@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPU Matmul Visualizer</title>
+<style>
+  :root{
+    --bg:#0a0e14;
+    --panel:#11161f;
+    --line:#1f2935;
+    --die:#0d1420;
+    --sm-idle:#1a2433;
+    --sm-edge:#2b3a4f;
+    --core-off:#243042;
+    --core-on:#ffd23f;     /* signature accent: silicon amber */
+    --core-hot:#ff7a3c;
+    --wire:#3a4a60;
+    --txt:#cdd6e3;
+    --txt-dim:#7a8aa0;
+    --accent:#ffd23f;
+    --mem:#1b2740;
+    --mem-active:#4f7cff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 70% -10%, #131c2b 0%, transparent 60%),
+      var(--bg);
+    color:var(--txt);
+    font-family:"SF Mono",ui-monospace,"Cascadia Code",Menlo,monospace;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{display:grid;grid-template-columns:1fr 320px;height:100vh}
+  @media(max-width:880px){.app{grid-template-columns:1fr;height:auto}}
+
+  header{
+    grid-column:1/-1;display:flex;align-items:baseline;gap:16px;
+    padding:14px 20px;border-bottom:1px solid var(--line);
+  }
+  header h1{
+    font-size:14px;letter-spacing:.32em;text-transform:uppercase;
+    margin:0;font-weight:600;color:var(--txt);
+  }
+  header .tag{color:var(--accent);font-size:11px;letter-spacing:.2em}
+  header .sub{margin-left:auto;color:var(--txt-dim);font-size:11px;letter-spacing:.1em}
+
+  .stage{position:relative;overflow:auto;padding:20px}
+  svg{display:block;width:100%;height:auto}
+
+  .controls{
+    border-left:1px solid var(--line);background:var(--panel);
+    padding:20px;display:flex;flex-direction:column;gap:18px;overflow:auto;
+  }
+  @media(max-width:880px){.controls{border-left:none;border-top:1px solid var(--line)}}
+  .controls h2{
+    font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--txt-dim);margin:0 0 8px;font-weight:600;
+  }
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+  button{
+    background:var(--die);color:var(--txt);border:1px solid var(--line);
+    border-radius:6px;padding:9px 14px;font:inherit;font-size:12px;cursor:pointer;
+    letter-spacing:.04em;transition:.12s;
+  }
+  button:hover{border-color:var(--accent);color:#fff}
+  button.primary{background:var(--accent);color:#0a0e14;border-color:var(--accent);font-weight:600}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  label.field{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--txt-dim)}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .stat{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px dashed var(--line)}
+  .stat span:last-child{color:var(--accent)}
+  .legend{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--txt-dim)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:8px;vertical-align:-1px}
+  .phase{font-size:12px;color:var(--accent);min-height:16px;letter-spacing:.06em}
+  .mini{font-size:10px;color:var(--txt-dim);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>GPU&nbsp;Die</h1><span class="tag">◢ matmul trace</span>
+    <span class="sub" id="clock">cycle 0</span>
+  </header>
+
+  <div class="stage">
+    <svg id="die" viewBox="0 0 900 640" aria-label="GPU die schematic"></svg>
+  </div>
+
+  <aside class="controls">
+    <div>
+      <h2>Workload</h2>
+      <label class="field">Matrix size&nbsp;N (N×N · N×N)
+        <input type="range" id="size" min="2" max="8" value="4">
+      </label>
+      <div class="mini" id="dims">4×4 · 4×4 → 4×4</div>
+    </div>
+    <div>
+      <h2>Run</h2>
+      <div class="btnrow">
+        <button class="primary" id="run">▶ Run</button>
+        <button id="step">Step</button>
+        <button id="reset">Reset</button>
+      </div>
+      <label class="field" style="margin-top:10px">Speed
+        <input type="range" id="speed" min="1" max="20" value="8">
+      </label>
+      <div class="phase" id="phase">idle — press Run</div>
+    </div>
+    <div>
+      <h2>Counters</h2>
+      <div class="stat"><span>MACs done</span><span id="macs">0</span></div>
+      <div class="stat"><span>of total</span><span id="total">0</span></div>
+      <div class="stat"><span>active cores</span><span id="active">0</span></div>
+      <div class="stat"><span>utilization</span><span id="util">0%</span></div>
+    </div>
+    <div>
+      <h2>Legend</h2>
+      <div class="legend">
+        <div><i style="background:var(--mem-active)"></i>Memory / HBM transfer</div>
+        <div><i style="background:var(--core-on)"></i>Core computing (MAC)</div>
+        <div><i style="background:var(--core-hot)"></i>Result written</div>
+        <div><i style="background:var(--core-off)"></i>Core idle</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("die");
+const el=id=>document.getElementById(id);
+
+// ---- Layout constants ----
+const SM_COLS=4, SM_ROWS=2;          // 8 Streaming Multiprocessors
+const CORE_GRID=4;                   // 4x4 cores per SM
+let state=null, timer=null;
+
+function mk(tag,attrs={},parent=svg){
+  const n=document.createElementNS(NS,tag);
+  for(const k in attrs)n.setAttribute(k,attrs[k]);
+  parent.appendChild(n);return n;
+}
+function txt(x,y,s,attrs={}){
+  const t=mk("text",{x,y,fill:"#7a8aa0","font-size":11,
+    "font-family":"monospace","letter-spacing":"1",...attrs});
+  t.textContent=s;return t;
+}
+
+// ---- Draw the static die ----
+const cores=[];          // flat list of {rect, sm}
+function drawDie(){
+  svg.innerHTML="";cores.length=0;
+  // die substrate
+  mk("rect",{x:8,y:8,width:884,height:624,rx:14,fill:"#0d1420",stroke:"#1f2935","stroke-width":2});
+  txt(24,34,"DIE",{fill:"#3a4a60","letter-spacing":"4"});
+
+  // HBM memory stacks (left + right edges)
+  for(const side of [{x:18,lab:"HBM"},{x:838,lab:"HBM"}]){
+    mk("rect",{x:side.x,y:120,width:44,height:400,rx:6,fill:"var(--mem)",stroke:"#2b3a4f",class:"mem",id:"mem-"+side.x});
+    for(let i=0;i<8;i++)mk("line",{x1:side.x,y1:120+i*50+25,x2:side.x+44,y2:120+i*50+25,stroke:"#0d1420"});
+    txt(side.x+8,114,side.lab,{fill:"#4f7cff","letter-spacing":"2"});
+  }
+
+  // L2 cache bus across the middle-top
+  mk("rect",{x:80,y:64,width:740,height:26,rx:5,fill:"#141d2c",stroke:"#243042"});
+  txt(90,82,"L2 CACHE  ·  INTERCONNECT",{fill:"#5a6b82"});
+
+  // SM grid
+  const gx=86, gy=110, smW=180, smH=240, gap=8;
+  let smIndex=0;
+  for(let r=0;r<SM_ROWS;r++)for(let c=0;c<SM_COLS;c++){
+    const x=gx+c*(smW+gap), y=gy+r*(smH+gap);
+    mk("rect",{x,y,width:smW,height:smH,rx:8,fill:"var(--sm-idle)",stroke:"var(--sm-edge)","stroke-width":1.5});
+    txt(x+10,y+18,"SM "+smIndex,{fill:"#8a9bb5","letter-spacing":"1","font-size":10});
+    // shared mem strip
+    mk("rect",{x:x+8,y:y+26,width:smW-16,height:14,rx:3,fill:"#16203040",stroke:"#243042"});
+    txt(x+12,y+37,"shared mem",{fill:"#46566e","font-size":8});
+    // warp scheduler tick
+    mk("rect",{x:x+smW-30,y:y+6,width:22,height:8,rx:2,fill:"#243042"});
+    // core grid
+    const cx=x+14, cy=y+50, cs=34, cgap=6;
+    for(let i=0;i<CORE_GRID;i++)for(let j=0;j<CORE_GRID;j++){
+      const rect=mk("rect",{x:cx+j*(cs+cgap),y:cy+i*(cs+cgap),width:cs,height:cs,rx:4,
+        fill:"var(--core-off)",stroke:"#11161f"});
+      cores.push({rect,sm:smIndex});
+    }
+    smIndex++;
+  }
+  txt(86,628,"8 SM · 16 CUDA cores each = 128 lanes",{fill:"#3a4a60","font-size":10});
+}
+
+// ---- Simulation ----
+function buildSim(N){
+  // Each output element C[i][j] = sum_k A[i][k]*B[k][j]  => N MACs.
+  // We map the N*N output cells round-robin onto the 128 physical cores.
+  const cells=[];
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++)cells.push({i,j,core:(i*N+j)%cores.length});
+  return {
+    N, cells,
+    totalMac:N*N*N,
+    macDone:0,
+    phase:0,        // 0 load, 1 compute, 2 done
+    k:0,            // current accumulation step within compute
+    cycle:0
+  };
+}
+
+function reset(){
+  clearInterval(timer);timer=null;
+  const N=+el("size").value;
+  drawDie();
+  state=buildSim(N);
+  el("total").textContent=state.totalMac;
+  el("macs").textContent=0;el("active").textContent=0;el("util").textContent="0%";
+  el("clock").textContent="cycle 0";
+  el("phase").textContent="idle — press Run";
+  el("dims").textContent=`${N}×${N} · ${N}×${N} → ${N}×${N}`;
+  el("run").disabled=false;
+  paintCores(()=> "var(--core-off)");
+}
+
+function paintCores(fn){
+  cores.forEach((c,idx)=>c.rect.setAttribute("fill",fn(idx)));
+}
+function setMem(active){
+  ["mem-18","mem-838"].forEach(id=>{
+    const m=document.getElementById(id);
+    if(m)m.setAttribute("fill",active?"var(--mem-active)":"var(--mem)");
+  });
+}
+
+function step(){
+  if(!state)reset();
+  const s=state;
+  if(s.phase===2)return;
+  s.cycle++;
+  el("clock").textContent="cycle "+s.cycle;
+
+  if(s.phase===0){ // LOAD operands from HBM
+    setMem(true);
+    el("phase").textContent="loading A,B tiles from HBM → shared mem";
+    paintCores(()=> "var(--sm-edge)");
+    s.phase=1;return;
+  }
+
+  // COMPUTE: one accumulation step k across all output cells in parallel
+  setMem(false);
+  const activeCores=new Set();
+  s.cells.forEach(cell=>{ activeCores.add(cell.core); });
+  paintCores(idx=> activeCores.has(idx)?"var(--core-on)":"var(--core-off)");
+  s.macDone+=s.N*s.N;                 // N*N MACs this k-step
+  s.k++;
+  el("phase").textContent=`MAC accumulate · k=${s.k}/${s.N}`;
+  el("macs").textContent=Math.min(s.macDone,s.totalMac);
+  el("active").textContent=activeCores.size;
+  el("util").textContent=Math.round(activeCores.size/cores.length*100)+"%";
+
+  if(s.k>=s.N){ // finished accumulation -> write results
+    paintCores(idx=> activeCores.has(idx)?"var(--core-hot)":"var(--core-off)");
+    el("phase").textContent="✓ results written to C · done";
+    el("macs").textContent=s.totalMac;
+    s.phase=2;el("run").disabled=true;
+    clearInterval(timer);timer=null;
+  }
+}
+
+function run(){
+  if(state&&state.phase===2)reset();
+  if(timer)return;
+  const ms=Math.max(40, 600/ +el("speed").value);
+  timer=setInterval(step,ms);
+}
+
+el("run").onclick=run;
+el("step").onclick=()=>{clearInterval(timer);timer=null;step();};
+el("reset").onclick=reset;
+el("size").oninput=reset;
+el("speed").oninput=()=>{if(timer){clearInterval(timer);run();}};
+
+reset();
+</script>
+</body>
+</html>
