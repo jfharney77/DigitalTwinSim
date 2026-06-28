@@ -20,6 +20,7 @@ export interface Workload {
   kind: "matmul";
   N: number;
   dtype: "fp32";
+  seed?: number;
 }
 
 export interface SimState {
@@ -39,6 +40,8 @@ export interface SimulateResponse {
   workload: Workload;
   totalCores: number;
   macTotal: number;
+  a: number[][];
+  b: number[][];
   trace: SimState[];
 }
 

@@ -193,3 +193,65 @@ select:hover {
   color: var(--txt-dim);
   line-height: 1.5;
 }
+
+/* --- Matrix panels (spec_02) --- */
+.panels {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.panels-op {
+  color: var(--txt-dim);
+  font-size: 18px;
+}
+.matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.matrix-label {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+.matrix-grid {
+  display: grid;
+  gap: 3px;
+}
+.cell {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 3px;
+  background: var(--die);
+  border: 1px solid var(--line);
+  color: var(--txt);
+}
+/* operand cells feeding the current MAC step */
+.cell.op-active {
+  background: var(--core-on);
+  color: #0a0e14;
+  border-color: var(--core-on);
+}
+/* C cells */
+.cell.c-blank {
+  color: var(--txt-dim);
+  opacity: 0.4;
+}
+.cell.c-partial {
+  background: var(--core-off);
+}
+.cell.c-done {
+  background: var(--core-hot);
+  color: #0a0e14;
+  border-color: var(--core-hot);
+}

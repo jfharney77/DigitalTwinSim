@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchProfiles, simulate } from "./api";
 import { DieView } from "./components/DieView";
+import { MatrixPanels } from "./components/MatrixPanels";
 import { Controls } from "./components/Controls";
 import { Counters } from "./components/Counters";
 import { Legend } from "./components/Legend";
@@ -28,6 +29,10 @@ export function App() {
   const [n, setN] = useState(4);
   const [speed, setSpeed] = useState(8);
   const [trace, setTrace] = useState<SimState[]>([]);
+  const [operands, setOperands] = useState<{ a: number[][]; b: number[][] }>({
+    a: [],
+    b: [],
+  });
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,8 +73,11 @@ export function App() {
     if (!profile) return;
     stop();
     setCursor(0);
-    simulate(profile, { kind: "matmul", N: n, dtype: "fp32" })
-      .then((res) => setTrace(res.trace))
+    simulate(profile, { kind: "matmul", N: n, dtype: "fp32", seed: 0 })
+      .then((res) => {
+        setTrace(res.trace);
+        setOperands({ a: res.a, b: res.b });
+      })
       .catch((e) => setError(String(e)));
   }, [profile, n, stop]);
 
@@ -124,6 +132,7 @@ export function App() {
       <div className="stage">
         {error && <div className="mini" style={{ color: "#ff7a3c" }}>{error}</div>}
         {profile && <DieView profile={profile} state={state} />}
+        <MatrixPanels a={operands.a} b={operands.b} state={state} />
       </div>
 
       <aside className="controls">

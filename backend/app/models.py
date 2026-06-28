@@ -56,6 +56,7 @@ class Workload(CamelModel):
     kind: Literal["matmul"] = "matmul"
     n: int = Field(ge=2, le=64, alias="N")
     dtype: DType = "fp32"
+    seed: int = 0  # deterministic operand pattern (spec_02)
 
 
 class SimState(CamelModel):
@@ -82,4 +83,6 @@ class SimulateResponse(CamelModel):
     workload: Workload
     total_cores: int
     mac_total: int
+    a: list[list[int]]  # operand A (spec_02)
+    b: list[list[int]]  # operand B (spec_02)
     trace: list[SimState]

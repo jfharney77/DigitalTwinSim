@@ -27,7 +27,7 @@ scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
 
 - `model/` → `backend/app/models.py` (pydantic `GpuProfile`/`Workload`/`SimState`, camelCase JSON) + `profiles.py`.
 - `sim/` → `backend/app/engine.py` (`simulate(profile, workload) -> list[SimState]`) + `mapping.py`. **Keep this pure** — no FastAPI/IO imports, so the trace tests stay fast.
-- `render/` → `frontend/src/components/DieView.tsx` (profile-driven SVG, painted from `SimState.coreState`).
+- `render/` → `frontend/src/components/DieView.tsx` (profile-driven SVG, painted from `SimState.coreState`) + `MatrixPanels.tsx` (A/B/C grids; C derived client-side from `SimState.k` — see spec_02). Operands come from `backend/app/matrices.py` (`make_operands`, deterministic) and ride in the simulate response as `a`/`b`.
 - `ui/` → `Controls.tsx` / `Counters.tsx` / `Legend.tsx`.
 - `app.ts` → `frontend/src/App.tsx` — composition root; **owns the playback clock** (the `setInterval` lives here, never in the engine).
 

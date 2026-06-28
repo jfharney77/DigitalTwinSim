@@ -1,6 +1,7 @@
 # Spec 02 — Show the actual A, B, C matrices
 
-**Status:** proposed (next feature)
+**Status:** implemented (the "recommended" options in each section were taken:
+backend emits seeded A/B, frontend derives partial C from `k`).
 **Builds on:** `initial_spec.md` (the foundation), which is now implemented as a FastAPI backend + React frontend.
 **Roadmap ref:** this is near-term item #2 ("Show the actual A / B / C matrices beside the die, filling in as MACs complete").
 

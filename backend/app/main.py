@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .engine import simulate
+from .matrices import make_operands
 from .models import GpuProfile, SimulateRequest, SimulateResponse
 from .profiles import DEFAULT_PROFILE, PROFILES
 
@@ -45,10 +46,13 @@ def post_simulate(req: SimulateRequest) -> SimulateResponse:
         raise HTTPException(status_code=422, detail="profile has no cores")
 
     trace = simulate(profile, workload)
+    a, b = make_operands(workload.n, workload.seed)
     return SimulateResponse(
         profile=profile,
         workload=workload,
         total_cores=total_cores,
         mac_total=workload.n ** 3,
+        a=a,
+        b=b,
         trace=trace,
     )
