@@ -26,8 +26,8 @@ scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
 ### Where things live (maps spec's `src/` layout onto the split)
 
 - `model/` → `backend/app/models.py` (pydantic `GpuProfile`/`Workload`/`SimState`, camelCase JSON) + `profiles.py`.
-- `sim/` → `backend/app/engine.py` (`simulate(profile, workload) -> list[SimState]`) + `mapping.py`. **Keep this pure** — no FastAPI/IO imports, so the trace tests stay fast.
-- `render/` → `frontend/src/components/DieView.tsx` (profile-driven SVG, painted from `SimState.coreState`) + `MatrixPanels.tsx` (A/B/C grids; C derived client-side from `SimState.k` — see spec_02). Operands come from `backend/app/matrices.py` (`make_operands`, deterministic) and ride in the simulate response as `a`/`b`.
+- `sim/` → `backend/app/engine.py` (`simulate(profile, workload) -> list[SimState]`) + `mapping.py`. **Keep this pure** — no FastAPI/IO imports, so the trace tests stay fast. Tiling (spec_03): the load/compute/writeback phases repeat per tile; `Workload.tile_size` of `0` or `>=N` means one tile = the whole matrix, which reproduces the original single-LOAD trace exactly (this is why the spec_01 tests still pass). `SimState.tile_row/tile_col/k_tile` carry tile context.
+- `render/` → `frontend/src/components/DieView.tsx` (profile-driven SVG, painted from `SimState.coreState`) + `MatrixPanels.tsx` (A/B/C grids with tiling overlays). Operands come from `backend/app/matrices.py` (`make_operands`, deterministic) and ride in the simulate response as `a`/`b`. With tiling, C fills in tile-by-tile, so `MatrixPanels` replays the trace up to the cursor to compute each cell's accumulation depth (not a single global `k`).
 - `ui/` → `Controls.tsx` / `Counters.tsx` / `Legend.tsx`.
 - `app.ts` → `frontend/src/App.tsx` — composition root; **owns the playback clock** (the `setInterval` lives here, never in the engine).
 
@@ -64,8 +64,8 @@ The implemented engine follows the spec's **5-phase model** (`idle → load → 
 Enforced by `backend/tests/test_engine.py` — keep them green:
 
 - **The clock lives in the frontend, never in the engine.** No timers in `engine.py`/`SimState`; the `setInterval` is in `App.tsx`. The trace is pure data.
-- Phases advance `idle→load→compute→writeback→done` with no skips.
-- `macDone <= macTotal`; after compute `macDone === N*N*N === macTotal`.
+- Phases follow `idle→load→compute→writeback→done`; with tiling the `load→compute→writeback` cycle repeats once per output tile (so phase order is only monotonic within the single-tile / whole-matrix case).
+- `macDone <= macTotal` and is monotonic non-decreasing; at `done` `macDone === N*N*N === macTotal`, for every tile size.
 - `activeCores <= totalCores`, where `totalCores = sm.rows*sm.cols * coresPerSM.rows*coresPerSM.cols`.
 - `utilization === activeCores / totalCores`.
 - Cell→core mapping is round-robin `core = (i*N + j) % totalCores` (deliberately naive — see roadmap).

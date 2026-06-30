@@ -21,6 +21,7 @@ export interface Workload {
   N: number;
   dtype: "fp32";
   seed?: number;
+  tileSize?: number;
 }
 
 export interface SimState {
@@ -33,6 +34,10 @@ export interface SimState {
   coreState: CoreState[];
   activeCores: number;
   utilization: number;
+  // Tiling context (spec_03); null outside a tile. Indices are in tile units.
+  tileRow: number | null;
+  tileCol: number | null;
+  kTile: number | null;
 }
 
 export interface SimulateResponse {
@@ -40,6 +45,7 @@ export interface SimulateResponse {
   workload: Workload;
   totalCores: number;
   macTotal: number;
+  tileSize: number;
   a: number[][];
   b: number[][];
   trace: SimState[];

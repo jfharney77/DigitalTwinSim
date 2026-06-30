@@ -12,12 +12,19 @@ function phaseLabel(s: SimState | null): string {
   switch (s.phase) {
     case "idle":
       return "idle — press Run";
-    case "load":
-      return "loading A,B tiles from HBM → shared mem";
-    case "compute":
-      return `MAC accumulate · k=${s.k}/${Math.round(Math.cbrt(s.macTotal))}`;
-    case "writeback":
-      return "results flushing to C";
+    case "load": {
+      const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol}) k-tile ${s.kTile}` : "";
+      return `loading A,B tiles from HBM → shared mem${tile}`;
+    }
+    case "compute": {
+      const n = Math.round(Math.cbrt(s.macTotal));
+      const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol})` : "";
+      return `MAC accumulate · k=${s.k}/${n}${tile}`;
+    }
+    case "writeback": {
+      const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol})` : "";
+      return `results flushing to C${tile}`;
+    }
     case "done":
       return "results written to C · done";
   }
@@ -27,12 +34,14 @@ export function App() {
   const [profiles, setProfiles] = useState<GpuProfile[]>([]);
   const [profile, setProfile] = useState<GpuProfile | null>(null);
   const [n, setN] = useState(4);
+  const [tileSize, setTileSize] = useState(2);
   const [speed, setSpeed] = useState(8);
   const [trace, setTrace] = useState<SimState[]>([]);
   const [operands, setOperands] = useState<{ a: number[][]; b: number[][] }>({
     a: [],
     b: [],
   });
+  const [effTileSize, setEffTileSize] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,16 +82,31 @@ export function App() {
     if (!profile) return;
     stop();
     setCursor(0);
-    simulate(profile, { kind: "matmul", N: n, dtype: "fp32", seed: 0 })
+    simulate(profile, { kind: "matmul", N: n, dtype: "fp32", seed: 0, tileSize })
       .then((res) => {
         setTrace(res.trace);
         setOperands({ a: res.a, b: res.b });
+        setEffTileSize(res.tileSize);
       })
       .catch((e) => setError(String(e)));
-  }, [profile, n, stop]);
+  }, [profile, n, tileSize, stop]);
 
   const state = trace[cursor] ?? null;
   const done = state?.phase === "done";
+
+  // Tiling counters (derived from the trace up to the cursor).
+  const tilingActive = effTileSize > 0 && effTileSize < n;
+  const tiling = tilingActive
+    ? {
+        hbmLoads: trace
+          .slice(0, cursor + 1)
+          .filter((s) => s.phase === "load").length,
+        tilesDone: trace
+          .slice(0, cursor + 1)
+          .filter((s) => s.phase === "writeback").length,
+        tilesTotal: Math.ceil(n / effTileSize) ** 2,
+      }
+    : null;
 
   const run = useCallback(() => {
     if (timer.current !== null || trace.length === 0) return;
@@ -132,7 +156,13 @@ export function App() {
       <div className="stage">
         {error && <div className="mini" style={{ color: "#ff7a3c" }}>{error}</div>}
         {profile && <DieView profile={profile} state={state} />}
-        <MatrixPanels a={operands.a} b={operands.b} state={state} />
+        <MatrixPanels
+          a={operands.a}
+          b={operands.b}
+          trace={trace}
+          cursor={cursor}
+          tileSize={effTileSize}
+        />
       </div>
 
       <aside className="controls">
@@ -141,17 +171,19 @@ export function App() {
           profileName={profile?.name ?? ""}
           onProfile={onProfile}
           n={n}
+          tileSize={tileSize}
           speed={speed}
           running={running}
           done={done}
           phaseLabel={phaseLabel(state)}
           onN={setN}
+          onTileSize={setTileSize}
           onSpeed={setSpeed}
           onRun={run}
           onStep={step}
           onReset={reset}
         />
-        <Counters state={state} />
+        <Counters state={state} tiling={tiling} />
         <Legend />
       </aside>
     </div>

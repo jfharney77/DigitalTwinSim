@@ -6,10 +6,12 @@ export function Controls({
   profileName,
   onProfile,
   n,
+  tileSize,
   speed,
   running,
   done,
   onN,
+  onTileSize,
   onSpeed,
   onRun,
   onStep,
@@ -20,10 +22,12 @@ export function Controls({
   profileName: string;
   onProfile: (name: string) => void;
   n: number;
+  tileSize: number;
   speed: number;
   running: boolean;
   done: boolean;
   onN: (n: number) => void;
+  onTileSize: (t: number) => void;
   onSpeed: (s: number) => void;
   onRun: () => void;
   onStep: () => void;
@@ -68,6 +72,21 @@ export function Controls({
         </label>
         <div className="mini">
           {n}×{n} · {n}×{n} → {n}×{n}
+        </div>
+        <label className="field" style={{ marginTop: 10 }}>
+          Tile size T (shared-memory block)
+          <input
+            type="range"
+            min={1}
+            max={n}
+            value={Math.min(tileSize || n, n)}
+            onChange={(e) => onTileSize(Number(e.target.value))}
+          />
+        </label>
+        <div className="mini">
+          {tileSize >= n || tileSize <= 0
+            ? `T=${n} — whole matrix, no tiling`
+            : `T=${tileSize} — stream ${tileSize}×${tileSize} blocks through shared mem`}
         </div>
       </div>
 

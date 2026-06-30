@@ -236,11 +236,31 @@ select:hover {
   border: 1px solid var(--line);
   color: var(--txt);
 }
-/* operand cells feeding the current MAC step */
+/* operand cells resident in shared memory, feeding the current MAC step */
 .cell.op-active {
   background: var(--core-on);
   color: #0a0e14;
   border-color: var(--core-on);
+}
+/* operand tile streaming HBM -> shared memory this step */
+.cell.op-loading {
+  background: var(--mem-active);
+  color: #0a0e14;
+  border-color: var(--mem-active);
+}
+/* tile boundaries (spec_03) */
+.cell.tile-top {
+  border-top-color: var(--sm-edge);
+  border-top-width: 2px;
+}
+.cell.tile-left {
+  border-left-color: var(--sm-edge);
+  border-left-width: 2px;
+}
+/* the C-tile currently being accumulated */
+.cell.c-active {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 /* C cells */
 .cell.c-blank {

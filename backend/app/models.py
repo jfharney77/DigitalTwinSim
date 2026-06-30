@@ -57,6 +57,7 @@ class Workload(CamelModel):
     n: int = Field(ge=2, le=64, alias="N")
     dtype: DType = "fp32"
     seed: int = 0  # deterministic operand pattern (spec_02)
+    tile_size: int = 0  # T; 0 means whole matrix / no tiling (spec_03)
 
 
 class SimState(CamelModel):
@@ -71,6 +72,11 @@ class SimState(CamelModel):
     core_state: list[CoreState]
     active_cores: int
     utilization: float
+    # Tiling context (spec_03); null outside a tile (idle/done) and k_tile is
+    # null during writeback. Tile indices are in tile units (multiply by tile_size).
+    tile_row: int | None = None
+    tile_col: int | None = None
+    k_tile: int | None = None
 
 
 class SimulateRequest(CamelModel):
@@ -83,6 +89,7 @@ class SimulateResponse(CamelModel):
     workload: Workload
     total_cores: int
     mac_total: int
+    tile_size: int  # effective T after clamping (spec_03)
     a: list[list[int]]  # operand A (spec_02)
     b: list[list[int]]  # operand B (spec_02)
     trace: list[SimState]

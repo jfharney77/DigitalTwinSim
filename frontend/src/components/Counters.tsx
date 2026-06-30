@@ -1,6 +1,12 @@
 import type { SimState } from "../types";
 
-export function Counters({ state }: { state: SimState | null }) {
+export function Counters({
+  state,
+  tiling,
+}: {
+  state: SimState | null;
+  tiling?: { hbmLoads: number; tilesDone: number; tilesTotal: number } | null;
+}) {
   const macs = state?.macDone ?? 0;
   const total = state?.macTotal ?? 0;
   const active = state?.activeCores ?? 0;
@@ -25,6 +31,20 @@ export function Counters({ state }: { state: SimState | null }) {
         <span>utilization</span>
         <span>{util}%</span>
       </div>
+      {tiling && (
+        <>
+          <div className="stat">
+            <span>HBM tile-loads</span>
+            <span>{tiling.hbmLoads}</span>
+          </div>
+          <div className="stat">
+            <span>tiles done</span>
+            <span>
+              {tiling.tilesDone} / {tiling.tilesTotal}
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
