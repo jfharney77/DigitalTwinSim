@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .engine import effective_tile_size, simulate
+from .engine import analyze, effective_tile_size, simulate
 from .matrices import make_operands
 from .models import GpuProfile, SimulateRequest, SimulateResponse
 from .profiles import DEFAULT_PROFILE, PROFILES
@@ -53,6 +53,7 @@ def post_simulate(req: SimulateRequest) -> SimulateResponse:
         total_cores=total_cores,
         mac_total=workload.n ** 3,
         tile_size=effective_tile_size(workload.n, workload.tile_size),
+        summary=analyze(profile, workload),
         a=a,
         b=b,
         trace=trace,

@@ -14,7 +14,11 @@ from pydantic.alias_generators import to_camel
 
 Phase = Literal["idle", "load", "compute", "writeback", "done"]
 CoreState = Literal["idle", "loading", "computing", "wrote"]
-DType = Literal["fp32"]  # future: fp16, bf16, int8
+DType = Literal["fp32", "fp16", "bf16", "int8"]  # spec_04
+Regime = Literal["memory", "compute"]
+
+# Bytes per element by dtype. Smaller dtype = fewer bytes to move (spec_04).
+DTYPE_BYTES: dict[str, int] = {"fp32": 4, "fp16": 2, "bf16": 2, "int8": 1}
 
 
 class CamelModel(BaseModel):
@@ -33,6 +37,13 @@ class Memory(CamelModel):
     label: str = "HBM"
 
 
+class Bandwidth(CamelModel):
+    """Illustrative (NOT real) rates for the memory/compute model (spec_04)."""
+
+    bytes_per_cycle: int = 8  # HBM throughput
+    macs_per_cycle: int = 4  # compute throughput
+
+
 class GpuProfile(CamelModel):
     """Describes the die. Everything structural derives from this (spec §3)."""
 
@@ -42,6 +53,7 @@ class GpuProfile(CamelModel):
     cores_per_sm: SMGrid = Field(alias="coresPerSM")
     memory: Memory
     has_l2_bus: bool = True
+    bandwidth: Bandwidth = Field(default_factory=Bandwidth)  # spec_04
 
     def total_cores(self) -> int:
         return (
@@ -77,11 +89,26 @@ class SimState(CamelModel):
     tile_row: int | None = None
     tile_col: int | None = None
     k_tile: int | None = None
+    # Bandwidth model (spec_04): cores waiting on HBM, and modeled cycles this
+    # event costs (loads cost more than compute -> the UI dwells on them).
+    stalled: bool = False
+    cycle_cost: int = 1
 
 
 class SimulateRequest(CamelModel):
     profile: GpuProfile
     workload: Workload
+
+
+class Summary(CamelModel):
+    """Analytical roofline read-out for the whole workload (spec_04)."""
+
+    bytes_moved: int
+    load_cycles_total: int
+    compute_cycles_total: int
+    arithmetic_intensity: float  # MACs per byte moved
+    ridge_point: float  # intensity where memory- and compute-bound balance
+    regime: Regime
 
 
 class SimulateResponse(CamelModel):
@@ -90,6 +117,7 @@ class SimulateResponse(CamelModel):
     total_cores: int
     mac_total: int
     tile_size: int  # effective T after clamping (spec_03)
+    summary: Summary  # spec_04
     a: list[list[int]]  # operand A (spec_02)
     b: list[list[int]]  # operand B (spec_02)
     trace: list[SimState]

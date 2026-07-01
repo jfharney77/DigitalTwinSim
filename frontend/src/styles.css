@@ -14,6 +14,7 @@
   --accent: #ffd23f;
   --mem: #1b2740;
   --mem-active: #4f7cff;
+  --stall: #7a3b52; /* cores waiting on HBM (spec_04) */
 }
 * {
   box-sizing: border-box;
@@ -68,6 +69,21 @@ header .sub {
   color: var(--txt-dim);
   font-size: 11px;
   letter-spacing: 0.1em;
+}
+.badge {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.badge-memory {
+  background: var(--stall);
+  color: #ffdbe6;
+}
+.badge-compute {
+  background: var(--core-on);
+  color: #0a0e14;
 }
 .stage {
   position: relative;

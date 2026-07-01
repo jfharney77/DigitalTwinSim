@@ -2,6 +2,8 @@
 
 export type Phase = "idle" | "load" | "compute" | "writeback" | "done";
 export type CoreState = "idle" | "loading" | "computing" | "wrote";
+export type DType = "fp32" | "fp16" | "bf16" | "int8";
+export type Regime = "memory" | "compute";
 
 export interface SMGrid {
   rows: number;
@@ -14,12 +16,13 @@ export interface GpuProfile {
   coresPerSM: SMGrid;
   memory: { stacks: number; label: string };
   hasL2Bus: boolean;
+  bandwidth?: { bytesPerCycle: number; macsPerCycle: number };
 }
 
 export interface Workload {
   kind: "matmul";
   N: number;
-  dtype: "fp32";
+  dtype: DType;
   seed?: number;
   tileSize?: number;
 }
@@ -38,6 +41,18 @@ export interface SimState {
   tileRow: number | null;
   tileCol: number | null;
   kTile: number | null;
+  // Bandwidth model (spec_04)
+  stalled: boolean;
+  cycleCost: number;
+}
+
+export interface Summary {
+  bytesMoved: number;
+  loadCyclesTotal: number;
+  computeCyclesTotal: number;
+  arithmeticIntensity: number;
+  ridgePoint: number;
+  regime: Regime;
 }
 
 export interface SimulateResponse {
@@ -46,6 +61,7 @@ export interface SimulateResponse {
   totalCores: number;
   macTotal: number;
   tileSize: number;
+  summary: Summary;
   a: number[][];
   b: number[][];
   trace: SimState[];

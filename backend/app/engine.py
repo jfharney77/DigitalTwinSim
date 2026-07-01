@@ -12,8 +12,10 @@ the original single-LOAD trace.
 
 from __future__ import annotations
 
+import math
+
 from .mapping import cell_to_core
-from .models import CoreState, GpuProfile, SimState, Workload
+from .models import DTYPE_BYTES, CoreState, GpuProfile, SimState, Summary, Workload
 
 
 def effective_tile_size(n: int, tile_size: int) -> int:
@@ -28,11 +30,51 @@ def _ranges(n: int, t: int) -> list[tuple[int, int]]:
     return [(s, min(s + t, n)) for s in range(0, n, t)]
 
 
+def _load_bytes(
+    r0: int, r1: int, c0: int, c1: int, k0: int, k1: int, dtype_bytes: int
+) -> int:
+    """Bytes to bring the A-tile (rows x k) and B-tile (k x cols) from HBM."""
+    cells_a = (r1 - r0) * (k1 - k0)
+    cells_b = (k1 - k0) * (c1 - c0)
+    return (cells_a + cells_b) * dtype_bytes
+
+
+def analyze(profile: GpuProfile, workload: Workload) -> Summary:
+    """Roofline summary for the whole workload (spec_04). Pure, no trace needed."""
+    n = workload.n
+    t = effective_tile_size(n, workload.tile_size)
+    db = DTYPE_BYTES[workload.dtype]
+    bw = profile.bandwidth
+    mac_total = n * n * n
+
+    bytes_moved = 0
+    for r0, r1 in _ranges(n, t):
+        for c0, c1 in _ranges(n, t):
+            for k0, k1 in _ranges(n, t):
+                bytes_moved += _load_bytes(r0, r1, c0, c1, k0, k1, db)
+
+    load_cycles_total = math.ceil(bytes_moved / bw.bytes_per_cycle)
+    compute_cycles_total = math.ceil(mac_total / bw.macs_per_cycle)
+    intensity = mac_total / bytes_moved if bytes_moved else 0.0
+    ridge = bw.macs_per_cycle / bw.bytes_per_cycle
+    regime = "memory" if intensity < ridge else "compute"
+    return Summary(
+        bytes_moved=bytes_moved,
+        load_cycles_total=load_cycles_total,
+        compute_cycles_total=compute_cycles_total,
+        arithmetic_intensity=intensity,
+        ridge_point=ridge,
+        regime=regime,  # type: ignore[arg-type]
+    )
+
+
 def simulate(profile: GpuProfile, workload: Workload) -> list[SimState]:
     """Build the full deterministic SimState trace."""
     total_cores = profile.total_cores()
     n = workload.n
     t = effective_tile_size(n, workload.tile_size)
+    db = DTYPE_BYTES[workload.dtype]
+    bpc = profile.bandwidth.bytes_per_cycle
     mac_total = n * n * n
 
     def make_state(
@@ -46,6 +88,8 @@ def simulate(profile: GpuProfile, workload: Workload) -> list[SimState]:
         tile_row: int | None,
         tile_col: int | None,
         k_tile: int | None,
+        stalled: bool = False,
+        cycle_cost: int = 1,
     ) -> SimState:
         cs: list[CoreState] = ["idle"] * total_cores
         active_set: set[int] = set()
@@ -68,6 +112,8 @@ def simulate(profile: GpuProfile, workload: Workload) -> list[SimState]:
             tile_row=tile_row,
             tile_col=tile_col,
             k_tile=k_tile,
+            stalled=stalled,
+            cycle_cost=cycle_cost,
         )
 
     trace: list[SimState] = []
@@ -86,12 +132,16 @@ def simulate(profile: GpuProfile, workload: Workload) -> list[SimState]:
             tile_cells = [(i, j) for i in range(r0, r1) for j in range(c0, c1)]
 
             for tk, (k0, k1) in enumerate(k_tiles):
-                # LOAD A-tile (ti,tk) + B-tile (tk,tj) HBM -> shared mem
+                # LOAD A-tile (ti,tk) + B-tile (tk,tj) HBM -> shared mem.
+                # Cost scales with bytes moved: the cores stall while they wait.
                 cycle += 1
+                load_bytes = _load_bytes(r0, r1, c0, c1, k0, k1, db)
+                load_cost = max(1, math.ceil(load_bytes / bpc))
                 trace.append(
                     make_state(
                         cycle, "load", k0, mac_done, True,
                         tile_cells, "loading", ti, tj, tk,
+                        stalled=True, cycle_cost=load_cost,
                     )
                 )
                 # COMPUTE one accumulation step per kk within this k-tile

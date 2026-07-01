@@ -45,8 +45,11 @@ export function DieView({
   const memActive = state?.memActive ?? false;
   const memFill = memActive ? "var(--mem-active)" : "var(--mem)";
 
+  const stalled = state?.stalled ?? false;
   const fillFor = (flatIndex: number): string => {
     const cs = state?.coreState[flatIndex] ?? "idle";
+    // While stalled (waiting on HBM), "loading" cores show the stall color.
+    if (stalled && cs === "loading") return "var(--stall)";
     return CORE_FILL[cs];
   };
 

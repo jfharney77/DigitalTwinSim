@@ -5,7 +5,9 @@ import { MatrixPanels } from "./components/MatrixPanels";
 import { Controls } from "./components/Controls";
 import { Counters } from "./components/Counters";
 import { Legend } from "./components/Legend";
-import type { GpuProfile, SimState } from "./types";
+import type { DType, GpuProfile, SimState, Summary } from "./types";
+
+const MAX_DWELL = 6; // cap how long the UI lingers on a slow load (pacing only)
 
 function phaseLabel(s: SimState | null): string {
   if (!s) return "idle — press Run";
@@ -35,7 +37,9 @@ export function App() {
   const [profile, setProfile] = useState<GpuProfile | null>(null);
   const [n, setN] = useState(4);
   const [tileSize, setTileSize] = useState(2);
+  const [dtype, setDtype] = useState<DType>("fp32");
   const [speed, setSpeed] = useState(8);
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [trace, setTrace] = useState<SimState[]>([]);
   const [operands, setOperands] = useState<{ a: number[][]; b: number[][] }>({
     a: [],
@@ -47,6 +51,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
 
   const timer = useRef<number | null>(null);
+  const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
@@ -82,14 +87,15 @@ export function App() {
     if (!profile) return;
     stop();
     setCursor(0);
-    simulate(profile, { kind: "matmul", N: n, dtype: "fp32", seed: 0, tileSize })
+    simulate(profile, { kind: "matmul", N: n, dtype, seed: 0, tileSize })
       .then((res) => {
         setTrace(res.trace);
         setOperands({ a: res.a, b: res.b });
         setEffTileSize(res.tileSize);
+        setSummary(res.summary);
       })
       .catch((e) => setError(String(e)));
-  }, [profile, n, tileSize, stop]);
+  }, [profile, n, tileSize, dtype, stop]);
 
   const state = trace[cursor] ?? null;
   const done = state?.phase === "done";
@@ -113,13 +119,20 @@ export function App() {
     // restart if finished
     setCursor((c) => (trace[c]?.phase === "done" ? 0 : c));
     setRunning(true);
+    dwell.current = 0;
     const tick = () => {
+      // Linger on costly states (slow HBM loads) so stalls are visible.
+      if (dwell.current > 1) {
+        dwell.current -= 1;
+        return;
+      }
       setCursor((c) => {
         const next = c + 1;
         if (next >= trace.length - 1) {
           stop();
           return trace.length - 1;
         }
+        dwell.current = Math.min(trace[next]?.cycleCost ?? 1, MAX_DWELL);
         return next;
       });
     };
@@ -150,7 +163,14 @@ export function App() {
       <header>
         <h1>GPU&nbsp;Die</h1>
         <span className="tag">◢ matmul trace</span>
-        <span className="sub">cycle {state?.cycle ?? 0}</span>
+        {summary && (
+          <span className={`badge badge-${summary.regime}`}>
+            {summary.regime === "memory" ? "MEMORY-BOUND" : "COMPUTE-BOUND"}
+          </span>
+        )}
+        <span className="sub">
+          {state?.stalled ? "⏳ waiting on HBM · " : ""}cycle {state?.cycle ?? 0}
+        </span>
       </header>
 
       <div className="stage">
@@ -172,18 +192,20 @@ export function App() {
           onProfile={onProfile}
           n={n}
           tileSize={tileSize}
+          dtype={dtype}
           speed={speed}
           running={running}
           done={done}
           phaseLabel={phaseLabel(state)}
           onN={setN}
           onTileSize={setTileSize}
+          onDtype={setDtype}
           onSpeed={setSpeed}
           onRun={run}
           onStep={step}
           onReset={reset}
         />
-        <Counters state={state} tiling={tiling} />
+        <Counters state={state} tiling={tiling} summary={summary} />
         <Legend />
       </aside>
     </div>

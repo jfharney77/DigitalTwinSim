@@ -1,11 +1,13 @@
-import type { SimState } from "../types";
+import type { SimState, Summary } from "../types";
 
 export function Counters({
   state,
   tiling,
+  summary,
 }: {
   state: SimState | null;
   tiling?: { hbmLoads: number; tilesDone: number; tilesTotal: number } | null;
+  summary?: Summary | null;
 }) {
   const macs = state?.macDone ?? 0;
   const total = state?.macTotal ?? 0;
@@ -42,6 +44,36 @@ export function Counters({
             <span>
               {tiling.tilesDone} / {tiling.tilesTotal}
             </span>
+          </div>
+        </>
+      )}
+
+      {summary && (
+        <>
+          <h2 style={{ marginTop: 16 }}>Roofline (illustrative)</h2>
+          <div className="stat">
+            <span>regime</span>
+            <span>{summary.regime === "memory" ? "memory-bound" : "compute-bound"}</span>
+          </div>
+          <div className="stat">
+            <span>intensity (MAC/byte)</span>
+            <span>{summary.arithmeticIntensity.toFixed(2)}</span>
+          </div>
+          <div className="stat">
+            <span>ridge point</span>
+            <span>{summary.ridgePoint.toFixed(2)}</span>
+          </div>
+          <div className="stat">
+            <span>load cycles</span>
+            <span>{summary.loadCyclesTotal}</span>
+          </div>
+          <div className="stat">
+            <span>compute cycles</span>
+            <span>{summary.computeCyclesTotal}</span>
+          </div>
+          <div className="stat">
+            <span>bytes moved</span>
+            <span>{summary.bytesMoved}</span>
           </div>
         </>
       )}

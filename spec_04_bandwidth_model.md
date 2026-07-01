@@ -1,6 +1,12 @@
 # Spec 04 — Memory-bandwidth model: memory-bound vs compute-bound
 
-**Status:** proposed (recommended next feature)
+**Status:** implemented — with one deliberate change from §3/§6: rather than
+emitting one trace state per load cycle ("explicit states"), each LOAD stays a
+single state carrying `cycle_cost` + `stalled`, and the **UI dwells** on it (up to
+a cap) so slow loads are visibly longer. This keeps the spec_03 "load count == tile
+grid" tests valid and avoids bloating the per-state `core_state` arrays on large
+dies. The analytical regime lives in a separate `summary` (see `engine.analyze`),
+so the badge/counters are exact even though on-screen dwell is capped for pacing.
 **Builds on:** `initial_spec.md`, `spec_02_matrix_panels.md`, `spec_03_tiling.md`.
 **Roadmap ref:** mid-term item #5 ("Memory-bandwidth model: make LOAD duration
 depend on tile size / dtype to show memory-bound vs. compute-bound regimes").

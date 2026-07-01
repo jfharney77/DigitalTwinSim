@@ -1,5 +1,7 @@
-import type { GpuProfile } from "../types";
+import type { DType, GpuProfile } from "../types";
 import { totalCores } from "../types";
+
+const DTYPES: DType[] = ["fp32", "fp16", "bf16", "int8"];
 
 export function Controls({
   profiles,
@@ -7,11 +9,13 @@ export function Controls({
   onProfile,
   n,
   tileSize,
+  dtype,
   speed,
   running,
   done,
   onN,
   onTileSize,
+  onDtype,
   onSpeed,
   onRun,
   onStep,
@@ -23,11 +27,13 @@ export function Controls({
   onProfile: (name: string) => void;
   n: number;
   tileSize: number;
+  dtype: DType;
   speed: number;
   running: boolean;
   done: boolean;
   onN: (n: number) => void;
   onTileSize: (t: number) => void;
+  onDtype: (d: DType) => void;
   onSpeed: (s: number) => void;
   onRun: () => void;
   onStep: () => void;
@@ -87,6 +93,19 @@ export function Controls({
           {tileSize >= n || tileSize <= 0
             ? `T=${n} — whole matrix, no tiling`
             : `T=${tileSize} — stream ${tileSize}×${tileSize} blocks through shared mem`}
+        </div>
+        <label className="field" style={{ marginTop: 10 }}>
+          Precision (dtype)
+          <select value={dtype} onChange={(e) => onDtype(e.target.value as DType)}>
+            {DTYPES.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="mini">
+          fewer bytes per element → less data to move from HBM
         </div>
       </div>
 
