@@ -14,31 +14,14 @@ validate-frontend:
       - frontend/dist/
     expire_in: 1 hour
 
-.railway-auth: &railway-auth
-  - npm install -g @railway/cli
-  - mkdir -p ~/.railway
-  - |
-    cat > ~/.railway/config.json <<EOF
-    {
-      "projects": {},
-      "user": {
-        "token": null,
-        "accessToken": "$RAILWAY_ACCESS_TOKEN",
-        "refreshToken": "$RAILWAY_REFRESH_TOKEN",
-        "tokenExpiresAt": 9999999999
-      },
-      "linkedFunctions": null
-    }
-    EOF
-  - railway whoami
-
 deploy-frontend:
   stage: deploy
   image: node:20
   needs: [validate-frontend]
   script:
-    - *railway-auth
+    - npm install -g @railway/cli
+    - railway status
     - rm -rf frontend/dist
-    - railway up --service DigitalTwinSim-frontend --environment production --project $RAILWAY_PROJECT_ID
+    - railway up --service DigitalTwinSim-frontend
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
