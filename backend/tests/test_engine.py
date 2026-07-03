@@ -74,6 +74,20 @@ def test_cycle_is_monotonic():
     assert cycles == list(range(len(trace)))
 
 
+@pytest.mark.parametrize("n,t", [(6, 4), (8, 2), (8, 3), (4, 2)])
+def test_tile_cells_stay_within_one_sm(n, t):
+    # A tile's shared-memory working set lives in one SM, so all of its output
+    # cells must map to lanes within a single SM -- never straddle two.
+    cores_per_sm = GENERIC_128.cores_per_sm.rows * GENERIC_128.cores_per_sm.cols
+    trace = simulate(GENERIC_128, Workload(N=n, tileSize=t))
+    for s in trace:
+        if s.phase != "compute":
+            continue
+        active = [i for i, c in enumerate(s.core_state) if c == "computing"]
+        sms = {a // cores_per_sm for a in active}
+        assert len(sms) <= 1, f"tile ({s.tile_row},{s.tile_col}) straddles SMs {sms}"
+
+
 def test_oversubscribed_cores_when_n_squared_exceeds_cores():
     # tiny die: 1 SM, 2x2 cores = 4 cores; N=4 -> 16 cells round-robin onto 4
     tiny = GpuProfile(

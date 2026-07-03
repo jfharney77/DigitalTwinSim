@@ -75,6 +75,19 @@ export function Counters({
             <span>bytes moved</span>
             <span>{summary.bytesMoved}</span>
           </div>
+          <div className="stat">
+            <span>serial cycles</span>
+            <span>{summary.serialCycles}</span>
+          </div>
+          <div className="stat">
+            <span>double-buffered</span>
+            <span>
+              {summary.pipelinedCycles}
+              {summary.pipelinedCycles < summary.serialCycles
+                ? ` (${(summary.serialCycles / summary.pipelinedCycles).toFixed(2)}×)`
+                : ""}
+            </span>
+          </div>
         </>
       )}
     </div>

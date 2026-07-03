@@ -70,6 +70,7 @@ class Workload(CamelModel):
     dtype: DType = "fp32"
     seed: int = 0  # deterministic operand pattern (spec_02)
     tile_size: int = 0  # T; 0 means whole matrix / no tiling (spec_03)
+    double_buffer: bool = False  # overlap next-tile load with compute (spec_05)
 
 
 class SimState(CamelModel):
@@ -93,6 +94,9 @@ class SimState(CamelModel):
     # event costs (loads cost more than compute -> the UI dwells on them).
     stalled: bool = False
     cycle_cost: int = 1
+    # Double-buffering (spec_05): the next tile is loading in the background while
+    # these cores compute (overlap -> mem_active is also true here).
+    prefetching: bool = False
 
 
 class SimulateRequest(CamelModel):
@@ -109,6 +113,9 @@ class Summary(CamelModel):
     arithmetic_intensity: float  # MACs per byte moved
     ridge_point: float  # intensity where memory- and compute-bound balance
     regime: Regime
+    # Scheduling cost estimates (spec_05): serial vs double-buffered.
+    serial_cycles: int
+    pipelined_cycles: int
 
 
 class SimulateResponse(CamelModel):
