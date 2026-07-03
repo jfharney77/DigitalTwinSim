@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from .anatomy import ANATOMIES, DieAnatomy
 from .engine import analyze, effective_tile_size, simulate
 from .matrices import make_operands
 from .models import GpuProfile, SimulateRequest, SimulateResponse
@@ -36,6 +37,19 @@ def list_profiles() -> list[GpuProfile]:
 @app.get("/api/profiles/default", response_model=GpuProfile)
 def default_profile() -> GpuProfile:
     return DEFAULT_PROFILE
+
+
+@app.get("/api/anatomy", response_model=list[DieAnatomy])
+def list_anatomies() -> list[DieAnatomy]:
+    return list(ANATOMIES.values())
+
+
+@app.get("/api/anatomy/{anatomy_id}", response_model=DieAnatomy)
+def get_anatomy(anatomy_id: str) -> DieAnatomy:
+    anatomy = ANATOMIES.get(anatomy_id)
+    if anatomy is None:
+        raise HTTPException(status_code=404, detail=f"unknown die {anatomy_id!r}")
+    return anatomy
 
 
 @app.post("/api/simulate", response_model=SimulateResponse)

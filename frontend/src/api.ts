@@ -1,4 +1,4 @@
-import type { GpuProfile, SimulateResponse, Workload } from "./types";
+import type { DieAnatomy, GpuProfile, SimulateResponse, Workload } from "./types";
 
 const BASE = "/api";
 
@@ -11,6 +11,12 @@ export async function fetchDefaultProfile(): Promise<GpuProfile> {
 export async function fetchProfiles(): Promise<GpuProfile[]> {
   const r = await fetch(`${BASE}/profiles`);
   if (!r.ok) throw new Error(`profiles ${r.status}`);
+  return r.json();
+}
+
+export async function fetchAnatomies(): Promise<DieAnatomy[]> {
+  const r = await fetch(`${BASE}/anatomy`);
+  if (!r.ok) throw new Error(`anatomy ${r.status}`);
   return r.json();
 }
 

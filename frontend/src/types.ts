@@ -25,6 +25,7 @@ export interface Workload {
   dtype: DType;
   seed?: number;
   tileSize?: number;
+  doubleBuffer?: boolean;
 }
 
 export interface SimState {
@@ -44,6 +45,8 @@ export interface SimState {
   // Bandwidth model (spec_04)
   stalled: boolean;
   cycleCost: number;
+  // Double-buffering (spec_05): next tile loading in the background during compute
+  prefetching: boolean;
 }
 
 export interface Summary {
@@ -53,6 +56,8 @@ export interface Summary {
   arithmeticIntensity: number;
   ridgePoint: number;
   regime: Regime;
+  serialCycles: number;
+  pipelinedCycles: number;
 }
 
 export interface SimulateResponse {
@@ -65,6 +70,56 @@ export interface SimulateResponse {
   a: number[][];
   b: number[][];
   trace: SimState[];
+}
+
+// --- Die anatomy (annotated real-GPU floorplans; backend/app/anatomy.py) ---
+
+export type RegionKind =
+  | "compute"
+  | "l2"
+  | "mem"
+  | "nvlink"
+  | "io"
+  | "media"
+  | "cache"
+  | "fabric";
+
+// Real photograph of a part (hotlinked from Wikimedia Commons; credit is the
+// attribution the CC license requires — always render it next to the image).
+export interface Photo {
+  url: string;
+  caption: string;
+  credit: string;
+}
+
+export interface DieRegion {
+  id: string;
+  kind: RegionKind;
+  label: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  description: string;
+  photo?: Photo | null;
+}
+
+export interface DieAnatomy {
+  id: string;
+  name: string;
+  vendor: string;
+  architecture: string;
+  process: string;
+  dieSize: string;
+  transistors: string;
+  year: number;
+  width: number;
+  height: number;
+  regions: DieRegion[];
+  stats: { label: string; value: string }[];
+  sources: { label: string; url: string }[];
+  overview: string;
+  photo?: Photo | null;
 }
 
 export function totalCores(p: GpuProfile): number {

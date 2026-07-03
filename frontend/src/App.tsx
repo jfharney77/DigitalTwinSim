@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchProfiles, simulate } from "./api";
+import { AnatomyPage } from "./components/AnatomyPage";
 import { DieView } from "./components/DieView";
 import { MatrixPanels } from "./components/MatrixPanels";
 import { Controls } from "./components/Controls";
@@ -21,7 +22,8 @@ function phaseLabel(s: SimState | null): string {
     case "compute": {
       const n = Math.round(Math.cbrt(s.macTotal));
       const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol})` : "";
-      return `MAC accumulate · k=${s.k}/${n}${tile}`;
+      const pf = s.prefetching ? " · prefetching next tile" : "";
+      return `MAC accumulate · k=${s.k}/${n}${tile}${pf}`;
     }
     case "writeback": {
       const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol})` : "";
@@ -32,12 +34,30 @@ function phaseLabel(s: SimState | null): string {
   }
 }
 
+type Page = "sim" | "anatomy";
+
 export function App() {
+  // Deep-linkable pages: /#anatomy (or /#anatomy/<dieId>) opens the
+  // die-anatomy view directly.
+  const [page, setPage] = useState<Page>(() =>
+    window.location.hash.startsWith("#anatomy") ? "anatomy" : "sim",
+  );
+  useEffect(() => {
+    if (page === "anatomy" && !window.location.hash.startsWith("#anatomy")) {
+      window.location.hash = "anatomy";
+    } else if (page === "sim") {
+      window.location.hash = "";
+    }
+    // The anatomy page uses the light Dell skin; swap the body backdrop with
+    // it so the dark gradient never bleeds through below the app grid.
+    document.body.classList.toggle("dell-body", page === "anatomy");
+  }, [page]);
   const [profiles, setProfiles] = useState<GpuProfile[]>([]);
   const [profile, setProfile] = useState<GpuProfile | null>(null);
   const [n, setN] = useState(4);
   const [tileSize, setTileSize] = useState(2);
   const [dtype, setDtype] = useState<DType>("fp32");
+  const [doubleBuffer, setDoubleBuffer] = useState(false);
   const [speed, setSpeed] = useState(8);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [trace, setTrace] = useState<SimState[]>([]);
@@ -87,7 +107,7 @@ export function App() {
     if (!profile) return;
     stop();
     setCursor(0);
-    simulate(profile, { kind: "matmul", N: n, dtype, seed: 0, tileSize })
+    simulate(profile, { kind: "matmul", N: n, dtype, seed: 0, tileSize, doubleBuffer })
       .then((res) => {
         setTrace(res.trace);
         setOperands({ a: res.a, b: res.b });
@@ -95,7 +115,7 @@ export function App() {
         setSummary(res.summary);
       })
       .catch((e) => setError(String(e)));
-  }, [profile, n, tileSize, dtype, stop]);
+  }, [profile, n, tileSize, dtype, doubleBuffer, stop]);
 
   const state = trace[cursor] ?? null;
   const done = state?.phase === "done";
@@ -159,20 +179,42 @@ export function App() {
   }, [speed]);
 
   return (
-    <div className="app">
+    <div className={page === "anatomy" ? "app dell" : "app"}>
       <header>
         <h1>GPU&nbsp;Die</h1>
-        <span className="tag">◢ matmul trace</span>
-        {summary && (
-          <span className={`badge badge-${summary.regime}`}>
-            {summary.regime === "memory" ? "MEMORY-BOUND" : "COMPUTE-BOUND"}
-          </span>
+        <nav className="nav">
+          <button
+            className={page === "sim" ? "active" : ""}
+            onClick={() => setPage("sim")}
+          >
+            Simulator
+          </button>
+          <button
+            className={page === "anatomy" ? "active" : ""}
+            onClick={() => setPage("anatomy")}
+          >
+            Die anatomy
+          </button>
+        </nav>
+        {page === "sim" && (
+          <>
+            <span className="tag">◢ matmul trace</span>
+            {summary && (
+              <span className={`badge badge-${summary.regime}`}>
+                {summary.regime === "memory" ? "MEMORY-BOUND" : "COMPUTE-BOUND"}
+              </span>
+            )}
+            <span className="sub">
+              {state?.stalled ? "⏳ waiting on HBM · " : ""}cycle {state?.cycle ?? 0}
+            </span>
+          </>
         )}
-        <span className="sub">
-          {state?.stalled ? "⏳ waiting on HBM · " : ""}cycle {state?.cycle ?? 0}
-        </span>
       </header>
 
+      {page === "anatomy" && <AnatomyPage />}
+
+      {page === "sim" && (
+        <>
       <div className="stage">
         {error && <div className="mini" style={{ color: "#ff7a3c" }}>{error}</div>}
         {profile && <DieView profile={profile} state={state} />}
@@ -193,6 +235,7 @@ export function App() {
           n={n}
           tileSize={tileSize}
           dtype={dtype}
+          doubleBuffer={doubleBuffer}
           speed={speed}
           running={running}
           done={done}
@@ -200,6 +243,7 @@ export function App() {
           onN={setN}
           onTileSize={setTileSize}
           onDtype={setDtype}
+          onDoubleBuffer={setDoubleBuffer}
           onSpeed={setSpeed}
           onRun={run}
           onStep={step}
@@ -208,6 +252,8 @@ export function App() {
         <Counters state={state} tiling={tiling} summary={summary} />
         <Legend />
       </aside>
+        </>
+      )}
     </div>
   );
 }
