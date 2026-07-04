@@ -15,7 +15,7 @@ export function Counters({
   const util = state ? Math.round(state.utilization * 100) : 0;
 
   return (
-    <div>
+    <div className="an-panel">
       <h2>Counters</h2>
       <div className="stat">
         <span>MACs done</span>

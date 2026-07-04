@@ -48,7 +48,7 @@ export function Controls({
   const selected = profiles.find((p) => p.name === profileName);
   return (
     <>
-      <div>
+      <div className="an-panel">
         <h2>GPU</h2>
         <label className="field">
           <span className="field-head">
@@ -90,7 +90,7 @@ export function Controls({
         )}
       </div>
 
-      <div>
+      <div className="an-panel">
         <h2>Workload</h2>
         <label className="field">
           <span className="field-head">
@@ -224,7 +224,7 @@ export function Controls({
         </div>
       </div>
 
-      <div>
+      <div className="an-panel">
         <span className="field-head">
           <h2 className="with-info">Run</h2>
           <InfoDot title="Run controls">
@@ -245,7 +245,7 @@ export function Controls({
         </span>
         <div className="btnrow">
           <button className="primary" onClick={onRun} disabled={running}>
-            ▶ Run
+            Run
           </button>
           <button onClick={onStep}>Step</button>
           <button onClick={onReset}>Reset</button>

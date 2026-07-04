@@ -1,6 +1,6 @@
 export function Legend() {
   return (
-    <div>
+    <div className="an-panel">
       <h2>Legend</h2>
       <div className="legend">
         <div>

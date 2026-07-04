@@ -580,7 +580,8 @@ body.dell-body {
   font-size: 12px;
   color: var(--dell-muted);
 }
-.app.dell .an-error {
+.app.dell .an-error,
+.app.dell .mini.an-error {
   color: var(--dell-error);
 }
 .app.dell .an-photo img {
@@ -615,6 +616,149 @@ body.dell-body {
   font-weight: 700;
   font-size: 13px;
   letter-spacing: normal;
+}
+
+/* Simulator page under the Dell skin: same masthead/hero/card structure; the
+   die schematic and matrix panels stay dark — they are the diagram. */
+.app.dell header .sub {
+  color: var(--dell-muted);
+  letter-spacing: normal;
+  font-size: 13px;
+}
+.app.dell .badge {
+  letter-spacing: normal;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 2px;
+}
+.app.dell .badge-memory {
+  background: #fff;
+  border: 1px solid var(--dell-error);
+  color: var(--dell-error);
+}
+.app.dell .badge-compute {
+  background: var(--dell-tint);
+  border: 1px solid var(--dell-blue);
+  color: var(--dell-blue);
+}
+.app.dell button {
+  background: #fff;
+  color: var(--dell-blue);
+  border: 1px solid var(--dell-blue);
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: normal;
+  padding: 9px 16px;
+}
+.app.dell button:hover {
+  background: var(--dell-tint);
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+}
+.app.dell button.primary {
+  background: var(--dell-blue);
+  border-color: var(--dell-blue);
+  color: #fff;
+}
+.app.dell button.primary:hover {
+  background: var(--dell-blue-hover);
+  border-color: var(--dell-blue-hover);
+}
+.app.dell .infodot {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--dell-border);
+  background: #fff;
+  color: var(--dell-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.app.dell .infodot:hover {
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+  background: #fff;
+}
+.app.dell label.field {
+  color: var(--dell-muted);
+  font-size: 13px;
+}
+.app.dell label.check {
+  color: var(--dell-text);
+  font-size: 13px;
+}
+.app.dell label.check input,
+.app.dell input[type="range"] {
+  accent-color: var(--dell-blue);
+}
+.app.dell .mini {
+  color: var(--dell-muted);
+  font-size: 12px;
+}
+.app.dell .phase {
+  color: var(--dell-blue);
+  font-size: 13px;
+  letter-spacing: normal;
+}
+.app.dell .panels {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 24px;
+}
+.app.dell .panels-op {
+  color: var(--dell-muted);
+}
+.app.dell .matrix-label {
+  color: var(--dell-muted);
+  letter-spacing: normal;
+  text-transform: none;
+  font-size: 12px;
+}
+.app.dell .info-backdrop {
+  background: rgba(22, 22, 22, 0.45);
+}
+.app.dell .info-modal {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+.app.dell .info-modal-head {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.app.dell .info-modal-head h3 {
+  color: var(--dell-text);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.app.dell .info-close {
+  border: none;
+  background: none;
+  color: var(--dell-muted);
+  padding: 0;
+}
+.app.dell .info-close:hover {
+  color: var(--dell-text);
+  background: none;
+}
+.app.dell .info-modal-body {
+  color: var(--dell-text);
+  font-size: 14px;
+}
+.app.dell .info-modal-body strong {
+  color: var(--dell-text);
+  font-weight: 700;
+}
+.app.dell .info-modal-body code {
+  background: var(--dell-page);
+  border: 1px solid var(--dell-border);
+  color: var(--dell-text);
 }
 
 /* --- Matrix panels (spec_02) --- */

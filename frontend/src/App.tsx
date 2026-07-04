@@ -48,9 +48,9 @@ export function App() {
     } else if (page === "sim") {
       window.location.hash = "";
     }
-    // The anatomy page uses the light Dell skin; swap the body backdrop with
-    // it so the dark gradient never bleeds through below the app grid.
-    document.body.classList.toggle("dell-body", page === "anatomy");
+    // Both pages use the light Dell skin; keep the body backdrop matching so
+    // the dark gradient never bleeds through below the app grid.
+    document.body.classList.add("dell-body");
   }, [page]);
   const [profiles, setProfiles] = useState<GpuProfile[]>([]);
   const [profile, setProfile] = useState<GpuProfile | null>(null);
@@ -179,7 +179,7 @@ export function App() {
   }, [speed]);
 
   return (
-    <div className={page === "anatomy" ? "app dell" : "app"}>
+    <div className="app dell">
       <header>
         <h1>GPU&nbsp;Die</h1>
         <nav className="nav">
@@ -198,14 +198,13 @@ export function App() {
         </nav>
         {page === "sim" && (
           <>
-            <span className="tag">◢ matmul trace</span>
             {summary && (
               <span className={`badge badge-${summary.regime}`}>
-                {summary.regime === "memory" ? "MEMORY-BOUND" : "COMPUTE-BOUND"}
+                {summary.regime === "memory" ? "Memory-bound" : "Compute-bound"}
               </span>
             )}
             <span className="sub">
-              {state?.stalled ? "⏳ waiting on HBM · " : ""}cycle {state?.cycle ?? 0}
+              {state?.stalled ? "waiting on HBM · " : ""}cycle {state?.cycle ?? 0}
             </span>
           </>
         )}
@@ -215,8 +214,16 @@ export function App() {
 
       {page === "sim" && (
         <>
+      <div className="an-hero">
+        <h2>Matrix multiply simulator</h2>
+        <p>
+          Pick a die and a workload, then play the trace to watch each load,
+          compute, and writeback phase move through the silicon.
+        </p>
+      </div>
       <div className="stage">
-        {error && <div className="mini" style={{ color: "#ff7a3c" }}>{error}</div>}
+        <div className="an-card">
+        {error && <div className="mini an-error">{error}</div>}
         {profile && <DieView profile={profile} state={state} />}
         <MatrixPanels
           a={operands.a}
@@ -225,6 +232,7 @@ export function App() {
           cursor={cursor}
           tileSize={effTileSize}
         />
+        </div>
       </div>
 
       <aside className="controls">
