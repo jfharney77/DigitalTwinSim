@@ -2,39 +2,43 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Repo layout: one directory per simulated component
+
+The repo is organized by hardware component. `GPU/` holds the GPU digital twin (everything below); future components (CPU, NIC, memory hierarchy, ...) get sibling top-level directories following the same pattern: a pure-engine FastAPI `backend/`, a React/Vite `frontend/` in the Dell clean-design skin, `scripts/`, and numbered `spec_NN_*.md` files driving the work.
+
 ## Current state
 
 The app is implemented as a **Python/FastAPI backend + React/Vite/TypeScript frontend**. The spec's three-layer design is split across the wire: the **backend owns the pure deterministic engine**, and the **frontend fetches the full `SimState[]` trace and animates it on its own clock**.
 
 Reference files:
-- `initial_spec.md` — the authoritative design + roadmap (data models, invariants, scope).
-- `gpu-sim.html` — the original single-file reference implementation (inline SVG + vanilla JS). It is the **behavior oracle** — open it in a browser to compare behavior. Not the architecture; see "Oracle vs. spec" below.
+- `GPU/initial_spec.md` — the authoritative design + roadmap (data models, invariants, scope).
+- `GPU/gpu-sim.html` — the original single-file reference implementation (inline SVG + vanilla JS). It is the **behavior oracle** — open it in a browser to compare behavior. Not the architecture; see "Oracle vs. spec" below.
 
 ### Layout & commands
 
 ```
-backend/   app/{models,profiles,mapping,engine,main}.py + tests/
-frontend/  src/{api,types}.ts, components/, App.tsx
-scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+GPU/backend/   app/{models,profiles,mapping,engine,main}.py + tests/
+GPU/frontend/  src/{api,types}.ts, components/, App.tsx
+GPU/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
 ```
 
-- Run everything: `./scripts/start_all.sh` (backend :8000 background, frontend :5173 foreground). Stop: `./scripts/stop_all.sh`.
-- Backend tests: `cd backend && . .venv/bin/activate && python -m pytest -q`
-- Frontend typecheck/build: `cd frontend && npm run build`
+- Run everything: `./GPU/scripts/start_all.sh` (backend :8000 background, frontend :5173 foreground). Stop: `./GPU/scripts/stop_all.sh`.
+- Backend tests: `cd GPU/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd GPU/frontend && npm run build`
 - Vite proxies `/api` → `http://localhost:8000`.
 
 ### Where things live (maps spec's `src/` layout onto the split)
 
-- `model/` → `backend/app/models.py` (pydantic `GpuProfile`/`Workload`/`SimState`, camelCase JSON) + `profiles.py`.
-- `sim/` → `backend/app/engine.py` (`simulate(profile, workload) -> list[SimState]`, plus `analyze(...) -> Summary` for the roofline read-out) + `mapping.py`. **Keep this pure** — no FastAPI/IO imports, so the trace tests stay fast. Tiling (spec_03): the load/compute/writeback phases repeat per tile; `Workload.tile_size` of `0` or `>=N` means one tile = the whole matrix, which reproduces the original single-LOAD trace exactly (this is why the spec_01 tests still pass). `SimState.tile_row/tile_col/k_tile` carry tile context. Bandwidth model (spec_04): each LOAD stays one state with `stalled=True` and a `cycle_cost` (bytes/`bytes_per_cycle`); the **UI dwells** on costly loads instead of the trace emitting per-cycle states. `analyze()` returns the memory- vs compute-bound `regime` (intensity vs ridge point); it's illustrative, not cycle-accurate.
-- `render/` → `frontend/src/components/DieView.tsx` (profile-driven SVG, painted from `SimState.coreState`) + `MatrixPanels.tsx` (A/B/C grids with tiling overlays). Operands come from `backend/app/matrices.py` (`make_operands`, deterministic) and ride in the simulate response as `a`/`b`. With tiling, C fills in tile-by-tile, so `MatrixPanels` replays the trace up to the cursor to compute each cell's accumulation depth (not a single global `k`).
+- `model/` → `GPU/backend/app/models.py` (pydantic `GpuProfile`/`Workload`/`SimState`, camelCase JSON) + `profiles.py`.
+- `sim/` → `GPU/backend/app/engine.py` (`simulate(profile, workload) -> list[SimState]`, plus `analyze(...) -> Summary` for the roofline read-out) + `mapping.py`. **Keep this pure** — no FastAPI/IO imports, so the trace tests stay fast. Tiling (spec_03): the load/compute/writeback phases repeat per tile; `Workload.tile_size` of `0` or `>=N` means one tile = the whole matrix, which reproduces the original single-LOAD trace exactly (this is why the spec_01 tests still pass). `SimState.tile_row/tile_col/k_tile` carry tile context. Bandwidth model (spec_04): each LOAD stays one state with `stalled=True` and a `cycle_cost` (bytes/`bytes_per_cycle`); the **UI dwells** on costly loads instead of the trace emitting per-cycle states. `analyze()` returns the memory- vs compute-bound `regime` (intensity vs ridge point); it's illustrative, not cycle-accurate.
+- `render/` → `GPU/frontend/src/components/DieView.tsx` (profile-driven SVG, painted from `SimState.coreState`) + `MatrixPanels.tsx` (A/B/C grids with tiling overlays). Operands come from `GPU/backend/app/matrices.py` (`make_operands`, deterministic) and ride in the simulate response as `a`/`b`. With tiling, C fills in tile-by-tile, so `MatrixPanels` replays the trace up to the cursor to compute each cell's accumulation depth (not a single global `k`).
 - `ui/` → `Controls.tsx` / `Counters.tsx` / `Legend.tsx`.
-- **Die-anatomy page** (second tab, deep-linkable via `/#anatomy/<dieId>`) → `backend/app/anatomy.py` (annotated floorplans of real GPUs as data — regions in a normalized coordinate space, stats, vendor whitepaper/die-shot sources, and per-region `Photo`s hotlinked from Wikimedia Commons whose `credit` line the UI must always render; geometry invariants in `tests/test_anatomy.py`) + `frontend/src/components/AnatomyPage.tsx` / `AnatomyView.tsx` (data-driven SVG renderer; new dies are backend data, not frontend code). Layouts are stylized mental models traced from vendor diagrams, not mm²-accurate. **Both pages use the Dell clean-design skin** (light, Roboto, Dell blue) scoped under `.app.dell` + `body.dell-body` in `styles.css` — per the `dell-clean-design` skill: no eyebrow text, no step numbers, no divider rules, no highlighted text, no serifs. Page chrome is light; the die schematic, matrix panels, and anatomy floorplan stay dark — they are the diagrams, and their palette lives in the `:root` vars. Keep new page-chrome styles inside the `.app.dell` scope.
-- `app.ts` → `frontend/src/App.tsx` — composition root; **owns the playback clock** (the `setInterval` lives here, never in the engine).
+- **Die-anatomy page** (second tab, deep-linkable via `/#anatomy/<dieId>`) → `GPU/backend/app/anatomy.py` (annotated floorplans of real GPUs as data — regions in a normalized coordinate space, stats, vendor whitepaper/die-shot sources, and per-region `Photo`s hotlinked from Wikimedia Commons whose `credit` line the UI must always render; geometry invariants in `GPU/backend/tests/test_anatomy.py`) + `GPU/frontend/src/components/AnatomyPage.tsx` / `AnatomyView.tsx` (data-driven SVG renderer; new dies are backend data, not frontend code). Layouts are stylized mental models traced from vendor diagrams, not mm²-accurate. **Both pages use the Dell clean-design skin** (light, Roboto, Dell blue) scoped under `.app.dell` + `body.dell-body` in `styles.css` — per the `dell-clean-design` skill: no eyebrow text, no step numbers, no divider rules, no highlighted text, no serifs. Page chrome is light; the die schematic, matrix panels, and anatomy floorplan stay dark — they are the diagrams, and their palette lives in the `:root` vars. Keep new page-chrome styles inside the `.app.dell` scope.
+- `app.ts` → `GPU/frontend/src/App.tsx` — composition root; **owns the playback clock** (the `setInterval` lives here, never in the engine).
 
 ### Cross-cutting gotcha
 
-`models.py` uses a camelCase alias generator, but `cores_per_sm` would camelize to `coresPerSm` — it has an explicit `alias="coresPerSM"` to match the spec/TS. If you add a field whose camelCase is ambiguous (embedded numbers/acronyms), verify the JSON key matches `frontend/src/types.ts` by hand.
+`models.py` uses a camelCase alias generator, but `cores_per_sm` would camelize to `coresPerSm` — it has an explicit `alias="coresPerSM"` to match the spec/TS. If you add a field whose camelCase is ambiguous (embedded numbers/acronyms), verify the JSON key matches `GPU/frontend/src/types.ts` by hand.
 
 ## Oracle vs. spec — known discrepancies
 
@@ -62,7 +66,7 @@ The implemented engine follows the spec's **5-phase model** (`idle → load → 
 
 ## Non-negotiable invariants
 
-Enforced by `backend/tests/test_engine.py` — keep them green:
+Enforced by `GPU/backend/tests/test_engine.py` — keep them green:
 
 - **The clock lives in the frontend, never in the engine.** No timers in `engine.py`/`SimState`; the `setInterval` is in `App.tsx`. The trace is pure data.
 - Phases follow `idle→load→compute→writeback→done`; with tiling the `load→compute→writeback` cycle repeats once per output tile (so phase order is only monotonic within the single-tile / whole-matrix case).

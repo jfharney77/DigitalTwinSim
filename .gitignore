@@ -1,13 +1,13 @@
-# Python
-backend/.venv/
+# Python (any component)
+.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
-backend/.env
+.env
 
-# Node / Vite
-frontend/node_modules/
-frontend/dist/
+# Node / Vite (any component)
+node_modules/
+dist/
 
 # Runtime
 logs/
