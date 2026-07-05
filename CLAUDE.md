@@ -17,15 +17,17 @@ Reference files:
 ### Layout & commands
 
 ```
-GPU/backend/   app/{models,profiles,mapping,engine,main}.py + tests/
-GPU/frontend/  src/{api,types}.ts, components/, App.tsx
+GPU/backend/   app/{models,profiles,mapping,matrices,engine,mlp,anatomy,main}.py + tests/
+GPU/frontend/  src/{api,types}.ts, App.tsx, components/{DieView,MatrixPanels,OpPipeline,
+               Controls,Counters,Legend,InfoDot,AnatomyPage,AnatomyView}.tsx
 GPU/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
 ```
 
 - Run everything: `./GPU/scripts/start_all.sh` (backend :8000 background, frontend :5173 foreground). Stop: `./GPU/scripts/stop_all.sh`.
 - Backend tests: `cd GPU/backend && . .venv/bin/activate && python -m pytest -q`
 - Frontend typecheck/build: `cd GPU/frontend && npm run build`
-- Vite proxies `/api` → `http://localhost:8000`.
+- Vite proxies `/api` → `http://localhost:8000`; if :8000 is taken (another component's backend, another session), run the backend elsewhere and point Vite at it: `API_TARGET=http://localhost:8010 npm run dev`.
+- Two workloads on the simulator page: `matmul` (spec_01–05) and `mlp_step` (spec_06 — an MLP training step as five chained matmuls). The die-anatomy page is the second tab.
 
 ### Where things live (maps spec's `src/` layout onto the split)
 
@@ -67,7 +69,7 @@ The implemented engine follows the spec's **5-phase model** (`idle → load → 
 
 ## Non-negotiable invariants
 
-Enforced by `GPU/backend/tests/test_engine.py` — keep them green:
+Enforced by `GPU/backend/tests/` (`test_engine.py`, `test_tiling.py`, `test_bandwidth.py`, `test_double_buffering.py`, `test_mlp.py`, `test_anatomy.py`) — keep them green:
 
 - **The clock lives in the frontend, never in the engine.** No timers in `engine.py`/`SimState`; the `setInterval` is in `App.tsx`. The trace is pure data.
 - Phases follow `idle→load→compute→writeback→done`; with tiling the `load→compute→writeback` cycle repeats once per output tile (so phase order is only monotonic within the single-tile / whole-matrix case).
@@ -76,6 +78,7 @@ Enforced by `GPU/backend/tests/test_engine.py` — keep them green:
 - `utilization === activeCores / totalCores`.
 - Cell→core mapping is **tile-aware** (`mapping.tile_aware_core`): a whole output tile is assigned to one SM (tiles round-robin across SMs by linear index), and each cell maps to a lane *within that SM*. A tile never straddles two SMs — they don't share memory. The legacy global round-robin `core = (i*N + j) % totalCores` (`cell_to_core`) is retained for reference only; it could scatter one tile across several SMs.
 - Changing N refetches the trace and resets the cursor; Step advances exactly one state; Speed retunes the interval live.
+- **MLP training step (spec_06):** `macTotal = steps × 5 × N³`; op order is exactly `Z1, relu, Z2, δ2, dW2, δ1, dW1, update` per step; every spec_01–05 invariant holds *inside* each matmul op; and the per-step `loss` strictly falls for the canned seed (η = 0.01) — the network must genuinely learn or `test_mlp.py` fails.
 
 ## Testing approach (spec §8)
 
