@@ -19,13 +19,16 @@ export interface GpuProfile {
   bandwidth?: { bytesPerCycle: number; macsPerCycle: number };
 }
 
+export type WorkloadKind = "matmul" | "mlp_step";
+
 export interface Workload {
-  kind: "matmul";
+  kind: WorkloadKind;
   N: number;
   dtype: DType;
   seed?: number;
   tileSize?: number;
   doubleBuffer?: boolean;
+  steps?: number; // SGD steps for mlp_step (spec_06)
 }
 
 export interface SimState {
@@ -47,6 +50,31 @@ export interface SimState {
   cycleCost: number;
   // Double-buffering (spec_05): next tile loading in the background during compute
   prefetching: boolean;
+  // MLP op context (spec_06); null for plain matmul workloads. opIndex is
+  // global across steps (stepIndex * opsPerStep + position).
+  opIndex: number | null;
+  opCount: number | null;
+  opName: string | null;
+  stepIndex: number | null;
+}
+
+// --- MLP training step (spec_06) ---
+
+export interface MlpOp {
+  name: string;
+  kind: "matmul" | "pointwise";
+  a: number[][] | null;
+  b: number[][] | null;
+  aLabel: string | null;
+  bLabel: string | null;
+  cLabel: string | null;
+}
+
+export interface MlpInfo {
+  ops: MlpOp[]; // steps × opsPerStep, aligned with SimState.opIndex
+  opsPerStep: number;
+  loss: number[]; // one per step
+  eta: number;
 }
 
 export interface Summary {
@@ -70,6 +98,7 @@ export interface SimulateResponse {
   a: number[][];
   b: number[][];
   trace: SimState[];
+  mlp?: MlpInfo | null; // spec_06
 }
 
 // --- Die anatomy (annotated real-GPU floorplans; backend/app/anatomy.py) ---

@@ -6,31 +6,43 @@ import { MatrixPanels } from "./components/MatrixPanels";
 import { Controls } from "./components/Controls";
 import { Counters } from "./components/Counters";
 import { Legend } from "./components/Legend";
-import type { DType, GpuProfile, SimState, Summary } from "./types";
+import { OpPipeline } from "./components/OpPipeline";
+import type {
+  DType,
+  GpuProfile,
+  MlpInfo,
+  SimState,
+  Summary,
+  WorkloadKind,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow load (pacing only)
 
-function phaseLabel(s: SimState | null): string {
+function phaseLabel(s: SimState | null, n: number, mlp: MlpInfo | null): string {
   if (!s) return "idle — press Run";
+  // MLP pointwise ops are one flash state; the op name is the whole story.
+  if (mlp && s.opIndex !== null && mlp.ops[s.opIndex]?.kind === "pointwise") {
+    return s.opName ?? "pointwise op";
+  }
+  const op = s.opName ? `${s.opName} · ` : "";
   switch (s.phase) {
     case "idle":
       return "idle — press Run";
     case "load": {
       const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol}) k-tile ${s.kTile}` : "";
-      return `loading A,B tiles from HBM → shared mem${tile}`;
+      return `${op}loading tiles from HBM → shared mem${tile}`;
     }
     case "compute": {
-      const n = Math.round(Math.cbrt(s.macTotal));
       const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol})` : "";
       const pf = s.prefetching ? " · prefetching next tile" : "";
-      return `MAC accumulate · k=${s.k}/${n}${tile}${pf}`;
+      return `${op}MAC accumulate · k=${s.k}/${n}${tile}${pf}`;
     }
     case "writeback": {
       const tile = s.tileRow != null ? ` · C-tile (${s.tileRow},${s.tileCol})` : "";
-      return `results flushing to C${tile}`;
+      return `${op}results flushing out${tile}`;
     }
     case "done":
-      return "results written to C · done";
+      return mlp ? "training run complete" : "results written to C · done";
   }
 }
 
@@ -55,6 +67,9 @@ export function App() {
   const [profiles, setProfiles] = useState<GpuProfile[]>([]);
   const [profile, setProfile] = useState<GpuProfile | null>(null);
   const [n, setN] = useState(4);
+  const [kind, setKind] = useState<WorkloadKind>("matmul");
+  const [steps, setSteps] = useState(1);
+  const [mlp, setMlp] = useState<MlpInfo | null>(null);
   const [tileSize, setTileSize] = useState(2);
   const [dtype, setDtype] = useState<DType>("fp32");
   const [doubleBuffer, setDoubleBuffer] = useState(false);
@@ -107,29 +122,77 @@ export function App() {
     if (!profile) return;
     stop();
     setCursor(0);
-    simulate(profile, { kind: "matmul", N: n, dtype, seed: 0, tileSize, doubleBuffer })
+    simulate(profile, { kind, N: n, dtype, seed: 0, tileSize, doubleBuffer, steps })
       .then((res) => {
         setTrace(res.trace);
         setOperands({ a: res.a, b: res.b });
         setEffTileSize(res.tileSize);
         setSummary(res.summary);
+        setMlp(res.mlp ?? null);
       })
       .catch((e) => setError(String(e)));
-  }, [profile, n, tileSize, dtype, doubleBuffer, stop]);
+  }, [profile, n, kind, steps, tileSize, dtype, doubleBuffer, stop]);
 
   const state = trace[cursor] ?? null;
   const done = state?.phase === "done";
 
-  // Tiling counters (derived from the trace up to the cursor).
+  // spec_06: the matmul op the panels (and tiling counters) describe — the
+  // current op, or the nearest preceding matmul during pointwise ops / done.
+  const displayOpIdx = (() => {
+    if (!mlp) return null;
+    let i = state?.opIndex ?? (done ? mlp.ops.length - 1 : 0);
+    while (i > 0 && mlp.ops[i].kind !== "matmul") i--;
+    return i;
+  })();
+
+  // What the matrix panels show. For plain matmul it's A×B=C over the whole
+  // trace; for a training run it's the display op's operands over that op's
+  // slice of the trace.
+  const panel = (() => {
+    if (!mlp) {
+      return {
+        a: operands.a, b: operands.b, trace, cursor,
+        aLabel: "A", bLabel: "B", cLabel: "C",
+      };
+    }
+    const opIdx = displayOpIdx ?? 0;
+    const op = mlp.ops[opIdx];
+    if (!op || op.kind !== "matmul" || !op.a || !op.b) return null;
+    const start = trace.findIndex((s) => s.opIndex === opIdx);
+    let end = start;
+    while (end + 1 < trace.length && trace[end + 1].opIndex === opIdx) end++;
+    const upto = Math.min(done ? end : cursor, end);
+    const slice = start >= 0 && upto >= start ? trace.slice(start, upto + 1) : [];
+    return {
+      a: op.a, b: op.b, trace: slice, cursor: slice.length - 1,
+      aLabel: op.aLabel ?? "A", bLabel: op.bLabel ?? "B", cLabel: op.cLabel ?? "C",
+    };
+  })();
+
+  // Losses known at the cursor: step i's loss exists once its δ2 op has run
+  // (position 3 in the 8-op pipeline).
+  const lossesSoFar = mlp
+    ? done
+      ? mlp.loss
+      : state?.opIndex != null
+        ? mlp.loss.slice(
+            0,
+            Math.floor(state.opIndex / mlp.opsPerStep) +
+              (state.opIndex % mlp.opsPerStep >= 3 ? 1 : 0),
+          )
+        : []
+    : null;
+
+  // Tiling counters (derived from the trace up to the cursor). For a training
+  // run they describe the display op only — totals are per matmul, not per run.
   const tilingActive = effTileSize > 0 && effTileSize < n;
+  const tilingScope = trace
+    .slice(0, cursor + 1)
+    .filter((s) => displayOpIdx === null || s.opIndex === displayOpIdx);
   const tiling = tilingActive
     ? {
-        hbmLoads: trace
-          .slice(0, cursor + 1)
-          .filter((s) => s.phase === "load").length,
-        tilesDone: trace
-          .slice(0, cursor + 1)
-          .filter((s) => s.phase === "writeback").length,
+        hbmLoads: tilingScope.filter((s) => s.phase === "load").length,
+        tilesDone: tilingScope.filter((s) => s.phase === "writeback").length,
         tilesTotal: Math.ceil(n / effTileSize) ** 2,
       }
     : null;
@@ -225,13 +288,21 @@ export function App() {
         <div className="an-card">
         {error && <div className="mini an-error">{error}</div>}
         {profile && <DieView profile={profile} state={state} />}
-        <MatrixPanels
-          a={operands.a}
-          b={operands.b}
-          trace={trace}
-          cursor={cursor}
-          tileSize={effTileSize}
-        />
+        {mlp && (
+          <OpPipeline mlp={mlp} currentOp={state?.opIndex ?? null} done={done} />
+        )}
+        {panel && (
+          <MatrixPanels
+            a={panel.a}
+            b={panel.b}
+            trace={panel.trace}
+            cursor={panel.cursor}
+            tileSize={effTileSize}
+            aLabel={panel.aLabel}
+            bLabel={panel.bLabel}
+            cLabel={panel.cLabel}
+          />
+        )}
         </div>
       </div>
 
@@ -240,6 +311,10 @@ export function App() {
           profiles={profiles}
           profileName={profile?.name ?? ""}
           onProfile={onProfile}
+          kind={kind}
+          steps={steps}
+          onKind={setKind}
+          onSteps={setSteps}
           n={n}
           tileSize={tileSize}
           dtype={dtype}
@@ -247,7 +322,7 @@ export function App() {
           speed={speed}
           running={running}
           done={done}
-          phaseLabel={phaseLabel(state)}
+          phaseLabel={phaseLabel(state, n, mlp)}
           onN={setN}
           onTileSize={setTileSize}
           onDtype={setDtype}
@@ -257,7 +332,12 @@ export function App() {
           onStep={step}
           onReset={reset}
         />
-        <Counters state={state} tiling={tiling} summary={summary} />
+        <Counters
+          state={state}
+          tiling={tiling}
+          summary={summary}
+          losses={lossesSoFar}
+        />
         <Legend />
       </aside>
         </>

@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .anatomy import ANATOMIES, DieAnatomy
 from .engine import analyze, effective_tile_size, simulate
 from .matrices import make_operands
+from .mlp import MATMULS_PER_STEP, analyze_mlp, simulate_mlp
 from .models import GpuProfile, SimulateRequest, SimulateResponse
 from .profiles import DEFAULT_PROFILE, PROFILES
 
@@ -59,6 +60,24 @@ def post_simulate(req: SimulateRequest) -> SimulateResponse:
     if total_cores < 1:
         raise HTTPException(status_code=422, detail="profile has no cores")
 
+    tile_size = effective_tile_size(workload.n, workload.tile_size)
+
+    if workload.kind == "mlp_step":
+        trace, info = simulate_mlp(profile, workload)
+        first = info.ops[0]
+        return SimulateResponse(
+            profile=profile,
+            workload=workload,
+            total_cores=total_cores,
+            mac_total=workload.steps * MATMULS_PER_STEP * workload.n ** 3,
+            tile_size=tile_size,
+            summary=analyze_mlp(profile, workload),
+            a=first.a or [],
+            b=first.b or [],
+            trace=trace,
+            mlp=info,
+        )
+
     trace = simulate(profile, workload)
     a, b = make_operands(workload.n, workload.seed)
     return SimulateResponse(
@@ -66,7 +85,7 @@ def post_simulate(req: SimulateRequest) -> SimulateResponse:
         workload=workload,
         total_cores=total_cores,
         mac_total=workload.n ** 3,
-        tile_size=effective_tile_size(workload.n, workload.tile_size),
+        tile_size=tile_size,
         summary=analyze(profile, workload),
         a=a,
         b=b,

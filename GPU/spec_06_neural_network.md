@@ -1,6 +1,6 @@
 # Spec 06 — A tiny neural network: matmuls with a purpose
 
-**Status:** proposed
+**Status:** implemented
 **Builds on:** `spec_03_tiling.md` (tiling), `spec_04_bandwidth_model.md` (roofline),
 `spec_05_double_buffering.md` (pipelining).
 **Roadmap ref:** initial_spec §7 "workloads beyond a single matmul"; the M×K×N

@@ -761,6 +761,38 @@ body.dell-body {
   color: var(--dell-text);
 }
 
+/* --- MLP op pipeline (spec_06): Dell step tiles, titles only --- */
+.app.dell .op-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+.app.dell .op-tile {
+  flex: 1 1 0;
+  min-width: 96px;
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 2px;
+  padding: 8px 10px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--dell-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app.dell .op-tile.active {
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+  font-weight: 700;
+}
+.app.dell .op-tile.done {
+  border-color: var(--dell-blue);
+  background: var(--dell-tint);
+  color: var(--dell-blue);
+}
+
 /* --- Matrix panels (spec_02) --- */
 .panels {
   display: flex;

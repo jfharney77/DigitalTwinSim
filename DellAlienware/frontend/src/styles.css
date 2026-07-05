@@ -1,0 +1,949 @@
+:root {
+  --bg: #0a0e14;
+  --panel: #11161f;
+  --line: #1f2935;
+  --die: #0d1420;
+  --sm-idle: #1a2433;
+  --sm-edge: #2b3a4f;
+  --core-off: #243042;
+  --core-on: #ffd23f; /* signature accent: silicon amber */
+  --core-hot: #ff7a3c;
+  --wire: #3a4a60;
+  --txt: #cdd6e3;
+  --txt-dim: #7a8aa0;
+  --accent: #ffd23f;
+  --mem: #1b2740;
+  --mem-active: #4f7cff;
+  /* Power-path flow colors */
+  --flow-ac: #4f7cff;
+  --flow-charge: #35c46a;
+  --flow-hybrid: #ff9f3c;
+  --flow-off: #3a4a60;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+body {
+  background: radial-gradient(1200px 600px at 70% -10%, #131c2b 0%, transparent 60%),
+    var(--bg);
+  color: var(--txt);
+  font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  -webkit-font-smoothing: antialiased;
+}
+.app {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  height: 100vh;
+}
+@media (max-width: 880px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+header h1 {
+  font-size: 14px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  margin: 0;
+  font-weight: 600;
+  color: var(--txt);
+}
+header .sub {
+  margin-left: auto;
+  color: var(--txt-dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.badge {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  color: var(--accent);
+}
+.nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.nav button {
+  padding: 5px 12px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+.nav button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.stage {
+  position: relative;
+  overflow: auto;
+  padding: 20px;
+}
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.controls {
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow: auto;
+}
+@media (max-width: 880px) {
+  .controls {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+}
+.controls h2 {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.btnrow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+button {
+  background: var(--die);
+  color: var(--txt);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: 0.12s;
+}
+button:hover {
+  border-color: var(--accent);
+  color: #fff;
+}
+button.primary {
+  background: var(--accent);
+  color: #0a0e14;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+label.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--txt-dim);
+  margin-top: 12px;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+select {
+  background: var(--die);
+  color: var(--txt);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  max-width: 100%;
+}
+select:hover {
+  border-color: var(--accent);
+}
+.stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.stat span:last-child {
+  color: var(--accent);
+  text-align: right;
+}
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--txt-dim);
+}
+.legend i {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: -1px;
+}
+.phase {
+  font-size: 12px;
+  color: var(--accent);
+  min-height: 16px;
+  letter-spacing: 0.06em;
+  margin-top: 8px;
+}
+.mini {
+  font-size: 10px;
+  color: var(--txt-dim);
+  line-height: 1.5;
+}
+.notes {
+  margin: 8px 0 0;
+  padding-left: 16px;
+}
+.notes li {
+  margin-bottom: 4px;
+}
+
+/* --- Info indicators ("i" + modal) --- */
+.field-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.controls h2.with-info {
+  margin-bottom: 0;
+  display: inline-block;
+}
+.infodot {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--wire);
+  background: var(--die);
+  color: var(--txt-dim);
+  font-size: 10px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: 0.12s;
+}
+.infodot:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.info-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 12, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+.info-modal {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  max-width: 440px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.info-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.info-modal-head h3 {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.info-close {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--txt-dim);
+}
+.info-modal-body {
+  padding: 16px 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--txt);
+}
+.info-modal-body p {
+  margin: 0 0 10px;
+}
+.info-modal-body p:last-child {
+  margin-bottom: 0;
+}
+.info-modal-body strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+.info-modal-body code {
+  background: var(--die);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 11px;
+}
+
+/* --- Power-path schematic (the centerpiece dark diagram) --- */
+.pp-wrap svg {
+  background: var(--die);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.pp-desc {
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pp-chassis {
+  fill: none;
+  stroke: var(--sm-edge);
+  stroke-width: 0.4;
+}
+.pp-board {
+  fill: #101826;
+}
+.pp-block rect {
+  fill: var(--sm-idle);
+  stroke: var(--sm-edge);
+  stroke-width: 0.3;
+}
+.pp-block text {
+  fill: var(--txt-dim);
+  font-size: 2px;
+  letter-spacing: 0.1px;
+}
+.pp-block .pp-sub,
+.pp-sub {
+  fill: var(--txt-dim);
+  font-size: 1.5px;
+  opacity: 0.8;
+}
+.pp-block.pp-active rect {
+  fill: #24344d;
+  stroke: var(--accent);
+  stroke-width: 0.45;
+  animation: region-pulse 1.4s ease-in-out infinite;
+}
+.pp-block.pp-active text {
+  fill: var(--accent);
+}
+.pp-block.pp-active .pp-sub {
+  fill: var(--txt);
+}
+.pp-watts {
+  font-size: 1.8px;
+  letter-spacing: 0.08px;
+}
+.pp-ctrl {
+  fill: none;
+  stroke: var(--wire);
+  stroke-width: 0.25;
+  stroke-dasharray: 0.6 0.6;
+}
+.pp-flow-base {
+  fill: none;
+  stroke: var(--flow-off);
+  stroke-width: 0.5;
+  opacity: 0.6;
+}
+.pp-flow-on {
+  fill: none;
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  stroke-dasharray: 1.6 1.4;
+  animation: flow-dash 0.7s linear infinite;
+}
+.pp-flow-rev {
+  animation-direction: reverse;
+}
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -3;
+  }
+}
+.pp-batt-well {
+  fill: #0b111c;
+  stroke: var(--sm-edge);
+  stroke-width: 0.2;
+}
+.pp-batt-fill {
+  stroke: none;
+  transition: width 0.3s ease;
+}
+.pp-batt-charging {
+  animation: region-pulse 1.4s ease-in-out infinite;
+}
+.pp-batt-label {
+  fill: var(--txt);
+  font-size: 1.8px;
+}
+.pp-fan-ring {
+  fill: none;
+  stroke: var(--sm-edge);
+  stroke-width: 0.35;
+}
+.pp-fan-blades path {
+  fill: var(--wire);
+  stroke: none;
+}
+.pp-fan-on .pp-fan-ring {
+  stroke: #4fa08a;
+}
+.pp-fan-on .pp-fan-blades path {
+  fill: #4fa08a;
+}
+.pp-fan-blades {
+  animation-name: fan-spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: 0s; /* overridden inline from fanPct */
+}
+@keyframes fan-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.pp-fan-label {
+  fill: var(--txt-dim);
+  font-size: 1.5px;
+}
+/* Regions carrying power/activity in the current trace step. */
+.region-active rect {
+  animation: region-pulse 1.4s ease-in-out infinite;
+}
+@keyframes region-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+/* --- Anatomy page --- */
+.an-hint {
+  margin-top: 10px;
+}
+.an-region {
+  cursor: pointer;
+}
+.an-region:hover rect {
+  stroke: var(--accent);
+}
+.an-kind {
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.an-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--txt);
+}
+.an-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.an-sources a {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--mem-active);
+  text-decoration: none;
+}
+.an-sources a:hover {
+  color: var(--accent);
+}
+.an-tooltip {
+  position: fixed;
+  width: 280px;
+  z-index: 40;
+  pointer-events: none;
+  background: var(--panel);
+  border: 1px solid var(--wire);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+.an-tooltip-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.an-photo {
+  margin: 12px 0 0;
+}
+.an-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--die);
+  min-height: 40px;
+}
+.an-photo figcaption {
+  margin-top: 6px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+}
+.an-photo-small {
+  margin: 0;
+}
+/* The real interior photo, shown above the floorplan as its anchor. */
+.an-photo-hero {
+  margin: 0 0 20px;
+}
+.an-photo-hero img {
+  max-height: 420px;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+}
+.an-credit {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--wire);
+}
+.an-error {
+  color: #ff7a3c;
+}
+
+/* --- Use-case page --- */
+.uc-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.uc-persona {
+  margin: 0 0 20px;
+  font-size: 12px;
+  color: var(--txt-dim);
+  line-height: 1.6;
+}
+.uc-step {
+  margin-bottom: 24px;
+}
+.uc-step h3,
+.uc-outcome h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--txt);
+}
+.uc-para {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--txt);
+}
+.uc-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.uc-tag {
+  padding: 3px 9px;
+  font-size: 10px;
+  border-radius: 10px;
+  letter-spacing: 0.04em;
+}
+.uc-outcome {
+  margin-top: 28px;
+}
+
+/* --- Dell clean design skin (.app.dell), used on every page ---
+   Dell support visual language: white masthead, light hero band, gray page
+   with white cards, Roboto, Dell blue. Whitespace separates sections — no
+   divider rules, no eyebrow text, no step numbers, no highlighted text. The
+   power-path schematic and the interior floorplan stay dark — they are the
+   diagrams; their palette lives in the :root vars. */
+.app.dell {
+  --dell-blue: #0672cb;
+  --dell-blue-hover: #0059a8;
+  --dell-tint: #ebf5fc;
+  --dell-text: #161616;
+  --dell-muted: #636363;
+  --dell-border: #d2d2d2;
+  --dell-page: #f5f6f7;
+  --dell-error: #ce1126;
+  background: var(--dell-page);
+  color: var(--dell-text);
+  grid-template-rows: auto auto 1fr;
+}
+body.dell-body {
+  background: #f5f6f7;
+}
+.app.dell,
+.app.dell button,
+.app.dell select,
+.app.dell input,
+.app.dell textarea {
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+.app.dell header {
+  background: #fff;
+  border-bottom: 1px solid var(--dell-border);
+  padding: 16px 32px;
+}
+.app.dell header h1 {
+  color: var(--dell-blue);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.app.dell .nav button {
+  background: none;
+  border: none;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dell-muted);
+}
+.app.dell .nav button:hover {
+  color: var(--dell-blue);
+}
+.app.dell .nav button.active {
+  color: var(--dell-blue);
+  font-weight: 700;
+}
+.app.dell .badge {
+  border: none;
+  background: var(--dell-tint);
+  color: var(--dell-blue);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: normal;
+  border-radius: 12px;
+  padding: 3px 12px;
+}
+.app.dell header .sub {
+  color: var(--dell-muted);
+  letter-spacing: normal;
+  font-size: 13px;
+}
+.app.dell .an-hero {
+  display: block;
+  grid-column: 1 / -1;
+  background: #fff;
+  padding: 28px 32px 32px;
+}
+.app.dell .an-hero h2 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--dell-text);
+}
+.app.dell .an-hero p {
+  margin: 8px 0 0;
+  max-width: 860px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--dell-muted);
+}
+.app.dell .stage {
+  padding: 24px 8px 24px 32px;
+}
+.app.dell .an-card {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  padding: 32px;
+}
+.app.dell .controls {
+  background: transparent;
+  border-left: none;
+  padding: 24px 32px 24px 24px;
+  gap: 16px;
+}
+.app.dell .an-panel {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  padding: 20px 24px;
+}
+.app.dell .controls h2 {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dell-text);
+  margin: 0 0 10px;
+}
+.app.dell .an-kind {
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dell-muted);
+}
+.app.dell .an-desc {
+  font-size: 14px;
+  color: var(--dell-text);
+}
+.app.dell .stat {
+  border-bottom: none;
+  font-size: 14px;
+  padding: 6px 0;
+  color: var(--dell-muted);
+}
+.app.dell .stat span:last-child {
+  color: var(--dell-text);
+  font-weight: 500;
+}
+.app.dell select {
+  width: 100%;
+  background: #fff;
+  color: var(--dell-text);
+  border: 1px solid var(--dell-border);
+  border-radius: 2px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.app.dell select:hover,
+.app.dell select:focus {
+  border-color: var(--dell-blue);
+  outline: none;
+}
+.app.dell .legend {
+  font-size: 13px;
+  color: var(--dell-muted);
+}
+.app.dell .an-hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--dell-muted);
+}
+.app.dell .an-error,
+.app.dell .mini.an-error {
+  color: var(--dell-error);
+}
+.app.dell .an-photo img {
+  border-color: var(--dell-border);
+  background: #fff;
+}
+.app.dell .an-photo figcaption {
+  font-size: 12px;
+  color: var(--dell-muted);
+}
+.app.dell .an-credit {
+  font-size: 11px;
+  letter-spacing: normal;
+  color: var(--dell-muted);
+}
+.app.dell .an-sources a {
+  font-size: 14px;
+  color: var(--dell-blue);
+}
+.app.dell .an-sources a:hover {
+  color: var(--dell-blue-hover);
+  text-decoration: underline;
+}
+.app.dell .an-tooltip {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+.app.dell .an-tooltip-label {
+  color: var(--dell-blue);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: normal;
+}
+.app.dell button {
+  background: #fff;
+  color: var(--dell-blue);
+  border: 1px solid var(--dell-blue);
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: normal;
+  padding: 9px 16px;
+}
+.app.dell button:hover {
+  background: var(--dell-tint);
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+}
+.app.dell button.primary {
+  background: var(--dell-blue);
+  border-color: var(--dell-blue);
+  color: #fff;
+}
+.app.dell button.primary:hover {
+  background: var(--dell-blue-hover);
+  border-color: var(--dell-blue-hover);
+}
+.app.dell .infodot {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--dell-border);
+  background: #fff;
+  color: var(--dell-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.app.dell .infodot:hover {
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+  background: #fff;
+}
+.app.dell label.field {
+  color: var(--dell-muted);
+  font-size: 13px;
+}
+.app.dell input[type="range"] {
+  accent-color: var(--dell-blue);
+}
+.app.dell .mini {
+  color: var(--dell-muted);
+  font-size: 12px;
+}
+.app.dell .phase {
+  color: var(--dell-blue);
+  font-size: 13px;
+  letter-spacing: normal;
+}
+.app.dell .info-backdrop {
+  background: rgba(22, 22, 22, 0.45);
+}
+.app.dell .info-modal {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+.app.dell .info-modal-head {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.app.dell .info-modal-head h3 {
+  color: var(--dell-text);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.app.dell .info-close {
+  border: none;
+  background: none;
+  color: var(--dell-muted);
+  padding: 0;
+}
+.app.dell .info-close:hover {
+  color: var(--dell-text);
+  background: none;
+}
+.app.dell .info-modal-body {
+  color: var(--dell-text);
+  font-size: 14px;
+}
+.app.dell .info-modal-body strong {
+  color: var(--dell-text);
+  font-weight: 700;
+}
+.app.dell .info-modal-body code {
+  background: var(--dell-page);
+  border: 1px solid var(--dell-border);
+  color: var(--dell-text);
+}
+.app.dell .pp-desc {
+  font-size: 14px;
+  color: var(--dell-text);
+}
+.app.dell .pp-desc strong {
+  font-weight: 700;
+}
+.app.dell .notes {
+  color: var(--dell-muted);
+}
+
+/* Use-case page, Dell skin */
+.app.dell .uc-persona {
+  color: var(--dell-muted);
+  font-size: 14px;
+}
+.app.dell .uc-step h3,
+.app.dell .uc-outcome h3 {
+  color: var(--dell-text);
+  font-size: 20px;
+  font-weight: 500;
+}
+.app.dell .uc-para {
+  color: var(--dell-text);
+  font-size: 15px;
+}
+.app.dell .uc-tabs button.active {
+  background: var(--dell-blue);
+  color: #fff;
+}
+.app.dell .uc-tag {
+  border: 1px solid var(--dell-border);
+  background: var(--dell-page);
+  color: var(--dell-muted);
+  font-size: 12px;
+  font-weight: 400;
+  border-radius: 12px;
+  padding: 3px 10px;
+}
+.app.dell .uc-tag:hover {
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+  background: #fff;
+}

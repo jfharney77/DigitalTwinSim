@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repo layout: one directory per simulated component
 
-The repo is organized by hardware component. `GPU/` holds the GPU digital twin (everything below); future components (CPU, NIC, memory hierarchy, ...) get sibling top-level directories following the same pattern: a pure-engine FastAPI `backend/`, a React/Vite `frontend/` in the Dell clean-design skin, `scripts/`, and numbered `spec_NN_*.md` files driving the work.
+The repo is organized by hardware component. `GPU/` holds the GPU digital twin (everything below); `DellPowerEdgeR760/` and `DellPowerStore/` are the second and third components, following the same pattern (see their sections at the end of this file); future components (CPU, NIC, memory hierarchy, ...) get sibling top-level directories following the same pattern: a pure-engine FastAPI `backend/`, a React/Vite `frontend/` in the Dell clean-design skin, `scripts/`, and numbered `spec_NN_*.md` files driving the work.
 
 ## Current state
 
@@ -32,7 +32,8 @@ GPU/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
 - `model/` → `GPU/backend/app/models.py` (pydantic `GpuProfile`/`Workload`/`SimState`, camelCase JSON) + `profiles.py`.
 - `sim/` → `GPU/backend/app/engine.py` (`simulate(profile, workload) -> list[SimState]`, plus `analyze(...) -> Summary` for the roofline read-out) + `mapping.py`. **Keep this pure** — no FastAPI/IO imports, so the trace tests stay fast. Tiling (spec_03): the load/compute/writeback phases repeat per tile; `Workload.tile_size` of `0` or `>=N` means one tile = the whole matrix, which reproduces the original single-LOAD trace exactly (this is why the spec_01 tests still pass). `SimState.tile_row/tile_col/k_tile` carry tile context. Bandwidth model (spec_04): each LOAD stays one state with `stalled=True` and a `cycle_cost` (bytes/`bytes_per_cycle`); the **UI dwells** on costly loads instead of the trace emitting per-cycle states. `analyze()` returns the memory- vs compute-bound `regime` (intensity vs ridge point); it's illustrative, not cycle-accurate.
 - `render/` → `GPU/frontend/src/components/DieView.tsx` (profile-driven SVG, painted from `SimState.coreState`) + `MatrixPanels.tsx` (A/B/C grids with tiling overlays). Operands come from `GPU/backend/app/matrices.py` (`make_operands`, deterministic) and ride in the simulate response as `a`/`b`. With tiling, C fills in tile-by-tile, so `MatrixPanels` replays the trace up to the cursor to compute each cell's accumulation depth (not a single global `k`).
-- `ui/` → `Controls.tsx` / `Counters.tsx` / `Legend.tsx`.
+- `ui/` → `Controls.tsx` / `Counters.tsx` / `Legend.tsx` / `OpPipeline.tsx` (spec_06 op strip).
+- **MLP training step (spec_06)** → `GPU/backend/app/mlp.py`: pure like the engine; chains `engine.simulate()` once per matmul op (stripping per-op idle/done bookends, restamping cycle/mac counters, adding `op_index`/`op_name`/`step_index`), pointwise ops are one flash state, and the numerics are real (per-step `loss` in the response; `tests/test_mlp.py` asserts it strictly falls for the canned seed). `MlpInfo.ops` aligns with `SimState.op_index`; the frontend derives the panel operands and per-op tiling counters from the *display op* (current matmul, or nearest preceding one during pointwise/done).
 - **Die-anatomy page** (second tab, deep-linkable via `/#anatomy/<dieId>`) → `GPU/backend/app/anatomy.py` (annotated floorplans of real GPUs as data — regions in a normalized coordinate space, stats, vendor whitepaper/die-shot sources, and per-region `Photo`s hotlinked from Wikimedia Commons whose `credit` line the UI must always render; geometry invariants in `GPU/backend/tests/test_anatomy.py`) + `GPU/frontend/src/components/AnatomyPage.tsx` / `AnatomyView.tsx` (data-driven SVG renderer; new dies are backend data, not frontend code). Layouts are stylized mental models traced from vendor diagrams, not mm²-accurate. **Both pages use the Dell clean-design skin** (light, Roboto, Dell blue) scoped under `.app.dell` + `body.dell-body` in `styles.css` — per the `dell-clean-design` skill: no eyebrow text, no step numbers, no divider rules, no highlighted text, no serifs. Page chrome is light; the die schematic, matrix panels, and anatomy floorplan stay dark — they are the diagrams, and their palette lives in the `:root` vars. Keep new page-chrome styles inside the `.app.dell` scope.
 - `app.ts` → `GPU/frontend/src/App.tsx` — composition root; **owns the playback clock** (the `setInterval` lives here, never in the engine).
 
@@ -83,3 +84,47 @@ Test the engine against full-trace assertions (the invariants above), not the HT
 ## Scope guardrails (spec §1)
 
 Not a cycle-accurate simulator; timing is illustrative. Not tied to any vendor ISA — "SM", "CUDA core", "warp" are generic vocabulary. Renders tens to low-hundreds of elements, not real GPU-scale tensors. Favor a correct *mental model* over correct numbers. See spec §7 for the roadmap (M×K×N generalization, tiling, tensor-core/systolic mode) before adding features.
+
+## DellPowerEdgeR760 — server digital twin (second component)
+
+Same architecture as GPU/, applied to the Dell PowerEdge R760 2U rack server. See `DellPowerEdgeR760/initial_spec.md` for the full spec.
+
+```
+DellPowerEdgeR760/backend/   app/{models,anatomy,engine,catalog,usecases,main}.py + tests/
+DellPowerEdgeR760/frontend/  src/{api,types}.ts, App.tsx, components/{ChassisView,AnatomyPage,CatalogPage,UseCasePage,PowerOnControls,PowerOnCounters}.tsx
+DellPowerEdgeR760/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./DellPowerEdgeR760/scripts/start_all.sh` (backend :8001 background, frontend :5174 foreground — ports offset from GPU's 8000/5173 so both apps run together). Stop: `./DellPowerEdgeR760/scripts/stop_all.sh`.
+- Backend tests: `cd DellPowerEdgeR760/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd DellPowerEdgeR760/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8001`.
+
+Key points (the GPU invariants carry over):
+
+- **Purity invariant:** `engine.py`'s `simulate()` emits the whole power-on sequence as a `PowerOnState[]` trace — pure data, no timers/IO/FastAPI imports (AST-checked in `tests/test_engine.py`). The playback clock (`setInterval`) lives in `frontend/src/App.tsx`, never in the engine. Phase order `off→standby→bmc→poweron→post→boot→os` never regresses; `activeRegions` ids must exist in the anatomy; long stages (DDR5 memory training) carry `cycleCost > 1` and the UI dwells on them.
+- **Chassis anatomy, component catalog, and use cases are backend data, not frontend code** (`anatomy.py` — stylized 100×46 floorplan traced from Dell's interior photo, geometry invariants in `tests/test_anatomy.py`; `catalog.py` — 12 option categories with `regionIds` tying them to the floorplan; `usecases.py` — build sheets whose category/option ids must resolve against the catalog, enforced in `tests/test_catalog.py`). `ChassisView.tsx` renders whatever regions it is sent.
+- All four pages (`/` power-on sim, `#anatomy`, `#components`, `#usecases`) use the Dell clean-design skin; the chassis floorplan stays dark — it is the diagram.
+- Copy is written for a technically skilled reader new to the product: spell out Dell terms (iDRAC, PERC, BOSS-N1, OCP 3.0) on first use; wattages/timings are illustrative, not measured.
+
+## DellPowerStore — storage-array digital twin (third component)
+
+Same architecture, applied to the Dell PowerStore all-NVMe storage appliance (2U, **two active-active controller nodes** sharing a 25-slot dual-ported NVMe drive bay). See `DellPowerStore/initial_spec.md` for the full spec.
+
+```
+DellPowerStore/backend/   app/{models,anatomy,engine,catalog,usecases,main}.py + tests/
+DellPowerStore/frontend/  src/{api,types}.ts, App.tsx, components/{ChassisView,AnatomyPage,CatalogPage,UseCasePage,PowerOnControls,PowerOnCounters}.tsx
+DellPowerStore/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./DellPowerStore/scripts/start_all.sh` (backend :8002 background, frontend :5175 foreground — ports offset from GPU's 8000/5173 and the R760's 8001/5174 so all three apps run together). Stop: `./DellPowerStore/scripts/stop_all.sh`.
+- Backend tests: `cd DellPowerStore/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd DellPowerStore/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8002`.
+
+Key points beyond the R760 pattern:
+
+- **Phase order** is `off→power→boot→drives→cluster→services→online` (no power button — applying AC is the power-on). The PowerStoreOS container-boot step carries the largest `cycleCost`.
+- **Dual-node symmetry invariant** (`tests/test_engine.py`): per-node regions come in `-a`/`-b` twins (same kind and size, checked in `tests/test_anatomy.py`), and during the `power`/`boot` phases every lit `-a` region must light its `-b` twin — the nodes bring up in lockstep.
+- Region kinds add `nvram` (mirrored write cache; writes acknowledge from both nodes' NVRAM) and `battery` (BBUs that vault cache on AC loss). Photos are the local `/powerstore1..4.webp` files in `frontend/public/` — tests forbid external photo URLs.
+- Copy spells out storage vocabulary (NVRAM, vaulting, active/active, NVMe-oF, Metro Volume) on first use; wattages/timings are illustrative.

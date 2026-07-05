@@ -65,12 +65,13 @@ class GpuProfile(CamelModel):
 
 
 class Workload(CamelModel):
-    kind: Literal["matmul"] = "matmul"
+    kind: Literal["matmul", "mlp_step"] = "matmul"
     n: int = Field(ge=2, le=64, alias="N")
     dtype: DType = "fp32"
     seed: int = 0  # deterministic operand pattern (spec_02)
     tile_size: int = 0  # T; 0 means whole matrix / no tiling (spec_03)
     double_buffer: bool = False  # overlap next-tile load with compute (spec_05)
+    steps: int = Field(default=1, ge=1, le=10)  # SGD steps for mlp_step (spec_06)
 
 
 class SimState(CamelModel):
@@ -97,6 +98,12 @@ class SimState(CamelModel):
     # Double-buffering (spec_05): the next tile is loading in the background while
     # these cores compute (overlap -> mem_active is also true here).
     prefetching: bool = False
+    # MLP op context (spec_06); null for plain matmul workloads. op_index is
+    # global across steps (step_index * ops_per_step + position).
+    op_index: int | None = None
+    op_count: int | None = None
+    op_name: str | None = None
+    step_index: int | None = None
 
 
 class SimulateRequest(CamelModel):
@@ -118,6 +125,28 @@ class Summary(CamelModel):
     pipelined_cycles: int
 
 
+class MlpOp(CamelModel):
+    """One op in the training-step pipeline (spec_06). Matmul ops carry their
+    operand snapshots (display-rounded); pointwise ops carry none."""
+
+    name: str
+    kind: Literal["matmul", "pointwise"]
+    a: list[list[float]] | None = None
+    b: list[list[float]] | None = None
+    a_label: str | None = None
+    b_label: str | None = None
+    c_label: str | None = None
+
+
+class MlpInfo(CamelModel):
+    """Training-step metadata riding in the simulate response (spec_06)."""
+
+    ops: list[MlpOp]  # steps × ops_per_step, aligned with SimState.op_index
+    ops_per_step: int
+    loss: list[float]  # one per step
+    eta: float
+
+
 class SimulateResponse(CamelModel):
     profile: GpuProfile
     workload: Workload
@@ -125,6 +154,7 @@ class SimulateResponse(CamelModel):
     mac_total: int
     tile_size: int  # effective T after clamping (spec_03)
     summary: Summary  # spec_04
-    a: list[list[int]]  # operand A (spec_02)
-    b: list[list[int]]  # operand B (spec_02)
+    a: list[list[float]]  # operand A (spec_02; floats for mlp_step)
+    b: list[list[float]]  # operand B (spec_02)
     trace: list[SimState]
+    mlp: MlpInfo | None = None  # spec_06

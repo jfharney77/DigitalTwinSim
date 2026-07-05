@@ -1,4 +1,4 @@
-import type { DType, GpuProfile } from "../types";
+import type { DType, GpuProfile, WorkloadKind } from "../types";
 import { totalCores } from "../types";
 import { InfoDot } from "./InfoDot";
 
@@ -8,6 +8,10 @@ export function Controls({
   profiles,
   profileName,
   onProfile,
+  kind,
+  steps,
+  onKind,
+  onSteps,
   n,
   tileSize,
   dtype,
@@ -28,6 +32,10 @@ export function Controls({
   profiles: GpuProfile[];
   profileName: string;
   onProfile: (name: string) => void;
+  kind: WorkloadKind;
+  steps: number;
+  onKind: (k: WorkloadKind) => void;
+  onSteps: (s: number) => void;
   n: number;
   tileSize: number;
   dtype: DType;
@@ -93,6 +101,63 @@ export function Controls({
       <div className="an-panel">
         <h2>Workload</h2>
         <label className="field">
+          <span className="field-head">
+            Kind
+            <InfoDot title="Workload kind">
+              <p>
+                <strong>Matrix multiply</strong> is the single N×N·N×N matmul from
+                spec_01–05.
+              </p>
+              <p>
+                <strong>Neural-net training step</strong> (spec_06) runs one SGD step
+                of a tiny 2-layer MLP: the forward pass is two matmuls, backprop is
+                three more, and the weight update is a cheap elementwise op. Same
+                silicon, same tiling and bandwidth model — only the operands change.
+              </p>
+              <p>
+                Two things to watch: training costs about <strong>3×</strong> an
+                inference pass, and every backprop op is just a{" "}
+                <strong>transposed matmul</strong>. There is no separate "backprop
+                circuit".
+              </p>
+            </InfoDot>
+          </span>
+          <select
+            value={kind}
+            onChange={(e) => onKind(e.target.value as WorkloadKind)}
+          >
+            <option value="matmul">Matrix multiply</option>
+            <option value="mlp_step">Neural-net training step</option>
+          </select>
+        </label>
+        {kind === "mlp_step" && (
+          <>
+            <label className="field" style={{ marginTop: 10 }}>
+              <span className="field-head">
+                Training steps
+                <InfoDot title="Training steps">
+                  <p>
+                    How many SGD steps to run back-to-back. Each step repeats the
+                    same 8-op pipeline with the <strong>updated weights</strong>, so
+                    the loss counter falls step over step — the network is learning
+                    with arithmetic you can watch.
+                  </p>
+                </InfoDot>
+              </span>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={steps}
+                onChange={(e) => onSteps(Number(e.target.value))}
+              />
+            </label>
+            <div className="mini">
+              {steps === 1 ? "one SGD step" : `${steps} SGD steps · loss falls as weights update`}
+            </div>
+          </>
+        )}
+        <label className="field" style={{ marginTop: 10 }}>
           <span className="field-head">
             Matrix size N (N×N · N×N)
             <InfoDot title="Matrix size N">

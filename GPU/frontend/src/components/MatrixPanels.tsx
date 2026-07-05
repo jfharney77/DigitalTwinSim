@@ -42,9 +42,13 @@ function partialValue(a: number[][], b: number[][], i: number, j: number, k: num
 function formula(a: number[][], b: number[][], i: number, j: number, k: number): string {
   const terms = a[i].map((_, kk) => {
     const done = kk < k;
-    return `${done ? "" : "("}${a[i][kk]}·${b[kk][j]}${done ? "" : ")"}`;
+    return `${done ? "" : "("}${fmt(a[i][kk])}·${fmt(b[kk][j])}${done ? "" : ")"}`;
   });
-  return `C[${i}][${j}] = ${terms.join(" + ")}`;
+  return `[${i}][${j}] = ${terms.join(" + ")}`;
+}
+
+function fmt(v: number): string | number {
+  return Number.isInteger(v) ? v : v.toFixed(2);
 }
 
 function Grid({
@@ -80,7 +84,7 @@ function Grid({
                 className={`cell ${cellClass?.(i, j) ?? ""}${edge}`}
                 title={cellTitle?.(i, j)}
               >
-                {v}
+                {fmt(v)}
               </div>
             );
           }),
@@ -96,12 +100,18 @@ export function MatrixPanels({
   trace,
   cursor,
   tileSize,
+  aLabel = "A",
+  bLabel = "B",
+  cLabel = "C",
 }: {
   a: number[][];
   b: number[][];
   trace: SimState[];
   cursor: number;
   tileSize: number;
+  aLabel?: string;
+  bLabel?: string;
+  cLabel?: string;
 }) {
   if (!a.length || !b.length) return null;
   const n = a.length;
@@ -142,7 +152,7 @@ export function MatrixPanels({
   return (
     <div className="panels">
       <Grid
-        title="A"
+        title={aLabel}
         values={a}
         tileSize={t}
         n={n}
@@ -150,7 +160,7 @@ export function MatrixPanels({
       />
       <span className="panels-op">×</span>
       <Grid
-        title="B"
+        title={bLabel}
         values={b}
         tileSize={t}
         n={n}
@@ -158,7 +168,7 @@ export function MatrixPanels({
       />
       <span className="panels-op">=</span>
       <Grid
-        title="C"
+        title={cLabel}
         values={a.map((_, i) => b[0].map((_, j) => cValue(i, j)))}
         tileSize={t}
         n={n}

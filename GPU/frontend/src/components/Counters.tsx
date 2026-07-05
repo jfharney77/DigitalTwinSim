@@ -4,10 +4,13 @@ export function Counters({
   state,
   tiling,
   summary,
+  losses,
 }: {
   state: SimState | null;
   tiling?: { hbmLoads: number; tilesDone: number; tilesTotal: number } | null;
   summary?: Summary | null;
+  // Losses computed so far (spec_06); null for plain matmul workloads.
+  losses?: number[] | null;
 }) {
   const macs = state?.macDone ?? 0;
   const total = state?.macTotal ?? 0;
@@ -33,6 +36,19 @@ export function Counters({
         <span>utilization</span>
         <span>{util}%</span>
       </div>
+      {losses != null && (
+        <>
+          <div className="stat">
+            <span>loss</span>
+            <span>{losses.length ? losses[losses.length - 1].toFixed(3) : "—"}</span>
+          </div>
+          {losses.length > 1 && (
+            <div className="mini">
+              per step: {losses.map((l) => l.toFixed(2)).join(" · ")}
+            </div>
+          )}
+        </>
+      )}
       {tiling && (
         <>
           <div className="stat">
