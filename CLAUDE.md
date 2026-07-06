@@ -131,3 +131,25 @@ Key points beyond the R760 pattern:
 - **Dual-node symmetry invariant** (`tests/test_engine.py`): per-node regions come in `-a`/`-b` twins (same kind and size, checked in `tests/test_anatomy.py`), and during the `power`/`boot` phases every lit `-a` region must light its `-b` twin — the nodes bring up in lockstep.
 - Region kinds add `nvram` (mirrored write cache; writes acknowledge from both nodes' NVRAM) and `battery` (BBUs that vault cache on AC loss). Photos are the local `/powerstore1..4.webp` files in `frontend/public/` — tests forbid external photo URLs.
 - Copy spells out storage vocabulary (NVRAM, vaulting, active/active, NVMe-oF, Metro Volume) on first use; wattages/timings are illustrative.
+
+## DellAlienware — gaming-laptop digital twin (fourth component)
+
+Same architecture, applied to the Alienware m18 gaming laptop — a digital twin of the AC power path answering "what happens inside when you plug it in" (adapter conversion, 1-Wire PSID handshake, power budgeting, Li-ion charge ramp, hybrid battery supplement under load). See `DellAlienware/initial_spec.md` for the full spec.
+
+```
+DellAlienware/backend/   app/{models,catalog,anatomy,engine,usecases,main}.py + tests/
+DellAlienware/frontend/  src/{api,types}.ts, App.tsx, components/{PowerPathView,AnatomyPage,AnatomyView,UseCasePage,PowerControls,PowerCounters}.tsx
+DellAlienware/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./DellAlienware/scripts/start_all.sh` (backend :8003 background, frontend :5176 foreground — ports offset from GPU's 8000/5173, the R760's 8001/5174, and PowerStore's 8002/5175 so all four apps run together). Stop: `./DellAlienware/scripts/stop_all.sh`.
+- Backend tests: `cd DellAlienware/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd DellAlienware/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8003`.
+
+Key points beyond the R760 pattern:
+
+- **Phase order** is `off→detect→handshake→budget→charge→boot→load→steady`; `POST /api/simulate` takes a `Scenario` (profile, adapter, start charge, thermal mode, workload) and returns profile + adapter + `Summary` + `PowerState[]` trace. The PSID handshake stage is `stalled` with the dwell `cycleCost`.
+- **Energy-conservation invariant** (`tests/test_engine.py`): every state satisfies `acW + batteryW == systemW + chargeW` (±0.5 W); never charging and discharging at once; `acW <= adapter.watts`; `hybrid` is true exactly while the battery supplements the adapter (demand above the adapter budget, pack above 20%). An `AdapterOption` with `recognized: false` models a failed handshake — `regime "throttled"`, `chargeW == 0`, capped CPU/GPU, but the phase machine still completes.
+- **Catalog, anatomy, and use cases are backend data** (`catalog.py` — laptops with adapter options, every profile keeps one unrecognized adapter so the throttled path stays reachable; `anatomy.py` — stylized 100×62 interior floorplan traced from the service photo `frontend/public/alienware-interior.jpg`, geometry + required-region-id invariants in `tests/test_anatomy.py`; `usecases.py` — step `regionIds` must resolve against the anatomy, enforced in `tests/test_catalog.py`). Trace `activeRegions` ids must exist in the profile's anatomy.
+- Copy spells out laptop-power vocabulary (EC, PSID, ExpressCharge, TGP, AWCC, hybrid power, UVP) on first use; wattages/timings are illustrative, anchored to Dell KB sources carried in the API's `sources` fields.

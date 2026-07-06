@@ -35,4 +35,4 @@ if [ -f ".env.example" ] && [ ! -f ".env" ]; then
 fi
 
 # app/main.py exposes `app`
-exec uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
+exec uvicorn app.main:app --reload --host 0.0.0.0 --port 8003

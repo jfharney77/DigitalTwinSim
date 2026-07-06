@@ -13,7 +13,7 @@ echo "Backend starting (PID $BACKEND_PID) — logs: logs/backend.log"
 
 # PID file for stop_all.sh: backend on line 1, frontend on line 2.
 # Frontend runs in the foreground here, so line 2 is left blank and stop_all.sh
-# falls back to killing whatever holds port 5175.
+# falls back to killing whatever holds port 5176.
 printf '%s\n\n' "$BACKEND_PID" >"$ROOT/logs/pids"
 
 cleanup() {

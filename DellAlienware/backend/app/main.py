@@ -1,6 +1,6 @@
 """FastAPI app: serves the laptop catalog, interior anatomies, use cases,
 and the AC power-path simulation. All content is static data + a pure
-engine — no state. Runs on port 8002 (frontend Vite dev server on 5175
+engine — no state. Runs on port 8003 (frontend Vite dev server on 5176
 proxies /api here)."""
 
 from __future__ import annotations
@@ -25,8 +25,8 @@ app = FastAPI(title="Alienware m18 Inside", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
+        "http://localhost:5176",
+        "http://127.0.0.1:5176",
     ],
     allow_methods=["*"],
     allow_headers=["*"],

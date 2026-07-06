@@ -39,8 +39,8 @@ if [ -f "$PID_FILE" ]; then
 fi
 
 # Fallback / belt-and-suspenders: kill by well-known dev ports.
-kill_port 8002 "FastAPI/uvicorn"
-kill_port 5175 "Vite dev server"
+kill_port 8003 "FastAPI/uvicorn"
+kill_port 5176 "Vite dev server"
 
 if [ "$stopped" -eq 0 ]; then
   echo "No running processes found."
