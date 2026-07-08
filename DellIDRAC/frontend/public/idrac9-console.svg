@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="Stylized iDRAC9 web console dashboard">
+  <rect width="400" height="250" fill="#0d1420"/>
+  <!-- masthead -->
+  <rect x="0" y="0" width="400" height="34" fill="#11161f"/>
+  <text x="16" y="22" fill="#4fa0c9" font-family="Roboto, Arial, sans-serif" font-size="14" font-weight="700">iDRAC9</text>
+  <text x="82" y="22" fill="#7a8aa0" font-family="Roboto, Arial, sans-serif" font-size="11">Integrated Dell Remote Access Controller</text>
+  <circle cx="372" cy="17" r="5" fill="#6ab585"/>
+  <text x="330" y="21" fill="#6ab585" font-family="Roboto, Arial, sans-serif" font-size="10">Powered On</text>
+  <!-- health tiles -->
+  <g font-family="Roboto, Arial, sans-serif">
+    <rect x="16" y="46" width="112" height="60" rx="6" fill="#122b2b" stroke="#2e5c54"/>
+    <text x="28" y="66" fill="#7a8aa0" font-size="10">System Health</text>
+    <text x="28" y="90" fill="#6ab585" font-size="20" font-weight="700">OK</text>
+
+    <rect x="144" y="46" width="112" height="60" rx="6" fill="#2b2412" stroke="#6b5a2b"/>
+    <text x="156" y="66" fill="#7a8aa0" font-size="10">Power</text>
+    <text x="156" y="90" fill="#c9a94f" font-size="20" font-weight="700">248 W</text>
+
+    <rect x="272" y="46" width="112" height="60" rx="6" fill="#12233a" stroke="#3d5a9e"/>
+    <text x="284" y="66" fill="#7a8aa0" font-size="10">Inlet Temp</text>
+    <text x="284" y="90" fill="#4f7cff" font-size="20" font-weight="700">21 &#176;C</text>
+  </g>
+  <!-- sensor bars -->
+  <g font-family="Roboto, Arial, sans-serif">
+    <text x="16" y="130" fill="#cdd6e3" font-size="11" font-weight="500">Thermal sensors</text>
+    <rect x="16" y="140" width="368" height="8" rx="4" fill="#1a2433"/>
+    <rect x="16" y="140" width="150" height="8" rx="4" fill="#4fa08a"/>
+    <rect x="16" y="156" width="368" height="8" rx="4" fill="#1a2433"/>
+    <rect x="16" y="156" width="210" height="8" rx="4" fill="#c9a94f"/>
+    <rect x="16" y="172" width="368" height="8" rx="4" fill="#1a2433"/>
+    <rect x="16" y="172" width="96" height="8" rx="4" fill="#4f7cff"/>
+  </g>
+  <!-- action row -->
+  <g font-family="Roboto, Arial, sans-serif" font-size="10" text-anchor="middle">
+    <rect x="16" y="200" width="86" height="30" rx="4" fill="#0672cb"/>
+    <text x="59" y="219" fill="#ffffff">Virtual Console</text>
+    <rect x="110" y="200" width="86" height="30" rx="4" fill="#11161f" stroke="#2e5666"/>
+    <text x="153" y="219" fill="#4fa0c9">Virtual Media</text>
+    <rect x="204" y="200" width="86" height="30" rx="4" fill="#11161f" stroke="#2e5666"/>
+    <text x="247" y="219" fill="#4fa0c9">Power Control</text>
+    <rect x="298" y="200" width="86" height="30" rx="4" fill="#11161f" stroke="#2e5666"/>
+    <text x="341" y="219" fill="#4fa0c9">Lifecycle Log</text>
+  </g>
+</svg>

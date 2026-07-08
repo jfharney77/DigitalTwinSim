@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 90" role="img" aria-label="Stylized front panel of a 48-port E3200-ON switch">
+  <rect width="640" height="90" rx="6" fill="#11161f" stroke="#2b3a4f"/>
+  <!-- left bezel / branding -->
+  <rect x="6" y="6" width="52" height="78" rx="4" fill="#0d1420" stroke="#1f2935"/>
+  <text x="32" y="34" fill="#4fa0c9" font-family="Roboto, Arial, sans-serif" font-size="9" font-weight="700" text-anchor="middle">DELL</text>
+  <text x="32" y="47" fill="#7a8aa0" font-family="Roboto, Arial, sans-serif" font-size="6" text-anchor="middle">E3200-ON</text>
+  <circle cx="24" cy="66" r="3" fill="#6ab585"/>
+  <circle cx="40" cy="66" r="3" fill="#c9a94f"/>
+  <!-- 48 RJ45 access ports: 2 rows x 24, in 4 groups of 12 -->
+  <g>
+    <!-- groups -->
+    <g fill="#12233a" stroke="#3d5a9e" stroke-width="0.8">
+      <!-- generated grid: 24 columns, 2 rows -->
+    </g>
+  </g>
+  <!-- draw ports programmatically-looking: two rows -->
+  <g fill="#0f2036" stroke="#3d5a9e" stroke-width="0.8">
+    <!-- row 1 -->
+    <g id="rowports"></g>
+  </g>
+  <!-- Since SVG can't loop, lay out 24 columns x 2 rows explicitly via repeated rects -->
+  <g fill="#123055" stroke="#3d5a9e" stroke-width="0.7">
+    <!-- top row y=12..30, bottom row y=34..52; each port 18 wide incl gap starting x=70 -->
+    <rect x="70" y="12" width="14" height="18" rx="1.5"/><rect x="70" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="88" y="12" width="14" height="18" rx="1.5"/><rect x="88" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="106" y="12" width="14" height="18" rx="1.5"/><rect x="106" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="124" y="12" width="14" height="18" rx="1.5"/><rect x="124" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="142" y="12" width="14" height="18" rx="1.5"/><rect x="142" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="160" y="12" width="14" height="18" rx="1.5"/><rect x="160" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="184" y="12" width="14" height="18" rx="1.5"/><rect x="184" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="202" y="12" width="14" height="18" rx="1.5"/><rect x="202" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="220" y="12" width="14" height="18" rx="1.5"/><rect x="220" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="238" y="12" width="14" height="18" rx="1.5"/><rect x="238" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="256" y="12" width="14" height="18" rx="1.5"/><rect x="256" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="274" y="12" width="14" height="18" rx="1.5"/><rect x="274" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="298" y="12" width="14" height="18" rx="1.5"/><rect x="298" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="316" y="12" width="14" height="18" rx="1.5"/><rect x="316" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="334" y="12" width="14" height="18" rx="1.5"/><rect x="334" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="352" y="12" width="14" height="18" rx="1.5"/><rect x="352" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="370" y="12" width="14" height="18" rx="1.5"/><rect x="370" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="388" y="12" width="14" height="18" rx="1.5"/><rect x="388" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="412" y="12" width="14" height="18" rx="1.5"/><rect x="412" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="430" y="12" width="14" height="18" rx="1.5"/><rect x="430" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="448" y="12" width="14" height="18" rx="1.5"/><rect x="448" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="466" y="12" width="14" height="18" rx="1.5"/><rect x="466" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="484" y="12" width="14" height="18" rx="1.5"/><rect x="484" y="34" width="14" height="18" rx="1.5"/>
+    <rect x="502" y="12" width="14" height="18" rx="1.5"/><rect x="502" y="34" width="14" height="18" rx="1.5"/>
+  </g>
+  <text x="70" y="64" fill="#7a8aa0" font-family="Roboto, Arial, sans-serif" font-size="7">48× RJ45 access ports · PoE (802.3at / 802.3bt)</text>
+  <!-- 4 SFP+ / SFP28 uplink cages -->
+  <g fill="#122b2b" stroke="#2e5c54" stroke-width="0.8">
+    <rect x="528" y="12" width="24" height="12" rx="1.5"/>
+    <rect x="528" y="28" width="24" height="12" rx="1.5"/>
+    <rect x="556" y="12" width="24" height="12" rx="1.5"/>
+    <rect x="556" y="28" width="24" height="12" rx="1.5"/>
+  </g>
+  <text x="528" y="52" fill="#4fa08a" font-family="Roboto, Arial, sans-serif" font-size="6">4× SFP+/SFP28</text>
+  <!-- management + console cluster -->
+  <g>
+    <rect x="590" y="12" width="44" height="12" rx="1.5" fill="#12282e" stroke="#2e5666"/>
+    <rect x="590" y="28" width="20" height="10" rx="1.5" fill="#12282e" stroke="#2e5666"/>
+    <rect x="614" y="28" width="20" height="10" rx="1.5" fill="#12282e" stroke="#2e5666"/>
+  </g>
+  <text x="590" y="52" fill="#4fa0c9" font-family="Roboto, Arial, sans-serif" font-size="6">mgmt · console · USB</text>
+  <text x="70" y="80" fill="#5a6b82" font-family="Roboto, Arial, sans-serif" font-size="6.5">Two 100GbE QSFP28 uplinks and dual hot-swap power supplies are on the rear.</text>
+</svg>
