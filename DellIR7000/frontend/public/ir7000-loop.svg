@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" role="img"
+     aria-label="Schematic of a Dell IR7000 rack drawn as a PowerCool cooling loop">
+  <!-- Self-contained schematic drawn for this project; not a Dell product image. -->
+  <defs>
+    <style>
+      .lbl { font: 500 11px Roboto, Helvetica, Arial, sans-serif; fill: #9fb2c8; }
+      .sm  { font: 400 9px Roboto, Helvetica, Arial, sans-serif; fill: #64798f; }
+      .bay { fill: #2b2412; stroke: #6b5a2b; }
+      .cdu { fill: #12302c; stroke: #2e5c54; }
+      .man { fill: #12233a; stroke: #3d5a9e; }
+      .door{ fill: #16281a; stroke: #3a6647; }
+      .fac { fill: #232855; stroke: #5a4fc9; }
+      .cool-line { stroke: #3d5a9e; stroke-width: 4; fill: none; opacity: 0.9; }
+      .warm-line { stroke: #6b3a3a; stroke-width: 4; fill: none; opacity: 0.9; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="360" height="480" rx="10" fill="#0d1420"/>
+  <!-- rack frame -->
+  <rect x="28" y="26" width="280" height="400" rx="6" fill="#101a29" stroke="#24313f" stroke-width="2"/>
+
+  <!-- supply manifold (left, cool) -->
+  <rect class="man" x="40" y="40" width="16" height="330" rx="3"/>
+  <text class="sm" x="44" y="230" transform="rotate(-90 44 230)">SUPPLY (cool)</text>
+
+  <!-- return manifold (right, warm) -->
+  <rect class="man" x="252" y="40" width="16" height="330" rx="3"/>
+  <text class="sm" x="264" y="240" transform="rotate(-90 264 240)">RETURN (warm)</text>
+
+  <!-- IT bays with cold plates -->
+  <g>
+    <rect class="bay" x="66" y="46"  width="176" height="66" rx="3"/>
+    <rect class="bay" x="66" y="122" width="176" height="66" rx="3"/>
+    <rect class="bay" x="66" y="198" width="176" height="66" rx="3"/>
+    <rect class="bay" x="66" y="274" width="176" height="66" rx="3"/>
+    <text class="sm" x="76" y="66">IT BAY — COLD PLATES</text>
+    <text class="sm" x="76" y="142">IT BAY — COLD PLATES</text>
+    <text class="sm" x="76" y="218">IT BAY — COLD PLATES</text>
+    <text class="sm" x="76" y="294">IT BAY — COLD PLATES</text>
+    <!-- branch stubs -->
+    <path class="cool-line" d="M56 79 L66 79"/>
+    <path class="cool-line" d="M56 155 L66 155"/>
+    <path class="cool-line" d="M56 231 L66 231"/>
+    <path class="cool-line" d="M56 307 L66 307"/>
+    <path class="warm-line" d="M242 79 L252 79"/>
+    <path class="warm-line" d="M242 155 L252 155"/>
+    <path class="warm-line" d="M242 231 L252 231"/>
+    <path class="warm-line" d="M242 307 L252 307"/>
+  </g>
+
+  <!-- rear-door heat exchanger -->
+  <rect class="door" x="276" y="40" width="22" height="330" rx="3"/>
+  <text class="sm" x="290" y="243" transform="rotate(-90 290 243)">eRDHx — AIR CATCH</text>
+
+  <!-- CDU -->
+  <rect class="cdu" x="40" y="382" width="176" height="34" rx="3"/>
+  <text class="sm" x="50" y="396">POWERCOOL CDU</text>
+  <text class="sm" x="50" y="408">pumps · heat exchanger · controls</text>
+
+  <!-- facility connection -->
+  <rect class="fac" x="228" y="382" width="70" height="34" rx="3"/>
+  <text class="sm" x="236" y="396">FACILITY</text>
+  <text class="sm" x="236" y="408">WATER</text>
+
+  <!-- loop plumbing: CDU -> supply, return -> CDU, CDU <-> facility -->
+  <path class="cool-line" d="M48 382 L48 370"/>
+  <path class="warm-line" d="M260 370 L260 376 L216 376 L216 382"/>
+  <path class="warm-line" d="M216 399 L228 399"/>
+
+  <text class="lbl" x="30" y="452">Dell IR7000 · PowerCool loop — schematic, not to scale</text>
+  <text class="sm" x="30" y="468">Heat in = heat out: cold plates + rear door → CDU → facility water</text>
+</svg>
