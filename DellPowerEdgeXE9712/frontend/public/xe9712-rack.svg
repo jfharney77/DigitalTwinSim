@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" role="img"
+     aria-label="Schematic of a Dell PowerEdge XE9712 GB200 NVL72 rack">
+  <!-- Self-contained schematic drawn for this project; not a Dell product image. -->
+  <defs>
+    <style>
+      .lbl { font: 500 11px Roboto, Helvetica, Arial, sans-serif; fill: #9fb2c8; }
+      .sm  { font: 400 9px Roboto, Helvetica, Arial, sans-serif; fill: #64798f; }
+      .tray { fill: #1a2333; stroke: #2e3d52; }
+      .gpu  { fill: #3a3116; stroke: #6b5a2b; }
+      .cpu  { fill: #241f33; stroke: #4a4066; }
+      .nvsw { fill: #232855; stroke: #5a4fc9; }
+      .cool { fill: #12302c; stroke: #2e5c54; }
+      .pow  { fill: #2b1a1a; stroke: #6b3a3a; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="360" height="480" rx="10" fill="#0d1420"/>
+  <!-- rack frame -->
+  <rect x="28" y="26" width="270" height="430" rx="6" fill="#101a29" stroke="#24313f" stroke-width="2"/>
+
+  <!-- power shelf -->
+  <rect class="pow" x="40" y="38" width="246" height="26" rx="3"/>
+  <text class="sm" x="48" y="55">POWER SHELVES → DC BUSBAR</text>
+
+  <!-- upper compute trays -->
+  <g>
+    <rect class="tray" x="40" y="74" width="246" height="118" rx="3"/>
+    <text class="sm" x="48" y="90">COMPUTE TRAYS (18 total, GB200)</text>
+    <!-- rows of GPU/CPU blocks -->
+    <g>
+      <rect class="gpu" x="48"  y="98"  width="30" height="20"/>
+      <rect class="gpu" x="82"  y="98"  width="30" height="20"/>
+      <rect class="cpu" x="116" y="98"  width="24" height="20"/>
+      <rect class="gpu" x="150" y="98"  width="30" height="20"/>
+      <rect class="gpu" x="184" y="98"  width="30" height="20"/>
+      <rect class="cpu" x="218" y="98"  width="24" height="20"/>
+      <rect class="gpu" x="48"  y="126" width="30" height="20"/>
+      <rect class="gpu" x="82"  y="126" width="30" height="20"/>
+      <rect class="cpu" x="116" y="126" width="24" height="20"/>
+      <rect class="gpu" x="150" y="126" width="30" height="20"/>
+      <rect class="gpu" x="184" y="126" width="30" height="20"/>
+      <rect class="cpu" x="218" y="126" width="24" height="20"/>
+      <rect class="gpu" x="48"  y="154" width="30" height="20"/>
+      <rect class="gpu" x="82"  y="154" width="30" height="20"/>
+      <rect class="cpu" x="116" y="154" width="24" height="20"/>
+      <rect class="gpu" x="150" y="154" width="30" height="20"/>
+      <rect class="gpu" x="184" y="154" width="30" height="20"/>
+      <rect class="cpu" x="218" y="154" width="24" height="20"/>
+    </g>
+  </g>
+
+  <!-- NVLink switch trays, mid-rack -->
+  <rect class="nvsw" x="40" y="202" width="246" height="56" rx="3"/>
+  <text class="lbl" x="48" y="224">NVLINK SWITCH TRAYS (9)</text>
+  <text class="sm" x="48" y="242">fuse 72 GPUs into one domain · 1.8 TB/s per GPU</text>
+
+  <!-- lower compute trays -->
+  <g>
+    <rect class="tray" x="40" y="268" width="246" height="118" rx="3"/>
+    <g>
+      <rect class="gpu" x="48"  y="280" width="30" height="20"/>
+      <rect class="gpu" x="82"  y="280" width="30" height="20"/>
+      <rect class="cpu" x="116" y="280" width="24" height="20"/>
+      <rect class="gpu" x="150" y="280" width="30" height="20"/>
+      <rect class="gpu" x="184" y="280" width="30" height="20"/>
+      <rect class="cpu" x="218" y="280" width="24" height="20"/>
+      <rect class="gpu" x="48"  y="308" width="30" height="20"/>
+      <rect class="gpu" x="82"  y="308" width="30" height="20"/>
+      <rect class="cpu" x="116" y="308" width="24" height="20"/>
+      <rect class="gpu" x="150" y="308" width="30" height="20"/>
+      <rect class="gpu" x="184" y="308" width="30" height="20"/>
+      <rect class="cpu" x="218" y="308" width="24" height="20"/>
+      <rect class="gpu" x="48"  y="336" width="30" height="20"/>
+      <rect class="gpu" x="82"  y="336" width="30" height="20"/>
+      <rect class="cpu" x="116" y="336" width="24" height="20"/>
+      <rect class="gpu" x="150" y="336" width="30" height="20"/>
+      <rect class="gpu" x="184" y="336" width="30" height="20"/>
+      <rect class="cpu" x="218" y="336" width="24" height="20"/>
+    </g>
+    <text class="sm" x="48" y="378">■ Blackwell GPU&#160;&#160;&#160;■ Grace CPU</text>
+  </g>
+
+  <!-- CDU -->
+  <rect class="cool" x="40" y="396" width="246" height="26" rx="3"/>
+  <text class="sm" x="48" y="413">CDU — LIQUID COOLING (pumps + heat exchanger)</text>
+
+  <!-- coolant manifold, right edge -->
+  <rect class="cool" x="288" y="38" width="8" height="384" rx="3"/>
+  <path d="M292 422 L292 440 L172 440 L172 424" fill="none" stroke="#2e5c54" stroke-width="3" opacity="0.8"/>
+
+  <text class="lbl" x="30" y="470">PowerEdge XE9712 · GB200 NVL72 — schematic, not to scale</text>
+</svg>
