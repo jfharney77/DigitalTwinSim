@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" role="img"
+     aria-label="Schematic of Dell PowerProtect Data Domain with a Cyber Recovery vault">
+  <!-- Self-contained schematic drawn for this project; not a Dell product image. -->
+  <defs>
+    <style>
+      .lbl  { font: 500 12px Roboto, Helvetica, Arial, sans-serif; fill: #9fb2c8; }
+      .sm   { font: 400 9px Roboto, Helvetica, Arial, sans-serif; fill: #64798f; }
+      .work { fill: #241f33; stroke: #4a4066; }
+      .bkp  { fill: #12282e; stroke: #2e5666; }
+      .appl { fill: #12233a; stroke: #3d5a9e; }
+      .gap  { fill: #2b1a1a; stroke: #6b3a3a; }
+      .anl  { fill: #2b2412; stroke: #6b5a2b; }
+      .rec  { fill: #16281a; stroke: #3a6647; }
+      .flow { stroke: #3d5a9e; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3d5a9e"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="480" height="300" rx="10" fill="#0d1420"/>
+
+  <!-- production zone -->
+  <rect x="10" y="18" width="200" height="264" rx="6" fill="#101a29" stroke="#24313f"/>
+  <text class="sm" x="20" y="36">PRODUCTION</text>
+  <rect class="work" x="22" y="46"  width="70" height="40" rx="3"/>
+  <rect class="work" x="22" y="94"  width="70" height="40" rx="3"/>
+  <rect class="bkp"  x="22" y="142" width="70" height="36" rx="3"/>
+  <text class="sm" x="30" y="70">VMs &amp; apps</text>
+  <text class="sm" x="30" y="118">Databases</text>
+  <text class="sm" x="30" y="164">PPDM backup</text>
+  <rect class="appl" x="110" y="46" width="88" height="200" rx="4"/>
+  <text class="lbl" x="120" y="70">Data Domain</text>
+  <text class="sm"  x="120" y="86">production</text>
+  <text class="sm"  x="120" y="230">dedupe up to 65:1</text>
+  <!-- flows into prod DD -->
+  <path class="flow" d="M92 66 L110 76"/>
+  <path class="flow" d="M92 114 L110 120"/>
+  <path class="flow" d="M92 160 L110 150"/>
+
+  <!-- air gap -->
+  <rect class="gap" x="220" y="120" width="40" height="60" rx="4"/>
+  <text class="sm" x="228" y="146">AIR</text>
+  <text class="sm" x="228" y="158">GAP</text>
+  <text class="sm" x="222" y="196">vault-owned</text>
+  <path class="flow" d="M198 146 L220 150" stroke-dasharray="4 3"/>
+  <path class="flow" d="M260 150 L282 146" stroke-dasharray="4 3"/>
+
+  <!-- vault zone -->
+  <rect x="270" y="18" width="200" height="264" rx="6" fill="#0f1a14" stroke="#24313f"/>
+  <text class="sm" x="352" y="36">CYBER RECOVERY VAULT</text>
+  <rect class="appl" x="282" y="46" width="80" height="200" rx="4"/>
+  <text class="lbl" x="290" y="70">Data Domain</text>
+  <text class="sm"  x="290" y="86">vault</text>
+  <text class="sm"  x="290" y="230">Retention Lock</text>
+  <rect class="anl" x="372" y="46"  width="86" height="86" rx="4"/>
+  <rect class="rec" x="372" y="142" width="86" height="60" rx="4"/>
+  <text class="sm" x="382" y="92">CyberSense</text>
+  <text class="sm" x="382" y="106">ML integrity</text>
+  <text class="sm" x="382" y="170">Clean room</text>
+  <text class="sm" x="382" y="184">recovery host</text>
+  <path class="flow" d="M362 90 L372 90"/>
+  <path class="flow" d="M362 170 L372 170"/>
+
+  <text class="lbl" x="12" y="298">Dell PowerProtect Data Domain + Cyber Recovery — schematic, not to scale</text>
+</svg>
