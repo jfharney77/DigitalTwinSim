@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repo layout: one directory per simulated component
 
-The repo is organized by hardware component. `GPU/` holds the GPU digital twin (everything below); `DellPowerEdgeR760/`, `DellPowerStore/`, `DellAlienware/`, `DellIDRAC/`, `DellPowerMax/`, `DellPowerSwitchE3200/`, `DellVxRail/`, `DellCloudIQ/`, `DellPowerEdgeXE9712/`, `DellIR7000/`, and `DellPowerProtect/` are the second through twelfth components, following the same pattern (see their sections at the end of this file); future components (CPU, NIC, memory hierarchy, ...) get sibling top-level directories following the same pattern: a pure-engine FastAPI `backend/`, a React/Vite `frontend/` in the Dell clean-design skin, `scripts/`, and numbered `spec_NN_*.md` files driving the work. (Port note: `DellPowerMax/` + `DellPowerSwitchE3200/` were both authored on 8005/5178, and `DellVxRail/` on 8006/5179 — collisions; `DellCloudIQ/` uses the next free ports, 8007/5180. Run colliding twins one at a time or reassign.)
+The repo is organized by hardware component. `GPU/` holds the GPU digital twin (everything below); `DellPowerEdgeR760/`, `DellPowerStore/`, `DellAlienware/`, `DellIDRAC/`, `DellPowerMax/`, `DellPowerSwitchE3200/`, `DellVxRail/`, `DellCloudIQ/`, `DellPowerEdgeXE9712/`, `DellIR7000/`, `DellPowerProtect/`, `DellExascale/`, `DellPowerSwitchSN6000/`, and `DellProMaxPlus/` are the second through fifteenth components, following the same pattern (see their sections at the end of this file); future components (CPU, NIC, memory hierarchy, ...) get sibling top-level directories following the same pattern: a pure-engine FastAPI `backend/`, a React/Vite `frontend/` in the Dell clean-design skin, `scripts/`, and numbered `spec_NN_*.md` files driving the work. (Port note: `DellPowerMax/` + `DellPowerSwitchE3200/` were both authored on 8005/5178, and `DellVxRail/` on 8006/5179 — collisions; `DellCloudIQ/` uses the next free ports, 8007/5180. Run colliding twins one at a time or reassign.)
 
 ## Current state
 
@@ -334,3 +334,89 @@ Key points beyond the chassis-twin pattern:
 - **Lifecycle trace** (`engine.py`, pure — AST-checked): phase order `idle→backup→dedupe→replicate→airgap→scan→attack→recover→restored` never regresses. Signature invariants (`test_engine.py`): **dedupe economics** — `stored_tb <= logical_tb` always, logical monotonic, ratio ≥10:1 from the dedupe phase on; **air-gap discipline** — the `gap` region is active in `replicate` and `recover` and *exactly* those two phases (both opened from the vault side); **the attack cannot reach the vault** — at the `attack` step no vault region (`dd-vault`/`cybersense`/`recovery-host`) and no gap is active while production's blast radius is; **the vaulted copy is sealed strictly before the attack**; **the CyberSense scan is the single longest stage** (`cycleCost` max); and recovery is driven from the vault side (vault + clean room + gap + prod appliance all active).
 - **Catalog (9 categories) and use cases (3) are backend data**: appliances (All-Flash / DD9910 / DD3410), DDOS software (variable-length dedupe, DD Boost, Data Invulnerability Architecture), immutability & hardening (Retention Lock Compliance, root of trust), Cyber Recovery vault (software, operational air gap, clean room), CyberSense analytics + forensics, backup software (PPDM + third-party ecosystem), replication & cloud tiering, estate integration (PowerStore/PowerMax direct backup, CloudIQ AIOps), resilience services. Use cases: hospital ransomware vault, bank compliance + cyber resilience, 40 branch offices into one vault.
 - Copy spells out data-protection vocabulary (deduplication, DD Boost, MTree, Retention Lock/WORM, operational air gap, CyberSense, clean room, RPO/RTO, DDOS, Cloud Tier, ROBO) on first use; anatomy page carries Dell `sources`. Only visual is the self-contained, credited schematic `frontend/public/powerprotect-vault.svg`. Capacities/ratios/timings are illustrative.
+
+## The AI Factory quartet
+
+Four twins model the four pillars of a Dell AI Factory and deliberately cross-reference each other; run them together to see one machine from four angles:
+
+| Pillar | Twin | Ports | The one idea |
+|---|---|---|---|
+| Compute | `DellPowerEdgeXE9712/` | 8008/5181 | 72 GPUs fuse into one NVLink domain |
+| Cooling | `DellIR7000/` | 8009/5182 | Heat in equals heat out, exactly |
+| Data | `DellExascale/` | 8011/5184 | Metadata leaves the data path |
+| Fabric | `DellPowerSwitchSN6000/` | 8012/5185 | The fabric never drops a packet |
+
+The XE9712's power-on pauses at "liquid before silicon" — the IR7000's verify phase is what it waits for. NVLink stops at the rack wall — the SN6000 carries traffic past it. The Exascale rack's fan-out reads are the incast the SN6000's congestion control absorbs. Keep these references intact when editing any of the four.
+
+## DellExascale — parallel-storage digital twin (thirteenth component)
+
+Same architecture, applied to **Dell Exascale Storage** + the **Lightning File System** (the production form of Project Lightning: parallel NFS on PowerScale's OneFS with a metadata server and Flex Files layouts; Exascale unifies PowerFlex block, PowerScale/Lightning file, and ObjectScale object in one ~6 TB/s rack). The twist versus PowerStore/PowerMax: those move every byte through a controller, and that controller's ceiling is the system's. A parallel file system refuses that — the client asks the metadata server *once* where the stripes live, then reads straight from every data server at once. See `DellExascale/README.md`. Grounded in Dell's Lightning blog, Blocks & Files' Project Lightning coverage, StorageReview's GTC 2026 report, and the DTW 2026 announcements.
+
+```
+DellExascale/backend/   app/{models,anatomy,engine,catalog,usecases,main}.py + tests/
+DellExascale/frontend/  src/{api,types}.ts, App.tsx, components/{PlatformView,AnatomyPage,CatalogPage,UseCasePage,DataControls,DataCounters}.tsx
+DellExascale/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./DellExascale/scripts/start_all.sh` (backend :8011 background, frontend :5184 foreground). Stop: `./DellExascale/scripts/stop_all.sh`.
+- Backend tests: `cd DellExascale/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd DellExascale/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8011`. Trace endpoint is `GET /api/datapath` returning `DataResponse`.
+
+Key points beyond the chassis-twin pattern:
+
+- **Parallel-storage model shapes** (`models.py`): `PlatformAnatomy` / `PlatformRegion` / **`DataState`**. `RegionKind` is data-path-specific: `client · fabric · metadata · dataserver · media · protocol · management` — `test_anatomy.py` asserts `kinds == EXPECTED_KINDS`, exactly one metadata server, four same-size dataserver+media pairs, and all three protocol engines (`protocol-file`/`-object`/`-block`). `DataState` carries `throughputGbps`, `dataServersStreaming` (0–4), and `layoutHeld`.
+- **Data-path trace** (`engine.py`, pure — AST-checked): phase order `idle→mount→layout→stripe→feed→checkpoint→tier→steady` never regresses. Signature invariants (`test_engine.py`): **metadata leaves the data path** — the `metadata` region is absent from every phase in `BULK_PHASES` and active in *exactly* `{mount, layout}` (this is the twin's whole reason for existing); **layout precedes data** and is never lost mid-job; **throughput requires fan-out** — nonzero throughput implies all four servers streaming, zero servers implies zero throughput; data servers light in lockstep each with its media; peak ≥48,000 Gbps (~6 TB/s); the **checkpoint burst is the longest stage**.
+- **Geometry carries the lesson** (`anatomy.py`, stylized 100×72 left→right path): clients, fabric, then the metadata server drawn *above* the data-server band with `test_anatomy.py::test_metadata_sits_off_the_data_path` pinning `mds.y + mds.h <= server.y`. Data servers run down the middle with their NVMe; the file/object/block protocol engines line the bottom. Only visual is the credited schematic `frontend/public/exascale-path.svg`.
+- **Catalog (10 categories) and use cases (3)**: platform (Exascale rack / PowerScale cluster), Lightning parallel FS (+ MDS and Flex Files), data servers, media, object (ObjectScale), block (PowerFlex), client access (GPUDirect, standards-based pNFS — no proprietary kernel module), storage fabric, management (+ CloudIQ AIOps), validated designs and residencies. Use cases: feeding an eight-rack AI factory, an HPC centre replacing a legacy parallel FS, consolidating three storage silos.
+- Copy spells out parallel-storage vocabulary (pNFS, layout, stripe, Flex Files, MDS, OneFS, GPUDirect, RDMA, incast, tiering) on first use. Bandwidths/timings illustrative.
+
+## DellPowerSwitchSN6000 — AI-fabric digital twin (fourteenth component)
+
+Same architecture, applied to the **Dell PowerSwitch SN6000** (NVIDIA Spectrum-6: 1.6 Tb/s ports, up to 409.6 Tb/s switching capacity, 2,048 breakout connections, liquid cooling and co-packaged optics options, Spectrum-X Ethernet; GA July 2026). The twist versus the E3200 twin: that one is a single campus switch booting via ONIE; this is the **fabric** several switches form — a leaf/spine topology joining GPU racks, picking up exactly where the XE9712's NVLink domain stops at the rack wall. See `DellPowerSwitchSN6000/README.md`. Grounded in Dell's SN6000 spec sheet and the March 2026 AI Factory announcement.
+
+```
+DellPowerSwitchSN6000/backend/   app/{models,anatomy,engine,catalog,usecases,main}.py + tests/
+DellPowerSwitchSN6000/frontend/  src/{api,types}.ts, App.tsx, components/{FabricView,AnatomyPage,CatalogPage,UseCasePage,FabricControls,FabricCounters}.tsx
+DellPowerSwitchSN6000/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./DellPowerSwitchSN6000/scripts/start_all.sh` (backend :8012 background, frontend :5185 foreground). Stop: `./DellPowerSwitchSN6000/scripts/stop_all.sh`.
+- Backend tests: `cd DellPowerSwitchSN6000/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd DellPowerSwitchSN6000/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8012`. Trace endpoint is `GET /api/fabric` returning `FabricResponse`.
+
+Key points beyond the chassis-twin pattern:
+
+- **Fabric model shapes** (`models.py`): `FabricAnatomy` / `FabricRegion` / **`FabricState`**. `RegionKind` is topology-specific: `spine · leaf · endpoint · optics · telemetry · cooling · management` — `test_anatomy.py` asserts `kinds == EXPECTED_KINDS`, two spines, four leaves, four endpoints, matched leaf/endpoint counts, uniform sizing within each tier, and **tiers vertically ordered** (spines above leaves above endpoints — the geometry encodes the two-hop path). `FabricState` carries `fabricTbps`, `peakLinkPercent`, and **`droppedPackets`**, which exists to be zero.
+- **Fabric trace** (`engine.py`, pure — AST-checked): phase order `off→power→linktrain→topology→ready→collective→congestion→reroute→steady` never regresses. Signature invariants (`test_engine.py`): **zero packet loss on every step** (the product claim, and this twin's reason for existing); **congestion is genuinely tested** — the congestion step must drive the busiest link ≥95%, so losslessness is proven under stress rather than asserted at idle; **adaptive routing relieves without losing work** — after the reroute the hot link is strictly cooler *and* `fabricTbps` has not fallen (98%@24 Tb/s → 71%@31 Tb/s); no traffic before links train and routing converges; spine and leaf tiers light in lockstep; any traffic crosses both tiers; **link training is the longest stage**.
+- **`FabricView.tsx` derives the leaf/spine mesh from the region data** — every leaf drawn to every spine, plus each leaf down to its rack — so a bigger fabric stays data, not code. The mesh is the topology's whole point, so it must be visible.
+- **Catalog (9 categories) and use cases (3)**: switch platform (SN6000 / Quantum-X800 InfiniBand), topology (leaf/spine, 1:1 non-blocking), lossless & congestion control (RoCE, ECN+PFC, adaptive routing), optics (co-packaged vs pluggable), endpoints & SuperNICs, collective acceleration (SHARP, NCCL tuning), switch cooling (liquid/air), fabric management (OS10/SONiC, validation), design services. Use cases: eight-rack training cluster fabric, storage fabric for the parallel file system, multi-tenant AI cloud.
+- Copy spells out AI-networking vocabulary (leaf/spine, oversubscription, incast, RoCE, ECN, PFC, adaptive routing, CPO, SHARP, NCCL, SuperNIC) on first use. Capacities/timings illustrative.
+
+## DellProMaxPlus — on-device inference digital twin (fifteenth component)
+
+Same architecture, applied to the **Dell Pro Max 16 Plus** with the **Qualcomm AI 100 PC Inference Card** — the first mobile workstation with an enterprise-grade *discrete* NPU (two AI-100 NPUs, 32 AI cores, ~450 TOPS INT8, and **64 GB of dedicated on-card AI memory**). Dell demonstrated a 109-billion-parameter Llama 4 model generating text on it with no network. The twist versus every other accelerator twin here: those are stories about moving data fast, and this one is about refusing to move it. See `DellProMaxPlus/README.md`. Grounded in Dell's discrete-NPU blog and Pro Max Plus product brief, the Qualcomm Cloud AI SDK architecture docs, and arXiv 2507.00418.
+
+```
+DellProMaxPlus/backend/   app/{models,anatomy,engine,catalog,usecases,main}.py + tests/
+DellProMaxPlus/frontend/  src/{api,types}.ts, App.tsx, components/{DeviceView,AnatomyPage,CatalogPage,UseCasePage,InferenceControls,InferenceCounters}.tsx
+DellProMaxPlus/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./DellProMaxPlus/scripts/start_all.sh` (backend :8013 background, frontend :5186 foreground). Stop: `./DellProMaxPlus/scripts/stop_all.sh`.
+- Backend tests: `cd DellProMaxPlus/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd DellProMaxPlus/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8013`. Trace endpoint is `GET /api/inference` returning `InferenceResponse`.
+
+Key points beyond the chassis-twin pattern:
+
+- **Inference-path model shapes** (`models.py`): `DeviceAnatomy` / `DeviceRegion` / **`InferenceState`**. `RegionKind` is inference-specific: `host · memory · storage · link · npu · aimemory · thermal · power · runtime` — `test_anatomy.py` asserts `kinds == EXPECTED_KINDS`, two identically-drawn NPUs, and exactly one of every other kind. `InferenceState` carries `weightsResidentGb`, `tokensPerSecond`, `npuWatts`, and **`linkGbps`**, which exists to be zero.
+- **Inference trace** (`engine.py`, pure — AST-checked): phase order `off→compile→load→resident→prefill→decode→sustained→offline` never regresses. Signature invariants (`test_engine.py`): **the weights cross the link exactly once** — `linkGbps > 0` during the `load` phase and no other, the twin's reason for existing; **never evicted** — `weightsResidentGb` monotonic to 61 GB and pinned there (no paging is what makes the thousandth token as predictable as the first); **the host is idle during generation** — no `host`/`memory`/`storage` region active once tokens flow, the counterpart to Exascale's "metadata leaves the data path"; **sustained power never throttles** (within 10% of peak from first decode — the discrete-NPU claim versus a laptop GPU); **disconnecting the network changes nothing** (the final step is a deliberate non-event); and **model load is the longest stage** (unique max `cycleCost`, cost paid per model not per prompt).
+- **Geometry carries the lesson** (`anatomy.py`, stylized 100×54 map built around one boundary): host CPU / system DRAM / NVMe on the left, a narrow PCIe strip in the middle, two AI-100s and the 64 GB pool on the right. `test_anatomy.py::test_the_boundary_is_drawn_and_the_sides_are_separate` pins every host-side region strictly left of the strip and every card-side region strictly right; the AI memory must span both NPUs and be the biggest block on the card, because capacity — not TOPS — decides which models run. `DeviceView.tsx` derives the dashed weights path from region *kinds*, and draws it heavy only while the link is busy.
+- **Catalog (10 categories) and use cases (3)**: platform, discrete NPU card, host processor, system memory, model library, other accelerators on board (integrated NPU vs workstation GPU — the honest contrast), toolchain (ONNX → hardware container, quantization, Dell Pro AI Studio), models that fit, thermal and power, deployment/security. Use cases: regulated case review on material that cannot leave the building, an agent dev loop with no metered API, and a disconnected field engineer.
+- Copy spells out on-device-inference vocabulary (NPU, TOPS, FP16, quantization, ONNX, prefill/decode, KV cache, mixture-of-experts) on first use, and is explicit that the 64 GB / ~120B pairing implies ~4-bit weight quantization — Dell's FP16 claim is about the arithmetic, not the storage, and only the storage decision makes the model fit. Cross-references the GPU twin (decode *is* its memory-bound roofline regime), the Alienware twin (laptop power path), and the datacenter quartet. Wattages/rates/timings illustrative.
+
+## Loop-driven twin discovery
+
+`LOOP_LOG.md` tracks a self-paced loop that researches untwinned Dell products, picks the three most interesting per iteration, specs all three, and fully builds one. Iteration 1 built `DellProMaxPlus/` and left specs at `DellNativeEdge/initial_spec.md` (ports 8014/5187) and `DellAIDataPlatform/initial_spec.md` (ports 8015/5188). Read `LOOP_LOG.md` before adding a twin so a later iteration does not re-pick a product, and update it (picks, ports, next-iteration exclusions) when one lands.
