@@ -79,14 +79,51 @@ endpoints verified serving.
 **Ports taken so far**: 8013/5186, 8016/5189 (built). Reserved by spec:
 8014/5187, 8015/5188, 8017/5190, 8018/5191.
 
+---
+
+## Iteration 3 — 2026-07-24 (fired early at the user's request)
+
+**Research**: Dell's Cyber Detect product page and the "recovery starts on
+primary storage" blog, the May 2026 data-center announcement, Dell's
+PowerMax cybersecurity info hub, the XE7745 spec sheet, and the Automation
+Platform / Automation Studio pages.
+
+**Top three picks**
+
+| Pick | Product | The one idea | Outcome |
+|---|---|---|---|
+| 1 | **Dell Cyber Detect** | It reads the data, not the metadata — and the answer is a date, not an alert | **Built** → `DellCyberDetect/`, ports 8019/5192 |
+| 2 | **Dell PowerEdge XE7745** | The same watts, spent two ways (8×600 W or 16×75 W) | Spec → `DellPowerEdgeXE7745/initial_spec.md`, ports 8020/5193 |
+| 3 | **Dell Automation Studio** | The gap between the drawing and the rack | Spec → `DellAutomationStudio/initial_spec.md`, ports 8021/5194 |
+
+**Why Cyber Detect was built first**: it closes a question the
+PowerProtect twin deliberately leaves open. That twin models the isolated
+vault and answers "will a copy survive?"; it cannot answer "which copy?",
+and a vault full of faithfully replicated, immutably locked corruption has
+protected nothing. Cyber Detect is also the first twin here whose subject
+is *adversarial* — the attack is designed against the detector — which let
+the trace carry an invariant no other twin could: a counter that stays at
+zero not because the system is healthy but because it is being fooled.
+
+**Novel technique in this twin**: `TimelineView.tsx` takes a `revealed`
+prop, so corrupted snapshots are drawn identically to clean ones until
+content analysis has run. Pausing on the blind step shows a timeline a
+viewer genuinely cannot read — which is the administrator's actual
+position. Marking corruption early would have undone the lesson.
+
+**Result**: 37 backend tests pass, frontend builds clean, all four API
+endpoints verified serving.
+
+**Ports taken so far**: 8013/5186, 8016/5189, 8019/5192 (built). Reserved
+by spec: 8014/5187, 8015/5188, 8017/5190, 8018/5191, 8020/5193,
+8021/5194.
+
 **Next iteration should avoid**: everything in the pre-loop list, plus
 Pro Max Plus, NativeEdge, AI Data Platform / Data Lakehouse, PowerFlex,
-Telecom Infrastructure Blocks / Open RAN, ObjectScale. Candidate areas
-still unexplored: PowerScale / OneFS as its own subject, APEX cloud
-platforms and APEX File Storage for Azure, Dell Automation Platform and
-Automation Studio (June 2026), Dell Cyber Detect for PowerStore/PowerMax
-(Q3 2026 — in-array ransomware detection, distinct from the PowerProtect
-vault twin), PowerProtect One, Precision fixed workstations, PowerVault
-entry storage, PowerEdge XE7745 and other AI server SKUs, Dell Managed
-Detection and Response, and Dell's sustainability/circular-design
-programs.
+Telecom Infrastructure Blocks / Open RAN, ObjectScale, Cyber Detect,
+XE7745, Automation Studio. Candidate areas still unexplored: PowerScale /
+OneFS as its own subject, APEX cloud platforms and APEX File Storage for
+Azure, PowerProtect One, Precision fixed workstations, PowerVault entry
+storage, Dell Managed Detection and Response, Dell's
+sustainability/circular-design programs, Dell Private Cloud, and the
+Dell Pro / Latitude commercial-client line.
