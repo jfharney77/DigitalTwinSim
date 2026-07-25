@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 230" width="420" height="230" role="img" aria-label="Seven co-equal zero-trust pillars around a central policy engine, with no perimeter">
+  <rect width="420" height="230" fill="#0d1420"/>
+
+  <text x="210" y="20" fill="#5a6b82" font-family="Roboto,Helvetica,Arial,sans-serif" font-size="10" letter-spacing="1.2" text-anchor="middle">A CENTRE, BUT NO INSIDE</text>
+
+  <!-- spokes, drawn first -->
+  <g stroke="#2b3950" stroke-width="1" stroke-dasharray="4 4" fill="none">
+    <path d="M 66 58 L 210 122"/>
+    <path d="M 210 58 L 210 122"/>
+    <path d="M 354 58 L 210 122"/>
+    <path d="M 66 122 L 210 122"/>
+    <path d="M 354 122 L 210 122"/>
+    <path d="M 138 190 L 210 122"/>
+    <path d="M 282 190 L 210 122"/>
+  </g>
+
+  <!-- pillars: all identical, because the model treats them as co-equal -->
+  <g font-family="Roboto,Helvetica,Arial,sans-serif" font-size="10" text-anchor="middle">
+    <rect x="22" y="44" width="88" height="28" rx="4" fill="#12233a" stroke="#3d5a9e" stroke-width="1"/>
+    <text x="66" y="62" fill="#4f7cff">Identity</text>
+
+    <rect x="166" y="44" width="88" height="28" rx="4" fill="#16233a" stroke="#3a5288" stroke-width="1"/>
+    <text x="210" y="62" fill="#5f88d8">Device</text>
+
+    <rect x="310" y="44" width="88" height="28" rx="4" fill="#241f33" stroke="#4a4066" stroke-width="1"/>
+    <text x="354" y="62" fill="#8a7ab5">Network</text>
+
+    <rect x="22" y="108" width="88" height="28" rx="4" fill="#1c1f3f" stroke="#5a4fc9" stroke-width="1"/>
+    <text x="66" y="126" fill="#8f7fff">Workload</text>
+
+    <rect x="310" y="108" width="88" height="28" rx="4" fill="#16281a" stroke="#3a6647" stroke-width="1"/>
+    <text x="354" y="126" fill="#6ab585">Data</text>
+
+    <rect x="94" y="176" width="88" height="28" rx="4" fill="#12282e" stroke="#2e5666" stroke-width="1"/>
+    <text x="138" y="194" fill="#4fa0c9">Visibility</text>
+
+    <rect x="238" y="176" width="88" height="28" rx="4" fill="#122b2b" stroke="#2e5c54" stroke-width="1"/>
+    <text x="282" y="194" fill="#4fa08a">Automation</text>
+
+    <!-- the decision point: same size as the pillars, it decides using them -->
+    <rect x="166" y="108" width="88" height="28" rx="4" fill="#2b2412" stroke="#6b5a2b" stroke-width="1"/>
+    <text x="210" y="126" fill="#c9a94f">Policy</text>
+  </g>
+
+  <text x="210" y="222" fill="#5a6b82" font-family="Roboto,Helvetica,Arial,sans-serif" font-size="10" text-anchor="middle">no enclosing shape — network position grants nothing</text>
+</svg>

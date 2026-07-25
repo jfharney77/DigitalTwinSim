@@ -121,9 +121,54 @@ by spec: 8014/5187, 8015/5188, 8017/5190, 8018/5191, 8020/5193,
 **Next iteration should avoid**: everything in the pre-loop list, plus
 Pro Max Plus, NativeEdge, AI Data Platform / Data Lakehouse, PowerFlex,
 Telecom Infrastructure Blocks / Open RAN, ObjectScale, Cyber Detect,
-XE7745, Automation Studio. Candidate areas still unexplored: PowerScale /
-OneFS as its own subject, APEX cloud platforms and APEX File Storage for
-Azure, PowerProtect One, Precision fixed workstations, PowerVault entry
-storage, Dell Managed Detection and Response, Dell's
-sustainability/circular-design programs, Dell Private Cloud, and the
-Dell Pro / Latitude commercial-client line.
+XE7745, Automation Studio.
+
+---
+
+## Iteration 4 — 2026-07-24 (fired early at the user's request)
+
+**Research**: Dell's April 2025 DoD zero-trust validation announcement and
+the Zero Trust landing page, the PowerScale/OneFS product overview and
+scalability docs, and Dell's circular-economy and sustainable-devices
+pages.
+
+**Top three picks**
+
+| Pick | Product | The one idea | Outcome |
+|---|---|---|---|
+| 1 | **Dell Project Fort Zero** | There is no inside | **Built** → `DellFortZero/`, ports 8022/5195 |
+| 2 | **Dell PowerScale / OneFS** | There are no volumes | Spec → `DellPowerScale/initial_spec.md`, ports 8023/5196 |
+| 3 | **Dell circular design & Asset Recovery** | Every other twin ends at "steady"; this one doesn't end | Spec → `DellCircularDesign/initial_spec.md`, ports 8024/5197 |
+
+**Why Fort Zero was built first**: it inverts the repo's dominant idiom.
+Seventeen twins carry their lesson in a boundary — a PCIe strip, an air
+gap, a band of nodes with nothing above it — and this one carries its
+lesson in the *absence* of one, with a geometry test forbidding any region
+large enough to act as a perimeter. It is also the second adversarial twin
+(after Cyber Detect) and fails differently: there, detection is defeated;
+here, lateral movement is.
+
+**Note on the runner-up**: the circular-design spec is the structurally
+most novel thing found so far — the only twin whose trace would *close*
+rather than end, with a mass-conservation invariant deliberately modelled
+on the IR7000's heat balance. It was not built first only because Fort
+Zero is a harder, more technical subject. It carries an explicit tone
+guard in its spec, because it is the twin most at risk of reading as a
+brochure.
+
+**Result**: 37 backend tests pass, frontend builds clean, all four API
+endpoints verified serving.
+
+**Ports taken so far**: 8013/5186, 8016/5189, 8019/5192, 8022/5195
+(built). Reserved by spec: 8014/5187, 8015/5188, 8017/5190, 8018/5191,
+8020/5193, 8021/5194, 8023/5196, 8024/5197.
+
+**Next iteration (5 of 5, the last) should avoid**: everything above,
+plus Fort Zero, PowerScale/OneFS, and circular design. Candidate areas
+still unexplored: APEX cloud platforms and APEX File Storage for Azure,
+PowerProtect One, Precision fixed workstations, PowerVault entry storage,
+Dell Managed Detection and Response, Dell Private Cloud, the Dell Pro /
+Latitude commercial-client line, Dell's services and residency programs,
+and Dell displays/peripherals. Iteration 5 should also close the loop:
+summarize what the five iterations produced and which specs remain
+unbuilt.
