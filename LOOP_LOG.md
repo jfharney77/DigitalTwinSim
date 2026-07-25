@@ -163,12 +163,89 @@ endpoints verified serving.
 (built). Reserved by spec: 8014/5187, 8015/5188, 8017/5190, 8018/5191,
 8020/5193, 8021/5194, 8023/5196, 8024/5197.
 
-**Next iteration (5 of 5, the last) should avoid**: everything above,
-plus Fort Zero, PowerScale/OneFS, and circular design. Candidate areas
-still unexplored: APEX cloud platforms and APEX File Storage for Azure,
+---
+
+## Iteration 5 — 2026-07-24 (fired early at the user's request) — FINAL
+
+**Research**: Dell's disaggregated-infrastructure strategy coverage
+(Computer Weekly, SiliconANGLE), the "why Dell Private Cloud outperforms
+HCI" blog and Nutanix-support announcement (February 2026), Dell's MDR
+pages plus StorageReview's coverage, and the APEX Infrastructure
+subscription pages.
+
+**Top three picks**
+
+| Pick | Product | The one idea | Outcome |
+|---|---|---|---|
+| 1 | **Dell Private Cloud** (disaggregated, multi-hypervisor) | You can change your mind | **Built** → `DellPrivateCloud/`, ports 8025/5198 |
+| 2 | **Dell APEX Infrastructure** | The hardware is already there, and you are not paying for it | Spec → `DellAPEX/initial_spec.md`, ports 8026/5199 |
+| 3 | **Dell Managed Detection and Response** | The alert is not the product; the person who read it is | Spec → `DellMDR/initial_spec.md`, ports 8027/5200 |
+
+**Why Private Cloud was built first**: it argues directly with the VxRail
+twin, giving the repo a genuine three-way storage/infrastructure
+comparison alongside the PowerStore/PowerMax ↔ PowerFlex pair. It is also
+the most topical subject the loop found — the post-Broadcom multi-hypervisor
+question is live, and Dell cites 52% of IT leaders weighing it.
+
+**Result**: 35 backend tests pass, frontend builds clean, all four API
+endpoints verified serving.
+
+---
+
+# Loop summary — five iterations, complete
+
+**Built (5 new twins, components 15–19):**
+
+| # | Twin | Ports | The one idea |
+|---|---|---|---|
+| 15 | `DellProMaxPlus/` | 8013/5186 | The weights never move |
+| 16 | `DellPowerFlex/` | 8016/5189 | There is no controller |
+| 17 | `DellCyberDetect/` | 8019/5192 | It reads the data, not the metadata |
+| 18 | `DellFortZero/` | 8022/5195 | There is no inside |
+| 19 | `DellPrivateCloud/` | 8025/5198 | You can change your mind |
+
+Each: pure FastAPI engine (AST-checked), React/Vite frontend in the Dell
+clean-design skin, 35–37 backend tests, geometry invariants that carry the
+lesson, a self-drawn credited schematic, and a CLAUDE.md section.
+
+**Specced but not built (10):**
+
+| Spec | Ports | The one idea |
+|---|---|---|
+| `DellNativeEdge/` | 8014/5187 | Nobody touches the device |
+| `DellAIDataPlatform/` | 8015/5188 | The bottleneck moved from storage to meaning |
+| `DellTelecomBlocks/` | 8017/5190 | The deadline is the product, not the rate |
+| `DellObjectScale/` | 8018/5191 | It scales because it gave up the tree |
+| `DellPowerEdgeXE7745/` | 8020/5193 | The same watts, spent two ways |
+| `DellAutomationStudio/` | 8021/5194 | The gap between the drawing and the rack |
+| `DellPowerScale/` | 8023/5196 | There are no volumes |
+| `DellCircularDesign/` | 8024/5197 | Every other twin ends at "steady"; this one doesn't end |
+| `DellAPEX/` | 8026/5199 | The hardware is already there, and you are not paying for it |
+| `DellMDR/` | 8027/5200 | The alert is not the product; the person who read it is |
+
+**Patterns the loop produced that are worth keeping:**
+
+- Several twins now *argue with each other* rather than sitting side by
+  side: PowerFlex against PowerStore/PowerMax, Private Cloud against
+  VxRail, Cyber Detect completing PowerProtect, Fort Zero inverting the
+  boundary idiom every earlier twin relies on.
+- Geometry as argument became routine — the Pro Max Plus boundary test,
+  PowerFlex's "nothing between clients and nodes", Cyber Detect's timeline
+  axis, Fort Zero's no-perimeter cap, Private Cloud's interchangeable slots.
+- Two twins invert the repo's usual `cycleCost` convention deliberately
+  (PowerFlex dwells on setup, not repair) or state the cost honestly where
+  it is inconvenient (Private Cloud's migration is the longest stage).
+- Two adversarial subjects appeared (Cyber Detect, Fort Zero), where an
+  invariant holds because the system is being attacked rather than because
+  it is healthy.
+
+**If the loop is restarted**, the strongest unbuilt candidate is
+`DellCircularDesign/` — structurally the most novel thing found, the only
+twin whose trace would close rather than end, with a mass-conservation
+invariant modelled on the IR7000's heat balance. It ships with an explicit
+tone guard because it is the twin most at risk of reading as a brochure.
+
+**Candidate areas never explored**: APEX File Storage for Azure,
 PowerProtect One, Precision fixed workstations, PowerVault entry storage,
-Dell Managed Detection and Response, Dell Private Cloud, the Dell Pro /
-Latitude commercial-client line, Dell's services and residency programs,
-and Dell displays/peripherals. Iteration 5 should also close the loop:
-summarize what the five iterations produced and which specs remain
-unbuilt.
+the Dell Pro / Latitude commercial-client line, Dell services and residency
+programs, and Dell displays/peripherals.
