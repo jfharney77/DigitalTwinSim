@@ -13,6 +13,7 @@ model of Dell's published AIOps architecture, not an internal system diagram.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import PlatformMap, PlatformRegion, SourceLink, Stat
 
 ANATOMY = PlatformMap(
@@ -24,22 +25,69 @@ ANATOMY = PlatformMap(
     year=2025,
     width=100,
     height=58,
-    overview=(
-        "CloudIQ is Dell's cloud-based AIOps application for observing and "
-        "managing Dell infrastructure — rebranded Dell AIOps and folded into "
-        "APEX AIOps, but still the same idea: connect your Dell systems, and a "
-        "SaaS platform continuously scores their health, forecasts capacity, "
-        "detects performance anomalies, watches cybersecurity posture, and "
-        "tells you about problems before they cause downtime. Nothing is "
-        "installed on a desktop; telemetry flows one way from your systems, "
-        "through the Secure Connect Gateway, to Dell's cloud, where machine "
-        "learning turns it into insights you reach from a browser or the "
-        "mobile app. A generative-AI AIOps Assistant, trained on Dell's "
-        "support knowledge and aware of your environment, answers questions in "
-        "plain language. It is included at no additional cost with ProSupport, "
-        "ProSupport Plus, and ProSupport One agreements. This diagram traces a "
-        "batch of telemetry from the monitored systems on the left to the "
-        "insights and actions on the right."
+    overview=L(
+        novice=(
+            "Everything else in this repo is a physical object. This one is "
+            "software running as a service, so instead of a floorplan you get a "
+            "diagram of a journey — the journey a piece of measurement data "
+            "takes from a machine in a customer's building to a useful piece of "
+            "advice. Equipment constantly reports on itself: temperatures, "
+            "error counts, how full the drives are. That reporting is "
+            "collected, sent securely to Dell, and analysed by machine-learning "
+            "models looking for patterns a person would never notice — a drive "
+            "that is failing slowly, or capacity that will run out in six weeks "
+            "at the current rate. Watch the health score in the trace: it "
+            "starts perfect, dips when a problem is detected, and recovers once "
+            "it is dealt with."
+        ),
+        plain=(
+            "CloudIQ — now Dell AIOps — is cloud-native observability software "
+            "rather than hardware, so both of this repo's usual metaphors are "
+            "adapted. The map is a platform architecture diagram laid out left "
+            "to right, and the trace is the lifecycle of a batch of telemetry "
+            "becoming an actionable insight: collected from monitored systems, "
+            "sent through the Secure Connect Gateway, ingested, analysed by "
+            "machine-learning models, surfaced as an insight, and notified. The "
+            "analysis stage is the longest. The health score starts at 100, "
+            "dips when an anomaly is detected, and partly recovers — telemetry "
+            "flows one way, which the tests assert."
+        ),
+        standard=(
+            "CloudIQ is Dell's cloud-based AIOps application for observing and "
+            "managing Dell infrastructure — rebranded Dell AIOps and folded into "
+            "APEX AIOps, but still the same idea: connect your Dell systems, and a "
+            "SaaS platform continuously scores their health, forecasts capacity, "
+            "detects performance anomalies, watches cybersecurity posture, and "
+            "tells you about problems before they cause downtime. Nothing is "
+            "installed on a desktop; telemetry flows one way from your systems, "
+            "through the Secure Connect Gateway, to Dell's cloud, where machine "
+            "learning turns it into insights you reach from a browser or the "
+            "mobile app. A generative-AI AIOps Assistant, trained on Dell's "
+            "support knowledge and aware of your environment, answers questions in "
+            "plain language. It is included at no additional cost with ProSupport, "
+            "ProSupport Plus, and ProSupport One agreements. This diagram traces a "
+            "batch of telemetry from the monitored systems on the left to the "
+            "insights and actions on the right."
+        ),
+        technical=(
+            "Cloud-native AIOps observability, so the anatomy is a "
+            "telemetry-to-insight architecture diagram rather than a floorplan: "
+            "sources → Secure Connect Gateway → cloud ingest → ML analytics and "
+            "cybersecurity → insights and assistant → notify. Phase order is "
+            "collect → transmit → ingest → analyze → detect → surface → assist "
+            "→ notify, with the ML analyze stage holding max dwell. "
+            "`healthScore` starts at 100, dips at or after detect, and recovers "
+            "above the low-water mark without returning to 100; first transmit "
+            "precedes first surface, asserting one-way flow. No power model at "
+            "all."
+        ),
+        expert=(
+            "AIOps pipeline: sources → SCG → ingest → ML analytics → insight → "
+            "notify. ML analyze holds max dwell. `healthScore` 100 → dip "
+            "at/after detect → partial recovery; one-way flow asserted via "
+            "transmit-before-surface. Capability catalog, not a bill of "
+            "materials."
+        ),
     ),
     regions=[
         # --- Sources: monitored Dell systems (telemetry in) ---------------

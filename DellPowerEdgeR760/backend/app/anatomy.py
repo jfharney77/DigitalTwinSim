@@ -13,6 +13,7 @@ placement.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import ChassisAnatomy, ChassisRegion, Photo, SourceLink, Stat
 
 P_R760_INTERIOR = Photo(
@@ -70,17 +71,60 @@ ANATOMY = ChassisAnatomy(
     year=2023,
     width=100,
     height=46,
-    overview=(
-        "The PowerEdge R760 is Dell's mainstream two-socket 2U rack server "
-        "(16th generation, 2023), built around 4th/5th-generation Intel "
-        "Xeon Scalable processors. It is a general-purpose workhorse: up to "
-        "128 cores, 8 TB of DDR5 across 32 DIMM slots, 24 NVMe/SAS/SATA "
-        "drive bays behind a hardware RAID controller, eight PCIe Gen5 "
-        "slots on risers, and dual hot-swap power supplies. Everything a "
-        "datacenter tech touches — drives, fans, PSUs, the boot module — is "
-        "a hot-swap or tool-less part reachable from the front or rear, and "
-        "the whole machine is managed out-of-band by an embedded controller "
-        "(iDRAC9) that runs whenever the server is plugged in."
+    overview=L(
+        novice=(
+            "This follows what happens inside an ordinary rack-mounted server "
+            "between plugging it in and it being ready to use — a stretch of a "
+            "few minutes that most people never think about. Pressing the power "
+            "button is not the beginning. Long before that, a small always-on "
+            "computer inside the machine has already woken up and started "
+            "checking the hardware. When the main power does come on, the "
+            "server spends a surprising amount of its startup time on one task: "
+            "memory training, where it tests and tunes the timing of every "
+            "memory module until the signals are reliable. Modern memory runs "
+            "so fast that the exact electrical timing has to be measured for "
+            "each machine, each time. That step is why servers take minutes to "
+            "start rather than seconds, and the animation deliberately lingers "
+            "there so you can see where the time actually goes."
+        ),
+        plain=(
+            "The power-on sequence of a 2U rack server, from applying mains "
+            "power to a running operating system. The order matters more than "
+            "people expect: the management controller comes up first on standby "
+            "power and checks the hardware before the main rails are even "
+            "energized. Then the power-on self-test runs, and the longest "
+            "single stage by far is memory training — measuring and tuning the "
+            "electrical timing of every memory module, which modern DDR5 speeds "
+            "make unavoidable and machine-specific. The trace dwells there on "
+            "purpose. Wattages and timings are illustrative rather than "
+            "measured."
+        ),
+        standard=(
+            "The PowerEdge R760 is Dell's mainstream two-socket 2U rack server "
+            "(16th generation, 2023), built around 4th/5th-generation Intel "
+            "Xeon Scalable processors. It is a general-purpose workhorse: up to "
+            "128 cores, 8 TB of DDR5 across 32 DIMM slots, 24 NVMe/SAS/SATA "
+            "drive bays behind a hardware RAID controller, eight PCIe Gen5 "
+            "slots on risers, and dual hot-swap power supplies. Everything a "
+            "datacenter tech touches — drives, fans, PSUs, the boot module — is "
+            "a hot-swap or tool-less part reachable from the front or rear, and "
+            "the whole machine is managed out-of-band by an embedded controller "
+            "(iDRAC9) that runs whenever the server is plugged in."
+        ),
+        technical=(
+            "Power-on sequence for a 2U dual-socket server: standby rails, BMC "
+            "bring-up and hardware inventory, main power, POST, boot, OS. "
+            "Memory training carries the largest dwell cost — per-module DDR5 "
+            "timing calibration is machine-specific and unavoidable at current "
+            "signalling rates, and it dominates time-to-ready. Region "
+            "activation follows the real dependency order rather than the "
+            "chassis layout. Illustrative timings."
+        ),
+        expert=(
+            "2U server bring-up: standby → BMC → main rails → POST → boot → OS. "
+            "DDR5 training dominates time-to-ready and holds the max dwell. "
+            "Phase order encodes dependency, not physical layout."
+        ),
     ),
     regions=[
         ChassisRegion(

@@ -17,6 +17,7 @@ runs VxRail Manager — but that is a role, not different hardware.)
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import ClusterAnatomy, ClusterRegion, Photo, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -141,19 +142,61 @@ ANATOMY = ClusterAnatomy(
     year=2024,
     width=100,
     height=64,
-    overview=(
-        "VxRail is Dell's hyperconverged infrastructure (HCI) system, "
-        "jointly engineered with VMware. Instead of separate servers and a "
-        "storage array, it is built from identical nodes — each a Dell "
-        "PowerEdge server running VMware ESXi — whose local NVMe drives are "
-        "pooled by VMware vSAN into one shared datastore that spans the "
-        "cluster. VxRail Manager, unique to VxRail, automates the whole life "
-        "cycle: it builds the cluster on first run and keeps hardware, "
-        "hypervisor, and vSAN upgrades in lockstep afterward. A cluster "
-        "starts at two nodes and grows one node at a time to sixty-four, "
-        "adding compute, memory, and storage together each time. This "
-        "floorplan shows four nodes joined by a redundant switch pair; the "
-        "layout is a stylized mental model, not a rack-accurate drawing."
+    overview=L(
+        novice=(
+            "Most of this repo's other systems are a single machine. This one "
+            "is a group of four identical servers that behave as one. Each "
+            "server brings its own processors and its own drives, and software "
+            "pools all those separate drives into a single shared pool that any "
+            "of them can use. Watch two moments in the startup. First, the four "
+            "servers come up in step with each other — whenever one lights up, "
+            "all four do, because they are meant to be interchangeable. Then, "
+            "at one specific moment, that symmetry breaks: the cluster holds an "
+            "election and exactly one server is chosen to run the management "
+            "software. It is the only step where the four are not identical, "
+            "and it is worth pausing on."
+        ),
+        plain=(
+            "VxRail is hyperconverged infrastructure: identical servers whose "
+            "local NVMe is pooled by vSAN into one shared datastore, managed "
+            "for life by VxRail Manager. The subject here is a cluster rather "
+            "than a box, so the map is four nodes plus a redundant top-of-rack "
+            "switch pair, and the trace is the cluster's first run. Two moments "
+            "matter: the nodes boot in lockstep, all four lighting together, "
+            "and then the primary election lights exactly one — the only step "
+            "that breaks the symmetry. The VxRail Manager cluster build is the "
+            "longest stage."
+        ),
+        standard=(
+            "VxRail is Dell's hyperconverged infrastructure (HCI) system, "
+            "jointly engineered with VMware. Instead of separate servers and a "
+            "storage array, it is built from identical nodes — each a Dell "
+            "PowerEdge server running VMware ESXi — whose local NVMe drives are "
+            "pooled by VMware vSAN into one shared datastore that spans the "
+            "cluster. VxRail Manager, unique to VxRail, automates the whole life "
+            "cycle: it builds the cluster on first run and keeps hardware, "
+            "hypervisor, and vSAN upgrades in lockstep afterward. A cluster "
+            "starts at two nodes and grows one node at a time to sixty-four, "
+            "adding compute, memory, and storage together each time. This "
+            "floorplan shows four nodes joined by a redundant switch pair; the "
+            "layout is a stylized mental model, not a rack-accurate drawing."
+        ),
+        technical=(
+            "HCI cluster first run: four identical PowerEdge-based nodes, local "
+            "NVMe pooled by vSAN into a single datastore, lifecycle owned by "
+            "VxRail Manager. Phase order is power → ESXi → discovery → primary "
+            "→ cluster → vSAN → online. Nodes light in lockstep across power, "
+            "ESXi, and discovery — asserted on the `-n1..-n4` suffix — and the "
+            "primary election lights exactly `{n1}`, the one step that breaks "
+            "symmetry. Cluster build holds max dwell. `progressPercent` mirrors "
+            "the Manager build bar."
+        ),
+        expert=(
+            "HCI first run over four nodes; vSAN pools local NVMe into one "
+            "datastore. Lockstep asserted on `-n1..-n4` through "
+            "power/ESXi/discovery; primary election lights exactly `{n1}` — the "
+            "only symmetry break. Manager cluster build holds max dwell."
+        ),
     ),
     regions=[
         ClusterRegion(

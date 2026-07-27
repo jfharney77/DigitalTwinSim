@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchAnatomy, fetchCatalog } from "../api";
+import { useLevel } from "../level";
 import { PlatformView } from "./PlatformView";
 import type { CatalogCategory, PlatformMap } from "../types";
 
@@ -12,6 +13,7 @@ export function CatalogPage() {
   const [anatomy, setAnatomy] = useState<PlatformMap | null>(null);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   useEffect(() => {
     Promise.all([fetchCatalog(), fetchAnatomy()])
@@ -20,7 +22,7 @@ export function CatalogPage() {
         setAnatomy(an);
       })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   const active = catalog.find((c) => c.id === activeCat) ?? null;
 

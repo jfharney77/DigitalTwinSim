@@ -13,6 +13,7 @@ bottom half — two mirror-image controller canisters in one 2U box.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import ChassisAnatomy, ChassisRegion, Photo, SourceLink, Stat
 
 # --- Product photographs (local files served from frontend/public) ----------
@@ -176,18 +177,61 @@ ANATOMY = ChassisAnatomy(
     year=2023,
     width=100,
     height=46,
-    overview=(
-        "PowerStore is Dell's all-NVMe midrange storage array: a 2U "
-        "appliance that serves block storage (Fibre Channel, iSCSI, "
-        "NVMe-oF) and file storage (NFS, SMB) from the same box. The "
-        "defining design is the pair of controller canisters — Node A and "
-        "Node B — two independent x86 computers running PowerStoreOS, a "
-        "container-based operating system on embedded Linux. Both nodes are "
-        "active at once and every NVMe drive is dual-ported, so either node "
-        "can serve any host path; inline deduplication and compression are "
-        "always on. Capacity scales up by adding expansion shelves and "
-        "scales out by clustering up to four appliances under one "
-        "management plane."
+    overview=L(
+        novice=(
+            "A storage array is a box whose whole job is to hold data for other "
+            "computers. This one has two independent controller units inside, "
+            "and both are working at the same time rather than one sitting idle "
+            "as a spare. They share the same set of drives, and each drive is "
+            "wired to both of them, so if one controller fails the other simply "
+            "carries on. Watch the startup sequence and notice that the two "
+            "sides come up in step with each other — whenever one lights up, so "
+            "does its twin. That symmetry is not decoration; it is what makes "
+            "the promise of continuous availability real. There is also a "
+            "battery inside, and its job is unusual: if the power fails, it "
+            "keeps the machine alive just long enough to write the contents of "
+            "memory safely to flash, so nothing in flight is lost."
+        ),
+        plain=(
+            "A 2U all-NVMe array with two active-active controller nodes "
+            "sharing one 25-slot, dual-ported drive bay. Both controllers serve "
+            "data simultaneously, and each drive is reachable from either, so "
+            "losing one node costs capacity to serve rather than access. The "
+            "startup sequence shows the pair coming up in lockstep — whenever "
+            "one side lights, its twin lights too — which is the visible form "
+            "of that guarantee. Writes are acknowledged from mirrored NVRAM on "
+            "both nodes, and battery backup exists to vault that cache to flash "
+            "if mains power is lost."
+        ),
+        standard=(
+            "PowerStore is Dell's all-NVMe midrange storage array: a 2U "
+            "appliance that serves block storage (Fibre Channel, iSCSI, "
+            "NVMe-oF) and file storage (NFS, SMB) from the same box. The "
+            "defining design is the pair of controller canisters — Node A and "
+            "Node B — two independent x86 computers running PowerStoreOS, a "
+            "container-based operating system on embedded Linux. Both nodes are "
+            "active at once and every NVMe drive is dual-ported, so either node "
+            "can serve any host path; inline deduplication and compression are "
+            "always on. Capacity scales up by adding expansion shelves and "
+            "scales out by clustering up to four appliances under one "
+            "management plane."
+        ),
+        technical=(
+            "2U all-NVMe appliance: dual active-active controller nodes over a "
+            "shared 25-slot dual-ported bay. Both nodes serve concurrently; "
+            "per-node regions are `-a`/`-b` twins and bring-up is lockstep, "
+            "which the engine tests assert. Writes land in mirrored NVRAM "
+            "across both nodes before acknowledgement; BBUs exist to vault "
+            "cache to flash on AC loss. Phase order is power → boot → drives → "
+            "cluster → services → online, with container-based OS boot carrying "
+            "the largest dwell."
+        ),
+        expert=(
+            "Dual active-active controllers, shared dual-ported NVMe bay. "
+            "Lockstep bring-up asserted on `-a`/`-b` twins. Mirrored NVRAM "
+            "write acknowledgement; BBU-backed vault-to-flash on AC loss. OS "
+            "container boot holds max dwell."
+        ),
     ),
     regions=[
         ChassisRegion(

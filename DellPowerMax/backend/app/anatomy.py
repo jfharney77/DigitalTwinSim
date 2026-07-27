@@ -18,6 +18,7 @@ at x=100.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import ChassisAnatomy, ChassisRegion, SourceLink, Stat
 
 # --- Per-node region descriptions (shared A/B text) --------------------------
@@ -165,22 +166,67 @@ ANATOMY = ChassisAnatomy(
     year=2025,
     width=100,
     height=52,
-    overview=(
-        "PowerMax is Dell's flagship mission-critical storage array: an "
-        "end-to-end NVMe scale-out system for the workloads that cannot go "
-        "down — large databases, SAP, VMware at scale, and IBM mainframe. It "
-        "is built from modular node pairs. Each node pair is two compute nodes "
-        "(directors) with their own CPUs, DRAM cache, vault flash, and "
-        "front-end connectivity, joined by a 100 Gb/s InfiniBand Dynamic "
-        "Fabric. Drives live separately in 48-slot Dynamic Media Enclosures "
-        "(DMEs) reached over that same fabric, so compute and capacity scale "
-        "independently — add node pairs for performance, add drives one at a "
-        "time for capacity. A PowerMax 2500 is 1–2 node pairs; a PowerMax 8500 "
-        "scales to 8 node pairs and 18 PBe. PowerMaxOS 10 runs global inline "
-        "data reduction (guaranteed 5:1 open systems, 3:1 mainframe), SnapVX "
-        "snapshots, SRDF replication, and hardware-rooted cyber resiliency, at "
-        "six-nines availability. This floorplan shows one node pair engine and "
-        "one DME."
+    overview=L(
+        novice=(
+            "This is storage at the scale a bank or an airline runs on, and it "
+            "is built differently from a single box. The parts that do the "
+            "thinking — called directors — live in one enclosure, and the "
+            "drives live in separate enclosures entirely. They are joined by a "
+            "very fast dedicated network. That separation is the point: it "
+            "means you can add more processing without adding drives, or more "
+            "drives without adding processing. Watch the startup order and "
+            "notice something that would look wrong on a simpler machine — the "
+            "network has to come up *before* the drives do, because here the "
+            "drives are reached across it rather than being plugged into the "
+            "same board. There is also a step called vaulting, where the "
+            "machine can dump everything held in memory to flash if power is "
+            "lost."
+        ),
+        plain=(
+            "PowerMax is Dell's flagship end-to-end NVMe scale-out array, built "
+            "from node pairs of directors joined by a 100 Gb/s InfiniBand "
+            "fabric, with drives in separate Dynamic Media Enclosures reached "
+            "over that fabric. Compute and capacity therefore scale "
+            "independently. The startup order carries the architecture: the "
+            "fabric must come up before the drives, because the drives hang off "
+            "it rather than off a director's bus. Vault modules and a standby "
+            "power supply exist to flush cache to flash on power loss. Wattages "
+            "are at rack scale rather than appliance scale."
+        ),
+        standard=(
+            "PowerMax is Dell's flagship mission-critical storage array: an "
+            "end-to-end NVMe scale-out system for the workloads that cannot go "
+            "down — large databases, SAP, VMware at scale, and IBM mainframe. It "
+            "is built from modular node pairs. Each node pair is two compute nodes "
+            "(directors) with their own CPUs, DRAM cache, vault flash, and "
+            "front-end connectivity, joined by a 100 Gb/s InfiniBand Dynamic "
+            "Fabric. Drives live separately in 48-slot Dynamic Media Enclosures "
+            "(DMEs) reached over that same fabric, so compute and capacity scale "
+            "independently — add node pairs for performance, add drives one at a "
+            "time for capacity. A PowerMax 2500 is 1–2 node pairs; a PowerMax 8500 "
+            "scales to 8 node pairs and 18 PBe. PowerMaxOS 10 runs global inline "
+            "data reduction (guaranteed 5:1 open systems, 3:1 mainframe), SnapVX "
+            "snapshots, SRDF replication, and hardware-rooted cyber resiliency, at "
+            "six-nines availability. This floorplan shows one node pair engine and "
+            "one DME."
+        ),
+        technical=(
+            "End-to-end NVMe scale-out: modular node pairs of directors over a "
+            "100 Gb/s InfiniBand Dynamic Fabric, with capacity in separate DMEs "
+            "reached across that fabric — so compute and capacity scale "
+            "independently. Phase order is power → vault → boot → fabric → "
+            "drives → pool → services → online, and the engine asserts fabric "
+            "precedes drives, which is the architecture stated as an invariant. "
+            "Dual-director `-a`/`-b` symmetry holds through power, vault, and "
+            "boot. PowerMaxOS boot carries the strictly largest dwell."
+        ),
+        expert=(
+            "Scale-out NVMe: director node pairs over 100 Gb/s IB fabric, "
+            "capacity in fabric-attached DMEs, independent compute/capacity "
+            "scaling. Fabric-before-drives asserted. `-a`/`-b` director "
+            "symmetry through power/vault/boot. Vault-to-flash on SPS. "
+            "PowerMaxOS boot holds max dwell."
+        ),
     ),
     regions=[
         ChassisRegion(

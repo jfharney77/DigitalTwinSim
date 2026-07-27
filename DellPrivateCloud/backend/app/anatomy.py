@@ -21,6 +21,7 @@ lesson and are pinned in ``tests/test_anatomy.py``:
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import CloudAnatomy, CloudRegion, Photo, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -93,25 +94,97 @@ ANATOMY = CloudAnatomy(
     year=2026,
     width=100,
     height=66,
-    overview=(
-        "Dell Private Cloud is Dell's disaggregated-infrastructure answer: "
-        "compute, storage, and networking pooled and scaled separately, one "
-        "control plane across all of them, and the hypervisor as a "
-        "swappable layer on top — VMware, Red Hat, Nutanix, or Microsoft. "
-        "It is best understood against this repo's VxRail twin, which "
-        "models the opposite bargain. Hyperconverged infrastructure fused "
-        "compute and storage into one node and bought real simplicity with "
-        "that coupling: you grow by adding nodes, which means you grow both "
-        "resources in a fixed ratio whether or not the ratio is what you "
-        "need, and you are committed to one software stack for the life of "
-        "the estate. Disaggregation un-buys the coupling and keeps most of "
-        "the simplicity, because a single control plane now does what the "
-        "fused node used to do. Dell cites research that 52% of IT leaders "
-        "are considering multiple hypervisors to reduce lock-in, which is a "
-        "fairly direct summary of what the last few years taught the "
-        "market. Watch the trace: storage doubles without a single server "
-        "being added, and a second hypervisor appears without a workload "
-        "noticing or an operator gaining a second console."
+    overview=L(
+        novice=(
+            "This is about how you buy and arrange the equipment behind a "
+            "company's applications. One popular approach puts computing power "
+            "and storage together in identical boxes: simple to run, but you "
+            "can only grow by adding another whole box, so if you need more "
+            "space you also buy processors you did not want. You are also "
+            "committed to one vendor's software for as long as you keep the "
+            "equipment. Dell Private Cloud separates the three ingredients — "
+            "computing, storage, and networking — so each can be bought and "
+            "grown on its own, while a single management system keeps it as "
+            "easy to run as the all-in-one version. The software layer that "
+            "divides physical machines into virtual ones also becomes a choice "
+            "you can change later, rather than something baked in. Watch the "
+            "story: the storage doubles without a single server being added, "
+            "and a second software platform appears without any application "
+            "noticing or anyone gaining a second set of tools to learn."
+        ),
+        plain=(
+            "Dell Private Cloud separates compute, storage, and networking "
+            "into "
+            "pools that are bought and scaled on their own, joins them under "
+            "one management system, and treats the hypervisor — the layer that "
+            "turns physical servers into virtual ones — as a swappable choice: "
+            "VMware, Red Hat, Nutanix, or Microsoft. It is best read against "
+            "this repo's VxRail twin, which is the opposite bargain. "
+            "Hyperconverged systems fuse compute and storage into one node and "
+            "buy real simplicity with that coupling: you grow by adding nodes, "
+            "so both resources grow in a fixed ratio whether or not that ratio "
+            "suits you, and you are committed to one software stack for the "
+            "life of the estate. Separating them un-buys the coupling and "
+            "keeps "
+            "most of the simplicity, because the control plane now does what "
+            "the fused node did. Dell cites 52% of IT leaders weighing "
+            "multiple "
+            "hypervisors to reduce lock-in. Watch the trace: storage doubles "
+            "with no server added, and a second hypervisor arrives unnoticed."
+        ),
+        standard=(
+            "Dell Private Cloud is Dell's disaggregated-infrastructure answer: "
+            "compute, storage, and networking pooled and scaled separately, "
+            "one "
+            "control plane across all of them, and the hypervisor as a "
+            "swappable layer on top — VMware, Red Hat, Nutanix, or Microsoft. "
+            "It is best understood against this repo's VxRail twin, which "
+            "models the opposite bargain. Hyperconverged infrastructure fused "
+            "compute and storage into one node and bought real simplicity with "
+            "that coupling: you grow by adding nodes, which means you grow "
+            "both "
+            "resources in a fixed ratio whether or not the ratio is what you "
+            "need, and you are committed to one software stack for the life of "
+            "the estate. Disaggregation un-buys the coupling and keeps most of "
+            "the simplicity, because a single control plane now does what the "
+            "fused node used to do. Dell cites research that 52% of IT leaders "
+            "are considering multiple hypervisors to reduce lock-in, which is "
+            "a "
+            "fairly direct summary of what the last few years taught the "
+            "market. Watch the trace: storage doubles without a single server "
+            "being added, and a second hypervisor appears without a workload "
+            "noticing or an operator gaining a second console."
+        ),
+        technical=(
+            "Disaggregated infrastructure: compute, storage, and networking "
+            "pooled and scaled independently under one control plane, with the "
+            "hypervisor as a swappable layer — VMware, Red Hat, Nutanix, or "
+            "Microsoft. Read against the VxRail twin, which models the "
+            "opposite "
+            "bargain. HCI fuses compute and storage into a node and buys "
+            "operational simplicity with the coupling: growth is by node, so "
+            "the compute-to-capacity ratio is fixed at the SKU, and the "
+            "software stack is a commitment for the life of the estate. "
+            "Disaggregation removes the coupling and retains the simplicity "
+            "because the control plane now supplies what the fused node did. "
+            "Dell cites 52% of IT leaders weighing multi-hypervisor to reduce "
+            "lock-in. The trace shows capacity doubling with compute flat and "
+            "a "
+            "second hypervisor arriving without workload or operational "
+            "impact."
+        ),
+        expert=(
+            "Disaggregated pools under a unified control plane; hypervisor as "
+            "a "
+            "swappable layer across VMware, Red Hat, Nutanix, Microsoft. The "
+            "inverse of the VxRail twin's bargain: HCI trades fixed "
+            "compute-to-capacity ratios and platform commitment for "
+            "operational "
+            "simplicity, and the control plane now supplies that simplicity "
+            "without the trade. Trace demonstrates independent scaling and "
+            "hypervisor addition at zero workload impact and constant "
+            "control-plane count."
+        ),
     ),
     regions=[
         CloudRegion(

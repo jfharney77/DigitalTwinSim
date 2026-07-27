@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchAnatomy, fetchCatalog, fetchUseCases } from "../api";
+import { useLevel } from "../level";
 import { DeviceView } from "./DeviceView";
 import type {
   CatalogCategory,
@@ -29,6 +30,7 @@ export function UseCasePage() {
     () => window.location.hash.split("/")[1] ?? null,
   );
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   useEffect(() => {
     Promise.all([fetchUseCases(), fetchCatalog(), fetchAnatomy()])
@@ -41,7 +43,7 @@ export function UseCasePage() {
         );
       })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   useEffect(() => {
     if (caseId) window.location.hash = `usecases/${caseId}`;

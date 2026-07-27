@@ -6,6 +6,8 @@ import { UseCasePage } from "./components/UseCasePage";
 import { PlatformView } from "./components/PlatformView";
 import { PipelineControls } from "./components/PipelineControls";
 import { PipelineCounters } from "./components/PipelineCounters";
+import { LevelControl } from "./components/LevelControl";
+import { useLevel } from "./level";
 import type { PlatformMap, PipelineState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
@@ -67,6 +69,7 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
@@ -90,7 +93,7 @@ export function App() {
         setTrace(po.trace);
       })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -180,6 +183,7 @@ export function App() {
             {state ? `${state.label} · t+${state.elapsedSeconds}s` : "—"}
           </span>
         )}
+        <LevelControl />
       </header>
 
       {page === "architecture" && <ArchitecturePage />}

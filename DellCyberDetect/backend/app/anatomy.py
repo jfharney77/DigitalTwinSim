@@ -20,6 +20,7 @@ vertical order is deliberate and tested: evidence above conclusion.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import DetectAnatomy, DetectRegion, Photo, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -74,25 +75,91 @@ ANATOMY = DetectAnatomy(
     year=2026,
     width=100,
     height=58,
-    overview=(
-        "Dell Cyber Detect runs machine-learning analysis directly against "
-        "snapshots on the array, inspecting data at the byte level rather "
-        "than reasoning about metadata, file activity, or known signatures. "
-        "Dell puts its accuracy at 99.99%, trained across thousands of "
-        "ransomware variants. The reason that distinction matters is "
-        "adversarial. Conventional detection watches for the things "
-        "ransomware historically did — extensions changing, entropy "
-        "spiking, mass renames, unusual I/O — and attackers have spent "
-        "years learning to do none of them: encrypt slowly, preserve "
-        "extensions, imitate the I/O profile of ordinary work. What cannot "
-        "be disguised is whether a file is still intelligible. This repo's "
-        "PowerProtect twin models the other half of the answer, the "
-        "isolated vault, and leaves one question open that isolation alone "
-        "cannot close: recover from *which* copy? A vault full of "
-        "faithfully replicated, immutably locked, thoroughly corrupted "
-        "snapshots has protected nothing. The output of this twin is "
-        "therefore not an alert but a date. The middle band is drawn as a "
-        "timeline because that is what the product actually navigates."
+    overview=L(
+        novice=(
+            "Ransomware is malicious software that scrambles your files and "
+            "demands payment to unscramble them. Most defences against it "
+            "watch "
+            "for suspicious behaviour — files being renamed in bulk, or "
+            "changing much faster than usual. The trouble is that attackers "
+            "learned what those alarms look for and simply stopped setting "
+            "them "
+            "off: they work slowly, keep the file names looking normal, and "
+            "behave like an ordinary busy day. This product does something "
+            "different. It opens the stored copies of your files and reads "
+            "what "
+            "is actually inside them, checking whether the contents still make "
+            "sense. You can disguise how a file was written; you cannot "
+            "disguise that it has become gibberish. Dell says this is right "
+            "99.99% of the time. And the answer it gives is not a warning that "
+            "something is wrong — by then you know. It is a date: this copy, "
+            "from this moment, is the last one you can safely go back to. The "
+            "row of boxes across the middle is a timeline of saved copies, "
+            "because finding the right point on that line is the entire job."
+        ),
+        plain=(
+            "Cyber Detect runs machine-learning analysis against saved "
+            "snapshots on the storage array, examining the actual contents of "
+            "files rather than reasoning about file names, activity patterns, "
+            "or known malware fingerprints. Dell puts its accuracy at 99.99%, "
+            "trained across thousands of ransomware variants. The distinction "
+            "matters because the opponent adapts: conventional detection "
+            "watches for what ransomware used to do — bulk renames, sudden "
+            "changes, unusual activity — and attackers now avoid all of it by "
+            "working slowly and imitating normal usage. What cannot be "
+            "disguised is whether a file still means anything. This repo's "
+            "PowerProtect twin covers the other half, an isolated vault, and "
+            "leaves one question open that isolation cannot answer: recover "
+            "from *which* copy? A vault full of faithfully preserved, "
+            "thoroughly corrupted snapshots has protected nothing. So the "
+            "output here is a date, not an alert, and the middle band is a "
+            "timeline because that is what is being searched."
+        ),
+        standard=(
+            "Dell Cyber Detect runs machine-learning analysis directly against "
+            "snapshots on the array, inspecting data at the byte level rather "
+            "than reasoning about metadata, file activity, or known "
+            "signatures. "
+            "Dell puts its accuracy at 99.99%, trained across thousands of "
+            "ransomware variants. The reason that distinction matters is "
+            "adversarial. Conventional detection watches for the things "
+            "ransomware historically did — extensions changing, entropy "
+            "spiking, mass renames, unusual I/O — and attackers have spent "
+            "years learning to do none of them: encrypt slowly, preserve "
+            "extensions, imitate the I/O profile of ordinary work. What cannot "
+            "be disguised is whether a file is still intelligible. This repo's "
+            "PowerProtect twin models the other half of the answer, the "
+            "isolated vault, and leaves one question open that isolation alone "
+            "cannot close: recover from *which* copy? A vault full of "
+            "faithfully replicated, immutably locked, thoroughly corrupted "
+            "snapshots has protected nothing. The output of this twin is "
+            "therefore not an alert but a date. The middle band is drawn as a "
+            "timeline because that is what the product actually navigates."
+        ),
+        technical=(
+            "Content-based ransomware detection running against array-local "
+            "snapshots: byte-level inspection rather than metadata, file "
+            "activity, or signature matching. Dell states 99.99% accuracy "
+            "across thousands of variants. The distinction is adversarial — "
+            "behavioural detection keys on what ransomware historically did, "
+            "and modern campaigns are shaped to avoid all of it: slow "
+            "encryption, preserved extensions, I/O within the normal envelope. "
+            "Corruption of the payload cannot be masked. The PowerProtect twin "
+            "covers isolation and leaves the recovery-point question open; an "
+            "immutable vault of corrupted snapshots protects nothing. Output "
+            "is "
+            "a recovery point, not an alert, and the middle band is a timeline "
+            "accordingly."
+        ),
+        expert=(
+            "Content-based detection on array-local snapshots — byte-level "
+            "integrity rather than metadata, behaviour, or signatures; 99.99% "
+            "claimed. Adversarially motivated: behavioural detection is evaded "
+            "by construction. Payload corruption is not maskable. Complements "
+            "the PowerProtect vault, which guarantees a copy survives but not "
+            "which copy is clean. Deliverable is a recovery point; the middle "
+            "band is a time axis."
+        ),
     ),
     regions=[
         DetectRegion(

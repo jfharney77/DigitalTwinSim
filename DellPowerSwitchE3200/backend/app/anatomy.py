@@ -17,6 +17,7 @@ are from the Dell PowerSwitch E3200-ON spec sheet (August 2024, v1.9).
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import ChassisAnatomy, ChassisRegion, Photo, SourceLink, Stat
 
 P_E3200_FRONT = Photo(
@@ -39,23 +40,67 @@ ANATOMY = ChassisAnatomy(
     year=2024,
     width=100,
     height=48,
-    overview=(
-        "The Dell PowerSwitch E3200-ON is a 1RU, high-performance open-"
-        "networking switch built for Layer 3 distribution at the network edge "
-        "— large enterprise offices, branches and campuses. A non-blocking, "
-        "store-and-forward architecture gives every port line-rate L2 "
-        "switching and L3 routing, up to 1560 Gbps of switching capacity and "
-        "2167 Mpps of forwarding on the top model. The series spans three "
-        "variants: the E3224F-ON (24× 1GbE SFP fiber, runs SmartFabric OS10), "
-        "the E3248P-ON (48× 1GbE copper with 30W PoE, runs Enterprise SONiC), "
-        "and the E3248PXE-ON (48× 1/2.5/5/10GbE Multigigabit copper with 90W "
-        "PoE, runs Enterprise SONiC). All three add four SFP+/SFP28 uplinks up "
-        "front and two 100GbE QSFP28 uplinks at the rear, dual hot-swap 80 "
-        "PLUS Platinum power supplies, and variable-speed fans. 'ON' means "
-        "Open Networking: the hardware boots ONIE and runs a disaggregated "
-        "network OS, so the switch silicon and the software are chosen "
-        "separately. This floorplan is the PoE-heavy 48-port layout, top-down "
-        "with the lid off: ports on the left, power and uplinks on the right."
+    overview=L(
+        novice=(
+            "A network switch is the box that lets all the computers in a "
+            "building talk to each other. Historically you bought the switch "
+            "and its software as one inseparable product from one company. This "
+            "one is different: the hardware and the operating system are "
+            "separate purchases, and the switch boots through a small standard "
+            "program whose only job is to go and fetch whichever network "
+            "operating system you chose. Watch where the power actually goes, "
+            "too. Most of the electricity this switch draws is not consumed by "
+            "the switch at all — it is sent back out of the front ports to "
+            "power the telephones, cameras, and wireless access points plugged "
+            "into it. That is why the power peak happens when those ports come "
+            "up, not when the switch is working hardest."
+        ),
+        plain=(
+            "A 1RU open-networking campus switch booting from mains power to "
+            "line-rate forwarding. The distinctive path is the '-ON' part: "
+            "hardware initialisation, then ONIE — a standard bootloader whose "
+            "job is to install and launch a network operating system chosen "
+            "independently of the switch vendor — then the switching silicon is "
+            "programmed and the ports come up. The network OS boot is the "
+            "longest stage. Note where the wattage goes: most of it leaves "
+            "through the front ports as Power over Ethernet for phones, "
+            "cameras, and access points, so the power peak is the PoE step "
+            "rather than peak forwarding."
+        ),
+        standard=(
+            "The Dell PowerSwitch E3200-ON is a 1RU, high-performance open-"
+            "networking switch built for Layer 3 distribution at the network edge "
+            "— large enterprise offices, branches and campuses. A non-blocking, "
+            "store-and-forward architecture gives every port line-rate L2 "
+            "switching and L3 routing, up to 1560 Gbps of switching capacity and "
+            "2167 Mpps of forwarding on the top model. The series spans three "
+            "variants: the E3224F-ON (24× 1GbE SFP fiber, runs SmartFabric OS10), "
+            "the E3248P-ON (48× 1GbE copper with 30W PoE, runs Enterprise SONiC), "
+            "and the E3248PXE-ON (48× 1/2.5/5/10GbE Multigigabit copper with 90W "
+            "PoE, runs Enterprise SONiC). All three add four SFP+/SFP28 uplinks up "
+            "front and two 100GbE QSFP28 uplinks at the rear, dual hot-swap 80 "
+            "PLUS Platinum power supplies, and variable-speed fans. 'ON' means "
+            "Open Networking: the hardware boots ONIE and runs a disaggregated "
+            "network OS, so the switch silicon and the software are chosen "
+            "separately. This floorplan is the PoE-heavy 48-port layout, top-down "
+            "with the lid off: ports on the left, power and uplinks on the right."
+        ),
+        technical=(
+            "1RU open-networking L3 campus switch: power-on → ONIE → "
+            "disaggregated NOS (SmartFabric OS10 or Enterprise SONiC) → ASIC "
+            "programming → ports and PoE → line rate. NOS boot holds the max "
+            "dwell. Data rate is zero through every boot phase and ramps only "
+            "at forwarding. PoE delivery is the power peak and the engine "
+            "asserts it — most of the draw is budget leaving the front panel, "
+            "not switch consumption. Airflow is I/O-to-PSU; the floorplan is "
+            "the 48-port PoE layout."
+        ),
+        expert=(
+            "1RU open-networking L3 switch: ONIE → disaggregated NOS → ASIC → "
+            "ports/PoE → line rate. NOS boot holds max dwell; data rate zero "
+            "until forwarding. PoE step is the asserted power peak — the budget "
+            "leaves the front panel rather than being consumed."
+        ),
     ),
     regions=[
         ChassisRegion(

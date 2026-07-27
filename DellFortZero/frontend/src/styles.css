@@ -741,3 +741,59 @@ body.dell-body {
   background: var(--dell-blue);
   color: #fff;
 }
+
+/* ---- Reading-level control -------------------------------------------
+   Shared verbatim across every twin in this repo. Sits in the header
+   beside the nav. Per the dell-clean-design skin: no eyebrow text, no
+   divider rules, no highlighted text — the active position is carried by
+   weight and the Dell blue, not by a background block. */
+.levelctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.levelctl-caption {
+  color: var(--dell-muted);
+  font-size: 12px;
+  letter-spacing: normal;
+}
+.levelctl-scale {
+  display: flex;
+  gap: 2px;
+}
+.app.dell .levelctl-scale button {
+  background: none;
+  border: 1px solid var(--dell-border);
+  border-radius: 3px;
+  color: var(--dell-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1;
+  padding: 4px 8px;
+  text-transform: none;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.app.dell .levelctl-scale button:hover {
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+}
+.app.dell .levelctl-scale button.active {
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+  font-weight: 700;
+}
+.app.dell .levelctl-scale button:focus-visible {
+  outline: 2px solid var(--dell-blue);
+  outline-offset: 1px;
+}
+.levelctl-name {
+  color: var(--dell-blue);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: normal;
+  min-width: 62px;
+}

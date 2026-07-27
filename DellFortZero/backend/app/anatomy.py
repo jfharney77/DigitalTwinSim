@@ -20,6 +20,7 @@ on-premises private cloud in April 2025.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import Pillar, Photo, SourceLink, Stat, ZeroTrustMap
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -60,26 +61,101 @@ ANATOMY = ZeroTrustMap(
     year=2026,
     width=MAP_W,
     height=MAP_H,
-    overview=(
-        "Project Fort Zero is Dell's turnkey zero-trust private cloud, and "
-        "in April 2025 it completed the US Department of Defense's "
-        "assessment for Target Level validation — tested against "
-        "sophisticated attack, as a sovereign, on-premises deployment. What "
-        "makes it worth a twin is not the product's feature list but the "
-        "assumption it inverts. Security has historically been built on a "
-        "perimeter: verify at the boundary, then treat what is behind it as "
-        "trusted. That model fails the same way every time — an attacker "
-        "who gets inside once inherits everything the inside was allowed to "
-        "do, and moves sideways at leisure. Zero trust removes the concept "
-        "rather than hardening it. There is no inside. Every request is "
-        "ruled on individually, using identity, device posture, network "
-        "context, workload, and data sensitivity together, and the ruling "
-        "expires. Being on the corporate network is evidence a policy "
-        "engine weighs; it is not a way in. This map is therefore drawn "
-        "with no enclosing shape at all: seven co-equal pillars around a "
-        "decision point. Note what happens in the trace when an attacker "
-        "compromises a host *inside* the network — nothing does, which is "
-        "the entire architecture in one step."
+    overview=L(
+        novice=(
+            "Most computer security has worked like a walled building. You "
+            "check people at the door, and once they are inside you assume "
+            "they "
+            "belong there. The flaw is obvious once stated: anyone who does "
+            "get "
+            "in — a stolen password is usually enough — can then wander "
+            "freely, "
+            "and attackers routinely spend weeks doing exactly that before "
+            "anyone notices. Zero trust throws the walls away rather than "
+            "making them thicker. There is no inside. Every single request to "
+            "reach something is judged on its own, using who is asking, what "
+            "machine they are on, where they are connecting from, and how "
+            "sensitive the thing is — and the permission it grants expires "
+            "shortly afterwards. Being on the company network counts as a "
+            "small "
+            "piece of evidence, not as a key. This diagram deliberately has no "
+            "box drawn around anything, because there is nothing to be inside "
+            "of: seven equally important considerations arranged around the "
+            "component that makes the decisions. Watch what happens in the "
+            "story when an attacker does get onto the internal network. "
+            "Nothing "
+            "happens, and that is the whole idea."
+        ),
+        plain=(
+            "Project Fort Zero is Dell's ready-built zero-trust private cloud, "
+            "and in April 2025 it passed the US Department of Defense's Target "
+            "Level assessment as a sovereign, on-premises deployment, tested "
+            "against serious attack. What makes it worth a twin is the "
+            "assumption it reverses. Security was traditionally built on a "
+            "perimeter: check at the boundary, then treat everything behind it "
+            "as trustworthy. That fails the same way every time — whoever gets "
+            "in inherits everything the inside was allowed to do and moves "
+            "sideways at leisure. Zero trust deletes the idea instead of "
+            "reinforcing it. Every request is decided individually on "
+            "identity, "
+            "the device's condition, network context, the application, and the "
+            "sensitivity of the data — and the decision expires. Being on the "
+            "corporate network is evidence, not entry. So the map is drawn "
+            "with "
+            "no enclosing shape at all: seven equal pillars around a decision "
+            "point. Note what the trace shows when an attacker compromises a "
+            "machine inside the network: nothing."
+        ),
+        standard=(
+            "Project Fort Zero is Dell's turnkey zero-trust private cloud, and "
+            "in April 2025 it completed the US Department of Defense's "
+            "assessment for Target Level validation — tested against "
+            "sophisticated attack, as a sovereign, on-premises deployment. "
+            "What "
+            "makes it worth a twin is not the product's feature list but the "
+            "assumption it inverts. Security has historically been built on a "
+            "perimeter: verify at the boundary, then treat what is behind it "
+            "as "
+            "trusted. That model fails the same way every time — an attacker "
+            "who gets inside once inherits everything the inside was allowed "
+            "to "
+            "do, and moves sideways at leisure. Zero trust removes the concept "
+            "rather than hardening it. There is no inside. Every request is "
+            "ruled on individually, using identity, device posture, network "
+            "context, workload, and data sensitivity together, and the ruling "
+            "expires. Being on the corporate network is evidence a policy "
+            "engine weighs; it is not a way in. This map is therefore drawn "
+            "with no enclosing shape at all: seven co-equal pillars around a "
+            "decision point. Note what happens in the trace when an attacker "
+            "compromises a host *inside* the network — nothing does, which is "
+            "the entire architecture in one step."
+        ),
+        technical=(
+            "Dell's turnkey zero-trust private cloud, DoD Target Level "
+            "validated in April 2025 as a sovereign on-premises deployment and "
+            "tested under adversarial assessment. The point is the inverted "
+            "assumption, not the feature list. Perimeter security verifies at "
+            "the boundary and trusts what is behind it, which fails "
+            "identically "
+            "every time: initial access confers everything the interior was "
+            "permitted, and lateral movement follows. Zero trust removes the "
+            "concept. Authorization is per-request across identity, device "
+            "posture, network context, workload, and data sensitivity, with an "
+            "expiring decision. Network position is an input, not an entry "
+            "path. Hence a map with no enclosing shape: seven co-equal pillars "
+            "around a policy decision point. The breach step is the "
+            "architecture in one frame."
+        ),
+        expert=(
+            "Turnkey zero-trust private cloud; DoD Target Level, April 2025, "
+            "sovereign on-prem, adversarially assessed. Inverts the perimeter "
+            "assumption: no implicit trust from position, per-request "
+            "authorization across the seven DoD pillars, expiring decisions, "
+            "least privilege at single-resource granularity. Network position "
+            "is an input to policy, not an entry path — so lateral movement "
+            "has "
+            "nothing to inherit. Map carries no enclosing shape by design."
+        ),
     ),
     regions=[
         _pillar(

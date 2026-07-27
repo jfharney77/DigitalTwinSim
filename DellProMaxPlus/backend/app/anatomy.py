@@ -21,6 +21,7 @@ large.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import DeviceAnatomy, DeviceRegion, Photo, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -60,21 +61,86 @@ ANATOMY = DeviceAnatomy(
     year=2026,
     width=100,
     height=54,
-    overview=(
-        "The Dell Pro Max 16 Plus is the first mobile workstation to ship an "
-        "enterprise-grade discrete Neural Processing Unit: a Qualcomm AI 100 "
-        "PC Inference Card carrying two AI-100 NPUs, 32 AI cores, roughly "
-        "450 TOPS of 8-bit compute, and — the number that actually decides "
-        "what you can run — 64 GB of dedicated on-card AI memory. Dell "
-        "demonstrated a 109-billion-parameter Llama 4 model generating text "
-        "on this machine with no internet connection and no server behind "
-        "it. This map is drawn around the one boundary that explains how: "
-        "the PCIe strip in the middle. The model file starts on the left, "
-        "on the NVMe SSD. It crosses the strip exactly once, during load. "
-        "Every token generated after that is computed entirely on the right "
-        "— which is why the bus goes quiet, why the host CPU has almost "
-        "nothing to do, and why pulling the network cable changes nothing "
-        "at all. Layout is a stylized mental model, not a service diagram."
+    overview=L(
+        novice=(
+            "This is a laptop that can run a very large "
+            "artificial-intelligence "
+            "model entirely by itself, with no internet connection. Normally "
+            "that kind of model is far too big for a personal computer, so you "
+            "send your question to a company's servers and they send an answer "
+            "back. This machine does not need to. It has an extra chip inside "
+            "— "
+            "an accelerator built only for running AI models — and, crucially, "
+            "that chip has 64 gigabytes of memory reserved for itself. Memory "
+            "is what decides whether a model fits at all, the way a "
+            "bookshelf's "
+            "size decides how many books you can keep to hand. The diagram is "
+            "arranged around one narrow strip in the middle, which is the "
+            "connection between the laptop's ordinary parts on the left and "
+            "the "
+            "accelerator on the right. The model is copied across that strip "
+            "once, when you load it. After that it simply lives on the right "
+            "side and never moves again. That is why you can unplug the "
+            "network "
+            "entirely and nothing changes."
+        ),
+        plain=(
+            "The Dell Pro Max 16 Plus is the first mobile workstation with a "
+            "separate, dedicated AI accelerator rather than a small one built "
+            "into the main processor. The card carries two AI-100 chips and 64 "
+            "GB of memory that belongs to the card alone — and that memory "
+            "figure, not the raw speed, is what decides which models will run. "
+            "Dell demonstrated a 109-billion-parameter model generating text "
+            "on "
+            "this machine with no internet connection. The map is drawn around "
+            "the connection in the middle: the model file starts on the left, "
+            "on the drive, crosses that connection once while loading, and is "
+            "then read in place on the right for every word it produces. That "
+            "is why the connection goes quiet, the main processor has little "
+            "to "
+            "do, and unplugging the network changes nothing."
+        ),
+        standard=(
+            "The Dell Pro Max 16 Plus is the first mobile workstation to ship "
+            "an "
+            "enterprise-grade discrete Neural Processing Unit: a Qualcomm AI "
+            "100 "
+            "PC Inference Card carrying two AI-100 NPUs, 32 AI cores, roughly "
+            "450 TOPS of 8-bit compute, and — the number that actually decides "
+            "what you can run — 64 GB of dedicated on-card AI memory. Dell "
+            "demonstrated a 109-billion-parameter Llama 4 model generating "
+            "text "
+            "on this machine with no internet connection and no server behind "
+            "it. This map is drawn around the one boundary that explains how: "
+            "the PCIe strip in the middle. The model file starts on the left, "
+            "on the NVMe SSD. It crosses the strip exactly once, during load. "
+            "Every token generated after that is computed entirely on the "
+            "right "
+            "— which is why the bus goes quiet, why the host CPU has almost "
+            "nothing to do, and why pulling the network cable changes nothing "
+            "at all. Layout is a stylized mental model, not a service diagram."
+        ),
+        technical=(
+            "The first mobile workstation with an enterprise-grade discrete "
+            "NPU: a Qualcomm AI 100 PC Inference Card with two AI-100 NPUs, 32 "
+            "AI cores, ~450 TOPS INT8, and 64 GB of dedicated on-card memory — "
+            "the capacity figure being what actually gates model selection. "
+            "Dell demonstrated a 109B-parameter Llama 4 running fully offline. "
+            "The map is organized around the PCIe boundary: the container is "
+            "staged on NVMe, crosses once at load, and every subsequent token "
+            "is computed card-side. Hence an idle bus, a host CPU doing "
+            "tokenization and little else, and complete indifference to "
+            "network "
+            "state. Stylized layout, not a service diagram."
+        ),
+        expert=(
+            "Discrete NPU in a mobile workstation: 2 × AI-100, 32 cores, ~450 "
+            "TOPS INT8, 64 GB dedicated. Capacity gates model selection, not "
+            "throughput. Weights cross PCIe once at load and are resident "
+            "thereafter; decode is card-local and bandwidth-bound against "
+            "on-card memory. Bus idle post-load, host idle during generation, "
+            "network irrelevant."
+        ),
     ),
     regions=[
         DeviceRegion(

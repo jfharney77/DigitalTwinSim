@@ -16,6 +16,7 @@ whose heat the loop exists to remove.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import Photo, RackAnatomy, RackRegion, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -62,22 +63,70 @@ ANATOMY = RackAnatomy(
     year=2024,
     width=100,
     height=84,
-    overview=(
-        "The Integrated Rack 7000 is Dell's Open Compute ORv3-based rack "
-        "for extreme-density AI and HPC — 33 to 264 kW per rack today, with "
-        "a roadmap toward 480 kW — and PowerCool is the liquid-cooling "
-        "family that makes such density survivable. This twin draws the "
-        "rack as what it thermally is: a closed coolant loop. An in-rack "
-        "coolant distribution unit (CDU) pumps treated coolant up a supply "
-        "manifold, through cold plates on every processor in every IT bay, "
-        "and back down a return manifold to a heat exchanger that hands the "
-        "heat to facility water; an enclosed rear-door heat exchanger "
-        "(eRDHx) catches the ten-or-so percent that still leaves by air, "
-        "making the rack room-neutral. Heat is conserved: every watt the "
-        "payload draws through the power shelf leaves through one of those "
-        "two paths, and the trace on the first page shows the books "
-        "balancing at every step. The layout is a stylized mental model, "
-        "not a rack-accurate drawing."
+    overview=L(
+        novice=(
+            "Nothing in this twin boots. The subject is not a computer but the "
+            "plumbing that keeps computers cool — and at the power levels "
+            "modern AI hardware reaches, moving air over it is no longer "
+            "enough, so the heat is carried away by liquid instead. The diagram "
+            "is the rack drawn as a loop: cool liquid goes up one side, passes "
+            "over metal plates pressed against the hot chips, comes back warmer "
+            "down the other side, and gives its heat to the building's water "
+            "supply. The single most important idea here is that heat does not "
+            "disappear. Every watt of electricity that goes into the equipment "
+            "comes back out as heat that has to go somewhere, and the whole "
+            "design is an argument about where. Watch the two heat figures: "
+            "added together, they always equal exactly what the equipment is "
+            "drawing."
+        ),
+        plain=(
+            "The Integrated Rack 7000 with PowerCool liquid cooling, at 33 to "
+            "264 kW per rack. The subject is a thermal system rather than a "
+            "computer, so nothing boots: the map is the rack drawn as a cooling "
+            "loop — coolant distribution unit, supply and return manifolds, "
+            "cold plates over four generic IT bays, an enclosed rear-door heat "
+            "exchanger, facility water, and leak and flow sensors — and the "
+            "trace is commissioning and thermal ramp. The governing idea is "
+            "conservation: the liquid and air heat figures always sum exactly "
+            "to the IT load, because heat does not vanish. Flow is established "
+            "before any heat arrives."
+        ),
+        standard=(
+            "The Integrated Rack 7000 is Dell's Open Compute ORv3-based rack "
+            "for extreme-density AI and HPC — 33 to 264 kW per rack today, with "
+            "a roadmap toward 480 kW — and PowerCool is the liquid-cooling "
+            "family that makes such density survivable. This twin draws the "
+            "rack as what it thermally is: a closed coolant loop. An in-rack "
+            "coolant distribution unit (CDU) pumps treated coolant up a supply "
+            "manifold, through cold plates on every processor in every IT bay, "
+            "and back down a return manifold to a heat exchanger that hands the "
+            "heat to facility water; an enclosed rear-door heat exchanger "
+            "(eRDHx) catches the ten-or-so percent that still leaves by air, "
+            "making the rack room-neutral. Heat is conserved: every watt the "
+            "payload draws through the power shelf leaves through one of those "
+            "two paths, and the trace on the first page shows the books "
+            "balancing at every step. The layout is a stylized mental model, "
+            "not a rack-accurate drawing."
+        ),
+        technical=(
+            "IR7000 with PowerCool, 33–264 kW/rack, roadmap to 480 kW. A "
+            "thermal system, not a compute one — the anatomy is the loop: RCDU, "
+            "supply/return manifolds, cold plates over four generic bays, "
+            "eRDHx, facility water, instrumentation. Phase order fill → pump → "
+            "verify → airdoor → load → balance → steady. Asserted with no "
+            "tolerance: `liquidWatts + airWatts == itLoadWatts` on every step; "
+            "liquid share ≥85% under load; flow strictly precedes the first "
+            "watt and is monotonic; per-branch leak and flow verification holds "
+            "max dwell. Bays are drawn generic because to the loop any payload "
+            "is heat."
+        ),
+        expert=(
+            "Thermal loop, 33–264 kW/rack. `liquidWatts + airWatts == "
+            "itLoadWatts` asserted exactly, no tolerance — the twin's reason "
+            "for existing. Liquid share ≥85% under load; flow strictly precedes "
+            "heat and is monotonic; leak/flow verification holds max dwell. "
+            "Payload drawn generic: to the loop it is heat."
+        ),
     ),
     regions=[
         RackRegion(

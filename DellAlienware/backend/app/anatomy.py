@@ -14,6 +14,7 @@ guardrails: favor a correct mental model over exact mm placement.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import Anatomy, Photo, Region, SourceLink, Stat
 
 P_M18_INTERIOR = Photo(
@@ -246,16 +247,57 @@ M18_R2_ANATOMY = Anatomy(
     year=2024,
     width=100,
     height=62,
-    overview=(
-        "The m18 R2 opened from below. The layout is the power path made "
-        "visible: 19.5 V enters at the DC-in jack (rear right), the "
-        "charger and power-path stage beside it routes energy between "
-        "adapter, battery, and system, and the EC on the motherboard "
-        "referees the whole exchange. The CPU and GPU dies sit under a "
-        "shared vapor-chamber-and-heat-pipe assembly flanked by two fans "
-        "— together they can demand more than the 280 W adapter supplies, "
-        "which is exactly why the 97 Wh battery across the front third is "
-        "wired to supplement the wall, not just replace it."
+    overview=L(
+        novice=(
+            "This is the underside of a large gaming laptop with the base "
+            "removed, and it is arranged here to show one thing: where the "
+            "electricity goes. Power arrives at a socket on the rear right "
+            "from the mains adapter. Next to it sits the circuitry that "
+            "decides, moment to moment, how to split that power between "
+            "running the machine and charging the battery — and a small "
+            "always-on controller referees the whole arrangement. The "
+            "processor and the graphics chip sit under a shared cooling "
+            "assembly with two fans. The important detail is that those two "
+            "chips together can want more power than the adapter can supply, "
+            "which is why the battery is wired to help out rather than merely "
+            "to be charged."
+        ),
+        plain=(
+            "The m18 R2 opened from below, laid out as the power path made "
+            "visible. 19.5 V enters at the DC-in jack on the rear right; the "
+            "charger and power-path stage beside it routes energy between "
+            "adapter, battery, and system; and the embedded controller on the "
+            "motherboard referees the exchange. The CPU and GPU sit under a "
+            "shared vapor-chamber and heat-pipe assembly between two fans. "
+            "Together they can demand more than the 280 W adapter provides, "
+            "which is exactly why the 97 Wh battery across the front third is "
+            "wired to supplement the wall rather than only to replace it."
+        ),
+        standard=(
+            "The m18 R2 opened from below. The layout is the power path made "
+            "visible: 19.5 V enters at the DC-in jack (rear right), the "
+            "charger and power-path stage beside it routes energy between "
+            "adapter, battery, and system, and the EC on the motherboard "
+            "referees the whole exchange. The CPU and GPU dies sit under a "
+            "shared vapor-chamber-and-heat-pipe assembly flanked by two fans "
+            "— together they can demand more than the 280 W adapter supplies, "
+            "which is exactly why the 97 Wh battery across the front third is "
+            "wired to supplement the wall, not just replace it."
+        ),
+        technical=(
+            "m18 R2 bottom-up, arranged as the power path: 19.5 V at the "
+            "DC-in jack (rear right), charger and power-path stage adjacent "
+            "routing between adapter, battery, and system, EC arbitrating. "
+            "CPU and GPU share a vapor-chamber and heat-pipe assembly between "
+            "two fans; combined demand exceeds the 280 W adapter, so the 97 "
+            "Wh pack is wired to supplement rather than only to charge."
+        ),
+        expert=(
+            "m18 R2: 19.5 V DC-in, charger/power-path stage, EC arbitration. "
+            "Shared CPU/GPU vapor chamber, dual fan. Combined demand > 280 W "
+            "adapter, so the 97 Wh pack supplements — hybrid power, not just "
+            "charge."
+        ),
     ),
     regions=_regions_18_inch(),
     stats=[
@@ -300,15 +342,53 @@ AREA51_18_ANATOMY = Anatomy(
     year=2025,
     width=100,
     height=62,
-    overview=(
-        "The 18 Area-51 is the m18's successor from the 2025 rebrand that "
-        "retired the m-/x-series names. The interior follows the same "
-        "18-inch recipe — dual fans, a shared CPU/GPU thermal assembly "
-        "(now branded 'Cryo-chamber'), battery across the front, 19.5 V "
-        "barrel input with the 1-Wire PSID handshake — so this floorplan "
-        "reuses the m18 layout as its mental model. What changed is the "
-        "silicon on top of it: Core Ultra 200HX and RTX 50-series GPUs up "
-        "to a 175 W TGP RTX 5090."
+    overview=L(
+        novice=(
+            "This is the newer version of the same machine, after Dell "
+            "retired the old model names in 2025. Inside, very little has "
+            "moved: the same two fans, the same shared cooling block over the "
+            "processor and graphics chip, the same battery across the front, "
+            "and the same power socket with the same handshake that lets the "
+            "laptop check which adapter is plugged in. What changed is the "
+            "chips themselves, which are newer and hungrier — the top "
+            "graphics option alone can draw 175 W. That is the usual pattern "
+            "in laptop design: the layout is durable and the silicon on top "
+            "of it turns over every year or two."
+        ),
+        plain=(
+            "The 18 Area-51 is the m18's successor from the 2025 rebrand that "
+            "retired the m- and x-series names. The interior follows the same "
+            "18-inch recipe — dual fans, a shared CPU and GPU thermal "
+            "assembly now branded 'Cryo-chamber', battery across the front, "
+            "19.5 V barrel input with the 1-Wire handshake that identifies "
+            "the adapter — so this floorplan reuses the m18 layout as its "
+            "mental model. What changed is the silicon on top of it: Core "
+            "Ultra 200HX processors and RTX 50-series graphics up to a 175 W "
+            "RTX 5090."
+        ),
+        standard=(
+            "The 18 Area-51 is the m18's successor from the 2025 rebrand that "
+            "retired the m-/x-series names. The interior follows the same "
+            "18-inch recipe — dual fans, a shared CPU/GPU thermal assembly "
+            "(now branded 'Cryo-chamber'), battery across the front, 19.5 V "
+            "barrel input with the 1-Wire PSID handshake — so this floorplan "
+            "reuses the m18 layout as its mental model. What changed is the "
+            "silicon on top of it: Core Ultra 200HX and RTX 50-series GPUs up "
+            "to a 175 W TGP RTX 5090."
+        ),
+        technical=(
+            "Successor to the m18 after the 2025 rebrand. Same 18-inch recipe "
+            "— dual fan, shared CPU/GPU thermal assembly ('Cryo-chamber'), "
+            "front-mounted pack, 19.5 V barrel input with 1-Wire PSID "
+            "handshake — so the floorplan is reused as the mental model. The "
+            "change is silicon: Core Ultra 200HX and RTX 50-series to a 175 W "
+            "TGP RTX 5090."
+        ),
+        expert=(
+            "18 Area-51: m18 chassis recipe retained (dual fan, shared "
+            "CPU/GPU vapor chamber, 19.5 V + 1-Wire PSID). Delta is silicon — "
+            "Core Ultra 200HX, RTX 50-series to 175 W TGP."
+        ),
     ),
     regions=_regions_18_inch(),
     stats=[

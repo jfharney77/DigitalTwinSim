@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchAnatomies } from "../api";
+import { useLevel } from "../level";
 import { AnatomyView, KIND_STYLE } from "./AnatomyView";
 import type { Anatomy, Photo, RegionKind } from "../types";
 
@@ -47,6 +48,7 @@ export function AnatomyPage() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   const onHover = useCallback((id: string | null, x: number, y: number) => {
     setHover(id ? { id, x, y } : null);
@@ -61,7 +63,7 @@ export function AnatomyPage() {
         );
       })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   useEffect(() => {
     window.location.hash = anatomyId ? `anatomy/${anatomyId}` : "anatomy";

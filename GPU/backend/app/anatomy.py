@@ -16,6 +16,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from .leveling import L
 from .models import CamelModel
 
 RegionKind = Literal[
@@ -194,11 +195,46 @@ GH100 = DieAnatomy(
     year=2022,
     width=100,
     height=64,
-    overview=(
-        "NVIDIA's Hopper flagship. 8 GPCs (144 SMs on the full die; 132 "
-        "enabled on H100 SXM) surround a split 60 MB L2, with three HBM3 "
-        "stacks on each edge feeding a 6144-bit bus (~3.35 TB/s) and 18 "
-        "NVLink 4 ports along the bottom for GPU-to-GPU traffic."
+    overview=L(
+        novice=(
+            "A GPU is a chip built to do enormous numbers of simple "
+            "calculations at the same time, which is what both graphics and "
+            "modern AI need. This is a floorplan of one — a map of what sits "
+            "where on the silicon. The repeated blocks filling most of the "
+            "area are the arithmetic units, grouped into clusters. The band "
+            "through the middle is cache: a small pool of very fast memory "
+            "that holds data the chip is about to reuse. Around the edges are "
+            "the connections to the chip's main memory, stacked vertically "
+            "right next to it so the distance the data travels stays short. "
+            "Along the bottom are the links used to join this chip to others, "
+            "because the largest AI jobs need many of them working together."
+        ),
+        plain=(
+            "NVIDIA's Hopper data-centre flagship. Most of the area is "
+            "arithmetic, organized into eight clusters of streaming "
+            "multiprocessors — 144 on the full die, 132 enabled on the H100 "
+            "SXM part, because some are disabled to improve manufacturing "
+            "yield. A split 60 MB cache runs down the middle, three stacks of "
+            "high-bandwidth memory sit on each edge feeding a very wide bus "
+            "at about 3.35 TB/s, and 18 NVLink ports along the bottom carry "
+            "traffic to other GPUs."
+        ),
+        standard=(
+            "NVIDIA's Hopper flagship. 8 GPCs (144 SMs on the full die; 132 "
+            "enabled on H100 SXM) surround a split 60 MB L2, with three HBM3 "
+            "stacks on each edge feeding a 6144-bit bus (~3.35 TB/s) and 18 "
+            "NVLink 4 ports along the bottom for GPU-to-GPU traffic."
+        ),
+        technical=(
+            "Hopper flagship: 8 GPCs, 144 SMs on the full die and 132 enabled "
+            "on H100 SXM, around a split 60 MB L2. Three HBM3 stacks per edge "
+            "on a 6144-bit bus at ~3.35 TB/s; 18 NVLink 4 ports along the "
+            "bottom edge for scale-up traffic."
+        ),
+        expert=(
+            "GH100: 8 GPCs / 144 SMs (132 on H100 SXM), split 60 MB L2, 6× "
+            "HBM3 on a 6144-bit bus at ~3.35 TB/s, 18× NVLink 4."
+        ),
     ),
     regions=[
         DieRegion(id="io", kind="io", label="PCIe Gen5 · GigaThread Engine",
@@ -275,11 +311,43 @@ GA100 = DieAnatomy(
     year=2020,
     width=100,
     height=64,
-    overview=(
-        "Hopper's predecessor and the template for NVIDIA's data-center "
-        "floorplan: 8 GPCs (128 SMs full, 108 enabled on A100) around a "
-        "split 40 MB L2, six HBM2e stacks on the flanks, and 12 NVLink 3 "
-        "ports on the bottom edge."
+    overview=L(
+        novice=(
+            "This is the chip that came before the Hopper design on the other "
+            "tab, and the family resemblance is the point — the same basic "
+            "arrangement of arithmetic clusters around a central cache, with "
+            "memory stacked along the flanks. Comparing the two shows how "
+            "this kind of chip evolves: the layout stays recognisable while "
+            "the counts and the speeds climb. Note again that not every unit "
+            "on the chip is switched on. Manufacturing silicon this large "
+            "always produces some defects, so parts are deliberately disabled "
+            "and the chip is sold with a lower count — which is why 128 are "
+            "built and 108 are used."
+        ),
+        plain=(
+            "Hopper's predecessor, and the template for NVIDIA's data-centre "
+            "floorplan: eight clusters of streaming multiprocessors — 128 on "
+            "the full die, 108 enabled on the A100 — around a split 40 MB "
+            "cache, six stacks of high-bandwidth memory on the flanks, and 12 "
+            "NVLink ports on the bottom edge. The gap between built and "
+            "enabled is deliberate: disabling defective units is how large "
+            "chips are made economically."
+        ),
+        standard=(
+            "Hopper's predecessor and the template for NVIDIA's data-center "
+            "floorplan: 8 GPCs (128 SMs full, 108 enabled on A100) around a "
+            "split 40 MB L2, six HBM2e stacks on the flanks, and 12 NVLink 3 "
+            "ports on the bottom edge."
+        ),
+        technical=(
+            "The template for the data-centre floorplan: 8 GPCs, 128 SMs full "
+            "and 108 enabled on A100, split 40 MB L2, six HBM2e stacks on the "
+            "flanks, 12 NVLink 3 ports on the bottom edge."
+        ),
+        expert=(
+            "GA100: 8 GPCs / 128 SMs (108 on A100), split 40 MB L2, 6× HBM2e, "
+            "12× NVLink 3. The floorplan GH100 inherits."
+        ),
     ),
     regions=[
         DieRegion(id="io", kind="io", label="PCIe Gen4 · GigaThread Engine",
@@ -355,12 +423,46 @@ AD102 = DieAnatomy(
     year=2022,
     width=100,
     height=76,
-    overview=(
-        "The consumer flagship layout: no HBM, no NVLink. Twelve GDDR6X "
-        "controllers wrap the left, right, and bottom edges; a huge central "
-        "96 MB L2 (16× Ampere's) compensates for the narrower 384-bit bus; "
-        "12 GPCs fill the space above and below it, with media engines and "
-        "display up top."
+    overview=L(
+        novice=(
+            "This chip is for gaming rather than for data centres, and the "
+            "differences in the floorplan tell you what that changes. There "
+            "is no stacked memory hugging the die and no links for joining "
+            "chips together, because a gaming card sits alone in one "
+            "computer. Instead, twelve ordinary memory controllers wrap "
+            "around three edges, connecting to memory chips soldered nearby "
+            "on the board. That memory is narrower than the data-centre kind, "
+            "so the designers compensated by making the on-chip cache "
+            "enormous — sixteen times larger than the previous generation. "
+            "Keeping data on the chip is the cheapest way to avoid needing to "
+            "fetch it."
+        ),
+        plain=(
+            "The consumer flagship layout, and it differs from the "
+            "data-centre dies in instructive ways: no high-bandwidth memory "
+            "and no NVLink, because a gaming card works alone. Twelve GDDR6X "
+            "controllers wrap the left, right, and bottom edges; a very large "
+            "central 96 MB cache — sixteen times Ampere's — compensates for "
+            "the narrower 384-bit bus; twelve clusters fill the space above "
+            "and below, with media and display engines up top."
+        ),
+        standard=(
+            "The consumer flagship layout: no HBM, no NVLink. Twelve GDDR6X "
+            "controllers wrap the left, right, and bottom edges; a huge central "
+            "96 MB L2 (16× Ampere's) compensates for the narrower 384-bit bus; "
+            "12 GPCs fill the space above and below it, with media engines and "
+            "display up top."
+        ),
+        technical=(
+            "Consumer flagship: no HBM, no NVLink. Twelve GDDR6X controllers "
+            "on the left, right, and bottom edges; a 96 MB central L2 (16× "
+            "Ampere) offsetting the 384-bit bus; 12 GPCs above and below; "
+            "media and display up top."
+        ),
+        expert=(
+            "AD102: GDDR6X ×12 on three edges, 384-bit, 96 MB L2 (16× Ampere) "
+            "offsetting bus width, 12 GPCs, no HBM or NVLink."
+        ),
     ),
     regions=[
         DieRegion(id="io", kind="io", label="PCIe Gen4 · Display",
@@ -443,12 +545,50 @@ NAVI31 = DieAnatomy(
     year=2022,
     width=100,
     height=54,
-    overview=(
-        "The first chiplet gaming GPU. A central Graphics Compute Die holds "
-        "six shader engines (96 CUs); memory controllers and Infinity Cache "
-        "are broken out into six MCD chiplets flanking it, wired over "
-        "Infinity Fanout links at ~5.3 TB/s. Compare with the monolithic "
-        "NVIDIA dies, where L2 and PHYs share the die with the SMs."
+    overview=L(
+        novice=(
+            "Every other chip here is one single piece of silicon. This one "
+            "is not: it is built from several smaller pieces mounted together "
+            "on one package. The reasoning is economic. Large chips are "
+            "disproportionately expensive to manufacture, because a single "
+            "defect ruins the whole thing and bigger chips catch more "
+            "defects. Splitting the design lets the parts that benefit from "
+            "the newest, priciest manufacturing stay small, while the memory "
+            "and cache blocks — which gain little from it — are made "
+            "separately on cheaper processes. The cost is that the pieces "
+            "must talk to each other across the package, which needs "
+            "dedicated high-speed links."
+        ),
+        plain=(
+            "The first chiplet gaming GPU, and the structural odd one out "
+            "here. A central Graphics Compute Die holds six shader engines "
+            "(96 compute units); the memory controllers and Infinity Cache "
+            "are broken out into six separate cache chiplets flanking it, "
+            "connected over Infinity Fanout links at about 5.3 TB/s. The "
+            "motivation is manufacturing cost: large dies yield badly, so "
+            "only the parts that need the newest process stay on the "
+            "expensive one. Compare the monolithic NVIDIA dies, where cache "
+            "and memory interfaces share silicon with the compute."
+        ),
+        standard=(
+            "The first chiplet gaming GPU. A central Graphics Compute Die holds "
+            "six shader engines (96 CUs); memory controllers and Infinity Cache "
+            "are broken out into six MCD chiplets flanking it, wired over "
+            "Infinity Fanout links at ~5.3 TB/s. Compare with the monolithic "
+            "NVIDIA dies, where L2 and PHYs share the die with the SMs."
+        ),
+        technical=(
+            "First chiplet gaming GPU: a central GCD with six shader engines "
+            "(96 CUs), memory controllers and Infinity Cache disaggregated "
+            "into six MCDs over Infinity Fanout at ~5.3 TB/s. Contrast the "
+            "monolithic NVIDIA dies, where L2 and PHYs share silicon with the "
+            "SMs — the trade is die cost against die-to-die interconnect."
+        ),
+        expert=(
+            "Navi 31: GCD (6 SE / 96 CU) + 6 MCDs over Infinity Fanout at "
+            "~5.3 TB/s. Disaggregates cache and PHYs off the leading-edge "
+            "node; trades yield economics against die-to-die cost."
+        ),
     ),
     regions=[
         *[DieRegion(id=f"mcd-l{i}", kind="cache", label="MCD · 16 MB IC",
@@ -525,13 +665,51 @@ GB200 = DieAnatomy(
     year=2024,
     width=130,
     height=64,
-    overview=(
-        "NVIDIA's first multi-die GPU: two reticle-limited compute dies "
-        "fused into one logical GPU by NV-HBI, a 10 TB/s die-to-die link "
-        "down the center — software sees a single 148-SM device. Four HBM3e "
-        "stacks flank each die (192 GB, ~8 TB/s), with 126 MB of L2 and "
-        "NVLink 5 at 1.8 TB/s. The GB200 superchip pairs two of these GPUs "
-        "with a Grace CPU."
+    overview=L(
+        novice=(
+            "There is a hard physical limit on how large a single chip can be "
+            "— the machines that print the patterns onto silicon can only "
+            "expose a rectangle of a certain size, and you cannot exceed it. "
+            "This design reaches that limit and then goes past it by building "
+            "two chips at the maximum size and fusing them with an extremely "
+            "fast connection down the middle. The connection is quick enough "
+            "that software cannot tell the difference: it sees one processor, "
+            "not two. That trick — making several physical things behave as "
+            "one logical thing — appears repeatedly in this repo, most "
+            "dramatically in the rack twin where 72 of these are fused into a "
+            "single unit."
+        ),
+        plain=(
+            "NVIDIA's first multi-die GPU: two reticle-limited compute dies — "
+            "each as large as the manufacturing process physically allows — "
+            "fused into one logical GPU by a 10 TB/s die-to-die link down the "
+            "centre, so software sees a single 148-SM device. Four stacks of "
+            "HBM3e flank each die (192 GB, about 8 TB/s), with 126 MB of "
+            "cache and NVLink 5 at 1.8 TB/s. The GB200 superchip pairs two of "
+            "these with a Grace CPU, and this repo's XE9712 twin shows 72 of "
+            "them fused into one domain."
+        ),
+        standard=(
+            "NVIDIA's first multi-die GPU: two reticle-limited compute dies "
+            "fused into one logical GPU by NV-HBI, a 10 TB/s die-to-die link "
+            "down the center — software sees a single 148-SM device. Four HBM3e "
+            "stacks flank each die (192 GB, ~8 TB/s), with 126 MB of L2 and "
+            "NVLink 5 at 1.8 TB/s. The GB200 superchip pairs two of these GPUs "
+            "with a Grace CPU."
+        ),
+        technical=(
+            "First multi-die GPU: two reticle-limited compute dies fused by "
+            "NV-HBI, a 10 TB/s die-to-die link — presented to software as a "
+            "single 148-SM device. Four HBM3e stacks per die (192 GB, ~8 "
+            "TB/s), 126 MB L2, NVLink 5 at 1.8 TB/s. The superchip pairs two "
+            "with a Grace CPU; the XE9712 twin fuses 72 into one NVLink "
+            "domain."
+        ),
+        expert=(
+            "GB200: 2× reticle-limited dies over NV-HBI at 10 TB/s, single "
+            "logical 148-SM device. 192 GB HBM3e at ~8 TB/s, 126 MB L2, "
+            "NVLink 5 at 1.8 TB/s. Scales to a 72-GPU domain (see XE9712)."
+        ),
     ),
     regions=[
         DieRegion(id="io", kind="io", label="Host Interface · GigaThread Engine",

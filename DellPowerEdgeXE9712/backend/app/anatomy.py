@@ -18,6 +18,7 @@ the fabric fusing them, not from any tray being special.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import Photo, RackAnatomy, RackRegion, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -95,20 +96,62 @@ ANATOMY = RackAnatomy(
     year=2025,
     width=100,
     height=86,
-    overview=(
-        "The PowerEdge XE9712 is Dell's rack-scale AI system built around "
-        "NVIDIA GB200 NVL72. It is sold and shipped as one integrated, "
-        "liquid-cooled rack: 18 compute trays carrying 36 NVIDIA Grace CPUs "
-        "and 72 Blackwell GPUs, joined through 9 NVLink switch trays and a "
-        "rear copper cable cartridge into a single NVLink domain — software "
-        "sees something close to one enormous GPU with 13.5 TB of pooled "
-        "HBM3e, which is what makes real-time trillion-parameter inference "
-        "and large-model training practical. Trays draw DC from a shared "
-        "busbar fed by power shelves, and nearly all of the rack's roughly "
-        "120 kW leaves through the liquid loop: an in-rack CDU pumps coolant "
-        "through manifolds to cold plates on every chip. This elevation "
-        "shows four of the 18 compute trays and two of the 9 switch trays; "
-        "the layout is a stylized mental model, not a rack-accurate drawing."
+    overview=L(
+        novice=(
+            "This is not a computer that goes in a rack — it is a rack that is "
+            "one computer. Inside are 72 graphics processors, the chips that do "
+            "the mathematics behind modern artificial intelligence, and they "
+            "are wired together so tightly that software sees them as a single "
+            "enormous processor rather than 72 separate ones. Two things are "
+            "worth watching. First, the coolant has to be flowing before the "
+            "chips are allowed to power up: these processors produce so much "
+            "heat that air cooling is not an option, so liquid comes first and "
+            "silicon second. Second, the moment the 72 processors are joined "
+            "into one is all-or-nothing — the counter goes straight from zero "
+            "to 72. There is no halfway state where some of them are joined."
+        ),
+        plain=(
+            "The XE9712 is a rack-scale AI system built around NVIDIA GB200 "
+            "NVL72: 18 compute trays holding 36 Grace CPUs and 72 Blackwell "
+            "GPUs, nine NVLink switch trays, power shelves feeding a DC busbar, "
+            "and an in-rack cooling distribution unit. The subject is an "
+            "integrated liquid-cooled rack rather than a box in a rack. Two "
+            "moments define the trace: coolant flows before any silicon powers "
+            "on, which inverts every air-cooled machine in this repo, and the "
+            "NVLink fabric fuses all 72 GPUs into one domain atomically — the "
+            "counter is zero, then 72, with nothing in between."
+        ),
+        standard=(
+            "The PowerEdge XE9712 is Dell's rack-scale AI system built around "
+            "NVIDIA GB200 NVL72. It is sold and shipped as one integrated, "
+            "liquid-cooled rack: 18 compute trays carrying 36 NVIDIA Grace CPUs "
+            "and 72 Blackwell GPUs, joined through 9 NVLink switch trays and a "
+            "rear copper cable cartridge into a single NVLink domain — software "
+            "sees something close to one enormous GPU with 13.5 TB of pooled "
+            "HBM3e, which is what makes real-time trillion-parameter inference "
+            "and large-model training practical. Trays draw DC from a shared "
+            "busbar fed by power shelves, and nearly all of the rack's roughly "
+            "120 kW leaves through the liquid loop: an in-rack CDU pumps coolant "
+            "through manifolds to cold plates on every chip. This elevation "
+            "shows four of the 18 compute trays and two of the 9 switch trays; "
+            "the layout is a stylized mental model, not a rack-accurate drawing."
+        ),
+        technical=(
+            "Rack-scale AI: GB200 NVL72 — 18 compute trays (36 Grace, 72 "
+            "Blackwell), 9 NVLink switch trays, power shelves on a DC busbar, "
+            "in-rack CDU. Phase order power → coolant → trayboot → gpuinit → "
+            "fabric → fused → ready. Asserted: liquid precedes silicon (coolant "
+            "before trayboot); power monotonic with its largest jump at "
+            "gpuinit; NVLink training holds max dwell; trays boot in lockstep "
+            "on `-t1..-t4`; and the fuse is atomic — `gpusInDomain` is 0 before "
+            "`fused` and exactly 72 after, never partial."
+        ),
+        expert=(
+            "GB200 NVL72 rack: 36 Grace / 72 Blackwell across 18 trays, 9 "
+            "NVSwitch trays, busbar, in-rack CDU. Coolant-before-silicon "
+            "asserted. Largest power step at gpuinit; NVLink training holds max "
+            "dwell. Fuse is atomic: `gpusInDomain` ∈ {0, 72}, never partial."
+        ),
     ),
     regions=[
         RackRegion(

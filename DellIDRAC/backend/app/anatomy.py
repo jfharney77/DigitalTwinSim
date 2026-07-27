@@ -16,6 +16,7 @@ always-on standby domain so it runs whenever the server is plugged in.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import Block, Photo, SourceLink, Stat, SubsystemMap
 
 P_IDRAC = Photo(
@@ -45,21 +46,63 @@ ANATOMY = SubsystemMap(
     year=2017,
     width=100,
     height=52,
-    overview=(
-        "The integrated Dell Remote Access Controller (iDRAC) is the "
-        "always-on service processor embedded on every PowerEdge server — a "
-        "small, self-contained computer with its own SoC, memory, flash, "
-        "operating system, and network port, soldered to the system board "
-        "but powered from a separate standby rail. It boots seconds after AC "
-        "is applied, long before the host, and lets an administrator manage "
-        "the server 'out-of-band' — power it on or off, watch every sensor, "
-        "redirect its console and virtual media, and update firmware — over "
-        "the network, with the host CPUs switched off and no agent installed "
-        "in the operating system. iDRAC9 is the 9th generation, shipping on "
-        "PowerEdge 14th- through 16th-generation servers, paired with the "
-        "embedded Lifecycle Controller for deployment and updates. This "
-        "diagram is a logical block view: host-facing management buses on the "
-        "left, the BMC core in the middle, the outside world on the right."
+    overview=L(
+        novice=(
+            "Every Dell server contains a second, much smaller computer whose "
+            "only job is to look after the first one. It is called a baseboard "
+            "management controller, and the striking thing about it is that it "
+            "runs even when the server itself is switched off — as long as the "
+            "machine is plugged in, this little controller is awake. That is "
+            "what lets an administrator on the other side of the world power a "
+            "server on, watch it boot, install an operating system, or read its "
+            "temperature, without anyone visiting the building. This twin "
+            "follows that controller starting up, and the whole time you are "
+            "watching, the actual server stays off. The power figures stay in "
+            "single or low double digits for exactly that reason."
+        ),
+        plain=(
+            "iDRAC9 is the always-on management controller embedded in every "
+            "PowerEdge server. It runs on standby power, so it is working "
+            "whenever the machine is plugged in — even with the host powered "
+            "down — which is what makes remote power control, console access, "
+            "firmware updates, and telemetry possible without anyone in the "
+            "room. This trace is the controller's own bring-up, and the host "
+            "never powers on during it, so the draw stays in single or low "
+            "double-digit watts. Lifecycle Controller initialisation is the "
+            "longest stage. Capability here is unlocked by licence tier rather "
+            "than by adding hardware."
+        ),
+        standard=(
+            "The integrated Dell Remote Access Controller (iDRAC) is the "
+            "always-on service processor embedded on every PowerEdge server — a "
+            "small, self-contained computer with its own SoC, memory, flash, "
+            "operating system, and network port, soldered to the system board "
+            "but powered from a separate standby rail. It boots seconds after AC "
+            "is applied, long before the host, and lets an administrator manage "
+            "the server 'out-of-band' — power it on or off, watch every sensor, "
+            "redirect its console and virtual media, and update firmware — over "
+            "the network, with the host CPUs switched off and no agent installed "
+            "in the operating system. iDRAC9 is the 9th generation, shipping on "
+            "PowerEdge 14th- through 16th-generation servers, paired with the "
+            "embedded Lifecycle Controller for deployment and updates. This "
+            "diagram is a logical block view: host-facing management buses on the "
+            "left, the BMC core in the middle, the outside world on the right."
+        ),
+        technical=(
+            "iDRAC9 bring-up on standby power, host held off throughout — the "
+            "engine asserts BMC-domain draw stays ≤20 W across the trace. Phase "
+            "order is standby → reset → bootloader → kernel → services → ready, "
+            "with Lifecycle Controller init as the single longest stage. The "
+            "anatomy is a functional block diagram rather than a floorplan: "
+            "host-facing sideband buses left, SoC centre, external interfaces "
+            "right. Capability scales by licence tier on identical silicon."
+        ),
+        expert=(
+            "BMC bring-up on standby rails, host off throughout (≤20 W "
+            "asserted). standby → reset → bootldr → kernel → services → ready; "
+            "LC init holds max dwell. Functional block diagram, not a "
+            "floorplan. Licence tier gates capability on fixed silicon."
+        ),
     ),
     regions=[
         # --- Host side (left): the sideband buses into the server ---

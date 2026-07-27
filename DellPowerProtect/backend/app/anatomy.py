@@ -16,6 +16,7 @@ power is not different hardware but different *reachability*.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import Photo, SiteAnatomy, SiteRegion, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -67,23 +68,69 @@ ANATOMY = SiteAnatomy(
     year=2025,
     width=100,
     height=56,
-    overview=(
-        "PowerProtect Data Domain is Dell's purpose-built backup appliance "
-        "— the deduplication machine behind most large backup estates — "
-        "and PowerProtect Cyber Recovery is the architecture that turns a "
-        "second one into a ransomware vault. The map reads left to right, "
-        "the way the data flows: the estate backs up to the production "
-        "appliance, where deduplication collapses hundreds of logical "
-        "terabytes into a few physical ones; on the vault's own schedule, "
-        "an operational air gap opens briefly and replication pulls the "
-        "copy across; then the gap closes, Retention Lock makes the copy "
-        "immutable, and CyberSense's machine-learning analytics decide "
-        "which restore points are provably clean. The attack the "
-        "architecture assumes is the modern one — ransomware that hunts "
-        "backups first with stolen admin credentials — and its answer is "
-        "a copy that has no network path, no writable surface, and a "
-        "rehearsed way back. The 2025 all-flash appliance is what makes "
-        "the way back fast."
+    overview=L(
+        novice=(
+            "This follows what happens to a backup copy of a company's data, "
+            "including the part where criminals try to destroy it. Backups are "
+            "first shrunk dramatically by noticing that most of the data is "
+            "identical to data already stored — only the genuinely new pieces "
+            "are kept, which is why the stored figure ends up ten or more times "
+            "smaller than the original. Then a copy is sent to a vault: a "
+            "separate, isolated environment with no route in from the ordinary "
+            "network. The connection between them is opened only briefly, and "
+            "only from the vault side, which is the crucial detail. Watch the "
+            "attack step: the production systems are ruined, and the vault is "
+            "not touched, because at that moment there is simply no path to it."
+        ),
+        plain=(
+            "PowerProtect Data Domain with Cyber Recovery and CyberSense, drawn "
+            "as a data path across two sites: production estate on the left, an "
+            "air gap in the middle, the vault on the right. The trace is the "
+            "lifecycle of the data itself — backed up, deduplicated, replicated "
+            "through a briefly-open gap, locked immutable, scanned for "
+            "integrity, attacked, and recovered. Two things are asserted: the "
+            "gap is open during replication and recovery and at no other time, "
+            "both opened from the vault side; and at the moment of attack no "
+            "vault component and no gap is active while production's blast "
+            "radius is."
+        ),
+        standard=(
+            "PowerProtect Data Domain is Dell's purpose-built backup appliance "
+            "— the deduplication machine behind most large backup estates — "
+            "and PowerProtect Cyber Recovery is the architecture that turns a "
+            "second one into a ransomware vault. The map reads left to right, "
+            "the way the data flows: the estate backs up to the production "
+            "appliance, where deduplication collapses hundreds of logical "
+            "terabytes into a few physical ones; on the vault's own schedule, "
+            "an operational air gap opens briefly and replication pulls the "
+            "copy across; then the gap closes, Retention Lock makes the copy "
+            "immutable, and CyberSense's machine-learning analytics decide "
+            "which restore points are provably clean. The attack the "
+            "architecture assumes is the modern one — ransomware that hunts "
+            "backups first with stolen admin credentials — and its answer is "
+            "a copy that has no network path, no writable surface, and a "
+            "rehearsed way back. The 2025 all-flash appliance is what makes "
+            "the way back fast."
+        ),
+        technical=(
+            "Data Domain plus Cyber Recovery and CyberSense as a two-site data "
+            "path: production, operational air gap, vault. Phase order backup → "
+            "dedupe → replicate → airgap → scan → attack → recover → restored. "
+            "Asserted: `storedTb <= logicalTb` always with ratio ≥10:1 from "
+            "dedupe onward; the gap region is active in exactly {replicate, "
+            "recover}; at the attack step no vault region and no gap is active; "
+            "the vaulted copy is sealed strictly before the attack; CyberSense "
+            "scan holds max dwell. Both appliances are drawn identical in size "
+            "— the vault's power is reachability, not hardware."
+        ),
+        expert=(
+            "Two-site protection path with an operational air gap. Gap active "
+            "in exactly {replicate, recover}, both vault-initiated. At attack: "
+            "no vault region, no gap, production blast radius only; vaulted "
+            "copy sealed strictly prior. Dedupe ratio ≥10:1 from dedupe onward. "
+            "CyberSense scan holds max dwell. Appliances drawn identical — "
+            "reachability is the differentiator, not hardware."
+        ),
     ),
     regions=[
         SiteRegion(

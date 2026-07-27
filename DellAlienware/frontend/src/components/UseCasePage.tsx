@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchAnatomies, fetchUseCases } from "../api";
+import { useLevel } from "../level";
 import { AnatomyView } from "./AnatomyView";
 import type { Anatomy, UseCase } from "../types";
 
@@ -11,6 +12,7 @@ export function UseCasePage() {
     () => window.location.hash.split("/")[1] ?? null,
   );
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   useEffect(() => {
     Promise.all([fetchUseCases(), fetchAnatomies()])
@@ -22,7 +24,7 @@ export function UseCasePage() {
         );
       })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   useEffect(() => {
     if (caseId) window.location.hash = `usecases/${caseId}`;

@@ -6,6 +6,7 @@ import { PowerPathView } from "./components/PowerPathView";
 import { PowerControls } from "./components/PowerControls";
 import { PowerCounters } from "./components/PowerCounters";
 import { Legend } from "./components/Legend";
+import { LevelControl } from "./components/LevelControl";
 import type {
   LaptopProfile,
   PowerPhase,
@@ -219,6 +220,7 @@ export function App() {
               : "—"}
           </span>
         )}
+        <LevelControl />
       </header>
 
       {page === "anatomy" && <AnatomyPage />}

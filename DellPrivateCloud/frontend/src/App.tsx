@@ -6,6 +6,8 @@ import { UseCasePage } from "./components/UseCasePage";
 import { StackView } from "./components/StackView";
 import { CloudControls } from "./components/CloudControls";
 import { CloudCounters } from "./components/CloudCounters";
+import { LevelControl } from "./components/LevelControl";
+import { useLevel } from "./level";
 import type { CloudAnatomy, CloudState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
@@ -44,6 +46,7 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
@@ -58,8 +61,11 @@ export function App() {
     setRunning(false);
   }, []);
 
-  // The trace is pure data from the backend engine; fetch it once and play
-  // it back here — the clock lives in the frontend, never in the engine.
+  // The trace is pure data from the backend engine; fetch it and play it
+  // back here — the clock lives in the frontend, never in the engine.
+  // Re-fetches when the reading level changes: the step count and every
+  // number are identical across levels, so the cursor is deliberately left
+  // alone and the reader stays on the step they were reading.
   useEffect(() => {
     Promise.all([fetchAnatomy(), fetchCloud()])
       .then(([an, cl]) => {
@@ -67,7 +73,7 @@ export function App() {
         setTrace(cl.trace);
       })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -157,6 +163,7 @@ export function App() {
             {state ? `${state.label} · t+${state.elapsedMinutes}m` : "—"}
           </span>
         )}
+        <LevelControl />
       </header>
 
       {page === "anatomy" && <AnatomyPage />}

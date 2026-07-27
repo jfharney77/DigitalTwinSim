@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchProfiles, simulate } from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
+import { LivePage } from "./components/LivePage";
 import { DieView } from "./components/DieView";
 import { MatrixPanels } from "./components/MatrixPanels";
 import { Controls } from "./components/Controls";
 import { Counters } from "./components/Counters";
 import { Legend } from "./components/Legend";
 import { OpPipeline } from "./components/OpPipeline";
+import { LevelControl } from "./components/LevelControl";
 import type {
   DType,
   GpuProfile,
@@ -46,17 +48,23 @@ function phaseLabel(s: SimState | null, n: number, mlp: MlpInfo | null): string 
   }
 }
 
-type Page = "sim" | "anatomy";
+type Page = "sim" | "anatomy" | "live";
 
 export function App() {
   // Deep-linkable pages: /#anatomy (or /#anatomy/<dieId>) opens the
-  // die-anatomy view directly.
+  // die-anatomy view directly; /#live opens the live CUDA view (spec_08).
   const [page, setPage] = useState<Page>(() =>
-    window.location.hash.startsWith("#anatomy") ? "anatomy" : "sim",
+    window.location.hash.startsWith("#anatomy")
+      ? "anatomy"
+      : window.location.hash.startsWith("#live")
+        ? "live"
+        : "sim",
   );
   useEffect(() => {
     if (page === "anatomy" && !window.location.hash.startsWith("#anatomy")) {
       window.location.hash = "anatomy";
+    } else if (page === "live" && !window.location.hash.startsWith("#live")) {
+      window.location.hash = "live";
     } else if (page === "sim") {
       window.location.hash = "";
     }
@@ -258,6 +266,12 @@ export function App() {
           >
             Die anatomy
           </button>
+          <button
+            className={page === "live" ? "active" : ""}
+            onClick={() => setPage("live")}
+          >
+            Live CUDA
+          </button>
         </nav>
         {page === "sim" && (
           <>
@@ -271,9 +285,19 @@ export function App() {
             </span>
           </>
         )}
+        <LevelControl />
       </header>
 
       {page === "anatomy" && <AnatomyPage />}
+
+      {page === "live" &&
+        (() => {
+          // The live view targets the machine's real die (spec_07); fall back
+          // to the first profile so the page still renders before load.
+          const liveProfile =
+            profiles.find((p) => p.name === "RTX-4060-Laptop") ?? profiles[0];
+          return liveProfile ? <LivePage profile={liveProfile} /> : null;
+        })()}
 
       {page === "sim" && (
         <>

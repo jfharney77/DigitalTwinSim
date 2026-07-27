@@ -24,6 +24,7 @@ being a nicety and becomes the reason to buy it.
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import ClusterAnatomy, ClusterRegion, Photo, SourceLink, Stat
 
 # The only shipped visual is a self-contained schematic drawn for this
@@ -70,24 +71,86 @@ ANATOMY = ClusterAnatomy(
     year=2026,
     width=100,
     height=55,
-    overview=(
-        "PowerFlex turns a set of ordinary servers into shared block "
-        "storage: each contributes its local NVMe, the software chops every "
-        "volume into chunks and scatters them — mirrored — across all of "
-        "them, and clients read and write straight to the servers holding "
-        "the chunks they want. Scale runs from three nodes to more than two "
-        "thousand, and past 240 million operations per second. What is "
-        "worth noticing in this diagram is what is not in it. There is no "
-        "controller row. PowerStore and PowerMax, both twinned elsewhere in "
-        "this repo, are built around controllers that every byte passes "
-        "through, and most of their engineering goes into making that "
-        "centrality safe. Here the centre was removed instead. The payoff "
-        "arrives when a server dies: rather than one surviving controller "
-        "grinding through a rebuild for hours, every remaining node "
-        "reconstructs a sliver simultaneously, reading from every other "
-        "node. Recovery therefore gets *faster* as the cluster grows, which "
-        "is the opposite of how storage systems usually age. Six nodes are "
-        "drawn; the layout is a stylized mental model."
+    overview=L(
+        novice=(
+            "This turns a group of ordinary servers into one big shared pool "
+            "of "
+            "storage. Each server contributes the drives it already has, and "
+            "software spreads every piece of data across all of them, keeping "
+            "more than one copy. When a program needs a file, it goes straight "
+            "to whichever servers hold the pieces. Compare that with the usual "
+            "arrangement, where all the data flows through one or two special "
+            "machines called controllers. Those controllers become both the "
+            "speed limit and the thing you most fear losing, so enormous "
+            "effort "
+            "goes into making them reliable. Here there are no controllers at "
+            "all — the middle was removed rather than reinforced. The payoff "
+            "shows up when a server fails. Instead of one machine slowly "
+            "rebuilding everything that was lost, every surviving server "
+            "rebuilds a small share at the same time. So the more servers you "
+            "have, the faster it recovers, which is the opposite of what "
+            "people "
+            "expect. Six servers are drawn here; real systems have far more."
+        ),
+        plain=(
+            "PowerFlex turns ordinary servers into shared block storage. Each "
+            "contributes its local drives; the software chops every volume "
+            "into "
+            "chunks, scatters them across all the servers with redundant "
+            "copies, and lets clients read and write straight to whichever "
+            "servers hold what they want. It scales from three servers to over "
+            "two thousand. What matters in this diagram is what is missing: "
+            "there is no controller row. PowerStore and PowerMax, twinned "
+            "elsewhere here, put every byte through a controller and spend "
+            "their engineering making that centre safe. This design removed "
+            "the "
+            "centre instead. When a server dies, every surviving one rebuilds "
+            "a "
+            "share simultaneously rather than one machine grinding through it "
+            "alone — so recovery gets faster as the system grows."
+        ),
+        standard=(
+            "PowerFlex turns a set of ordinary servers into shared block "
+            "storage: each contributes its local NVMe, the software chops "
+            "every "
+            "volume into chunks and scatters them — mirrored — across all of "
+            "them, and clients read and write straight to the servers holding "
+            "the chunks they want. Scale runs from three nodes to more than "
+            "two "
+            "thousand, and past 240 million operations per second. What is "
+            "worth noticing in this diagram is what is not in it. There is no "
+            "controller row. PowerStore and PowerMax, both twinned elsewhere "
+            "in "
+            "this repo, are built around controllers that every byte passes "
+            "through, and most of their engineering goes into making that "
+            "centrality safe. Here the centre was removed instead. The payoff "
+            "arrives when a server dies: rather than one surviving controller "
+            "grinding through a rebuild for hours, every remaining node "
+            "reconstructs a sliver simultaneously, reading from every other "
+            "node. Recovery therefore gets *faster* as the cluster grows, "
+            "which "
+            "is the opposite of how storage systems usually age. Six nodes are "
+            "drawn; the layout is a stylized mental model."
+        ),
+        technical=(
+            "Server-based block storage: local NVMe contributed to a shared "
+            "pool, volumes chunked and scattered with redundancy across all "
+            "nodes, clients addressing the holders directly. Three to 2,000+ "
+            "nodes, past 240M IOPS. The notable feature of the diagram is an "
+            "absence — no controller tier. PowerStore and PowerMax, twinned "
+            "here, engineer around controller centrality; this removes it. The "
+            "consequence surfaces at node loss: rebuild is many-to-many, every "
+            "survivor reconstructing a fraction concurrently, so recovery time "
+            "falls as node count rises. Six nodes drawn, stylized."
+        ),
+        expert=(
+            "Distributed block pool over commodity nodes; chunked, "
+            "mesh-mirrored, client-addressed. No controller tier — the "
+            "centrality "
+            "PowerStore and PowerMax engineer around is removed rather than "
+            "hardened. Rebuild is many-to-many, so MTTR is inversely "
+            "proportional to node count. 3–2,000+ nodes, 240M IOPS."
+        ),
     ),
     regions=[
         ClusterRegion(

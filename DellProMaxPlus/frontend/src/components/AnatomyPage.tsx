@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchAnatomy } from "../api";
+import { useLevel } from "../level";
 import { DeviceView } from "./DeviceView";
 import type { Photo, RegionKind, DeviceAnatomy } from "../types";
 
@@ -52,6 +53,7 @@ export function AnatomyPage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   const onHover = useCallback((id: string | null, x: number, y: number) => {
     setHover(id ? { id, x, y } : null);
@@ -61,7 +63,7 @@ export function AnatomyPage() {
     fetchAnatomy()
       .then(setAnatomy)
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   useEffect(() => {
     window.location.hash = regionId ? `anatomy/${regionId}` : "anatomy";
