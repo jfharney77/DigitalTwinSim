@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchProfiles, simulate } from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LivePage } from "./components/LivePage";
+import { downloadSvgFrom } from "./svgExport";
 import { DieView } from "./components/DieView";
 import { MatrixPanels } from "./components/MatrixPanels";
 import { Controls } from "./components/Controls";
@@ -72,16 +74,42 @@ export function App() {
     // the dark gradient never bleeds through below the app grid.
     document.body.classList.add("dell-body");
   }, [page]);
+  // Page titles follow the tab (spec_21 #10).
+  useEffect(() => {
+    const titles: Record<Page, string> = {
+      sim: "GPU Die — Simulator",
+      anatomy: "GPU Die — Anatomy",
+      live: "GPU Die — Live CUDA",
+    };
+    document.title = titles[page];
+  }, [page]);
+
+  // Sim settings survive a reload (spec_21 #2).
+  const saved = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("twin.simSettings") ?? "{}");
+    } catch {
+      return {};
+    }
+  })();
   const [profiles, setProfiles] = useState<GpuProfile[]>([]);
   const [profile, setProfile] = useState<GpuProfile | null>(null);
-  const [n, setN] = useState(4);
-  const [kind, setKind] = useState<WorkloadKind>("matmul");
-  const [steps, setSteps] = useState(1);
+  const [n, setN] = useState<number>(saved.n ?? 4);
+  const [kind, setKind] = useState<WorkloadKind>(saved.kind ?? "matmul");
+  const [steps, setSteps] = useState<number>(saved.steps ?? 1);
   const [mlp, setMlp] = useState<MlpInfo | null>(null);
-  const [tileSize, setTileSize] = useState(2);
-  const [dtype, setDtype] = useState<DType>("fp32");
-  const [doubleBuffer, setDoubleBuffer] = useState(false);
-  const [speed, setSpeed] = useState(8);
+  const [tileSize, setTileSize] = useState<number>(saved.tileSize ?? 2);
+  const [dtype, setDtype] = useState<DType>(saved.dtype ?? "fp32");
+  const [doubleBuffer, setDoubleBuffer] = useState<boolean>(
+    saved.doubleBuffer ?? false,
+  );
+  const [speed, setSpeed] = useState<number>(saved.speed ?? 8);
+  useEffect(() => {
+    localStorage.setItem(
+      "twin.simSettings",
+      JSON.stringify({ n, kind, steps, tileSize, dtype, doubleBuffer, speed }),
+    );
+  }, [n, kind, steps, tileSize, dtype, doubleBuffer, speed]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [trace, setTrace] = useState<SimState[]>([]);
   const [operands, setOperands] = useState<{ a: number[][]; b: number[][] }>({
@@ -249,6 +277,25 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speed]);
 
+  // Sim keyboard shortcuts (spec_21 #1): space run/pause, → step, R reset.
+  useEffect(() => {
+    if (page !== "sim") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)
+        return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        running ? stop() : run();
+      } else if (e.code === "ArrowRight") {
+        step();
+      } else if (e.code === "KeyR") {
+        reset();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [page, running, run, stop, step, reset]);
+
   return (
     <div className="app dell">
       <header>
@@ -288,7 +335,11 @@ export function App() {
         <LevelControl />
       </header>
 
-      {page === "anatomy" && <AnatomyPage />}
+      {page === "anatomy" && (
+        <ErrorBoundary label="anatomy">
+          <AnatomyPage />
+        </ErrorBoundary>
+      )}
 
       {page === "live" &&
         (() => {
@@ -296,7 +347,11 @@ export function App() {
           // to the first profile so the page still renders before load.
           const liveProfile =
             profiles.find((p) => p.name === "RTX-4060-Laptop") ?? profiles[0];
-          return liveProfile ? <LivePage profile={liveProfile} /> : null;
+          return liveProfile ? (
+            <ErrorBoundary label="Live CUDA">
+              <LivePage profile={liveProfile} />
+            </ErrorBoundary>
+          ) : null;
         })()}
 
       {page === "sim" && (
@@ -309,9 +364,22 @@ export function App() {
         </p>
       </div>
       <div className="stage">
-        <div className="an-card">
+        <div className="an-card" id="sim-stage">
         {error && <div className="mini an-error">{error}</div>}
         {profile && <DieView profile={profile} state={state} />}
+        {profile && (
+          <button
+            className="mini"
+            onClick={() =>
+              downloadSvgFrom(
+                document.getElementById("sim-stage"),
+                `${profile.name}-die`,
+              )
+            }
+          >
+            Download die SVG
+          </button>
+        )}
         {mlp && (
           <OpPipeline mlp={mlp} currentOp={state?.opIndex ?? null} done={done} />
         )}

@@ -29,6 +29,22 @@ const PAGE_HASH: Record<Page, string> = {
   usecases: "usecases",
 };
 
+// Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
+// cursor, or null when the hash matches neither pattern (or names an unknown
+// phase) — in which case playback starts at 0 as before.
+function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
+  const h = window.location.hash;
+  const step = h.match(/#step=(\d+)$/);
+  if (step) return Math.min(Number(step[1]), states.length - 1);
+  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
+  if (phase) {
+    const i = states.findIndex((s) => s.phase === phase[1]);
+    return i >= 0 ? i : null;
+  }
+  return null;
+}
+
 // Keep in sync with KIND_STYLE in ChassisView.tsx.
 const KIND_SWATCH: Record<RegionKind, string> = {
   storage: "#12233a",
@@ -75,6 +91,9 @@ export function App() {
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
+  // Apply a #step=/#phase= deep link only on the first successful trace load,
+  // so a reading-level refetch does not yank the cursor back.
+  const hashApplied = useRef(false);
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
@@ -93,6 +112,11 @@ export function App() {
       .then(([an, po]) => {
         setAnatomy(an);
         setTrace(po.trace);
+        if (!hashApplied.current) {
+          hashApplied.current = true;
+          const start = initialStepFromHash(po.trace);
+          if (start !== null) setCursor(start);
+        }
       })
       .catch((e) => setError(String(e)));
   }, [level]);

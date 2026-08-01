@@ -29,6 +29,20 @@ const PAGE_HASH: Record<Page, string> = {
   usecases: "usecases",
 };
 
+// #step=N / #phase=<name> deep-links start playback at a chosen step; both
+// fall through pageFromHash() and land on the default page.
+function initialStepFromHash(states: { phase: string }[]): number | null {
+  const h = window.location.hash;
+  const step = h.match(/^#step=(\d+)$/);
+  if (step) return Math.min(Number(step[1]), states.length - 1);
+  const phase = h.match(/^#phase=([a-z0-9_-]+)$/i);
+  if (phase) {
+    const i = states.findIndex((s) => s.phase === phase[1]);
+    return i >= 0 ? i : null;
+  }
+  return null;
+}
+
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
@@ -50,6 +64,9 @@ export function App() {
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
+  // Apply the #step=/#phase= deep-link only on the first load — a
+  // reading-level refetch must not yank the cursor back.
+  const hashApplied = useRef(false);
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
@@ -68,6 +85,11 @@ export function App() {
       .then(([an, det]) => {
         setAnatomy(an);
         setTrace(det.trace);
+        if (!hashApplied.current) {
+          hashApplied.current = true;
+          const s = initialStepFromHash(det.trace);
+          if (s !== null) setCursor(s);
+        }
       })
       .catch((e) => setError(String(e)));
   }, [level]);

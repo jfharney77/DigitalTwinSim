@@ -29,6 +29,22 @@ const PAGE_HASH: Record<Page, string> = {
   usecases: "usecases",
 };
 
+// Deep-link a trace step: /#step=N (clamped) or /#phase=<name> (first step of
+// that phase). Unknown hashes and phases are a no-op; page hashes above are
+// unaffected since neither pattern matches a page prefix.
+function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
+  const h = window.location.hash;
+  const step = h.match(/^#step=(\d+)$/);
+  if (step) return Math.min(Number(step[1]), states.length - 1);
+  const phase = h.match(/^#phase=([a-z0-9_-]+)$/i);
+  if (phase) {
+    const i = states.findIndex((s) => s.phase === phase[1]);
+    return i >= 0 ? i : null;
+  }
+  return null;
+}
+
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
@@ -50,6 +66,7 @@ export function App() {
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
+  const hashApplied = useRef(false); // deep-link applies once, not on level refetch
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
@@ -68,6 +85,11 @@ export function App() {
       .then(([an, acc]) => {
         setAnatomy(an);
         setTrace(acc.trace);
+        if (!hashApplied.current) {
+          hashApplied.current = true;
+          const s = initialStepFromHash(acc.trace);
+          if (s !== null) setCursor(s);
+        }
       })
       .catch((e) => setError(String(e)));
   }, [level]);

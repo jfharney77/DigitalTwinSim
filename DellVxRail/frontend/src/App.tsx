@@ -22,6 +22,20 @@ function pageFromHash(): Page {
   return "firstrun";
 }
 
+// Deep-link into the trace: #step=N (clamped) or #phase=<name> (first
+// matching state). Returns null when the hash names neither.
+function initialStepFromHash(states: { phase: string }[]): number | null {
+  const h = window.location.hash;
+  const step = h.match(/#step=(\d+)$/);
+  if (step) return Math.min(Number(step[1]), states.length - 1);
+  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
+  if (phase) {
+    const i = states.findIndex((s) => s.phase === phase[1]);
+    return i >= 0 ? i : null;
+  }
+  return null;
+}
+
 const PAGE_HASH: Record<Page, string> = {
   firstrun: "",
   anatomy: "anatomy",
@@ -49,6 +63,9 @@ export function App() {
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
+  // Apply a #step=/#phase= deep link only on the first successful load — a
+  // reading-level refetch must not yank the cursor back.
+  const hashApplied = useRef(false);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -68,6 +85,11 @@ export function App() {
       .then(([an, fr]) => {
         setAnatomy(an);
         setTrace(fr.trace);
+        if (!hashApplied.current) {
+          hashApplied.current = true;
+          const start = initialStepFromHash(fr.trace);
+          if (start !== null) setCursor(start);
+        }
       })
       .catch((e) => setError(String(e)));
   }, [level]);
