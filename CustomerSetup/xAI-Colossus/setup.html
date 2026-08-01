@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>xAI Colossus — customer setup twin</title>
+<link rel="stylesheet" href="../shared/setup.css" />
+<style>
+  :root { --gpu: #ffd23f; --fabric: #4f7cff; --coolant: #3fd2c7; --power: #ff7a3c; --storage: #b18cff; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="crumb"><a href="../index.html">CustomerSetup</a></nav>
+  <div class="level-control"></div>
+  <h1>xAI Colossus, Memphis</h1>
+  <p class="lede lvl-standard">
+    xAI built the Colossus AI supercluster in Memphis, Tennessee — 100,000 GPUs stood up in
+    122 days, doubled to 200,000 within three more months, with Dell Technologies and Supermicro
+    supplying the GPU servers. Each server carries eight GPUs; racks are liquid-cooled at
+    64 GPUs per rack; every GPU gets a dedicated 400 GbE network interface on an
+    NVIDIA Spectrum-X Ethernet fabric. The expansion toward one million GPUs runs on
+    Dell-built NVIDIA Blackwell (B200/GB200) systems. This drawing renders that setup out of
+    the digital twins in this repository.
+  </p>
+  <p class="lede lvl-novice">
+    xAI (Elon Musk's AI company) built one of the world's largest AI computers, called
+    Colossus, in Memphis, Tennessee. It is made of racks — tall cabinets — of GPU servers
+    (computers built around graphics processors, the chips AI training runs on), many of
+    them supplied by Dell. The racks are cooled with liquid instead of air because the chips
+    run too hot for fans alone, and every GPU has its own very fast network connection so
+    100,000+ of them can work on one problem together. The drawing below rebuilds that
+    machine out of this repository's interactive models ("digital twins").
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1060 560" role="img" aria-label="Colossus setup diagram">
+      <rect x="0" y="0" width="1060" height="560" fill="var(--bg)"/>
+
+      <g data-wt="title">
+        <text x="20" y="30" fill="var(--txt)" font-size="15">COLOSSUS — ONE DATA HALL (of many)</text>
+        <text x="20" y="50" fill="var(--txt-dim)" font-size="11">1,500 GPU racks at initial build · 8 GPUs per server · 64 GPUs per rack · liquid-cooled</text>
+      </g>
+
+      <g data-wt="fabric">
+        <rect x="20" y="80" width="830" height="90" rx="6" fill="var(--panel)" stroke="var(--fabric)"/>
+        <text x="36" y="106" fill="var(--fabric)" font-size="13">SPECTRUM-X ETHERNET FABRIC — leaf/spine, 400 GbE per GPU</text>
+        <text x="36" y="126" fill="var(--txt-dim)" font-size="11">~3.6 Tb/s of NICs per server · RoCE, lossless under incast</text>
+        <text x="36" y="146" fill="var(--txt)" font-size="11">twin: DellPowerSwitchSN6000 — “the fabric never drops a packet”</text>
+        <rect x="600" y="95" width="110" height="28" rx="4" fill="var(--bg)" stroke="var(--fabric)"/>
+        <text x="620" y="113" fill="var(--fabric)" font-size="11">SPINE ×2</text>
+        <rect x="600" y="132" width="110" height="28" rx="4" fill="var(--bg)" stroke="var(--fabric)"/>
+        <text x="623" y="150" fill="var(--fabric)" font-size="11">LEAF ×4</text>
+        <line x1="655" y1="123" x2="655" y2="132" stroke="var(--fabric)"/>
+        <rect x="730" y="95" width="105" height="65" rx="4" fill="var(--bg)" stroke="var(--line)"/>
+        <text x="742" y="122" fill="var(--txt-dim)" font-size="10">BlueField-3</text>
+        <text x="742" y="138" fill="var(--txt-dim)" font-size="10">SuperNICs</text>
+      </g>
+
+      <g data-wt="racks">
+        <rect x="20" y="200" width="530" height="230" rx="6" fill="var(--panel)" stroke="var(--gpu)"/>
+        <text x="36" y="226" fill="var(--gpu)" font-size="13">GPU RACKS — Dell PowerEdge GPU servers</text>
+        <text x="36" y="246" fill="var(--txt-dim)" font-size="11">HGX H100/H200 at first build; Blackwell GB200 racks in the expansion</text>
+        <g fill="none" stroke="var(--gpu)">
+          <rect x="40"  y="265" width="100" height="140" rx="4"/>
+          <rect x="165" y="265" width="100" height="140" rx="4"/>
+          <rect x="290" y="265" width="100" height="140" rx="4"/>
+          <rect x="415" y="265" width="100" height="140" rx="4"/>
+        </g>
+        <g fill="var(--gpu)" opacity="0.85" font-size="10">
+          <text x="52" y="285">RACK 64×GPU</text>
+          <text x="177" y="285">RACK 64×GPU</text>
+          <text x="302" y="285">RACK 64×GPU</text>
+          <text x="440" y="285">GB200 NVL72</text>
+        </g>
+        <g stroke="var(--line)">
+          <line x1="50" y1="300" x2="130" y2="300"/><line x1="50" y1="320" x2="130" y2="320"/>
+          <line x1="50" y1="340" x2="130" y2="340"/><line x1="50" y1="360" x2="130" y2="360"/>
+          <line x1="175" y1="300" x2="255" y2="300"/><line x1="175" y1="320" x2="255" y2="320"/>
+          <line x1="175" y1="340" x2="255" y2="340"/><line x1="175" y1="360" x2="255" y2="360"/>
+          <line x1="300" y1="300" x2="380" y2="300"/><line x1="300" y1="320" x2="380" y2="320"/>
+          <line x1="300" y1="340" x2="380" y2="340"/><line x1="300" y1="360" x2="380" y2="360"/>
+          <line x1="425" y1="300" x2="505" y2="300"/><line x1="425" y1="320" x2="505" y2="320"/>
+          <line x1="425" y1="340" x2="505" y2="340"/><line x1="425" y1="360" x2="505" y2="360"/>
+        </g>
+        <!-- scale badge: four glyphs stand for the reported ~1,500 racks -->
+        <rect x="452" y="212" width="84" height="20" rx="10" fill="var(--bg)" stroke="var(--gpu)"/>
+        <text x="462" y="226" fill="var(--gpu)" font-size="10">4 of ~1,500</text>
+        <text x="40" y="422" fill="var(--txt)" font-size="11">twins: DellPowerEdgeXE9712 (rack) · GPU (one die, one matmul)</text>
+      </g>
+
+      <g data-wt="cooling">
+        <rect x="580" y="200" width="255" height="230" rx="6" fill="var(--panel)" stroke="var(--coolant)"/>
+        <text x="596" y="226" fill="var(--coolant)" font-size="13">LIQUID COOLING LOOP</text>
+        <text x="596" y="246" fill="var(--txt-dim)" font-size="11">cold plates on every GPU rack;</text>
+        <text x="596" y="262" fill="var(--txt-dim)" font-size="11">CDUs + facility water</text>
+        <rect x="596" y="280" width="100" height="34" rx="4" fill="var(--bg)" stroke="var(--coolant)"/>
+        <text x="618" y="301" fill="var(--coolant)" font-size="11">CDU</text>
+        <rect x="716" y="280" width="100" height="34" rx="4" fill="var(--bg)" stroke="var(--coolant)"/>
+        <text x="726" y="301" fill="var(--coolant)" font-size="11">FACILITY H₂O</text>
+        <path d="M646 314 v 40 h 70" fill="none" stroke="var(--coolant)" stroke-dasharray="4 3"/>
+        <path d="M766 314 v 60 h -60" fill="none" stroke="var(--coolant)" stroke-dasharray="4 3"/>
+        <text x="596" y="400" fill="var(--txt)" font-size="11">twin: DellIR7000 —</text>
+        <text x="596" y="416" fill="var(--txt)" font-size="11">heat in equals heat out</text>
+      </g>
+
+      <g data-wt="storage">
+        <rect x="20" y="460" width="530" height="80" rx="6" fill="var(--panel)" stroke="var(--storage)" stroke-dasharray="6 4"/>
+        <text x="36" y="486" fill="var(--storage)" font-size="13">TRAINING DATA TIER — parallel reads feeding every rack at once</text>
+        <text x="36" y="506" fill="var(--txt-dim)" font-size="11">the fan-out read pattern is the incast the fabric above must absorb</text>
+        <text x="36" y="526" fill="var(--txt)" font-size="11">representative twin: DellExascale — metadata leaves the data path</text>
+        <rect x="440" y="466" width="100" height="20" rx="10" fill="var(--bg)" stroke="var(--storage)"/>
+        <text x="450" y="480" fill="var(--storage)" font-size="10">representative</text>
+      </g>
+      <g data-wt="power">
+        <rect x="580" y="460" width="255" height="80" rx="6" fill="var(--panel)" stroke="var(--power)"/>
+        <text x="596" y="486" fill="var(--power)" font-size="13">POWER</text>
+        <text x="596" y="506" fill="var(--txt-dim)" font-size="11">~150 MW grid + Tesla Megapack</text>
+        <text x="596" y="522" fill="var(--txt-dim)" font-size="11">buffering during build-out</text>
+      </g>
+
+      <g data-wt="flows">
+        <path d="M285 200 v -30" fill="none" stroke="var(--fabric)" stroke-width="2"/>
+        <path d="M285 460 v -30" fill="none" stroke="var(--storage)" stroke-width="2"/>
+        <path d="M580 315 h -30" fill="none" stroke="var(--coolant)" stroke-width="2"/>
+      </g>
+
+      <g data-wt="legend" font-size="10" fill="var(--txt-dim)">
+        <rect x="870" y="90" width="170" height="216" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="886" y="114" fill="var(--txt)" font-size="11">LEGEND</text>
+        <rect x="886" y="128" width="12" height="12" fill="none" stroke="var(--gpu)"/><text x="906" y="138">GPU compute</text>
+        <rect x="886" y="150" width="12" height="12" fill="none" stroke="var(--fabric)"/><text x="906" y="160">Ethernet fabric</text>
+        <rect x="886" y="172" width="12" height="12" fill="none" stroke="var(--coolant)"/><text x="906" y="182">liquid cooling</text>
+        <rect x="886" y="194" width="12" height="12" fill="none" stroke="var(--storage)"/><text x="906" y="204">data tier</text>
+        <rect x="886" y="216" width="12" height="12" fill="none" stroke="var(--power)"/><text x="906" y="226">power</text>
+        <text x="886" y="252">dashes = coolant return,</text>
+        <text x="886" y="266">or a representative block</text>
+        <text x="886" y="284">solid = data / supply</text>
+      </g>
+    </svg>
+    <div id="walkthrough" class="walkthrough"></div>
+  </div>
+  <script>
+    window.WALKTHROUGH = [
+      { focus: ["power"],
+        text: "Nothing happens before power: ~150 MW from the grid, buffered by Tesla Megapacks while the utility build-out catches up. The wattage entering here is exactly the heat the cooling loop must remove later." },
+      { focus: ["cooling"],
+        text: "Liquid before silicon. Cold plates, CDUs, and facility water must be flowing and verified before dense GPUs are allowed to draw power — the IR7000 twin's whole trace is this step." },
+      { focus: ["racks"],
+        text: "The compute: Dell PowerEdge GPU servers, eight GPUs each, 64 per liquid-cooled rack, ~1,500 racks at first build. In the GB200 expansion racks, NVLink fuses 72 GPUs into one domain — the XE9712 twin's signature step." },
+      { focus: ["fabric", "racks"],
+        text: "Every GPU gets its own 400 GbE port onto the Spectrum-X Ethernet fabric — ~3.6 Tb/s of network per server. NVLink stops at the rack wall; this fabric is what makes 100,000 GPUs one machine." },
+      { focus: ["storage", "fabric"],
+        text: "Training data fans out to every rack at once. That many-to-one read pattern (incast) is precisely the congestion the SN6000 twin drives its fabric into — and the fabric must absorb it without dropping a packet." },
+      { focus: ["racks", "fabric", "cooling", "power", "storage", "flows"],
+        text: "The whole machine: power in, heat out, data across. Each subsystem here is one twin; open them from the table below to watch each one's bring-up." },
+    ];
+  </script>
+
+  <h2>Blocks in this drawing, and the twins behind them</h2>
+  <table>
+    <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
+    <tr data-wt-ref="racks">
+      <td>GB200 GPU racks (expansion phase)</td>
+      <td><code>DellPowerEdgeXE9712/</code> — 72 GPUs fusing into one NVLink domain, liquid before silicon</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5181/" data-twin-port="5181" data-twin-start="DellPowerEdgeXE9712" data-twin-trace="poweron">localhost:5181</a> · <a href="http://localhost:5181/#anatomy">rack anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="racks">
+      <td>What one GPU die does with a matmul</td>
+      <td><code>GPU/</code> — the original simulator; the roofline regimes Colossus lives in</td>
+      <td><span class="basis inferred">inferred</span></td>
+      <td><a href="http://localhost:5173/" data-twin-port="5173" data-twin-start="GPU">localhost:5173</a></td>
+    </tr>
+    <tr data-wt-ref="fabric">
+      <td>Spectrum-X Ethernet fabric</td>
+      <td><code>DellPowerSwitchSN6000/</code> — Spectrum-X leaf/spine, zero packet loss under congestion</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5185/" data-twin-port="5185" data-twin-start="DellPowerSwitchSN6000" data-twin-trace="fabric">localhost:5185</a> · <a href="http://localhost:5185/#anatomy">fabric anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="cooling">
+      <td>Liquid cooling loop</td>
+      <td><code>DellIR7000/</code> — CDU, manifolds, cold plates; liquid + air = IT load exactly</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5182/" data-twin-port="5182" data-twin-start="DellIR7000" data-twin-trace="thermal">localhost:5182</a> · <a href="http://localhost:5182/#anatomy">loop anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="storage">
+      <td>Training data tier</td>
+      <td><code>DellExascale/</code> — parallel storage whose fan-out reads are the fabric's incast</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5184/" data-twin-port="5184" data-twin-start="DellExascale" data-twin-trace="datapath">localhost:5184</a> · <a href="http://localhost:5184/#anatomy">data path</a></td>
+    </tr>
+  </table>
+
+  <h2>What the twins would show you</h2>
+  <p class="lede lvl-standard">
+    Each link opens a twin paused at the step that carries this setup's story
+    (the twin must be running; the trace loads at that step).
+  </p>
+  <p class="lede lvl-novice">
+    Each link opens one of the interactive models paused at the exact moment that matters
+    for this story — like opening a video at a bookmarked scene. The model has to be
+    running first (see the chips above).
+  </p>
+  <ul>
+    <li><a href="http://localhost:5181/#phase=fused">XE9712 at the fuse</a> — the step where 72 GPUs snap into a single NVLink domain, all at once or not at all. Colossus's expansion racks do this 8,000+ times over.</li>
+    <li><a href="http://localhost:5181/#phase=coolant">XE9712 waiting on coolant</a> — "liquid before silicon": the rack pauses until the loop proves itself.</li>
+    <li><a href="http://localhost:5185/#phase=congestion">SN6000 under congestion</a> — the busiest link driven past 95% with zero packets dropped; Colossus's training traffic lives here.</li>
+    <li><a href="http://localhost:5182/#phase=verify">IR7000 at leak/flow verify</a> — the longest stage of the cooling trace, and the thing the XE9712's coolant step is waiting for.</li>
+    <li><a href="http://localhost:5184/#phase=feed">Exascale at full fan-out</a> — all four data servers streaming at once; the read pattern that becomes the fabric's incast.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lvl-standard">
+    What the sources actually state: Dell and Supermicro supplied the servers; 100k GPUs in
+    122 days, then 200k; 8-GPU HGX servers, 64 GPUs per liquid-cooled rack, ~1,500 racks;
+    400 GbE per GPU on Spectrum-X; a ~$5B Dell order of Blackwell systems for the expansion.
+    The specific rack counts drawn here, the four-rack grouping, and the storage tier are
+    illustrative — xAI has not published its storage architecture, so the Exascale twin is a
+    representative stand-in, not a claim.
+    </span>
+    <span class="lvl-novice">
+    What the news reports actually say: Dell and Supermicro built the servers; 100,000 GPUs
+    were running within 122 days and 200,000 soon after; each server holds 8 GPUs, each rack
+    64, roughly 1,500 racks; every GPU has its own fast network port. Everything else in the
+    drawing — how many racks are shown, how the storage works — is our illustration, not
+    something xAI has confirmed. Blocks tagged "representative" are educated stand-ins.
+    </span>
+  </div>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://www.datacenterdynamics.com/en/news/dell-and-super-micro-computer-to-provide-server-racks-for-xai-supercomputer/">DCD — Dell and Supermicro to provide servers for xAI supercomputer</a></li>
+    <li><a href="https://introl.com/blog/xai-memphis-colossus-100000-gpu-supercomputer-infrastructure">Introl — xAI's Memphis Colossus: 100,000-GPU infrastructure</a></li>
+    <li><a href="https://www.datacenterfrontier.com/machine-learning/article/55244139/the-colossus-ai-supercomputer-elon-musks-drive-toward-data-center-ai-technology-domination">Data Center Frontier — The Colossus supercomputer</a></li>
+    <li><a href="https://introl.com/blog/xai-colossus-2-gigawatt-expansion-555k-gpus-january-2026">Introl — Colossus 2 GW expansion (Jan 2026)</a></li>
+  </ul>
+</main>
+<script src="../shared/setup.js"></script>
+</body>
+</html>

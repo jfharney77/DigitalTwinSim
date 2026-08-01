@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TACC Horizon — customer setup twin</title>
+<link rel="stylesheet" href="../shared/setup.css" />
+<style>
+  :root { --gpu: #ffd23f; --fabric: #4f7cff; --coolant: #3fd2c7; --mgmt: #b18cff; --cpu: #ff8000; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="crumb"><a href="../index.html">CustomerSetup</a></nav>
+  <div class="level-control"></div>
+  <h1>TACC Horizon, Austin</h1>
+  <p class="lede lvl-standard">
+    The Texas Advanced Computing Center's Horizon is the largest academic supercomputer in
+    the United States — 300 petaflops, ten times TACC's Frontera. Announced November 2025,
+    it is built from Dell Integrated Rack Scalable Systems (IRSS): direct-liquid-cooled Dell
+    PowerEdge servers on the NVIDIA Grace Blackwell platform, one million CPU cores and
+    4,000 NVIDIA GPUs, joined by NVIDIA Quantum-X800 InfiniBand. This is the rare public
+    deployment that maps almost one-to-one onto this repo's AI Factory quartet.
+  </p>
+  <p class="lede lvl-novice">
+    The Texas Advanced Computing Center (TACC) at UT Austin runs the biggest university
+    supercomputer in the US, called Horizon. Dell delivers it as complete pre-built racks —
+    cabinets of servers that arrive assembled, tested, and plumbed for liquid cooling
+    (the chips run too hot for air alone). Inside are a million processor cores and 4,000
+    NVIDIA GPUs, wired together by an ultra-fast network called InfiniBand so they can
+    behave like one machine. Almost every part of this setup has a matching interactive
+    model in this repository.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1060 540" role="img" aria-label="TACC Horizon setup diagram">
+      <rect x="0" y="0" width="1060" height="540" fill="var(--bg)"/>
+
+      <g data-wt="title">
+        <text x="20" y="30" fill="var(--txt)" font-size="15">HORIZON — ONE IRSS ROW (of many) · 300 PF total · 4,000 GPUs · 1M CPU cores</text>
+      </g>
+
+      <g data-wt="fabric">
+        <rect x="20" y="55" width="1020" height="85" rx="6" fill="var(--panel)" stroke="var(--fabric)"/>
+        <text x="36" y="81" fill="var(--fabric)" font-size="13">NVIDIA QUANTUM-X800 INFINIBAND — scale-out fabric across every rack</text>
+        <text x="36" y="101" fill="var(--txt-dim)" font-size="11">NVLink fuses GPUs inside a rack; InfiniBand carries the job past the rack wall</text>
+        <text x="36" y="121" fill="var(--txt)" font-size="11">twin: DellPowerSwitchSN6000 — Quantum-X800 is the InfiniBand option in its catalog</text>
+      </g>
+
+      <g data-wt="racks">
+        <rect x="20" y="170" width="700" height="280" rx="6" fill="var(--panel)" stroke="var(--gpu)"/>
+        <text x="36" y="196" fill="var(--gpu)" font-size="13">DELL IRSS RACKS — factory-integrated, delivered as tested units</text>
+        <g fill="none" stroke="var(--gpu)">
+          <rect x="40"  y="215" width="200" height="190" rx="4"/>
+          <rect x="260" y="215" width="200" height="190" rx="4"/>
+          <rect x="480" y="215" width="200" height="190" rx="4"/>
+        </g>
+        <g font-size="10">
+          <text x="52" y="236" fill="var(--gpu)">GRACE BLACKWELL RACK</text>
+          <text x="272" y="236" fill="var(--gpu)">GRACE BLACKWELL RACK</text>
+          <text x="492" y="236" fill="var(--gpu)">GRACE BLACKWELL RACK</text>
+        </g>
+        <g font-size="10" fill="var(--txt-dim)">
+          <rect x="52" y="248" width="176" height="40" rx="3" fill="none" stroke="var(--cpu)"/>
+          <text x="60" y="272">compute trays — Vera CPUs + GPUs</text>
+          <rect x="52" y="296" width="176" height="30" rx="3" fill="none" stroke="var(--fabric)"/>
+          <text x="60" y="315">NVLink switch trays (mid-rack)</text>
+          <rect x="52" y="334" width="176" height="30" rx="3" fill="none" stroke="var(--coolant)"/>
+          <text x="60" y="353">in-rack CDU + manifold</text>
+          <text x="52" y="392" fill="var(--txt)">twin: XE9712 rack</text>
+        </g>
+        <g font-size="10" fill="var(--txt-dim)">
+          <rect x="272" y="248" width="176" height="40" rx="3" fill="none" stroke="var(--cpu)"/>
+          <text x="280" y="272">compute trays</text>
+          <rect x="272" y="296" width="176" height="30" rx="3" fill="none" stroke="var(--fabric)"/>
+          <text x="280" y="315">NVLink switch trays</text>
+          <rect x="272" y="334" width="176" height="30" rx="3" fill="none" stroke="var(--coolant)"/>
+          <text x="280" y="353">in-rack CDU + manifold</text>
+        </g>
+        <g font-size="10" fill="var(--txt-dim)">
+          <rect x="492" y="248" width="176" height="40" rx="3" fill="none" stroke="var(--cpu)"/>
+          <text x="500" y="272">compute trays</text>
+          <rect x="492" y="296" width="176" height="30" rx="3" fill="none" stroke="var(--fabric)"/>
+          <text x="500" y="315">NVLink switch trays</text>
+          <rect x="492" y="334" width="176" height="30" rx="3" fill="none" stroke="var(--coolant)"/>
+          <text x="500" y="353">in-rack CDU + manifold</text>
+        </g>
+        <!-- scale badge -->
+        <rect x="610" y="184" width="96" height="20" rx="10" fill="var(--bg)" stroke="var(--gpu)"/>
+        <text x="620" y="198" fill="var(--gpu)" font-size="10">3 of ~56 racks</text>
+        <text x="36" y="434" fill="var(--txt)" font-size="11">a real row is many racks; three are drawn — like the twins, stylized on purpose</text>
+      </g>
+
+      <g data-wt="cooling">
+        <rect x="750" y="170" width="290" height="170" rx="6" fill="var(--panel)" stroke="var(--coolant)"/>
+        <text x="766" y="196" fill="var(--coolant)" font-size="13">DIRECT LIQUID COOLING PLANT</text>
+        <text x="766" y="216" fill="var(--txt-dim)" font-size="11">row CDUs + facility water; ~120 kW</text>
+        <text x="766" y="232" fill="var(--txt-dim)" font-size="11">per NVL72-class rack must leave as heat</text>
+        <rect x="766" y="248" width="120" height="34" rx="4" fill="var(--bg)" stroke="var(--coolant)"/>
+        <text x="790" y="269" fill="var(--coolant)" font-size="11">ROW CDU</text>
+        <rect x="902" y="248" width="120" height="34" rx="4" fill="var(--bg)" stroke="var(--coolant)"/>
+        <text x="916" y="269" fill="var(--coolant)" font-size="11">FACILITY H₂O</text>
+        <text x="766" y="316" fill="var(--txt)" font-size="11">twin: DellIR7000 — heat in equals heat out</text>
+      </g>
+
+      <g data-wt="mgmt">
+        <rect x="750" y="360" width="290" height="90" rx="6" fill="var(--panel)" stroke="var(--mgmt)" stroke-dasharray="6 4"/>
+        <text x="766" y="386" fill="var(--mgmt)" font-size="13">MANAGEMENT PLANE</text>
+        <text x="766" y="406" fill="var(--txt-dim)" font-size="11">a BMC on every tray boots before any host</text>
+        <text x="766" y="430" fill="var(--txt)" font-size="11">twin: DellIDRAC — the brain that wakes first</text>
+      </g>
+
+      <g data-wt="flows">
+        <path d="M370 170 v -30" fill="none" stroke="var(--fabric)" stroke-width="2"/>
+        <path d="M750 255 h -30" fill="none" stroke="var(--coolant)" stroke-width="2"/>
+        <path d="M750 405 h -30" fill="none" stroke="var(--mgmt)" stroke-width="2"/>
+      </g>
+
+      <g data-wt="footer">
+        <rect x="20" y="470" width="1020" height="50" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="36" y="500" fill="var(--txt-dim)" font-size="11">Bring-up order the twins teach: BMCs first (iDRAC) → coolant flowing (IR7000) → trays boot, NVLink fuses the rack (XE9712) → InfiniBand joins the racks (SN6000 fabric trace) → the job runs (GPU twin)</text>
+      </g>
+    </svg>
+    <div id="walkthrough" class="walkthrough"></div>
+  </div>
+  <script>
+    window.WALKTHROUGH = [
+      { focus: ["mgmt"],
+        text: "Before any host powers on, every tray's baseboard management controller (BMC) wakes on standby power — the iDRAC twin's whole trace happens here, once per tray, across the machine." },
+      { focus: ["cooling"],
+        text: "Coolant next: row CDUs and facility water must be flowing and leak-verified before ~120 kW racks are allowed to draw load. The IR7000 twin's verify phase is exactly this gate." },
+      { focus: ["racks", "cooling"],
+        text: "The IRSS racks boot: Grace/Vera CPUs come up in lockstep, Blackwell GPUs wake on their cold plates, and NVLink trains until each rack's GPUs fuse into one domain — the XE9712 twin's atomic fuse, repeated per rack." },
+      { focus: ["fabric", "racks"],
+        text: "NVLink stops at the rack wall. Quantum-X800 InfiniBand joins the racks into one 300-petaflop machine — the SN6000 twin's fabric trace (its catalog carries this exact InfiniBand option)." },
+      { focus: ["racks", "fabric", "cooling", "mgmt", "flows", "footer"],
+        text: "The whole machine: 1M CPU cores, 4,000 GPUs, one job. Three of the four AI Factory quartet pillars are exercised directly; open each twin below to watch its piece." },
+      ];
+  </script>
+
+  <h2>Blocks in this drawing, and the twins behind them</h2>
+  <table>
+    <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
+    <tr data-wt-ref="racks">
+      <td>IRSS Grace Blackwell racks</td>
+      <td><code>DellPowerEdgeXE9712/</code> — the GB200 NVL72 rack: trays, NVLink switch trays, atomic 72-GPU fuse. Its catalog's delivery category is IRSS itself.</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5181/" data-twin-port="5181" data-twin-start="DellPowerEdgeXE9712" data-twin-trace="poweron">localhost:5181</a> · <a href="http://localhost:5181/#anatomy">rack anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="cooling">
+      <td>Direct liquid cooling plant</td>
+      <td><code>DellIR7000/</code> — fill, verify, ramp; liquid + air = IT load with no tolerance</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5182/" data-twin-port="5182" data-twin-start="DellIR7000" data-twin-trace="thermal">localhost:5182</a> · <a href="http://localhost:5182/#anatomy">loop anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="fabric">
+      <td>Quantum-X800 InfiniBand fabric</td>
+      <td><code>DellPowerSwitchSN6000/</code> — its catalog offers exactly this Quantum-X800 InfiniBand alternative; the fabric trace shows congestion absorbed without loss</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5185/" data-twin-port="5185" data-twin-start="DellPowerSwitchSN6000" data-twin-trace="fabric">localhost:5185</a> · <a href="http://localhost:5185/#components">catalog</a></td>
+    </tr>
+    <tr data-wt-ref="mgmt">
+      <td>Management plane</td>
+      <td><code>DellIDRAC/</code> — the BMC bring-up that precedes every host boot in the machine</td>
+      <td><span class="basis inferred">inferred</span></td>
+      <td><a href="http://localhost:5177/" data-twin-port="5177" data-twin-start="DellIDRAC" data-twin-trace="bringup">localhost:5177</a> · <a href="http://localhost:5177/#anatomy">block diagram</a></td>
+    </tr>
+    <tr data-wt-ref="racks">
+      <td>What each GPU does once the job lands</td>
+      <td><code>GPU/</code> — matmul phases, tiling, roofline</td>
+      <td><span class="basis inferred">inferred</span></td>
+      <td><a href="http://localhost:5173/" data-twin-port="5173" data-twin-start="GPU">localhost:5173</a></td>
+    </tr>
+  </table>
+
+  <h2>What the twins would show you</h2>
+  <p class="lede lvl-standard">
+    Each link opens a twin paused at the step that carries this setup's story
+    (the twin must be running; the trace loads at that step).
+  </p>
+  <p class="lede lvl-novice">
+    Each link opens one of the interactive models paused at the exact moment that matters
+    for this story. The model has to be running first (see the chips above).
+  </p>
+  <ul>
+    <li><a href="http://localhost:5177/#phase=ready">iDRAC at ready</a> — the BMC watching over a host that hasn't powered on yet; multiply by every tray in Horizon.</li>
+    <li><a href="http://localhost:5182/#phase=verify">IR7000 at leak/flow verify</a> — the longest stage of the cooling trace, and the gate the racks wait behind.</li>
+    <li><a href="http://localhost:5181/#phase=coolant">XE9712 waiting on coolant</a> — "liquid before silicon", the inversion no air-cooled twin has.</li>
+    <li><a href="http://localhost:5181/#phase=fused">XE9712 at the fuse</a> — GPUs-in-domain snapping from 0 to 72; Horizon does this once per rack.</li>
+    <li><a href="http://localhost:5185/#phase=linktrain">SN6000 at link training</a> — the longest fabric stage; thousands of links must train before any traffic flows between racks.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lvl-standard">
+    What the sources actually state: Horizon is built by Dell for TACC; Dell IRSS with
+    direct-liquid-cooled PowerEdge servers; NVIDIA Grace Blackwell platform with Vera CPUs;
+    1M CPU cores, 4,000 GPUs; Quantum-X800 InfiniBand; 300 PF, 10× Frontera. The three-rack
+    row, per-rack internals, the ~56-rack estimate (4,000 GPUs ÷ 72 per NVL72-class rack),
+    and the management plane are drawn from the twins' stylized models, not from a published
+    TACC floor plan.
+    </span>
+    <span class="lvl-novice">
+    What Dell and TACC have actually said: Dell builds Horizon as pre-integrated,
+    liquid-cooled racks; it uses NVIDIA's Grace Blackwell chips; a million CPU cores and
+    4,000 GPUs; InfiniBand networking; 300 petaflops. The way we've drawn the row — three
+    racks, what's inside each, the management layer — is our stylized illustration based on
+    how these systems are normally built, not TACC's actual floor plan.
+    </span>
+  </div>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~11~dell-technologies-powers-taccs-new-supercomputer-horizon.htm">Dell Technologies — Dell powers TACC's new supercomputer Horizon (Nov 2025)</a></li>
+    <li><a href="https://investors.delltechnologies.com/news-releases/news-release-details/dell-technologies-powers-taccs-new-supercomputer-horizon">Dell investor release — TACC Horizon</a></li>
+    <li><a href="https://tacc.utexas.edu/news/latest-news/2024/05/13/stampede3-supercomputer-enters-full-production-modernizes-to-meet-computational-needs/">TACC — Stampede3 (the Dell lineage: Frontera, Stampede3, Horizon)</a></li>
+  </ul>
+</main>
+<script src="../shared/setup.js"></script>
+</body>
+</html>

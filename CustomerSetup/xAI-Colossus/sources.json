@@ -1,0 +1,40 @@
+[
+  {
+    "url": "https://www.datacenterdynamics.com/en/news/dell-and-super-micro-computer-to-provide-server-racks-for-xai-supercomputer/",
+    "title": "Dell and Supermicro to provide servers for xAI supercomputer",
+    "publisher": "Data Center Dynamics",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Dell and Supermicro supplied Colossus's GPU servers"
+    ]
+  },
+  {
+    "url": "https://introl.com/blog/xai-memphis-colossus-100000-gpu-supercomputer-infrastructure",
+    "title": "xAI's Memphis Colossus: 100,000-GPU supercomputer infrastructure",
+    "publisher": "Introl",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "100k GPUs in 122 days, doubled to 200k in ~92 more",
+      "8-GPU HGX servers, 64 GPUs per liquid-cooled rack, ~1,500 racks",
+      "400 GbE per GPU on Spectrum-X; ~3.6 Tb/s of NICs per server"
+    ]
+  },
+  {
+    "url": "https://www.datacenterfrontier.com/machine-learning/article/55244139/the-colossus-ai-supercomputer-elon-musks-drive-toward-data-center-ai-technology-domination",
+    "title": "The Colossus supercomputer",
+    "publisher": "Data Center Frontier",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Facility context: Memphis site, power buildout, Megapack buffering"
+    ]
+  },
+  {
+    "url": "https://introl.com/blog/xai-colossus-2-gigawatt-expansion-555k-gpus-january-2026",
+    "title": "Colossus 2 GW expansion (Jan 2026)",
+    "publisher": "Introl",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "~$5B Dell Blackwell (B200/GB200) order for the expansion toward 1M GPUs"
+    ]
+  }
+]

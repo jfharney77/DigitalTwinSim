@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RHB Banking Group — customer setup twin</title>
+<link rel="stylesheet" href="../shared/setup.css" />
+<style>
+  :root { --prod: #4f7cff; --gap: #ff7a3c; --vault: #3fd2c7; --scan: #ffd23f; --attack: #e0526e; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="crumb"><a href="../index.html">CustomerSetup</a></nav>
+  <div class="level-control"></div>
+  <h1>RHB Banking Group, Malaysia</h1>
+  <p class="lede lvl-standard">
+    RHB, one of Malaysia's largest banking groups, is a featured Dell customer for
+    PowerProtect Cyber Recovery: business-critical data moves through an operational air gap
+    into an isolated, immutable vault, where AI-driven analytics (CyberSense) validate every
+    copy — so that after an attack the bank restores a copy it can prove is clean. The
+    architecture is the one Dell's Sheltered Harbor-endorsed reference describes for
+    financial institutions, and it is exactly the data path two of this repo's twins model
+    as a pair.
+  </p>
+  <p class="lede lvl-novice">
+    RHB is a major Malaysian bank. To survive a ransomware attack — malware that encrypts a
+    company's data and demands payment — it keeps a copy of its critical data in a "vault":
+    a set of Dell systems that are disconnected from the network almost all the time (an
+    "air gap"), where copies are locked so they cannot be altered. Software called
+    CyberSense reads every copy byte by byte to certify which ones are clean. If an attack
+    gets through, the bank restores from a copy it can prove was made before the attack —
+    instead of guessing.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1060 500" role="img" aria-label="RHB cyber recovery setup diagram">
+      <rect x="0" y="0" width="1060" height="500" fill="var(--bg)"/>
+
+      <g data-wt="title">
+        <text x="20" y="30" fill="var(--txt)" font-size="15">PRODUCTION SITE</text>
+        <text x="760" y="30" fill="var(--txt)" font-size="15">ISOLATED VAULT</text>
+        <text x="20" y="50" fill="var(--txt-dim)" font-size="11">banking core, channels, databases</text>
+        <text x="760" y="50" fill="var(--txt-dim)" font-size="11">reachable only when the vault opens the gap</text>
+      </g>
+
+      <g data-wt="prod">
+        <rect x="20" y="70" width="250" height="150" rx="6" fill="var(--panel)" stroke="var(--prod)" stroke-dasharray="6 4"/>
+        <text x="36" y="96" fill="var(--prod)" font-size="13">PRODUCTION STORAGE</text>
+        <rect x="36" y="110" width="100" height="52" rx="4" fill="var(--bg)" stroke="var(--prod)"/>
+        <text x="46" y="132" fill="var(--prod)" font-size="10">PowerStore</text>
+        <text x="46" y="148" fill="var(--txt-dim)" font-size="9">general estate</text>
+        <rect x="152" y="110" width="100" height="52" rx="4" fill="var(--bg)" stroke="var(--prod)"/>
+        <text x="162" y="132" fill="var(--prod)" font-size="10">PowerMax</text>
+        <text x="162" y="148" fill="var(--txt-dim)" font-size="9">core banking</text>
+        <text x="36" y="196" fill="var(--txt)" font-size="11">twins: PowerStore · PowerMax</text>
+      </g>
+
+      <g data-wt="backup">
+        <rect x="20" y="250" width="250" height="130" rx="6" fill="var(--panel)" stroke="var(--prod)"/>
+        <text x="36" y="276" fill="var(--prod)" font-size="13">BACKUP — PowerProtect DD</text>
+        <text x="36" y="296" fill="var(--txt-dim)" font-size="11">deduplicated backups of the estate;</text>
+        <text x="36" y="312" fill="var(--txt-dim)" font-size="11">stored TB ≪ logical TB</text>
+        <text x="36" y="348" fill="var(--txt)" font-size="11">twin: DellPowerProtect</text>
+        <text x="36" y="364" fill="var(--txt)" font-size="11">(production-side appliance)</text>
+      </g>
+      <g data-wt="flows">
+        <path d="M145 220 v 30" fill="none" stroke="var(--prod)" stroke-width="2"/>
+        <path d="M270 315 h 60" fill="none" stroke="var(--gap)" stroke-width="2"/>
+        <path d="M450 315 h 60" fill="none" stroke="var(--gap)" stroke-width="2"/>
+      </g>
+
+      <g data-wt="attack">
+        <rect x="20" y="410" width="250" height="70" rx="6" fill="var(--panel)" stroke="var(--attack)"/>
+        <text x="36" y="436" fill="var(--attack)" font-size="13">THE ATTACK</text>
+        <text x="36" y="456" fill="var(--txt-dim)" font-size="11">ransomware in production cannot cross</text>
+        <text x="36" y="470" fill="var(--txt-dim)" font-size="11">a gap that is closed from the far side</text>
+      </g>
+
+      <g data-wt="gap">
+        <rect x="330" y="70" width="120" height="310" rx="6" fill="var(--panel)" stroke="var(--gap)"/>
+        <text x="352" y="100" fill="var(--gap)" font-size="13">AIR GAP</text>
+        <text x="344" y="124" fill="var(--txt-dim)" font-size="10">operational,</text>
+        <text x="344" y="139" fill="var(--txt-dim)" font-size="10">opened only</text>
+        <text x="344" y="154" fill="var(--txt-dim)" font-size="10">from the vault</text>
+        <text x="344" y="169" fill="var(--txt-dim)" font-size="10">side, only to</text>
+        <text x="344" y="184" fill="var(--txt-dim)" font-size="10">replicate or</text>
+        <text x="344" y="199" fill="var(--txt-dim)" font-size="10">recover</text>
+        <g stroke="var(--gap)" stroke-dasharray="5 5">
+          <line x1="350" y1="230" x2="430" y2="230"/>
+          <line x1="350" y1="250" x2="430" y2="250"/>
+        </g>
+        <text x="344" y="290" fill="var(--txt)" font-size="10">the gap region in</text>
+        <text x="344" y="305" fill="var(--txt)" font-size="10">the PowerProtect</text>
+        <text x="344" y="320" fill="var(--txt)" font-size="10">twin is active in</text>
+        <text x="344" y="335" fill="var(--txt)" font-size="10">exactly two phases:</text>
+        <text x="344" y="350" fill="var(--txt)" font-size="10">replicate, recover</text>
+      </g>
+
+      <g data-wt="vault">
+        <rect x="510" y="70" width="530" height="310" rx="6" fill="var(--panel)" stroke="var(--vault)"/>
+        <text x="526" y="96" fill="var(--vault)" font-size="13">CYBER RECOVERY VAULT</text>
+        <rect x="526" y="112" width="230" height="110" rx="4" fill="var(--bg)" stroke="var(--vault)"/>
+        <text x="540" y="136" fill="var(--vault)" font-size="11">VAULT PowerProtect DD</text>
+        <text x="540" y="154" fill="var(--txt-dim)" font-size="10">immutable copies — Retention</text>
+        <text x="540" y="169" fill="var(--txt-dim)" font-size="10">Lock: sealed before any attack</text>
+        <text x="540" y="184" fill="var(--txt-dim)" font-size="10">can reach them</text>
+        <text x="540" y="208" fill="var(--txt)" font-size="10">twin: DellPowerProtect (vault side)</text>
+
+        <rect x="786" y="112" width="230" height="110" rx="4" fill="var(--bg)" stroke="var(--scan)"/>
+        <text x="800" y="136" fill="var(--scan)" font-size="11">CYBERSENSE ANALYTICS</text>
+        <text x="800" y="154" fill="var(--txt-dim)" font-size="10">AI/ML reads every byte of every</text>
+        <text x="800" y="169" fill="var(--txt-dim)" font-size="10">copy; names the last clean one —</text>
+        <text x="800" y="184" fill="var(--txt-dim)" font-size="10">a date, not an alert</text>
+        <text x="800" y="208" fill="var(--txt)" font-size="10">twin: DellCyberDetect</text>
+
+        <rect x="526" y="244" width="490" height="70" rx="4" fill="var(--bg)" stroke="var(--vault)"/>
+        <text x="540" y="268" fill="var(--vault)" font-size="11">CLEAN ROOM — recovery rehearsal and forensics</text>
+        <text x="540" y="288" fill="var(--txt-dim)" font-size="10">writeable copies validated here before anything returns to production;</text>
+        <text x="540" y="302" fill="var(--txt-dim)" font-size="10">recovery in hours, driven from the vault side of the gap</text>
+
+        <text x="526" y="352" fill="var(--txt)" font-size="11">the two twins are designed as a pair: PowerProtect answers “will a copy survive?”,</text>
+        <text x="526" y="368" fill="var(--txt)" font-size="11">Cyber Detect answers the question isolation leaves open — “which copy?”</text>
+      </g>
+
+      <g data-wt="footer">
+        <rect x="330" y="410" width="710" height="70" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="346" y="436" fill="var(--txt)" font-size="12">SHELTERED HARBOR — PowerProtect Cyber Recovery is the first solution endorsed for the US financial-sector vaulting standard</text>
+        <text x="346" y="458" fill="var(--txt-dim)" font-size="11">the same discipline RHB applies: the vaulted copy is sealed, scanned, and provably clean before anyone restores it</text>
+      </g>
+    </svg>
+    <div id="walkthrough" class="walkthrough"></div>
+  </div>
+  <script>
+    window.WALKTHROUGH = [
+      { focus: ["prod", "backup"],
+        text: "Day to day: the production estate backs up to a PowerProtect DD appliance, deduplicated so the stored terabytes are a fraction of the logical ones." },
+      { focus: ["gap", "backup", "vault"],
+        text: "On the vault's schedule — never production's — the air gap opens from the inside, the newest backups replicate across, and the gap closes. Production has no route in." },
+      { focus: ["vault"],
+        text: "Inside the vault each copy is sealed immutable (Retention Lock), then CyberSense reads it byte by byte. Its deliverable is a date: the last provably clean copy." },
+      { focus: ["attack", "prod", "backup"],
+        text: "The attack lands in production. Blast radius: the estate and possibly its backups. The gap is closed; the vault, its sealed copies, and its verdict are out of reach." },
+      { focus: ["gap", "vault", "backup"],
+        text: "Recovery runs the gap in reverse — opened from the vault side, restoring the copy CyberSense named, rehearsed in the clean room first. Hours, not weeks, because nobody is guessing which backup to trust." },
+      { focus: ["prod", "backup", "gap", "vault", "attack", "footer", "flows"],
+        text: "The whole architecture. The PowerProtect twin plays this exact lifecycle end to end; the CyberDetect twin plays the vault's hardest step — telling clean from corrupted when they look identical." },
+    ];
+  </script>
+
+  <h2>Blocks in this drawing, and the twins behind them</h2>
+  <table>
+    <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
+    <tr data-wt-ref="backup,gap,vault">
+      <td>Backup, air gap, vault, clean room</td>
+      <td><code>DellPowerProtect/</code> — the full lifecycle: backup → dedupe → replicate → seal → attack → recover. Its bank use case is this exact architecture.</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5183/" data-twin-port="5183" data-twin-start="DellPowerProtect" data-twin-trace="lifecycle">localhost:5183</a> · <a href="http://localhost:5183/#usecases">use cases</a></td>
+    </tr>
+    <tr data-wt-ref="vault">
+      <td>CyberSense-style content analytics</td>
+      <td><code>DellCyberDetect/</code> — byte-level inspection naming the last clean snapshot; built as the companion to the vault twin</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5192/" data-twin-port="5192" data-twin-start="DellCyberDetect" data-twin-trace="detect">localhost:5192</a> · <a href="http://localhost:5192/#anatomy">timeline anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="prod">
+      <td>Production storage</td>
+      <td><code>DellPowerStore/</code> — the general-estate array</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5175/" data-twin-port="5175" data-twin-start="DellPowerStore" data-twin-trace="poweron">localhost:5175</a></td>
+    </tr>
+    <tr data-wt-ref="prod">
+      <td>Core-banking storage</td>
+      <td><code>DellPowerMax/</code> — its cyber-resiliency-vault use case is this architecture seen from the production side</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5178/" data-twin-port="5178" data-twin-start="DellPowerMax" data-twin-trace="poweron">localhost:5178</a> · <a href="http://localhost:5178/#usecases">use cases</a></td>
+    </tr>
+  </table>
+
+  <h2>What the twins would show you</h2>
+  <p class="lede lvl-standard">
+    Each link opens a twin paused at the step that carries this setup's story
+    (the twin must be running; the trace loads at that step).
+  </p>
+  <p class="lede lvl-novice">
+    Each link opens one of the interactive models paused at the exact moment that matters
+    for this story. The model has to be running first (see the chips above).
+  </p>
+  <ul>
+    <li><a href="http://localhost:5183/#phase=airgap">PowerProtect with the gap sealed</a> — the vaulted copy locked immutable, before anything goes wrong.</li>
+    <li><a href="http://localhost:5183/#phase=attack">PowerProtect at the attack</a> — production's blast radius lit while the vault and gap stay dark; the invariant is that they must.</li>
+    <li><a href="http://localhost:5192/#phase=blind">CyberDetect while metadata is blind</a> — corruption spreading with zero alerts; the timeline is genuinely unreadable, which is the administrator's real position.</li>
+    <li><a href="http://localhost:5192/#phase=verdict">CyberDetect at the verdict</a> — the deliverable: a named last-clean snapshot, strictly older than the first corrupted one.</li>
+    <li><a href="http://localhost:5183/#phase=recover">PowerProtect recovering</a> — the gap open from the vault side, the named copy flowing back.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lvl-standard">
+    What the sources actually state: RHB secures data with Dell PowerProtect Cyber Recovery,
+    using AI and an air-gapped vault for clean recoveries; PowerProtect Cyber Recovery is
+    Sheltered Harbor-endorsed and used by 1,300+ customers. Dell's customer story does not
+    publish RHB's production storage models or vault sizing — the PowerStore/PowerMax blocks
+    and all counts here are representative, drawn from Dell's own reference architecture for
+    financial institutions.
+    </span>
+    <span class="lvl-novice">
+    What Dell's customer story actually says: RHB protects its data with PowerProtect Cyber
+    Recovery, using AI and an air-gapped vault so recoveries start from clean copies. Dell
+    does not say which storage systems RHB runs in production or how big the vault is — the
+    left side of our drawing is a typical bank setup from Dell's own reference design, not
+    RHB's disclosed one. Blocks tagged "representative" are those stand-ins.
+    </span>
+  </div>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/powerprotect-cyber-recovery">Dell — PowerProtect Cyber Recovery (RHB featured customer story)</a></li>
+    <li><a href="https://www.delltechnologies.com/asset/en-us/products/data-protection/industry-market/h18661-dell-powerprotect-cyber-recovery-reference-architecture-wp.pdf">Dell — PowerProtect Cyber Recovery reference architecture (H18661)</a></li>
+    <li><a href="https://indexengines.com/products/cybersense-for-dell-technologies/">Index Engines — CyberSense for Dell Technologies</a></li>
+  </ul>
+</main>
+<script src="../shared/setup.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>F1Soft — customer setup twin</title>
+<link rel="stylesheet" href="../shared/setup.css" />
+<style>
+  :root { --pool: #ffd23f; --fabric: #4f7cff; --workload: #3fd2c7; --observe: #b18cff; --rebuild: #ff7a3c; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="crumb"><a href="../index.html">CustomerSetup</a></nav>
+  <div class="level-control"></div>
+  <h1>F1Soft, Kathmandu</h1>
+  <p class="lede lvl-standard">
+    F1Soft is Nepal's leading fintech group — its platforms carry mobile banking and digital
+    payments for a large share of the country's banks. Dell's customer story has F1Soft
+    deploying PowerFlex software-defined storage in its data centers for performance,
+    agility, scalability, and reliability; its CIO, Akbar Khan, credits PowerFlex with
+    cutting time spent on routine tasks by around 40%. A payments platform is the canonical
+    PowerFlex customer: the estate can never pause, and PowerFlex's whole argument is that
+    growth, failure, and repair all happen while I/O keeps flowing.
+  </p>
+  <p class="lede lvl-novice">
+    F1Soft is a financial-technology company in Nepal whose software runs mobile banking
+    and digital payments for much of the country. Banking systems can never stop, so F1Soft
+    stores its data on Dell PowerFlex — a design that takes the drives inside many ordinary
+    servers and pools them over the network into one shared, self-healing storage system.
+    If a server dies, every surviving server helps rebuild the lost copies at once, while
+    payments keep flowing. F1Soft's technology chief says this cut routine maintenance work
+    by about 40%.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1060 520" role="img" aria-label="F1Soft setup diagram">
+      <rect x="0" y="0" width="1060" height="520" fill="var(--bg)"/>
+
+      <g data-wt="title">
+        <text x="20" y="30" fill="var(--txt)" font-size="15">F1SOFT DATA CENTER — THE STORAGE POOL UNDER THE PAYMENTS PLATFORM</text>
+        <text x="20" y="50" fill="var(--txt-dim)" font-size="11">PowerFlex: shared block storage assembled from ordinary servers' local NVMe, over ordinary IP</text>
+      </g>
+
+      <g data-wt="workloads">
+        <rect x="20" y="70" width="1020" height="80" rx="6" fill="var(--panel)" stroke="var(--workload)"/>
+        <text x="36" y="96" fill="var(--workload)" font-size="13">BANKING WORKLOADS — mobile banking, payments, core integrations</text>
+        <g fill="none" stroke="var(--workload)">
+          <rect x="36" y="108" width="170" height="30" rx="4"/>
+          <rect x="220" y="108" width="170" height="30" rx="4"/>
+          <rect x="404" y="108" width="170" height="30" rx="4"/>
+        </g>
+        <g fill="var(--txt-dim)" font-size="10">
+          <text x="56" y="127">mobile banking DBs</text>
+          <text x="240" y="127">payment switch</text>
+          <text x="424" y="127">bank integrations</text>
+        </g>
+        <text x="880" y="127" fill="var(--txt-dim)" font-size="10">cannot pause — ever</text>
+      </g>
+
+      <g data-wt="fabric">
+        <rect x="20" y="170" width="1020" height="55" rx="6" fill="var(--panel)" stroke="var(--fabric)" stroke-dasharray="6 4"/>
+        <text x="36" y="196" fill="var(--fabric)" font-size="13">IP FABRIC — every byte between clients and the pool crosses this network</text>
+        <text x="36" y="214" fill="var(--txt-dim)" font-size="11">in software-defined storage the fabric is part of the storage design, not plumbing around it</text>
+      </g>
+
+      <g data-wt="pool">
+        <rect x="20" y="245" width="1020" height="185" rx="6" fill="var(--panel)" stroke="var(--pool)"/>
+        <text x="36" y="271" fill="var(--pool)" font-size="13">POWERFLEX POOL — six identical servers, no controller anywhere</text>
+        <g fill="none" stroke="var(--pool)">
+          <rect x="36"  y="286" width="150" height="100" rx="4"/>
+          <rect x="202" y="286" width="150" height="100" rx="4"/>
+          <rect x="368" y="286" width="150" height="100" rx="4"/>
+          <rect x="534" y="286" width="150" height="100" rx="4"/>
+          <rect x="700" y="286" width="150" height="100" rx="4"/>
+          <rect x="866" y="286" width="150" height="100" rx="4"/>
+        </g>
+        <g fill="var(--txt-dim)" font-size="10">
+          <text x="46" y="306">node 1</text><text x="46" y="324">NVMe + SDS</text>
+          <text x="212" y="306">node 2</text><text x="212" y="324">NVMe + SDS</text>
+          <text x="378" y="306">node 3</text><text x="378" y="324">NVMe + SDS</text>
+          <text x="544" y="306">node 4</text><text x="544" y="324">NVMe + SDS</text>
+          <text x="710" y="306">node 5</text><text x="710" y="324">NVMe + SDS</text>
+          <text x="876" y="306">node 6</text><text x="876" y="324">NVMe + SDS</text>
+        </g>
+        <!-- rebuild mesh hint on node 4 -->
+        <g stroke="var(--rebuild)" fill="none" stroke-dasharray="3 3">
+          <path d="M609 386 q -180 60 -498 -0"/>
+          <path d="M609 386 q 120 55 340 0"/>
+        </g>
+        <text x="500" y="416" fill="var(--rebuild)" font-size="10">if a node fails, every survivor rebuilds at once — recovery gets faster as the pool grows</text>
+        <rect x="920" y="255" width="96" height="20" rx="10" fill="var(--bg)" stroke="var(--pool)"/>
+        <text x="930" y="269" fill="var(--pool)" font-size="10">6 of 3–2,000+</text>
+      </g>
+
+      <g data-wt="observe">
+        <rect x="20" y="450" width="500" height="50" rx="6" fill="var(--panel)" stroke="var(--observe)" stroke-dasharray="6 4"/>
+        <text x="36" y="472" fill="var(--observe)" font-size="12">FLEET OBSERVABILITY — the 40% routine-work reduction lives here</text>
+        <text x="36" y="490" fill="var(--txt)" font-size="10">representative twin: DellCloudIQ</text>
+      </g>
+      <g data-wt="footer">
+        <rect x="540" y="450" width="500" height="50" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="556" y="472" fill="var(--txt)" font-size="12">No controller row in this drawing — that is the drawing's point.</text>
+        <text x="556" y="490" fill="var(--txt-dim)" font-size="10">compare the PowerStore/PowerMax twins, where every byte crosses a controller pair</text>
+      </g>
+
+      <g data-wt="flows">
+        <path d="M530 150 v 20" fill="none" stroke="var(--workload)" stroke-width="2"/>
+        <path d="M530 225 v 20" fill="none" stroke="var(--fabric)" stroke-width="2"/>
+      </g>
+    </svg>
+    <div id="walkthrough" class="walkthrough"></div>
+  </div>
+  <script>
+    window.WALKTHROUGH = [
+      { focus: ["pool"],
+        text: "Six identical servers, each contributing its local NVMe to one shared pool — no storage controller anywhere. The PowerFlex twin's trace builds this pool: the initial scatter is deliberately its longest stage, so repair can be its fastest." },
+      { focus: ["fabric", "pool"],
+        text: "Everything crosses ordinary IP. In software-defined storage the network is part of the storage design — which is why the fabric band sits inside this drawing, not around it." },
+      { focus: ["workloads", "fabric", "pool"],
+        text: "On top, the workloads that can never pause: mobile banking databases, the payment switch, bank integrations. Clients talk straight to the nodes holding their data — no tier in between." },
+      { focus: ["pool", "flows"],
+        text: "The failure story F1Soft is buying: a node dies, and every survivor rebuilds the lost copies simultaneously while I/O keeps flowing — never below 70% of steady in the twin's invariant. Recovery gets faster as the pool grows; a controller array's rebuild is one machine's job at any scale." },
+      { focus: ["observe", "pool"],
+        text: "The CIO's 40% figure is an operations claim: growth, failure, and repair are all non-events, so routine work shrinks. The observability layer (CloudIQ twin, representative) is where that shows up day to day." },
+    ];
+  </script>
+
+  <h2>Blocks in this drawing, and the twins behind them</h2>
+  <table>
+    <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
+    <tr data-wt-ref="pool">
+      <td>PowerFlex pool</td>
+      <td><code>DellPowerFlex/</code> — six nodes, no controller; failure, all-hands rebuild, and rebalance with I/O never stopping</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5189/" data-twin-port="5189" data-twin-start="DellPowerFlex" data-twin-trace="cluster">localhost:5189</a> · <a href="http://localhost:5189/#anatomy">cluster anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="pool">
+      <td>What each pool node is</td>
+      <td><code>DellPowerEdgeR760/</code> — PowerFlex nodes are PowerEdge servers running the SDS stack</td>
+      <td><span class="basis inferred">inferred</span></td>
+      <td><a href="http://localhost:5174/" data-twin-port="5174" data-twin-start="DellPowerEdgeR760" data-twin-trace="poweron">localhost:5174</a></td>
+    </tr>
+    <tr data-wt-ref="fabric">
+      <td>IP fabric under the pool</td>
+      <td><code>DellPowerSwitchSN6000/</code> — the leaf/spine twin; PowerFlex's design treats the fabric as part of the storage</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5185/" data-twin-port="5185" data-twin-start="DellPowerSwitchSN6000" data-twin-trace="fabric">localhost:5185</a></td>
+    </tr>
+    <tr data-wt-ref="observe">
+      <td>Fleet observability</td>
+      <td><code>DellCloudIQ/</code> — telemetry to insight; where a 40% routine-work reduction becomes visible</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5180/" data-twin-port="5180" data-twin-start="DellCloudIQ" data-twin-trace="pipeline">localhost:5180</a></td>
+    </tr>
+  </table>
+
+  <h2>What the twins would show you</h2>
+  <p class="lede lvl-standard">
+    Each link opens a twin paused at the step that carries this setup's story
+    (the twin must be running; the trace loads at that step).
+  </p>
+  <p class="lede lvl-novice">
+    Each link opens one of the interactive models paused at the exact moment that matters
+    for this story. The model has to be running first (see the chips above).
+  </p>
+  <ul>
+    <li><a href="http://localhost:5189/#phase=pool">PowerFlex scattering the pool</a> — the deliberately slow initial scatter that buys the fast repair later.</li>
+    <li><a href="http://localhost:5189/#phase=failure">PowerFlex losing a node</a> — I/O keeps flowing through the failure; there is no failover pause to find.</li>
+    <li><a href="http://localhost:5189/#phase=rebuild">PowerFlex rebuilding</a> — rebuild participants equal to every surviving node, never a subset; the field the twin exists for.</li>
+    <li><a href="http://localhost:5175/#phase=cluster" data-twin-port="5175" data-twin-start="DellPowerStore" data-twin-trace="poweron">PowerStore's controller pair forming</a> — the architecture PowerFlex argues with, for contrast: here, every byte crosses these two nodes.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lvl-standard">
+    What the sources actually state: F1Soft deployed Dell PowerFlex in its data centers for
+    performance, agility, scalability, and reliability, and its CIO credits it with roughly
+    40% less time on routine tasks. Dell's story does not publish node counts, fabric
+    hardware, or the workload placement drawn here — the six-node pool mirrors the PowerFlex
+    twin's stylized cluster, and the fabric/observability blocks are representative.
+    </span>
+    <span class="lvl-novice">
+    What Dell's customer story actually says: F1Soft runs its data centers on Dell PowerFlex
+    and its technology chief credits it with about 40% less routine maintenance work.
+    How many servers F1Soft has, which network switches it uses, and which workload sits
+    where are our illustration, not disclosed facts. Blocks tagged "representative" are
+    educated stand-ins.
+    </span>
+  </div>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://www.dell.com/en-us/lp/dt/customer-stories">Dell — Customer Stories (F1Soft PowerFlex story, with the Akbar Khan quote)</a></li>
+    <li><a href="https://www.dell.com/en-us/dt/storage/powerflex.htm">Dell — PowerFlex software-defined infrastructure</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Dell_Technologies_PowerFlex">Wikipedia — Dell Technologies PowerFlex</a></li>
+  </ul>
+</main>
+<script src="../shared/setup.js"></script>
+</body>
+</html>

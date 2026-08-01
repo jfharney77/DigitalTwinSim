@@ -1,0 +1,40 @@
+[
+  {
+    "url": "https://www.mclaren.com/racing/latest-news/2026/mclaren-racing-extends-relationship-with-dell-technologies/",
+    "title": "McLaren Racing extends relationship with Dell Technologies",
+    "publisher": "McLaren Racing",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Partnership since 2018, extended Feb 2026",
+      "Constructors' Championships 2024, 2025"
+    ]
+  },
+  {
+    "url": "https://investors.delltechnologies.com/news-releases/news-release-details/mclaren-racing-extends-relationship-dell-technologies-accelerate",
+    "title": "McLaren extends relationship with Dell (press release)",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Dell AI Factory incl. PowerEdge; up to 1.5 TB per race weekend",
+      "Factory, road, and trackside operations"
+    ]
+  },
+  {
+    "url": "https://www.dell.com/en-us/blog/mclaren-racing-turns-race-data-into-an-edge-with-dell-technologies-storage/",
+    "title": "McLaren Racing turns race data into an edge with Dell storage",
+    "publisher": "Dell Technologies blog",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "PowerStore and PowerScale for modelling and CFD workloads"
+    ]
+  },
+  {
+    "url": "https://channellife.com.au/story/mclaren-extends-dell-tech-deal-to-power-f1-data-push",
+    "title": "McLaren extends Dell tech deal",
+    "publisher": "ChannelLife",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Trade-press corroboration of the extension and data volumes"
+    ]
+  }
+]

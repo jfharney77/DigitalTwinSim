@@ -1,0 +1,113 @@
+{
+  "_comment": "Port registry for every built twin. Regenerate/verify: python3 CustomerSetup/tests/test_links.py (test_ports_registry). knownCollisions are historical (run those twins one at a time); adding a NEW collision fails the test.",
+  "twins": {
+    "DellAlienware": {
+      "frontend": 5176,
+      "proxyDefault": 8003,
+      "backend": 8003
+    },
+    "DellCloudIQ": {
+      "frontend": 5180,
+      "proxyDefault": 8007,
+      "backend": 8007
+    },
+    "DellCyberDetect": {
+      "frontend": 5192,
+      "proxyDefault": 8019,
+      "backend": 8019
+    },
+    "DellExascale": {
+      "frontend": 5184,
+      "proxyDefault": 8011,
+      "backend": 8011
+    },
+    "DellFortZero": {
+      "frontend": 5195,
+      "proxyDefault": 8022,
+      "backend": 8022
+    },
+    "DellIDRAC": {
+      "frontend": 5177,
+      "proxyDefault": 8004,
+      "backend": 8004
+    },
+    "DellIR7000": {
+      "frontend": 5182,
+      "proxyDefault": 8009,
+      "backend": 8009
+    },
+    "DellPowerEdgeR760": {
+      "frontend": 5174,
+      "proxyDefault": 8001,
+      "backend": 8001
+    },
+    "DellPowerEdgeXE9712": {
+      "frontend": 5181,
+      "proxyDefault": 8008,
+      "backend": 8008
+    },
+    "DellPowerFlex": {
+      "frontend": 5189,
+      "proxyDefault": 8016,
+      "backend": 8016
+    },
+    "DellPowerMax": {
+      "frontend": 5178,
+      "proxyDefault": 8005,
+      "backend": 8005
+    },
+    "DellPowerProtect": {
+      "frontend": 5183,
+      "proxyDefault": 8010,
+      "backend": 8010
+    },
+    "DellPowerStore": {
+      "frontend": 5175,
+      "proxyDefault": 8002,
+      "backend": 8002
+    },
+    "DellPowerSwitchE3200": {
+      "frontend": 5178,
+      "proxyDefault": 8005,
+      "backend": 8005
+    },
+    "DellPowerSwitchSN6000": {
+      "frontend": 5185,
+      "proxyDefault": 8012,
+      "backend": 8012
+    },
+    "DellPrivateCloud": {
+      "frontend": 5198,
+      "proxyDefault": 8025,
+      "backend": 8025
+    },
+    "DellProMaxPlus": {
+      "frontend": 5186,
+      "proxyDefault": 8013,
+      "backend": 8013
+    },
+    "DellVxRail": {
+      "frontend": 5179,
+      "proxyDefault": 8006,
+      "backend": 8006
+    },
+    "GPU": {
+      "frontend": 5173,
+      "proxyDefault": 8000,
+      "backend": 8000
+    }
+  },
+  "knownCollisions": {
+    "frontend:5178": [
+      "DellPowerMax",
+      "DellPowerSwitchE3200"
+    ],
+    "backend:8005": [
+      "DellPowerMax",
+      "DellPowerSwitchE3200"
+    ]
+  },
+  "reserved": {
+    "customerSetupPages": 5170
+  }
+}

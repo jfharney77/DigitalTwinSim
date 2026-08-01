@@ -1,0 +1,31 @@
+[
+  {
+    "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~11~dell-technologies-powers-taccs-new-supercomputer-horizon.htm",
+    "title": "Dell Technologies powers TACC's new supercomputer Horizon",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Dell IRSS with direct-liquid-cooled PowerEdge; Grace Blackwell + Vera CPUs",
+      "1M CPU cores, 4,000 GPUs, Quantum-X800 InfiniBand",
+      "300 PF, 10x Frontera"
+    ]
+  },
+  {
+    "url": "https://investors.delltechnologies.com/news-releases/news-release-details/dell-technologies-powers-taccs-new-supercomputer-horizon",
+    "title": "Dell powers TACC Horizon (investor release)",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Same claims as the press release; investor-page copy"
+    ]
+  },
+  {
+    "url": "https://tacc.utexas.edu/news/latest-news/2024/05/13/stampede3-supercomputer-enters-full-production-modernizes-to-meet-computational-needs/",
+    "title": "Stampede3 enters full production",
+    "publisher": "TACC",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "The Dell lineage at TACC: Frontera, Stampede3 (PowerEdge XE9640, DLC), Horizon"
+    ]
+  }
+]

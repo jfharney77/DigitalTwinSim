@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~04~dell-technologies-achieves-us-department-of-defense-validation-for-zero-trust-solution.htm",
+    "title": "Dell achieves US DoD validation for zero trust solution",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Target Level validation, April 2025, under the DoD ZTRA",
+      "Sovereign, on-premises private cloud; tested against sophisticated attack"
+    ]
+  },
+  {
+    "url": "https://investors.delltechnologies.com/news-releases/news-release-details/dell-technologies-project-fort-zero-transform-security",
+    "title": "Dell Technologies Project Fort Zero to transform security",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Program announced 2023 with 30+ partner ecosystem"
+    ]
+  },
+  {
+    "url": "https://www.executivebiz.com/articles/dell-zero-trust-cybersecurity-platform",
+    "title": "Dell readies zero trust cybersecurity platform",
+    "publisher": "ExecutiveBiz",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "ZTRA validation context; government and private-sector availability"
+    ]
+  }
+]

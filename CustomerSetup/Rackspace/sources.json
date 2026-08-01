@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2021~06~20210602-dell-technologies-reimagines-dell-emc-vxrail-to-offer-greater-performance-and-storage-flexibility.htm",
+    "title": "Dell reimagines VxRail (dynamic nodes announcement)",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Eric Miller (Rackspace VP, private cloud) quote endorsing VCF on VxRail + PowerStore",
+      "VxRail dynamic nodes: compute-only nodes using external storage"
+    ]
+  },
+  {
+    "url": "https://www.rackspace.com/newsroom/rackspace-technology-makes-significant-investment-extending-its-vmware-multicloud",
+    "title": "Rackspace extends its VMware multicloud solutions",
+    "publisher": "Rackspace Technology",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Rackspace's VMware-based private-cloud investment"
+    ]
+  },
+  {
+    "url": "https://www.dell.com/en-us/blog/scalable-transformation-with-vmware-cloud-foundation-5-0-on-vxrail/",
+    "title": "VMware Cloud Foundation 5.0 on VxRail",
+    "publisher": "Dell Technologies blog",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "The VCF-on-VxRail stack drawn: vSphere/vSAN/NSX lifecycle-managed as a unit"
+    ]
+  }
+]

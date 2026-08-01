@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DoD Fort Zero validation — customer setup twin</title>
+<link rel="stylesheet" href="../shared/setup.css" />
+<style>
+  :root { --pillar: #4f7cff; --policy: #ffd23f; --attack: #e0526e; --substrate: #b18cff; --spoke: #3a4a60; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="crumb"><a href="../index.html">CustomerSetup</a></nav>
+  <div class="level-control"></div>
+  <h1>US Department of Defense, Fort Zero validation</h1>
+  <p class="lede lvl-standard">
+    In April 2025 Dell's Project Fort Zero completed the US Department of Defense's
+    assessment under the DoD Zero Trust Reference Architecture, achieving Target Level
+    validation as a sovereign, on-premises private cloud — tested by withstanding
+    sophisticated attack, not by checklist. The deployment assessed is the unusual customer
+    setup here: not a rack diagram but a decision architecture, in which no network
+    position, device, or credential is ever trusted implicitly. It is the one setup in this
+    collection whose drawing must not contain a perimeter — drawing a wall around it would
+    reverse the claim being validated.
+  </p>
+  <p class="lede lvl-novice">
+    In April 2025 the US Department of Defense finished testing Dell's "Project Fort Zero"
+    security platform and validated it at its "Target Level" — by attacking it with skilled
+    testers and confirming the attacks got nowhere. Fort Zero implements "zero trust": the
+    idea that being inside the network should earn you nothing, and every single access is
+    checked, every time, against seven kinds of evidence. That is why this drawing has no
+    wall around it — in the old model the wall was the security, and the whole point here
+    is that there is no wall to be inside of.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1060 560" role="img" aria-label="DoD Fort Zero setup diagram">
+      <rect x="0" y="0" width="1060" height="560" fill="var(--bg)"/>
+
+      <g data-wt="title">
+        <text x="20" y="30" fill="var(--txt)" font-size="15">THE ASSESSED DEPLOYMENT — SEVEN PILLARS, ONE DECISION POINT, NO PERIMETER</text>
+        <text x="20" y="50" fill="var(--txt-dim)" font-size="11">the DoD Zero Trust Reference Architecture's pillars, drawn co-equal on purpose</text>
+      </g>
+
+      <g data-wt="spokes" stroke="var(--spoke)">
+        <line x1="255" y1="144" x2="470" y2="230"/>
+        <line x1="530" y1="144" x2="530" y2="208"/>
+        <line x1="805" y1="144" x2="590" y2="230"/>
+        <line x1="210" y1="262" x2="440" y2="245"/>
+        <line x1="850" y1="262" x2="620" y2="245"/>
+        <line x1="325" y1="374" x2="480" y2="272"/>
+        <line x1="735" y1="374" x2="580" y2="272"/>
+      </g>
+
+      <g data-wt="pillars">
+        <g fill="none" stroke="var(--pillar)">
+          <rect x="180" y="90"  width="150" height="54" rx="4"/>
+          <rect x="455" y="90"  width="150" height="54" rx="4"/>
+          <rect x="730" y="90"  width="150" height="54" rx="4"/>
+          <rect x="60"  y="262" width="150" height="54" rx="4"/>
+          <rect x="850" y="262" width="150" height="54" rx="4"/>
+          <rect x="250" y="374" width="150" height="54" rx="4"/>
+          <rect x="660" y="374" width="150" height="54" rx="4"/>
+        </g>
+        <g fill="var(--pillar)" font-size="11">
+          <text x="196" y="112">IDENTITY</text>
+          <text x="471" y="112">DEVICE</text>
+          <text x="746" y="112">NETWORK</text>
+          <text x="76"  y="284">WORKLOAD</text>
+          <text x="866" y="284">DATA</text>
+          <text x="266" y="396">VISIBILITY</text>
+          <text x="676" y="396">AUTOMATION</text>
+        </g>
+        <g fill="var(--txt-dim)" font-size="9">
+          <text x="196" y="130">who is asking</text>
+          <text x="471" y="130">on what machine</text>
+          <text x="746" y="130">location ≠ authority</text>
+          <text x="76"  y="302">what is asking</text>
+          <text x="866" y="302">for which records</text>
+          <text x="266" y="414">everything is seen</text>
+          <text x="676" y="414">response in seconds</text>
+        </g>
+      </g>
+
+      <g data-wt="policy">
+        <rect x="440" y="208" width="180" height="64" rx="4" fill="var(--panel)" stroke="var(--policy)"/>
+        <text x="456" y="232" fill="var(--policy)" font-size="12">POLICY ENGINE</text>
+        <text x="456" y="250" fill="var(--txt-dim)" font-size="9">every access decided here,</text>
+        <text x="456" y="262" fill="var(--txt-dim)" font-size="9">every time, on all seven</text>
+      </g>
+
+      <g data-wt="redteam">
+        <rect x="620" y="300" width="185" height="56" rx="4" fill="var(--panel)" stroke="var(--attack)" stroke-dasharray="5 4"/>
+        <text x="634" y="322" fill="var(--attack)" font-size="11">DoD ASSESSMENT TEAM</text>
+        <text x="634" y="338" fill="var(--txt-dim)" font-size="9">already "inside" — and holding</text>
+        <text x="634" y="349" fill="var(--txt-dim)" font-size="9">the position a perimeter would honor</text>
+      </g>
+
+      <g data-wt="substrate">
+        <rect x="20" y="460" width="1020" height="60" rx="6" fill="var(--panel)" stroke="var(--substrate)" stroke-dasharray="6 4"/>
+        <text x="36" y="484" fill="var(--substrate)" font-size="13">SOVEREIGN ON-PREM SUBSTRATE — Dell-delivered private cloud; a hardware root of trust under every server</text>
+        <text x="36" y="504" fill="var(--txt)" font-size="11">twins: DellPrivateCloud (representative) · DellIDRAC (the silicon the trust chain starts in) · DellPowerEdgeR760 (representative)</text>
+      </g>
+
+      <g data-wt="footer">
+        <text x="20" y="546" fill="var(--txt-dim)" font-size="11">No enclosure is drawn and none is missing — the absence is the architecture. The FortZero twin's map test caps every shape so nothing can act as a wall.</text>
+      </g>
+    </svg>
+    <div id="walkthrough" class="walkthrough"></div>
+  </div>
+  <script>
+    window.WALKTHROUGH = [
+      { focus: ["pillars"],
+        text: "The DoD reference architecture's seven pillars, drawn identical on purpose: identity, device, network, workload, data, visibility, automation. A gap in any one is a route around all of them — which is why none is drawn larger." },
+      { focus: ["policy", "spokes", "pillars"],
+        text: "Every access request — every one, every time — is decided at the policy engine, drawing on all seven pillars at once. There is no fast path for 'internal' traffic because internal is not a place that exists here." },
+      { focus: ["policy"],
+        text: "A grant is a lease, not a property: it carries a TTL, covers at most one resource, and monitoring never stops. The FortZero twin's longest stage is deliberately the monitoring — that is where zero trust's real cost lives." },
+      { focus: ["redteam", "policy", "pillars"],
+        text: "The assessment: DoD testers operated from the position a perimeter model would have honored — already inside, holding credentials and network position. Target Level validation means that position bought them nothing reachable." },
+      { focus: ["substrate"],
+        text: "Underneath: a sovereign, on-premises Dell private cloud, with the trust chain anchored in silicon — each server's BMC verifies firmware before any host boots. The iDRAC twin is that first link; the substrate twins are representative stand-ins." },
+      { focus: ["pillars", "policy", "spokes", "redteam", "substrate", "footer"],
+        text: "The whole assessed deployment. Note what is not in the picture: a firewall ring, a DMZ, an inside. The FortZero twin enforces that absence with a test." },
+    ];
+  </script>
+
+  <h2>Blocks in this drawing, and the twins behind them</h2>
+  <table>
+    <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
+    <tr data-wt-ref="pillars,policy,redteam">
+      <td>Seven pillars, policy engine, and the breach that reaches nothing</td>
+      <td><code>DellFortZero/</code> — the access trace: verify → decide → grant → monitor → breach → contained; implicit trust grants pinned at zero</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5195/" data-twin-port="5195" data-twin-start="DellFortZero" data-twin-trace="access">localhost:5195</a> · <a href="http://localhost:5195/#anatomy">pillar map</a></td>
+    </tr>
+    <tr data-wt-ref="substrate">
+      <td>Hardware root of trust under every server</td>
+      <td><code>DellIDRAC/</code> — the BMC that verifies firmware and boots before any host; the FortZero twin names it as the trust chain's first link</td>
+      <td><span class="basis inferred">inferred</span></td>
+      <td><a href="http://localhost:5177/" data-twin-port="5177" data-twin-start="DellIDRAC" data-twin-trace="bringup">localhost:5177</a> · <a href="http://localhost:5177/#anatomy">block diagram</a></td>
+    </tr>
+    <tr data-wt-ref="substrate">
+      <td>The on-prem private-cloud substrate</td>
+      <td><code>DellPrivateCloud/</code> — pooled compute/storage/network under one control plane; Fort Zero's actual stack composition is not published</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5198/" data-twin-port="5198" data-twin-start="DellPrivateCloud" data-twin-trace="cloud">localhost:5198</a></td>
+    </tr>
+    <tr data-wt-ref="substrate">
+      <td>The servers themselves</td>
+      <td><code>DellPowerEdgeR760/</code> — the PowerEdge machines a Dell private cloud stands on</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5174/" data-twin-port="5174" data-twin-start="DellPowerEdgeR760" data-twin-trace="poweron">localhost:5174</a></td>
+    </tr>
+  </table>
+
+  <h2>What the twins would show you</h2>
+  <p class="lede lvl-standard">
+    Each link opens a twin paused at the step that carries this setup's story
+    (the twin must be running; the trace loads at that step).
+  </p>
+  <p class="lede lvl-novice">
+    Each link opens one of the interactive models paused at the exact moment that matters
+    for this story. The model has to be running first (see the chips above).
+  </p>
+  <ul>
+    <li><a href="http://localhost:5195/#phase=decide">FortZero at the decision</a> — all seven pillar spokes lit at once; the network pillar consulted and still authorizing nothing by itself.</li>
+    <li><a href="http://localhost:5195/#phase=monitor">FortZero mid-monitoring</a> — the longest stage on purpose: zero trust's cost is not the login, it is the never stopping.</li>
+    <li><a href="http://localhost:5195/#phase=breach">FortZero at the breach</a> — the attacker genuinely holds the inside position, and resources reachable stays at zero; the DoD assessment in miniature.</li>
+    <li><a href="http://localhost:5195/#phase=contained">FortZero contained</a> — the end state the Target Level validation certifies.</li>
+    <li><a href="http://localhost:5177/#phase=ready">iDRAC at ready</a> — the root-of-trust bring-up that anchors the whole chain, finished before any host wakes.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lvl-standard">
+    What the sources actually state: Project Fort Zero completed the DoD's rigorous
+    assessment under the Zero Trust Reference Architecture, was tested to withstand
+    sophisticated attack, and achieved Target Level validation as a sovereign, on-premises
+    private cloud (announced April 2025; the program itself was announced in 2023 with a
+    partner ecosystem of 30+). The DoD does not publish the assessed environment's bill of
+    materials — the substrate row and everything tagged representative reflect how Dell
+    delivers such a platform, not a disclosed configuration; the pillar layout follows the
+    DoD reference architecture the FortZero twin encodes.
+    </span>
+    <span class="lvl-novice">
+    What Dell and the DoD process actually established: Fort Zero passed the Department of
+    Defense's zero-trust assessment in April 2025, at "Target Level", tested by real
+    attack. What hardware sat underneath in the assessed environment is not published — the
+    bottom band of our drawing shows how Dell typically builds such a platform, and is
+    labeled "representative" for that reason.
+    </span>
+  </div>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~04~dell-technologies-achieves-us-department-of-defense-validation-for-zero-trust-solution.htm">Dell — US DoD validation for zero trust solution (Apr 2025)</a></li>
+    <li><a href="https://investors.delltechnologies.com/news-releases/news-release-details/dell-technologies-project-fort-zero-transform-security">Dell — Project Fort Zero announcement (2023)</a></li>
+    <li><a href="https://www.executivebiz.com/articles/dell-zero-trust-cybersecurity-platform">ExecutiveBiz — Dell readies zero trust platform (ZTRA validation context)</a></li>
+  </ul>
+</main>
+<script src="../shared/setup.js"></script>
+</body>
+</html>

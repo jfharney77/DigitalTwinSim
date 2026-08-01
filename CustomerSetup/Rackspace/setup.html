@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rackspace Technology — customer setup twin</title>
+<link rel="stylesheet" href="../shared/setup.css" />
+<style>
+  :root { --hci: #ffd23f; --storage: #b18cff; --cloud: #4f7cff; --tenant: #3fd2c7; --node: #ff8000; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="crumb"><a href="../index.html">CustomerSetup</a></nav>
+  <div class="level-control"></div>
+  <h1>Rackspace Technology, hosted private cloud</h1>
+  <p class="lede lvl-standard">
+    Rackspace Technology runs managed private clouds for enterprise tenants on VMware Cloud
+    Foundation over Dell VxRail — and pairs the HCI clusters with external PowerStore arrays.
+    In Dell's words, from Eric Miller, Rackspace's VP of private cloud: combining VCF on
+    VxRail with enterprise arrays like PowerStore "is the perfect blend of resources,
+    allowing us to take advantage of HCI's automation, hybrid cloud's agility and enterprise
+    storage's performance and efficiency." That mix — fused HCI nodes where coupling helps,
+    external storage where it doesn't — is the exact argument two of this repo's twins stage
+    against each other.
+  </p>
+  <p class="lede lvl-novice">
+    Rackspace is a company that runs private clouds for other businesses — each customer
+    gets its own slice of managed infrastructure. Rackspace builds these on Dell VxRail:
+    clusters of identical servers whose built-in drives pool together into shared storage
+    ("hyperconverged infrastructure", HCI). For workloads that need more storage than
+    compute, Rackspace attaches separate Dell PowerStore storage systems instead of adding
+    whole servers. A Rackspace executive calls the combination "the perfect blend" — and the
+    trade-off it navigates is the same one two of this repository's models argue about.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1060 520" role="img" aria-label="Rackspace setup diagram">
+      <rect x="0" y="0" width="1060" height="520" fill="var(--bg)"/>
+
+      <g data-wt="title">
+        <text x="20" y="30" fill="var(--txt)" font-size="15">ONE MANAGED PRIVATE CLOUD (Rackspace runs many)</text>
+        <text x="20" y="50" fill="var(--txt-dim)" font-size="11">VMware Cloud Foundation on VxRail · external PowerStore for storage-heavy tenants</text>
+      </g>
+
+      <g data-wt="tenants">
+        <rect x="20" y="70" width="1020" height="70" rx="6" fill="var(--panel)" stroke="var(--tenant)"/>
+        <text x="36" y="96" fill="var(--tenant)" font-size="13">TENANT WORKLOADS — each enterprise customer's VMs, isolated from its neighbors</text>
+        <g fill="none" stroke="var(--tenant)">
+          <rect x="36" y="106" width="150" height="24" rx="4"/>
+          <rect x="200" y="106" width="150" height="24" rx="4"/>
+          <rect x="364" y="106" width="150" height="24" rx="4"/>
+        </g>
+        <g fill="var(--txt-dim)" font-size="10">
+          <text x="66" y="122">tenant A</text>
+          <text x="230" y="122">tenant B</text>
+          <text x="394" y="122">tenant C</text>
+        </g>
+        <rect x="930" y="106" width="96" height="24" rx="12" fill="var(--bg)" stroke="var(--tenant)"/>
+        <text x="940" y="122" fill="var(--tenant)" font-size="10">3 of many</text>
+      </g>
+
+      <g data-wt="vcf">
+        <rect x="20" y="160" width="1020" height="60" rx="6" fill="var(--panel)" stroke="var(--cloud)"/>
+        <text x="36" y="186" fill="var(--cloud)" font-size="13">VMWARE CLOUD FOUNDATION — vSphere + vSAN + NSX + SDDC Manager, lifecycle-managed by VxRail HCI System Software</text>
+        <text x="36" y="206" fill="var(--txt-dim)" font-size="11">one operations model over every cluster; Rackspace's managed-service layer sits on top</text>
+      </g>
+
+      <g data-wt="vxrail">
+        <rect x="20" y="240" width="620" height="190" rx="6" fill="var(--panel)" stroke="var(--hci)"/>
+        <text x="36" y="266" fill="var(--hci)" font-size="13">VXRAIL CLUSTER — identical PowerEdge-based nodes, local NVMe pooled by vSAN</text>
+        <g fill="none" stroke="var(--node)">
+          <rect x="36"  y="284" width="140" height="100" rx="4"/>
+          <rect x="188" y="284" width="140" height="100" rx="4"/>
+          <rect x="340" y="284" width="140" height="100" rx="4"/>
+          <rect x="492" y="284" width="132" height="100" rx="4"/>
+        </g>
+        <g fill="var(--txt-dim)" font-size="10">
+          <text x="46" y="304">node 1</text><text x="46" y="322">compute + vSAN</text>
+          <text x="198" y="304">node 2</text><text x="198" y="322">compute + vSAN</text>
+          <text x="350" y="304">node 3</text><text x="350" y="322">compute + vSAN</text>
+          <text x="502" y="304">node 4</text><text x="502" y="322">dynamic node —</text><text x="502" y="338">compute only,</text><text x="502" y="354">storage on PowerStore</text>
+        </g>
+        <text x="36" y="416" fill="var(--txt)" font-size="11">twins: DellVxRail (the cluster) · DellPowerEdgeR760 (what each node is)</text>
+      </g>
+
+      <g data-wt="powerstore">
+        <rect x="670" y="240" width="370" height="190" rx="6" fill="var(--panel)" stroke="var(--storage)"/>
+        <text x="686" y="266" fill="var(--storage)" font-size="13">POWERSTORE — external enterprise array</text>
+        <text x="686" y="286" fill="var(--txt-dim)" font-size="11">storage-heavy tenants grow capacity here</text>
+        <text x="686" y="302" fill="var(--txt-dim)" font-size="11">without buying compute they don't need</text>
+        <rect x="686" y="318" width="160" height="66" rx="4" fill="var(--bg)" stroke="var(--storage)"/>
+        <text x="700" y="342" fill="var(--storage)" font-size="10">node A · node B</text>
+        <text x="700" y="358" fill="var(--txt-dim)" font-size="10">active/active, all-NVMe</text>
+        <text x="686" y="416" fill="var(--txt)" font-size="11">twin: DellPowerStore</text>
+      </g>
+
+      <g data-wt="flows">
+        <path d="M330 140 v 20" fill="none" stroke="var(--tenant)" stroke-width="2"/>
+        <path d="M330 220 v 20" fill="none" stroke="var(--cloud)" stroke-width="2"/>
+        <path d="M640 335 h 30" fill="none" stroke="var(--storage)" stroke-width="2"/>
+      </g>
+
+      <g data-wt="footer">
+        <rect x="20" y="450" width="1020" height="50" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="36" y="480" fill="var(--txt-dim)" font-size="11">The argument in one rack: nodes 1–3 are hyperconvergence (VxRail twin); node 4 + PowerStore is the first step toward disaggregation (PrivateCloud twin) — Rackspace runs both on purpose.</text>
+      </g>
+    </svg>
+    <div id="walkthrough" class="walkthrough"></div>
+  </div>
+  <script>
+    window.WALKTHROUGH = [
+      { focus: ["vxrail"],
+        text: "The foundation: a VxRail cluster — identical PowerEdge-based nodes whose local NVMe is pooled by vSAN into one datastore. The VxRail twin's first-run trace shows this cluster assembling itself: lockstep boot, primary election, vSAN fuse." },
+      { focus: ["vcf", "vxrail"],
+        text: "VMware Cloud Foundation lays one operations model over it — vSphere, vSAN, NSX, lifecycle-managed as a unit by VxRail HCI System Software. This automation is what lets Rackspace run many such clouds with one team." },
+      { focus: ["powerstore", "vxrail"],
+        text: "The twist Rackspace praises: compute-only VxRail dynamic nodes mount external PowerStore instead of growing vSAN. Storage-heavy tenants get terabytes without paying for processors they don't need." },
+      { focus: ["tenants", "vcf"],
+        text: "On top: tenant workloads, one enterprise per slice, isolated by NSX and managed by Rackspace. The tenants see a cloud; the blend below is invisible to them." },
+      { focus: ["vxrail", "powerstore", "footer"],
+        text: "Read the bottom band: nodes 1–3 are the hyperconverged argument, node 4 + PowerStore is the disaggregated one. The VxRail and PrivateCloud twins stage exactly this debate — Rackspace's estate is both answers at once." },
+    ];
+  </script>
+
+  <h2>Blocks in this drawing, and the twins behind them</h2>
+  <table>
+    <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
+    <tr data-wt-ref="vxrail">
+      <td>VxRail cluster running VCF</td>
+      <td><code>DellVxRail/</code> — four identical nodes fusing their NVMe into one vSAN datastore; its VCF use case is this stack</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5179/" data-twin-port="5179" data-twin-start="DellVxRail" data-twin-trace="firstrun">localhost:5179</a> · <a href="http://localhost:5179/#usecases">use cases</a></td>
+    </tr>
+    <tr data-wt-ref="powerstore">
+      <td>External PowerStore array</td>
+      <td><code>DellPowerStore/</code> — the dual-controller all-NVMe array the dynamic nodes mount</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5175/" data-twin-port="5175" data-twin-start="DellPowerStore" data-twin-trace="poweron">localhost:5175</a> · <a href="http://localhost:5175/#anatomy">array anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="vxrail">
+      <td>What one VxRail node is</td>
+      <td><code>DellPowerEdgeR760/</code> — VxRail nodes are PowerEdge servers under the HCI software</td>
+      <td><span class="basis inferred">inferred</span></td>
+      <td><a href="http://localhost:5174/" data-twin-port="5174" data-twin-start="DellPowerEdgeR760" data-twin-trace="poweron">localhost:5174</a></td>
+    </tr>
+    <tr data-wt-ref="footer">
+      <td>The disaggregation this points at</td>
+      <td><code>DellPrivateCloud/</code> — dynamic nodes + external arrays taken to their conclusion: pools, one control plane, swappable hypervisor</td>
+      <td><span class="basis inferred">inferred</span></td>
+      <td><a href="http://localhost:5198/" data-twin-port="5198" data-twin-start="DellPrivateCloud" data-twin-trace="cloud">localhost:5198</a></td>
+    </tr>
+  </table>
+
+  <h2>What the twins would show you</h2>
+  <p class="lede lvl-standard">
+    Each link opens a twin paused at the step that carries this setup's story
+    (the twin must be running; the trace loads at that step).
+  </p>
+  <p class="lede lvl-novice">
+    Each link opens one of the interactive models paused at the exact moment that matters
+    for this story. The model has to be running first (see the chips above).
+  </p>
+  <ul>
+    <li><a href="http://localhost:5179/#phase=primary">VxRail at primary election</a> — lockstep breaks for one step: a single node steps up to run VxRail Manager and build the cluster.</li>
+    <li><a href="http://localhost:5179/#phase=vsan">VxRail at the vSAN fuse</a> — four nodes' local drives become one shared datastore; the moment HCI earns its name.</li>
+    <li><a href="http://localhost:5175/#phase=cluster">PowerStore forming its active/active pair</a> — the external array the dynamic nodes lean on.</li>
+    <li><a href="http://localhost:5198/#phase=growstorage">PrivateCloud growing storage alone</a> — capacity doubles, compute untouched, workloads never notice: the property Rackspace buys with dynamic nodes + PowerStore.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lvl-standard">
+    What the sources actually state: Rackspace runs VMware Cloud Foundation on VxRail for
+    its multicloud/private-cloud services and endorses pairing it with PowerStore (the Eric
+    Miller quote, from Dell's June 2021 VxRail dynamic-nodes announcement); Rackspace's own
+    newsroom documents its VMware-based private-cloud investment. The four-node drawing,
+    tenant count, and the specific dynamic-node split are illustrative — Rackspace does not
+    publish per-cloud topology.
+    </span>
+    <span class="lvl-novice">
+    What the sources actually say: Rackspace builds its managed private clouds on VMware
+    Cloud Foundation over Dell VxRail, and a Rackspace executive publicly endorsed adding
+    PowerStore storage to that mix. The number of servers, customers, and the exact split
+    we've drawn are our illustration — Rackspace doesn't publish the layout of each cloud.
+    </span>
+  </div>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2021~06~20210602-dell-technologies-reimagines-dell-emc-vxrail-to-offer-greater-performance-and-storage-flexibility.htm">Dell — VxRail dynamic nodes announcement, with the Rackspace quote (June 2021)</a></li>
+    <li><a href="https://www.rackspace.com/newsroom/rackspace-technology-makes-significant-investment-extending-its-vmware-multicloud">Rackspace — investment in extending its VMware multicloud solutions</a></li>
+    <li><a href="https://www.dell.com/en-us/blog/scalable-transformation-with-vmware-cloud-foundation-5-0-on-vxrail/">Dell blog — VMware Cloud Foundation on VxRail</a></li>
+  </ul>
+</main>
+<script src="../shared/setup.js"></script>
+</body>
+</html>

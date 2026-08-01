@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://www.dell.com/en-us/lp/dt/customer-stories",
+    "title": "Dell Customer Stories (F1Soft PowerFlex story)",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "F1Soft deployed PowerFlex in its data centers",
+      "Akbar Khan (CIO) quote: ~40% less time on routine tasks"
+    ]
+  },
+  {
+    "url": "https://www.dell.com/en-us/dt/storage/powerflex.htm",
+    "title": "PowerFlex software-defined infrastructure",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "PowerFlex scale/architecture claims: 3 to 2,000+ nodes, no controller"
+    ]
+  },
+  {
+    "url": "https://en.wikipedia.org/wiki/Dell_Technologies_PowerFlex",
+    "title": "Dell Technologies PowerFlex",
+    "publisher": "Wikipedia",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "Product lineage and architecture background"
+    ]
+  }
+]

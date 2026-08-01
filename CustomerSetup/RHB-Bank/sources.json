@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/powerprotect-cyber-recovery",
+    "title": "PowerProtect Cyber Recovery Solutions (RHB featured customer story)",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "RHB secures data with PowerProtect Cyber Recovery: AI + air-gapped vault for clean recoveries",
+      "1,300+ customers; Sheltered Harbor endorsement"
+    ]
+  },
+  {
+    "url": "https://www.delltechnologies.com/asset/en-us/products/data-protection/industry-market/h18661-dell-powerprotect-cyber-recovery-reference-architecture-wp.pdf",
+    "title": "PowerProtect Cyber Recovery reference architecture (H18661)",
+    "publisher": "Dell Technologies",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "The vault architecture drawn: operational air gap, Retention Lock, clean room"
+    ]
+  },
+  {
+    "url": "https://indexengines.com/products/cybersense-for-dell-technologies/",
+    "title": "CyberSense for Dell Technologies",
+    "publisher": "Index Engines",
+    "dateAccessed": "2026-07-31",
+    "supports": [
+      "CyberSense scans in-vault, ML content analytics, 99.99% accuracy claim"
+    ]
+  }
+]
