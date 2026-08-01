@@ -47,6 +47,21 @@ LEVEL_NAMES = {
 
 DEFAULT_LEVEL = 3
 
+# Most twins register a fixed set of blocks once, at import or on the first
+# ``simulate()``. The Alienware twin is the exception: its descriptions are
+# f-strings interpolating the scenario (adapter name, battery percentage,
+# thermal mode), so a distinct scenario produces distinct level-3 text and
+# therefore a distinct key. That is correct behaviour — all five variants
+# are rendered together in the same call, so they stay consistent — but it
+# means the registry grows with the number of scenarios a long-running
+# server has been asked for.
+#
+# This cap bounds that growth. Past it, further blocks simply go
+# unregistered, which degrades them to reading the same at every level
+# rather than failing. A few thousand entries is far more than any twin
+# needs and a few megabytes at worst.
+MAX_REGISTERED = 4096
+
 # level-3 text -> {level: text}
 _REGISTRY: dict[str, dict[int, str]] = {}
 
@@ -76,6 +91,10 @@ def L(
             variants[level] = text
 
     existing = _REGISTRY.get(standard)
+    if existing is None and len(_REGISTRY) >= MAX_REGISTERED:
+        # Bounded: this block reads the same at every level rather than
+        # growing the registry without limit. See MAX_REGISTERED.
+        return standard
     if existing is not None and existing != variants:
         raise LevelingConflict(
             "two blocks share level-3 text but declare different variants; "
