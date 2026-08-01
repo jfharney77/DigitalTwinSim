@@ -1,4 +1,6 @@
-import type { SimState, Summary } from "../types";
+import { useEffect, useState } from "react";
+import { fetchMeasurements } from "../api";
+import type { Measurements, SimState, Summary } from "../types";
 
 export function Counters({
   state,
@@ -16,6 +18,15 @@ export function Counters({
   const total = state?.macTotal ?? 0;
   const active = state?.activeCores ?? 0;
   const util = state ? Math.round(state.utilization * 100) : 0;
+
+  // spec_15: calibration from lesson 06 — real hardware annotating the model.
+  const [measured, setMeasured] = useState<Measurements>({});
+  useEffect(() => {
+    fetchMeasurements()
+      .then(setMeasured)
+      .catch(() => setMeasured({}));
+  }, []);
+  const stream = measured["stream_gbps"];
 
   return (
     <div className="an-panel">
@@ -44,7 +55,23 @@ export function Counters({
           </div>
           {losses.length > 1 && (
             <div className="mini">
-              per step: {losses.map((l) => l.toFixed(2)).join(" · ")}
+              per step: {losses.map((l) => l.toFixed(2)).join(" · ")}{" "}
+              <svg width={90} height={20} aria-label="Loss per training step">
+                <title>loss per step — falling means the network is learning</title>
+                <polyline
+                  fill="none"
+                  stroke="#4f7cff"
+                  strokeWidth={1.5}
+                  points={losses
+                    .map(
+                      (l, i) =>
+                        `${(i / (losses.length - 1)) * 86 + 2},${
+                          18 - (l / Math.max(...losses)) * 15
+                        }`,
+                    )
+                    .join(" ")}
+                />
+              </svg>
             </div>
           )}
         </>
@@ -91,6 +118,19 @@ export function Counters({
             <span>bytes moved</span>
             <span>{summary.bytesMoved}</span>
           </div>
+          {stream && (
+            <>
+              <div className="stat">
+                <span>your die, measured</span>
+                <span>{stream.value.toFixed(0)} GB/s</span>
+              </div>
+              <div className="mini">
+                streaming bandwidth measured by the CUDA bandwidth lesson on{" "}
+                {stream.measuredAt} — the model's units are illustrative; this
+                line is your hardware.
+              </div>
+            </>
+          )}
           <div className="stat">
             <span>serial cycles</span>
             <span>{summary.serialCycles}</span>

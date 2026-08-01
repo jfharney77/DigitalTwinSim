@@ -1,0 +1,4 @@
+{"tMs": 0.0, "event": {"type": "device_info", "name": "NVIDIA GeForce RTX 4060 Laptop GPU", "smCount": 24, "maxThreadsPerSm": 1536, "warpSize": 32, "vramMb": 8188.0}}
+{"tMs": 500.0, "event": {"type": "gpu_sample", "utilPct": 4.0, "vramMb": 700.0, "powerW": 12.0, "tempC": 41.0}}
+{"tMs": 1500.0, "event": {"type": "kernel_launch", "kernel": "hello_thread", "grid": [1, 1, 1], "block": [8, 1, 1], "blocks": [{"smid": 2, "start": 100, "end": 1286}], "elapsedMs": 0.18, "occupancyPct": 0.5}}
+{"tMs": 2500.0, "event": {"type": "gpu_sample", "utilPct": 30.0, "vramMb": 760.0, "powerW": 35.0, "tempC": 44.0}}

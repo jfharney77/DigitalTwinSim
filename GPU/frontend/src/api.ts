@@ -2,8 +2,11 @@ import { getLevel } from "./level";
 import type {
   DieAnatomy,
   GpuProfile,
+  LessonTour,
   LiveSessionInfo,
   LiveState,
+  Measurements,
+  SessionSummary,
   SimulateResponse,
   Workload,
 } from "./types";
@@ -66,6 +69,58 @@ export async function fetchLiveTrace(id: string): Promise<LiveState[]> {
 
 export function liveStreamUrl(): string {
   return `${BASE}/live/stream`;
+}
+
+export async function deleteLiveSession(id: string): Promise<void> {
+  const r = await fetch(`${BASE}/live/sessions/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!r.ok) throw new Error(`delete session ${r.status}`);
+}
+
+export function sessionDownloadUrl(id: string): string {
+  return `${BASE}/live/sessions/${encodeURIComponent(id)}/download`;
+}
+
+export function sessionCsvUrl(id: string): string {
+  return `${BASE}/live/sessions/${encodeURIComponent(id)}/events.csv`;
+}
+
+export async function fetchSessionSummary(id: string): Promise<SessionSummary> {
+  const r = await fetch(`${BASE}/live/sessions/${encodeURIComponent(id)}/summary`);
+  if (!r.ok) throw new Error(`summary ${r.status}`);
+  return r.json();
+}
+
+export async function importLiveSession(
+  name: string,
+  jsonl: string,
+): Promise<LiveSessionInfo> {
+  const r = await fetch(`${BASE}/live/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, jsonl }),
+  });
+  if (!r.ok) throw new Error(`import ${r.status}`);
+  return r.json();
+}
+
+export async function fetchMeasurements(): Promise<Measurements> {
+  const r = await fetch(`${BASE}/measurements`);
+  if (!r.ok) throw new Error(`measurements ${r.status}`);
+  return r.json();
+}
+
+export async function fetchLessonTour(): Promise<LessonTour> {
+  const r = await fetch(`${BASE}/tour`);
+  if (!r.ok) throw new Error(`tour ${r.status}`);
+  return r.json();
+}
+
+export async function fetchTourRecording(lessonId: string): Promise<LiveState[]> {
+  const r = await fetch(`${BASE}/tour/recordings/${encodeURIComponent(lessonId)}`);
+  if (!r.ok) throw new Error(`tour recording ${r.status}`);
+  return (await r.json()).trace as LiveState[];
 }
 
 export async function simulate(

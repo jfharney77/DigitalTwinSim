@@ -1,0 +1,1 @@
+{"type": "kernel_launch", "kernel": "hello_thread", "grid": [1, 1, 1], "block": [8, 1, 1], "blocks": [{"smid": 2, "start": 100, "end": 1286}], "elapsedMs": 0.18, "occupancyPct": 0.5}

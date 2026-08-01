@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# twin-run (spec_17) — run ANY CUDA program with zero-code-change capture:
+#   ./twin-run python train.py        ./twin-run ./bin/02_vector_add
+# Kernels appear on the Live CUDA tab as timing-only chips (source: cupti).
+# Non-CUDA programs run unaffected (the injection hook simply never fires).
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB="$HERE/twininject/libtwininject.so"
+
+if [ ! -f "$LIB" ]; then
+  echo "twin-run: $LIB not built yet — run: make -C $HERE/twininject" >&2
+  echo "twin-run: continuing WITHOUT capture." >&2
+  exec "$@"
+fi
+
+CUDA_INJECTION64_PATH="$LIB" exec "$@"

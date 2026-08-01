@@ -154,3 +154,98 @@ export interface DieAnatomy {
 export function totalCores(p: GpuProfile): number {
   return p.sm.rows * p.sm.cols * p.coresPerSM.rows * p.coresPerSM.cols;
 }
+
+// -- Live CUDA co-browsing (spec_08 + specs 10/12/14/15/16/17/18).
+// Mirrors backend/app/live.py and tour.py. -----------------------------------
+
+export type Dim3 = [number, number, number];
+
+export interface DeviceInfo {
+  name: string;
+  smCount: number;
+  maxThreadsPerSm: number | null;
+  warpSize: number | null;
+  vramMb: number | null;
+}
+
+export interface SmActivity {
+  smId: number;
+  blocksRun: number; // blocks this SM ran in the current kernel
+  busy: boolean;
+  estimated: boolean; // spec_16: scaled from a declared sample
+}
+
+export interface BlockSpan {
+  smId: number;
+  startNorm: number; // 0..1 over the kernel's own span (spec_10)
+  endNorm: number;
+}
+
+export interface LiveState {
+  sessionId: string;
+  tMs: number;
+  kind: "kernel" | "sample" | "device" | "progress";
+  device: DeviceInfo | null;
+  kernel: string | null;
+  grid: Dim3 | null;
+  block: Dim3 | null;
+  smActivity: SmActivity[];
+  recordsDropped: number; // >0: the probe truncated records; frame is partial
+  running: boolean; // spec_14: kernel mid-flight (progress frames)
+  blockSpans: BlockSpan[] | null; // spec_10
+  spansSampled: boolean;
+  source: "probe" | "cupti"; // spec_17: cupti = timing-only
+  occupancySource: "theoretical" | "measured";
+  occupancyPct: number | null;
+  elapsedMs: number | null;
+  utilPct: number | null;
+  vramMb: number | null;
+  powerW: number | null;
+  tempC: number | null;
+}
+
+export interface LiveSessionInfo {
+  id: string;
+  name: string;
+  eventCount: number;
+  active: boolean;
+}
+
+// spec_15 (+ spec_20 #7 history): latest calibration per metric.
+export type Measurements = Record<
+  string,
+  { value: number; kernel: string | null; measuredAt: string; history?: number[] }
+>;
+
+// spec_20 #1.
+export interface SessionSummary {
+  sessionId: string;
+  frames: number;
+  kernelLaunches: number;
+  deviceName: string | null;
+  durationMs: number;
+  kernelStats: {
+    kernel: string;
+    runs: number;
+    bestMs: number | null;
+    worstMs: number | null;
+  }[];
+}
+
+// spec_18: lesson tours.
+export interface TourStep {
+  id: string;
+  title: string;
+  script: string;
+  lessonId: string;
+  cursor: number;
+  provenance: "hardware" | "representative";
+  experiment: string | null;
+}
+
+export interface LessonTour {
+  id: string;
+  title: string;
+  intro: string;
+  steps: TourStep[];
+}

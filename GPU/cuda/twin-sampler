@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""twin-sampler — Tier B capture for the Live CUDA view (spec_08).
+
+Polls nvidia-smi once a second (configurable) and POSTs whole-GPU telemetry
+(utilization, VRAM, power, temperature) to the backend's live ingest. Works
+with zero code changes to any CUDA program — it drives the counters strip even
+for un-instrumented runs. Ctrl-C to stop.
+
+Usage:  ./twin-sampler [interval_seconds]
+        ./twin-sampler --once     # one sample, then exit (scriptable)
+Env:    TWIN_URL (default http://localhost:8000)
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+
+QUERY = "utilization.gpu,memory.used,power.draw,temperature.gpu"
+
+
+def find_nvidia_smi() -> str:
+    found = shutil.which("nvidia-smi")
+    if found:
+        return found
+    wsl = "/usr/lib/wsl/lib/nvidia-smi"  # WSL2: driver lives on Windows
+    if os.path.exists(wsl):
+        return wsl
+    sys.exit("twin-sampler: nvidia-smi not found (checked PATH and /usr/lib/wsl/lib)")
+
+
+def sample(smi: str) -> dict | None:
+    out = subprocess.run(
+        [smi, f"--query-gpu={QUERY}", "--format=csv,noheader,nounits"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    if out.returncode != 0:
+        return None
+    fields = [f.strip() for f in out.stdout.strip().splitlines()[0].split(",")]
+
+    def num(s: str) -> float | None:
+        try:
+            return float(s)
+        except ValueError:
+            return None  # nvidia-smi reports "[N/A]" for unsupported counters
+
+    util, vram, power, temp = (num(f) for f in fields[:4])
+    return {
+        "type": "gpu_sample",
+        "utilPct": util,
+        "vramMb": vram,
+        "powerW": power,
+        "tempC": temp,
+    }
+
+
+def post(url: str, event: dict) -> bool:
+    req = urllib.request.Request(
+        f"{url}/api/live/ingest",
+        data=json.dumps(event).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return 200 <= r.status < 300
+    except (urllib.error.URLError, OSError):
+        return False
+
+
+def main() -> None:
+    url = os.environ.get("TWIN_URL", "http://localhost:8000")
+    smi = find_nvidia_smi()
+    if len(sys.argv) > 1 and sys.argv[1] == "--once":
+        event = sample(smi)
+        ok = event is not None and post(url, event)
+        print(json.dumps(event) if event else "twin-sampler: no reading")
+        sys.exit(0 if ok else 1)
+    interval = float(sys.argv[1]) if len(sys.argv) > 1 else 1.0
+    print(f"twin-sampler: {smi} every {interval}s -> {url}/api/live/ingest")
+    misses = 0
+    while True:
+        event = sample(smi)
+        if event is not None:
+            if post(url, event):
+                misses = 0
+            else:
+                misses += 1
+                if misses == 1:
+                    print("twin-sampler: backend unreachable, backing off")
+        # Exponential backoff while the backend is away (spec_21 #19):
+        # 1x, 2x, 4x ... capped at 30s; reset on the first success.
+        time.sleep(min(interval * (2 ** min(misses, 5)), 30.0) if misses else interval)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\ntwin-sampler: stopped")

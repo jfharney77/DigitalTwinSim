@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { CoreState, GpuProfile, SimState } from "../types";
 
 // Geometry constants (px in SVG user units). The viewBox is computed from the
@@ -13,6 +14,15 @@ const SM_HEAD = 50; // SM header: label + shared-mem strip
 const SM_PAD_BOTTOM = 14;
 const CS = 30; // core square
 const CGAP = 6; // gap between cores
+
+// Density rule (spec_07): above this lane count, per-core rects are unreadable
+// and heavy — render per-SM aggregate tiles instead; click a tile to inspect
+// that SM's lanes per-core in a detail strip below the die.
+const DENSE_LIMIT = 512;
+const TILE_W = 116;
+const TILE_H = 66;
+const DETAIL_CS = 10; // core square in the dense-mode detail strip
+const DETAIL_CGAP = 3;
 
 const CORE_FILL: Record<CoreState, string> = {
   idle: "var(--core-off)",
@@ -30,17 +40,28 @@ export function DieView({
 }) {
   const { sm, coresPerSM } = profile;
   const coresPerSMCount = coresPerSM.rows * coresPerSM.cols;
+  const totalCores = sm.rows * sm.cols * coresPerSMCount;
+  const dense = totalCores > DENSE_LIMIT;
 
-  const smW = SM_PAD_X * 2 + coresPerSM.cols * CS + (coresPerSM.cols - 1) * CGAP;
-  const smH =
-    SM_HEAD + coresPerSM.rows * CS + (coresPerSM.rows - 1) * CGAP + SM_PAD_BOTTOM;
+  // Dense mode: which SM the detail strip inspects.
+  const [inspected, setInspected] = useState(0);
+
+  const smW = dense
+    ? TILE_W
+    : SM_PAD_X * 2 + coresPerSM.cols * CS + (coresPerSM.cols - 1) * CGAP;
+  const smH = dense
+    ? TILE_H
+    : SM_HEAD + coresPerSM.rows * CS + (coresPerSM.rows - 1) * CGAP + SM_PAD_BOTTOM;
   const gridW = sm.cols * smW + (sm.cols - 1) * SM_GAP;
   const gridH = sm.rows * smH + (sm.rows - 1) * SM_GAP;
 
   const gx = MARGIN + MEM_W + MEM_GAP;
   const gy = TOP;
+  const detailH = dense
+    ? 44 + coresPerSM.rows * (DETAIL_CS + DETAIL_CGAP) + 10
+    : 0;
   const W = gx + gridW + MEM_GAP + MEM_W + MARGIN;
-  const H = gy + gridH + FOOTER;
+  const H = gy + gridH + detailH + FOOTER;
 
   const memActive = state?.memActive ?? false;
   const memFill = memActive ? "var(--mem-active)" : "var(--mem)";
@@ -53,70 +74,193 @@ export function DieView({
     return CORE_FILL[cs];
   };
 
+  // Dense mode: aggregate one SM's lanes into {active count, dominant state}.
+  const smSummary = (smIndex: number) => {
+    const base = smIndex * coresPerSMCount;
+    const counts: Record<CoreState, number> = {
+      idle: 0,
+      loading: 0,
+      computing: 0,
+      wrote: 0,
+    };
+    for (let i = 0; i < coresPerSMCount; i++) {
+      counts[state?.coreState[base + i] ?? "idle"]++;
+    }
+    const active = coresPerSMCount - counts.idle;
+    const dominant: CoreState =
+      counts.wrote >= counts.computing && counts.wrote >= counts.loading && counts.wrote > 0
+        ? "wrote"
+        : counts.computing >= counts.loading && counts.computing > 0
+          ? "computing"
+          : counts.loading > 0
+            ? "loading"
+            : "idle";
+    return { active, dominant };
+  };
+
   const sms = [];
   let smIndex = 0;
   for (let r = 0; r < sm.rows; r++) {
     for (let c = 0; c < sm.cols; c++) {
       const x = gx + c * (smW + SM_GAP);
       const y = gy + r * (smH + SM_GAP);
-      const baseCore = smIndex * coresPerSMCount;
-      const coreRects = [];
-      const cx0 = x + SM_PAD_X;
-      const cy0 = y + SM_HEAD;
-      for (let i = 0; i < coresPerSM.rows; i++) {
-        for (let j = 0; j < coresPerSM.cols; j++) {
-          const flat = baseCore + i * coresPerSM.cols + j;
-          coreRects.push(
+      if (dense) {
+        const { active, dominant } = smSummary(smIndex);
+        const frac = active / coresPerSMCount;
+        const barW = smW - 20;
+        const idx = smIndex;
+        sms.push(
+          <g
+            key={smIndex}
+            onClick={() => setInspected(idx)}
+            style={{ cursor: "pointer" }}
+          >
             <rect
-              key={flat}
-              x={cx0 + j * (CS + CGAP)}
-              y={cy0 + i * (CS + CGAP)}
-              width={CS}
-              height={CS}
-              rx={4}
-              fill={fillFor(flat)}
-              stroke="#11161f"
-            />,
-          );
+              x={x}
+              y={y}
+              width={smW}
+              height={smH}
+              rx={8}
+              fill="var(--sm-idle)"
+              stroke={inspected === idx ? "var(--core-on)" : "var(--sm-edge)"}
+              strokeWidth={inspected === idx ? 2.5 : 1.5}
+            />
+            <text x={x + 10} y={y + 18} fill="#8a9bb5" fontSize={10} letterSpacing="1">
+              SM {smIndex}
+            </text>
+            {/* aggregate activity bar: fill fraction of lanes, dominant color */}
+            <rect
+              x={x + 10}
+              y={y + 28}
+              width={barW}
+              height={14}
+              rx={3}
+              fill="#16203040"
+              stroke="#243042"
+            />
+            {frac > 0 && (
+              <rect
+                x={x + 10}
+                y={y + 28}
+                width={Math.max(2, barW * frac)}
+                height={14}
+                rx={3}
+                fill={
+                  stalled && dominant === "loading"
+                    ? "var(--stall)"
+                    : CORE_FILL[dominant]
+                }
+              />
+            )}
+            <text x={x + 10} y={y + 56} fill="#46566e" fontSize={9}>
+              {active}/{coresPerSMCount} lanes
+            </text>
+          </g>,
+        );
+      } else {
+        const baseCore = smIndex * coresPerSMCount;
+        const coreRects = [];
+        const cx0 = x + SM_PAD_X;
+        const cy0 = y + SM_HEAD;
+        for (let i = 0; i < coresPerSM.rows; i++) {
+          for (let j = 0; j < coresPerSM.cols; j++) {
+            const flat = baseCore + i * coresPerSM.cols + j;
+            coreRects.push(
+              <rect
+                key={flat}
+                x={cx0 + j * (CS + CGAP)}
+                y={cy0 + i * (CS + CGAP)}
+                width={CS}
+                height={CS}
+                rx={4}
+                fill={fillFor(flat)}
+                stroke="#11161f"
+              />,
+            );
+          }
         }
+        sms.push(
+          <g key={smIndex}>
+            <rect
+              x={x}
+              y={y}
+              width={smW}
+              height={smH}
+              rx={8}
+              fill="var(--sm-idle)"
+              stroke="var(--sm-edge)"
+              strokeWidth={1.5}
+            />
+            <text x={x + 10} y={y + 18} fill="#8a9bb5" fontSize={10} letterSpacing="1">
+              SM {smIndex}
+            </text>
+            <rect
+              x={x + 8}
+              y={y + 26}
+              width={smW - 16}
+              height={14}
+              rx={3}
+              fill="#16203040"
+              stroke="#243042"
+            />
+            <text x={x + 12} y={y + 37} fill="#46566e" fontSize={8}>
+              shared mem
+            </text>
+            {/* warp scheduler tick */}
+            <rect x={x + smW - 30} y={y + 6} width={22} height={8} rx={2} fill="#243042" />
+            {coreRects}
+          </g>,
+        );
       }
-      sms.push(
-        <g key={smIndex}>
-          <rect
-            x={x}
-            y={y}
-            width={smW}
-            height={smH}
-            rx={8}
-            fill="var(--sm-idle)"
-            stroke="var(--sm-edge)"
-            strokeWidth={1.5}
-          />
-          <text x={x + 10} y={y + 18} fill="#8a9bb5" fontSize={10} letterSpacing="1">
-            SM {smIndex}
-          </text>
-          <rect
-            x={x + 8}
-            y={y + 26}
-            width={smW - 16}
-            height={14}
-            rx={3}
-            fill="#16203040"
-            stroke="#243042"
-          />
-          <text x={x + 12} y={y + 37} fill="#46566e" fontSize={8}>
-            shared mem
-          </text>
-          {/* warp scheduler tick */}
-          <rect x={x + smW - 30} y={y + 6} width={22} height={8} rx={2} fill="#243042" />
-          {coreRects}
-        </g>,
-      );
       smIndex++;
     }
   }
 
-  // HBM stacks on left + right edges.
+  // Dense mode: detail strip — the inspected SM's lanes, per-core.
+  let detail = null;
+  if (dense) {
+    const base = inspected * coresPerSMCount;
+    const dy = gy + gridH + 20;
+    const detailW =
+      coresPerSM.cols * (DETAIL_CS + DETAIL_CGAP) - DETAIL_CGAP;
+    const cores = [];
+    for (let i = 0; i < coresPerSM.rows; i++) {
+      for (let j = 0; j < coresPerSM.cols; j++) {
+        const flat = base + i * coresPerSM.cols + j;
+        cores.push(
+          <rect
+            key={flat}
+            x={gx + j * (DETAIL_CS + DETAIL_CGAP)}
+            y={dy + 24 + i * (DETAIL_CS + DETAIL_CGAP)}
+            width={DETAIL_CS}
+            height={DETAIL_CS}
+            rx={2}
+            fill={fillFor(flat)}
+            stroke="#11161f"
+          />,
+        );
+      }
+    }
+    detail = (
+      <g>
+        <text x={gx} y={dy + 12} fill="#8a9bb5" fontSize={10} letterSpacing="1">
+          SM {inspected} · {coresPerSMCount} lanes (click any SM tile to inspect)
+        </text>
+        <rect
+          x={gx - 8}
+          y={dy + 16}
+          width={detailW + 16}
+          height={coresPerSM.rows * (DETAIL_CS + DETAIL_CGAP) + 14}
+          rx={6}
+          fill="var(--sm-idle)"
+          stroke="var(--sm-edge)"
+        />
+        {cores}
+      </g>
+    );
+  }
+
+  // Memory stacks/controllers on left + right edges.
   const memY = gy;
   const memH = gridH;
   const mem = [MARGIN, W - MARGIN - MEM_W].map((mx, idx) => (
@@ -135,9 +279,6 @@ export function DieView({
       </text>
     </g>
   ));
-
-  const totalCores =
-    sm.rows * sm.cols * coresPerSM.rows * coresPerSM.cols;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} aria-label="GPU die schematic">
@@ -172,8 +313,10 @@ export function DieView({
       )}
       {mem}
       {sms}
+      {detail}
       <text x={gx} y={H - 12} fill="#3a4a60" fontSize={10}>
         {sm.rows * sm.cols} SM · {coresPerSMCount} cores each = {totalCores} lanes
+        {dense ? " · aggregate view (per-SM tiles)" : ""}
       </text>
     </svg>
   );

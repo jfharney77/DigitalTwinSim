@@ -47,7 +47,11 @@ export function AnatomyPage() {
   const [dieId, setDieId] = useState<string | null>(
     () => window.location.hash.split("/")[1] ?? null,
   );
-  const [regionId, setRegionId] = useState<string | null>(null);
+  // spec_21 #6: /#anatomy/<die>/<region> pins a region on load.
+  const [regionId, setRegionId] = useState<string | null>(
+    () => window.location.hash.split("/")[2] ?? null,
+  );
+  const [query, setQuery] = useState(""); // spec_21 #7: region search
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(
     null,
   );
@@ -70,11 +74,27 @@ export function AnatomyPage() {
   }, [level]);
 
   useEffect(() => {
-    if (dieId) window.location.hash = `anatomy/${dieId}`;
-  }, [dieId]);
+    if (dieId)
+      window.location.hash = regionId
+        ? `anatomy/${dieId}/${regionId}`
+        : `anatomy/${dieId}`;
+  }, [dieId, regionId]);
 
   const die = dies.find((d) => d.id === dieId) ?? null;
   const region = die?.regions.find((r) => r.id === regionId) ?? null;
+
+  // spec_21 #7: text search over this die's regions (label + description).
+  const q = query.trim().toLowerCase();
+  const matches =
+    die && q
+      ? die.regions
+          .filter(
+            (r) =>
+              r.label.toLowerCase().includes(q) ||
+              r.description.toLowerCase().includes(q),
+          )
+          .slice(0, 8)
+      : [];
   const hovered = die?.regions.find((r) => r.id === hover?.id) ?? null;
 
   // Legend shows only the kinds this die actually has.
@@ -95,6 +115,33 @@ export function AnatomyPage() {
       )}
       <div className="stage">
         {error && <div className="mini an-error">{error}</div>}
+        {die && (
+          <div className="mini" style={{ marginBottom: 6 }}>
+            <input
+              placeholder="find a region (e.g. NVLink, cache, tensor)…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search regions on this die"
+            />
+            {q &&
+              (matches.length ? (
+                matches.map((r) => (
+                  <button
+                    key={r.id}
+                    style={{ marginLeft: 6 }}
+                    onClick={() => {
+                      setRegionId(r.id);
+                      setQuery("");
+                    }}
+                  >
+                    {r.label || r.id}
+                  </button>
+                ))
+              ) : (
+                <span style={{ marginLeft: 8 }}>no matching regions on this die</span>
+              ))}
+          </div>
+        )}
         {die && (
           <div className="an-card">
             <AnatomyView

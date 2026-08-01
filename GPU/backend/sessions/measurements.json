@@ -1,0 +1,7 @@
+{
+  "stream_gbps": {
+    "value": 238.5,
+    "kernel": "stream_copy",
+    "measuredAt": "2026-07-31"
+  }
+}
