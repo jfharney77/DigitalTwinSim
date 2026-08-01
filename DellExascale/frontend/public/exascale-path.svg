@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img"
+     aria-label="Schematic of the Dell Exascale parallel data path with Lightning File System">
+  <!-- Self-contained schematic drawn for this project; not a Dell product image. -->
+  <defs>
+    <style>
+      .lbl  { font: 500 12px Roboto, Helvetica, Arial, sans-serif; fill: #9fb2c8; }
+      .sm   { font: 400 9px Roboto, Helvetica, Arial, sans-serif; fill: #64798f; }
+      .cli  { fill: #2b2412; stroke: #6b5a2b; }
+      .mds  { fill: #2b1a1a; stroke: #6b3a3a; }
+      .ds   { fill: #12233a; stroke: #3d5a9e; }
+      .med  { fill: #241f33; stroke: #4a4066; }
+      .proto{ fill: #1c1f3f; stroke: #5a4fc9; }
+      .ctrl { stroke: #6b3a3a; stroke-width: 2; fill: none; stroke-dasharray: 5 4; marker-end: url(#ar-ctrl); }
+      .data { stroke: #3d5a9e; stroke-width: 2.5; fill: none; marker-end: url(#ar-data); }
+    </style>
+    <marker id="ar-data" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3d5a9e"/>
+    </marker>
+    <marker id="ar-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6b3a3a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="480" height="320" rx="10" fill="#0d1420"/>
+
+  <!-- metadata server, above the path -->
+  <rect class="mds" x="150" y="18" width="200" height="34" rx="4"/>
+  <text class="lbl" x="162" y="34">Lightning metadata server</text>
+  <text class="sm"  x="162" y="47">answers once: "where are the stripes?"</text>
+
+  <!-- clients -->
+  <rect class="cli" x="14" y="96" width="86" height="140" rx="4"/>
+  <text class="lbl" x="24" y="120">GPU</text>
+  <text class="lbl" x="24" y="136">clients</text>
+  <text class="sm"  x="24" y="156">hold the</text>
+  <text class="sm"  x="24" y="168">layout</text>
+
+  <!-- control-path arrows: client -> mds -> client -->
+  <path class="ctrl" d="M70 96 L160 52"/>
+  <path class="ctrl" d="M240 52 L100 104"/>
+  <text class="sm" x="120" y="76">1. layout request</text>
+  <text class="sm" x="150" y="92">2. layout granted (then MDS steps aside)</text>
+
+  <!-- data servers + media -->
+  <g>
+    <rect class="ds"  x="200" y="96"  width="120" height="28" rx="3"/>
+    <rect class="med" x="326" y="96"  width="60"  height="28" rx="3"/>
+    <rect class="ds"  x="200" y="132" width="120" height="28" rx="3"/>
+    <rect class="med" x="326" y="132" width="60"  height="28" rx="3"/>
+    <rect class="ds"  x="200" y="168" width="120" height="28" rx="3"/>
+    <rect class="med" x="326" y="168" width="60"  height="28" rx="3"/>
+    <rect class="ds"  x="200" y="204" width="120" height="28" rx="3"/>
+    <rect class="med" x="326" y="204" width="60"  height="28" rx="3"/>
+    <text class="sm" x="210" y="114">Data server 1</text>
+    <text class="sm" x="210" y="150">Data server 2</text>
+    <text class="sm" x="210" y="186">Data server 3</text>
+    <text class="sm" x="210" y="222">Data server 4</text>
+    <text class="sm" x="336" y="114">NVMe</text>
+    <text class="sm" x="336" y="150">NVMe</text>
+    <text class="sm" x="336" y="186">NVMe</text>
+    <text class="sm" x="336" y="222">NVMe</text>
+  </g>
+
+  <!-- parallel data-path arrows: all four at once -->
+  <path class="data" d="M196 110 L104 128"/>
+  <path class="data" d="M196 146 L104 152"/>
+  <path class="data" d="M196 182 L104 176"/>
+  <path class="data" d="M196 218 L104 200"/>
+  <text class="sm" x="110" y="248">3. stripes stream in parallel — MDS not involved</text>
+
+  <!-- protocol engines -->
+  <rect class="proto" x="14" y="262" width="140" height="26" rx="3"/>
+  <rect class="proto" x="162" y="262" width="140" height="26" rx="3"/>
+  <rect class="proto" x="310" y="262" width="140" height="26" rx="3"/>
+  <text class="sm" x="24" y="279">FILE — PowerScale / Lightning</text>
+  <text class="sm" x="172" y="279">OBJECT — ObjectScale</text>
+  <text class="sm" x="320" y="279">BLOCK — PowerFlex</text>
+
+  <text class="lbl" x="14" y="308">Dell Exascale Storage + Lightning File System — schematic, not to scale</text>
+</svg>

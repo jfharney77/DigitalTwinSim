@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img"
+     aria-label="Schematic of a Dell PowerSwitch SN6000 leaf/spine AI fabric">
+  <!-- Self-contained schematic drawn for this project; not a Dell product image. -->
+  <defs>
+    <style>
+      .lbl  { font: 500 12px Roboto, Helvetica, Arial, sans-serif; fill: #9fb2c8; }
+      .sm   { font: 400 9px Roboto, Helvetica, Arial, sans-serif; fill: #64798f; }
+      .spine{ fill: #1c1f3f; stroke: #5a4fc9; }
+      .leaf { fill: #12233a; stroke: #3d5a9e; }
+      .rack { fill: #2b2412; stroke: #6b5a2b; }
+      .mesh { stroke: #2b3950; stroke-width: 1.4; fill: none; }
+      .down { stroke: #3d5a9e; stroke-width: 1.6; fill: none; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="480" height="320" rx="10" fill="#0d1420"/>
+
+  <!-- spines -->
+  <rect class="spine" x="60"  y="26" width="150" height="30" rx="4"/>
+  <rect class="spine" x="270" y="26" width="150" height="30" rx="4"/>
+  <text class="lbl" x="72"  y="46">Spine 1</text>
+  <text class="lbl" x="282" y="46">Spine 2</text>
+  <text class="sm"  x="130" y="20">SPINE TIER — connects only to leaves</text>
+
+  <!-- mesh: every leaf to every spine -->
+  <g class="mesh">
+    <path d="M50 140 L135 56"/>  <path d="M50 140 L345 56"/>
+    <path d="M170 140 L135 56"/> <path d="M170 140 L345 56"/>
+    <path d="M290 140 L135 56"/> <path d="M290 140 L345 56"/>
+    <path d="M410 140 L135 56"/> <path d="M410 140 L345 56"/>
+  </g>
+
+  <!-- leaves -->
+  <rect class="leaf" x="12"  y="140" width="76" height="26" rx="3"/>
+  <rect class="leaf" x="132" y="140" width="76" height="26" rx="3"/>
+  <rect class="leaf" x="252" y="140" width="76" height="26" rx="3"/>
+  <rect class="leaf" x="372" y="140" width="76" height="26" rx="3"/>
+  <text class="sm" x="24"  y="157">Leaf 1</text>
+  <text class="sm" x="144" y="157">Leaf 2</text>
+  <text class="sm" x="264" y="157">Leaf 3</text>
+  <text class="sm" x="384" y="157">Leaf 4</text>
+
+  <!-- leaf down to rack -->
+  <g class="down">
+    <path d="M50 166 L50 210"/>
+    <path d="M170 166 L170 210"/>
+    <path d="M290 166 L290 210"/>
+    <path d="M410 166 L410 210"/>
+  </g>
+
+  <!-- GPU racks -->
+  <rect class="rack" x="12"  y="210" width="76" height="56" rx="3"/>
+  <rect class="rack" x="132" y="210" width="76" height="56" rx="3"/>
+  <rect class="rack" x="252" y="210" width="76" height="56" rx="3"/>
+  <rect class="rack" x="372" y="210" width="76" height="56" rx="3"/>
+  <text class="sm" x="20"  y="232">GPU rack</text>
+  <text class="sm" x="140" y="232">GPU rack</text>
+  <text class="sm" x="260" y="232">GPU rack</text>
+  <text class="sm" x="380" y="232">GPU rack</text>
+  <text class="sm" x="20"  y="248">NVL72</text>
+  <text class="sm" x="140" y="248">NVL72</text>
+  <text class="sm" x="260" y="248">NVL72</text>
+  <text class="sm" x="380" y="248">NVL72</text>
+
+  <text class="sm"  x="12" y="288">Every leaf reaches every spine → any rack pair is two hops, and every spare path is somewhere to reroute.</text>
+  <text class="lbl" x="12" y="308">Dell PowerSwitch SN6000 leaf/spine fabric — schematic, not to scale</text>
+</svg>

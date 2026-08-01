@@ -11,3 +11,7 @@ dist/
 
 # Runtime
 logs/
+
+# Live co-browse session recordings (runtime output, see GPU/backend/app/live_store.py).
+# Calibration measurements alongside them are kept — they outlive sessions.
+GPU/backend/sessions/*.jsonl
