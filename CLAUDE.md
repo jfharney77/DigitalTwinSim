@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repo layout: one directory per simulated component
 
-The repo is organized by hardware component. `GPU/` holds the GPU digital twin (everything below); `DellPowerEdgeR760/`, `DellPowerStore/`, `DellAlienware/`, `DellIDRAC/`, `DellPowerMax/`, `DellPowerSwitchE3200/`, `DellVxRail/`, `DellCloudIQ/`, `DellPowerEdgeXE9712/`, `DellIR7000/`, `DellPowerProtect/`, `DellExascale/`, `DellPowerSwitchSN6000/`, `DellProMaxPlus/`, `DellPowerFlex/`, `DellCyberDetect/`, `DellFortZero/`, and `DellPrivateCloud/` are the second through nineteenth components, following the same pattern (see their sections at the end of this file); future components (CPU, NIC, memory hierarchy, ...) get sibling top-level directories following the same pattern: a pure-engine FastAPI `backend/`, a React/Vite `frontend/` in the Dell clean-design skin, `scripts/`, and numbered `spec_NN_*.md` files driving the work. (Port note: `DellPowerMax/` + `DellPowerSwitchE3200/` were both authored on 8005/5178, and `DellVxRail/` on 8006/5179 — collisions; `DellCloudIQ/` uses the next free ports, 8007/5180. Run colliding twins one at a time or reassign.)
+The repo is organized by hardware component. `GPU/` holds the GPU digital twin (everything below); `DellPowerEdgeR760/`, `DellPowerStore/`, `DellAlienware/`, `DellIDRAC/`, `DellPowerMax/`, `DellPowerSwitchE3200/`, `DellVxRail/`, `DellCloudIQ/`, `DellPowerEdgeXE9712/`, `DellIR7000/`, `DellPowerProtect/`, `DellExascale/`, `DellPowerSwitchSN6000/`, `DellProMaxPlus/`, `DellPowerFlex/`, `DellCyberDetect/`, `DellFortZero/`, `DellPrivateCloud/`, and `DellPowerScale/` are the second through twentieth components, following the same pattern (see their sections at the end of this file); future components (CPU, NIC, memory hierarchy, ...) get sibling top-level directories following the same pattern: a pure-engine FastAPI `backend/`, a React/Vite `frontend/` in the Dell clean-design skin, `scripts/`, and numbered `spec_NN_*.md` files driving the work. (Port note: `DellPowerMax/` + `DellPowerSwitchE3200/` were both authored on 8005/5178, and `DellVxRail/` on 8006/5179 — collisions; `DellCloudIQ/` uses the next free ports, 8007/5180. Run colliding twins one at a time or reassign.) Repo-level planning docs from the 2026-07 research pass: `ACTIVE_TWIN_SPEC.md` (narrated look-inside tour mode — data model, invariants, per-twin storyboards; PowerStore is the designated pilot), `TWIN_IMPROVEMENTS.md` (prioritized improvement plan, community-informed), and `RESEARCH_ASSETS.md` (per-product image sources with licensing guidance + Dell Community threads/pain points). Consult these before adding twin features or shipping photos.
 
 ## Current state
 
@@ -17,10 +17,13 @@ Reference files:
 ### Layout & commands
 
 ```
-GPU/backend/   app/{models,profiles,mapping,matrices,engine,mlp,anatomy,main}.py + tests/
-GPU/frontend/  src/{api,types}.ts, App.tsx, components/{DieView,MatrixPanels,OpPipeline,
-               Controls,Counters,Legend,InfoDot,AnatomyPage,AnatomyView}.tsx
-GPU/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+GPU/backend/   app/{models,profiles,mapping,matrices,engine,mlp,anatomy,
+               live,live_store,tour,leveling,main}.py + tests/ + tours/lessons/ + sessions/
+GPU/frontend/  src/{api,types,level,svgExport}.ts, App.tsx, components/{DieView,MatrixPanels,
+               OpPipeline,Controls,Counters,Legend,InfoDot,AnatomyPage,AnatomyView,
+               LivePage,LiveViz,GanttStrip,ComparePane,LessonTour,ErrorBoundary,LevelControl}.tsx
+GPU/cuda/      twinprobe.cuh, twin-sampler, twin-run, twininject/, lessons/00..06_*.cu, Makefile
+GPU/scripts/   start_*.sh, stop_all.sh, prune_sessions.sh, demo_feed.py
 ```
 
 - Run everything: `./GPU/scripts/start_all.sh` (backend :8000 background, frontend :5173 foreground). Stop: `./GPU/scripts/stop_all.sh`.
@@ -28,7 +31,10 @@ GPU/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
 - Frontend typecheck/build: `cd GPU/frontend && npm run build`
 - Vite proxies `/api` → `http://localhost:8000`; if :8000 is taken (another component's backend, another session), run the backend elsewhere and point Vite at it: `API_TARGET=http://localhost:8010 npm run dev`.
 - Two workloads on the simulator page: `matmul` (spec_01–05) and `mlp_step` (spec_06 — an MLP training step as five chained matmuls). The die-anatomy page is the second tab.
+- GPU is the only component with a spec series past 06: **`spec_07` through `spec_21`** drive the RTX 4060 profile, CUDA live co-browse, the lesson curriculum, per-SM Gantt, diff mode, device-agnostic sessions, mid-kernel streaming, measured roofline, grid sampling, CUPTI injection, lesson tours, and three rounds of small wins. Read the spec before changing anything under `live*.py`, `tour.py`, or `cuda/` — several of them encode invariants the tests enforce.
 - **Live CUDA co-browsing (spec_08)** is the third tab (`/#live`): real CUDA runs on the machine's RTX 4060 Laptop GPU (spec_07 profile, 24 SMs) light per-SM tiles from actual `%smid` block placement. The purity split is strict: `app/live.py` is the pure fold (`replay()`, AST-checked in `tests/test_live.py` — no fastapi/time/file imports, ever) and `app/live_store.py` is the only impure edge (stamps time, appends session JSONL under `backend/sessions/`, fans out SSE). Capture tools live in `GPU/cuda/`: `twinprobe.cuh` (header-only; kernels report per-block smid/clock64, host POSTs one JSON event, degrades to stderr offline) and `twin-sampler` (nvidia-smi poller; WSL2 path `/usr/lib/wsl/lib/nvidia-smi`). Recorded sessions replay through the same pure pipeline — keep new live logic in the fold, not the store. Specs 10–18 extended it: `device_info` events size the die per session (spec_12; default stays the 4060's 24 SMs), kernel frames carry normalized `blockSpans` for a per-SM Gantt (spec_10), `kernel_progress` events stream mid-kernel counts with the closing launch authoritative (spec_14 — `test_streaming_converges_to_launch_only_result` pins that), declared sampling scales huge grids to `~` estimates (spec_16 — a contract, distinct from accidental truncation), `measurement` events persist calibrations outside sessions (spec_15 — lesson 06's measured GB/s annotates the sim roofline), CUPTI-sourced events are timing-only and labeled (spec_17 — `cuda/twininject/` + `twin-run`), and `app/tour.py` + `backend/tours/lessons/` serve the GPU-free guided-lesson tour (spec_18 — provenance labels required by `test_tour.py`). Frontend pins/timeline key on `frameKey()` (tMs+kernel+kind), never buffer indices.
+- **Specs 19–21 ("small wins" rounds)** finished the live surface — read the spec files before extending it, since much of what a new feature needs already exists: the session API is full CRUD (latest/summary/download/CSV/import/rename/delete, `?limit=` newest-first, a 100k-event cap → 409, batched ingest, `GET /api/live/config` serving the caps as data), `tests/test_smallwins3.py::test_api_surface_snapshot` **pins all 23 `/api` routes by name** (add a route → update that test deliberately), `scripts/demo_feed.py [--all]` demos the whole Live tab GPU-free by replaying golden recordings through real ingest, `make watch-NN` gives save→see, and both sim and replay have keyboard shortcuts (space/arrows/R). Anatomy deep-links to region level (`#anatomy/<die>/<region>`) and has region search; sim settings persist in localStorage; `ErrorBoundary` wraps the anatomy/live tabs; the sessions dir writes its own `.gitignore`. A spec_07–21 changelog table lives in `README.md`.
+- **Honest caveat that outlives this note:** `nvcc` has never run on this machine — `twinprobe.cuh`, the lessons, and `cuda/twininject/` have never been compiled. The header↔backend wire contract is what's CI-tested (probe-sample fixtures). First hardware run may need compile fixes; toolkit install is step 0 of `GPU/cuda/README.md`.
 
 ### Where things live (maps spec's `src/` layout onto the split)
 
@@ -516,11 +522,34 @@ Key points beyond the chassis-twin pattern:
 - **Catalog (8 categories) and use cases (3)**: architecture first (it determines whether the later decisions stay decisions), then hypervisor, control plane, the three pools, workloads and migration, operations and consumption. Use cases: an estate that wants the option to leave without leaving yet, a business whose data grows and whose compute does not, and a platform team running VMs and containers forever.
 - Copy spells out private-cloud vocabulary (hyperconverged, disaggregated, three-tier, hypervisor, control plane, live migration, lock-in) on first use, and is deliberately even-handed: it does not argue against VMware (staying is a good decision; having no alternative is not), it presents cross-hypervisor migration as slow and real, and it notes that licensing arithmetic drives more hypervisor decisions than technical merit does. Counts/timings illustrative.
 
-## Reading levels (all 19 twins)
+## DellPowerScale — scale-out NAS digital twin (twentieth component)
+
+Same architecture, applied to **Dell PowerScale** running **OneFS** — scale-out NAS where every node contributes compute, memory, networking, and storage, and the cluster presents **one file system, one namespace** over NFS, SMB, S3, and HDFS. Built post-loop from `DellPowerScale/initial_spec.md` (iteration 4's spec). The one idea: **there are no volumes** — capacity is never partitioned into containers, so growth is "add a node", never "plan a migration". The fourth storage twin: PowerFlex removed the controller, this removes the volume (the sibling refusal, and both name each other); Exascale's Lightning file system runs *on* OneFS — parallel throughput there, the namespace beneath it here.
+
+```
+DellPowerScale/backend/   app/{models,anatomy,engine,catalog,usecases,leveling,main}.py + tests/
+DellPowerScale/frontend/  src/{api,types,level}.ts, App.tsx, components/{ClusterView,AnatomyPage,CatalogPage,UseCasePage,NamespaceControls,NamespaceCounters,LevelControl}.tsx
+DellPowerScale/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./DellPowerScale/scripts/start_all.sh` (backend :8023 background, frontend :5196 foreground). Stop: `./DellPowerScale/scripts/stop_all.sh`.
+- Backend tests: `cd DellPowerScale/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd DellPowerScale/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8023`. Trace endpoint is `GET /api/namespace` returning `NamespaceResponse`.
+
+Key points beyond the chassis-twin pattern:
+
+- **Namespace model shapes** (`models.py`): `ClusterAnatomy` / `ClusterRegion` / **`NamespaceState`**. `RegionKind` is NAS-specific: `node · media · protocol · interconnect · namespace · management`. `NamespaceState` carries `nodes` (4→6), `capacityTb`, `usedPercent`, `rebalancing`, and the two hero fields — **`namespaces`, which exists to be 1** (this twin's `droppedPackets`), and **`migrationsRequired`, which exists to be 0**.
+- **Namespace trace** (`engine.py`, pure — AST-checked): phase order `off→form→stripe→serve→fill→addnode→rebalance→served` never regresses. Signature invariants (`test_engine.py`): **one namespace at every step and every cluster size**; **growing requires no migration** (`migrations_required == 0` across the expansion); **capacity grows with nodes, not with planning** (`capacityTb` jumps only at `addnode`; `usedPercent` falls as a consequence, nothing deleted or moved); **service continues during rebalance** (expansion is a background task, not an outage); **all nodes serve all protocols** (no "NFS head"); **nodes are never partitioned for placement** (striping spans the cluster); **rebalancing is the longest stage** (unique max `cycleCost` — the honest price of never migrating). The trace deliberately *lacks* the steps conventional NAS would need: no "provision a volume", no "volume full", no "migrate".
+- **Geometry carries the lesson** (`anatomy.py`, stylized 100×60): a protocol band on top, six identical node+media pairs, the interconnect band (deliberately not full-width), and the **`namespace` region as the only shape spanning every node** — pinned by `test_the_namespace_spans_every_node`, which also asserts nothing else does. `ClusterView.tsx` draws the namespace as one continuous glowing band and a node-to-node mesh only while `rebalancing`.
+- **Catalog (10 categories) and use cases (3) are backend data**: node tiers (all-flash/hybrid/archive), OneFS, protocols, erasure-coding protection, tiering, cluster networking, scale limits/node pools, snapshots/replication, security/immutability, management/AIOps; use cases are a media archive that can never go offline, genomics with multi-protocol access to the same files, and an AI training corpus (cross-referencing DellExascale). `test_catalog.py` enforces resolvable ids as elsewhere.
+- Copy spells out NAS vocabulary (OneFS, namespace, striping, erasure coding, node pool, SmartPools-style tiering, multi-protocol) on first use; the anatomy page carries Dell OneFS `sources`; the anatomy overview is authored at all five reading levels. Capacities/timings illustrative. Also referenced by `CustomerSetup/McLarenRacing/` (its file tier — the row that was a spec link until this twin was built).
+
+## Reading levels (all 20 twins)
 
 Every twin's header carries a **1–5 reading-level control**: 1 opens the jargon up for a newcomer, 3 is the register the twins were written in, 5 leaves the vocabulary in and takes the explanations out. The choice persists in `localStorage` and applies across all four pages of a twin.
 
-**The mechanism is shared byte-for-byte across all 19 twins — if you change one, change them all.**
+**The mechanism is shared byte-for-byte across all 20 twins — if you change one, change them all.**
 
 - `backend/app/leveling.py` — `L(standard=..., novice=..., plain=..., technical=..., expert=...)` registers variants **keyed by the level-3 text** and returns that text unchanged. So the data modules read as they did before, every model field stays a plain `str`, the wire format is untouched, and **dropping `L(...)` from any call site is a safe edit**. Registration is keyed on the standard text, so two blocks with byte-identical level-3 prose share variants; `LevelingConflict` is raised if two calls ever register *different* variants under one key.
 - Resolution happens in `main.py`, never in the engine or the data modules — every content endpoint takes `level: int = Level` (a shared `Query(3, ge=1, le=5)`) and returns `leveled(...)` / `leveled_all(...)`. `GET /api/levels` publishes the scale so the UI does not hard-code it. **Engine purity is preserved**: `leveling` imports nothing but `typing`, so `from .leveling import L` inside `engine.py` still passes the AST purity test.
@@ -528,7 +557,12 @@ Every twin's header carries a **1–5 reading-level control**: 1 opens the jargo
 - Frontend: `src/level.ts` (module-level store + `useLevel()` hook + persistence) and `src/components/LevelControl.tsx` (five discrete positions, not a slider — the levels are named registers, and a reader should see that Standard is the middle). `api.ts` appends `?level=` to prose-bearing requests; each page lists `level` in its fetch effect's dependencies. The playback cursor is deliberately **not** reset on a level change: step counts and every number are identical across levels, so the reader stays on the step they were reading.
 - `backend/tests/test_leveling.py` guards the feature against becoming decorative: something must actually be registered; level 3 must be byte-identical to no leveling at all; adjacent variants must differ; where both ends are authored the novice text must be *longer* than the expert text (catching an inverted scale); resolution must be total at every level; and coverage at levels 1 and 5 must be non-zero.
 
-**Authoring status.** Complete for the two highest-traffic blocks on every twin: **every anatomy overview** (including all five GPU dies and both Alienware interiors) and **every trace step** — 188 steps across 18 twins, all five levels each. GPU is the exception and needs nothing: its `SimState` carries no prose. Region descriptions, catalog entries, and use-case narratives still fall back and read the same at every level; extending them is incremental and safe — wrap the string in `L(...)`, add the variants you have, and the tests will flag an inverted scale or an empty level.
+**Authoring status.** **Every anatomy overview** is authored at all five levels, on all 20 twins (including all five GPU dies and both Alienware interiors). **Trace steps** are authored on 18 twins — 188 steps, all five levels each — with two exceptions:
+
+- **GPU** needs nothing: its `SimState` carries no prose.
+- **`DellPowerScale/` is the open gap.** It was built after the trace-prose pass finished, so its overview is leveled but its **8 trace steps are not** — they read the same at every level. This is the one place the repo is inconsistent, and closing it is the obvious next task: wrap each `description=(...)` in `engine.py` with `L(standard=<existing text>, novice=..., ...)` and the tests will do the rest.
+
+Region descriptions, catalog entries, and use-case narratives fall back everywhere and read the same at every level. Extending them is incremental and safe — wrap the string in `L(...)`, add the variants you have, and the tests will flag an inverted scale or an empty level.
 
 **Two authoring gotchas, both learned the hard way.** First, writing a level-2 variant as a light edit of level 3 tends to collapse into a byte-identical string; `test_every_variant_is_nonempty_and_distinct_from_its_neighbours` caught this **21 times** across the repo and every instance was rewritten rather than shipped. Treat levels 1–2 as a change of register, not a paraphrase. Second, the **Alienware twin builds its descriptions per request** — they are f-strings interpolating the scenario, and some branch on connector type — so its variants are f-strings and ternaries mirroring the same interpolations and branches. A static variant there would show barrel-jack prose on a USB-C scenario. That per-request registration is also why `leveling.py` carries `MAX_REGISTERED`: past the cap, blocks go unregistered and read at level 3 rather than growing the registry without bound.
 
@@ -536,19 +570,19 @@ Every twin's header carries a **1–5 reading-level control**: 1 opens the jargo
 
 `LOOP_LOG.md` tracks a self-paced loop that researched untwinned Dell products, picking the three most interesting per iteration, speccing all three and fully building one. **The loop ran its five iterations and is complete.** Iteration 1 built `DellProMaxPlus/` and left specs at `DellNativeEdge/initial_spec.md` (8014/5187) and `DellAIDataPlatform/initial_spec.md` (8015/5188). Iteration 2 built `DellPowerFlex/` and left specs at `DellTelecomBlocks/initial_spec.md` (8017/5190) and `DellObjectScale/initial_spec.md` (8018/5191). Iteration 3 built `DellCyberDetect/` and left specs at `DellPowerEdgeXE7745/initial_spec.md` (8020/5193) and `DellAutomationStudio/initial_spec.md` (8021/5194). Iteration 4 built `DellFortZero/` and left specs at `DellPowerScale/initial_spec.md` (8023/5196) and `DellCircularDesign/initial_spec.md` (8024/5197). Iteration 5 built `DellPrivateCloud/` and left specs at `DellAPEX/initial_spec.md` (8026/5199) and `DellMDR/initial_spec.md` (8027/5200).
 
-Ten specced-but-unbuilt twins now sit in the repo as `<Dir>/initial_spec.md` files, each with its ports reserved and its invariants worked out — see the summary table at the end of `LOOP_LOG.md`. Read that file before adding a twin so nothing is re-picked or given a colliding port. The strongest unbuilt candidate is `DellCircularDesign/`: the only twin whose trace would *close* rather than end, with a mass-conservation invariant modelled on the IR7000's heat balance.
+`DellPowerScale/` was built from its spec post-loop (July 2026 — see the note at the end of `LOOP_LOG.md`). Nine specced-but-unbuilt twins now sit in the repo as `<Dir>/initial_spec.md` files, each with its ports reserved and its invariants worked out — see the summary table at the end of `LOOP_LOG.md`. Read that file before adding a twin so nothing is re-picked or given a colliding port. The strongest unbuilt candidate is `DellCircularDesign/`: the only twin whose trace would *close* rather than end, with a mass-conservation invariant modelled on the IR7000's heat balance.
 
 ## CustomerSetup — real deployments drawn with the twins
 
 `CustomerSetup/` documents publicly reported customer deployments of Dell hardware and draws each one as a diagram assembled from this repo's twins. One folder per customer, each holding `setup.html` and `README.md` (the reported facts, a block→twin→port table, and source URLs). `CustomerSetup/index.html` is the gallery; `CustomerSetup/README.md` documents the mechanics.
 
-Current setups: `xAI-Colossus/` (XE9712 · SN6000 · IR7000 · Exascale · GPU), `TACC-Horizon/` (XE9712 · IR7000 · SN6000 · iDRAC · GPU — the closest public match to the AI Factory quartet), `McLarenRacing/` (R760 · PowerStore · GPU · CloudIQ, plus a link to the unbuilt `DellPowerScale/initial_spec.md`), `RHB-Bank/` (PowerProtect · CyberDetect · PowerStore · PowerMax), `Rackspace/` (VxRail · PowerStore · R760 · PrivateCloud — both sides of the HCI-vs-disaggregation argument in one estate), `F1Soft/` (PowerFlex · R760 · SN6000 · CloudIQ), `DoD-FortZero/` (FortZero · iDRAC · PrivateCloud · R760 — the DoD Target Level validation, drawn with no perimeter per the twin's own idiom).
+Current setups: `xAI-Colossus/` (XE9712 · SN6000 · IR7000 · Exascale · GPU), `TACC-Horizon/` (XE9712 · IR7000 · SN6000 · iDRAC · GPU — the closest public match to the AI Factory quartet), `McLarenRacing/` (R760 · PowerStore · GPU · CloudIQ, PowerScale), `RHB-Bank/` (PowerProtect · CyberDetect · PowerStore · PowerMax), `Rackspace/` (VxRail · PowerStore · R760 · PrivateCloud — both sides of the HCI-vs-disaggregation argument in one estate), `F1Soft/` (PowerFlex · R760 · SN6000 · CloudIQ), `DoD-FortZero/` (FortZero · iDRAC · PrivateCloud · R760 — the DoD Target Level validation, drawn with no perimeter per the twin's own idiom).
 
 Structure and rules for adding or editing a setup:
 
 - **Shared template.** Pages link `shared/setup.css` + `shared/setup.js` (page-specific accent vars stay in a small inline `<style>`). The JS provides three opt-in features driven by markup: liveness chips (`data-twin-port`/`data-twin-start`/`data-twin-trace` on twin links — pinged, with a start-command hint when down and a step-count/phase-span readout fetched from the twin's trace endpoint when up), a stepped walkthrough (`window.WALKTHROUGH` + `data-wt` groups on the SVG), and a two-register reading level honoring the twins' shared `localStorage` key `twin-reading-level` (1–2 novice, 3–5 standard; prose is authored twice under `.lvl-novice`/`.lvl-standard`).
 - **Sourced facts only in the prose; everything else labeled illustrative.** Each page carries a note box (in both registers) separating what the sources state from what the drawing invents, and per-block basis tags — `sourced` / `inferred` / `representative` — in the twin table. Representative blocks are drawn dashed; where a drawing shows fewer units than reality the ratio badge ("4 of ~1,500") sits on the SVG itself.
-- **Every block that has a twin links two ways**: the twin's local frontend page (plus `#anatomy`/`#usecases`, and `#phase=<name>`/`#step=N` deep links — all 15 referenced twins' `App.tsx` open the playback cursor at that phase/step) and — for specced-but-unbuilt twins — a relative link to the spec file. A "What the twins would show you" section lists the specific paused steps that carry the setup's story.
+- **Every block that has a twin links two ways**: the twin's local frontend page (plus `#anatomy`/`#usecases`, and `#phase=<name>`/`#step=N` deep links — all 16 referenced twins' `App.tsx` open the playback cursor at that phase/step) and — for specced-but-unbuilt twins — a relative link to the spec file. A "What the twins would show you" section lists the specific paused steps that carry the setup's story.
 - **The drawings follow the house style**: dell-clean-design chrome, dark diagram (`--bg` panel palette, monospace SVG labels), one accent per subsystem with a legend when colors multiply.
 - Customers must be verifiable via web sources cited in both files. No backend, no build step; `./CustomerSetup/scripts/serve.sh` serves the pages at :5170 (reserved in `ports.json`).
 - **Table rows cross-link to the diagram** via `data-wt-ref="group[,group]"` — hover a row to spotlight its blocks, click a block to flash its rows. Give every twin-table row a ref.
@@ -557,3 +591,24 @@ Structure and rules for adding or editing a setup:
 ## ports.json — repo-root port registry
 
 `ports.json` records every built twin's `frontend` (vite), `backend` (uvicorn), and `proxyDefault` ports as scanned from disk, plus `knownCollisions` (currently PowerMax/E3200 sharing 8005/5178 — run one at a time) and `reserved` ports (5170 = CustomerSetup pages). `test_ports_registry` in `CustomerSetup/tests/test_links.py` fails on registry↔disk drift, on a vite proxy pointing at a foreign backend, or on any NEW collision. **When adding a twin, pick free ports from this file and add the entry** — the prose port notes in this document remain, but the registry is the checked source of truth.
+
+## Repository state
+
+Work happens on the **`add-ai-factory-twins`** branch, which is pushed to **both** remotes and tracks `origin`:
+
+- `origin` → `git@github.com:jfharney77/DigitalTwinSim.git` (SSH; the HTTPS URL was swapped for SSH because HTTPS password auth is no longer accepted and no token is configured)
+- `gitlab` → `git@gitlab.com:metsfan77/DigitalTwinSim.git`
+
+The branch is a fast-forward ahead of `main` on both. Neither remote has had `main` updated — merging is still open.
+
+**Verifying the whole repo** — every twin should be green before anything is pushed:
+
+```
+for d in */backend;  do (cd $d && . .venv/bin/activate && python -m pytest -q); done
+for d in */frontend; do (cd $d && npm run build); done
+```
+
+Two directories are deliberately excluded from git and should stay that way:
+
+- `GPU/backend/sessions/*.jsonl` — live co-browse recordings, written at runtime by `live_store.py`. The directory keeps its own `.gitignore` (`*` plus `!.gitignore`) so it survives a fresh clone. `measurements.json` beside them **is** tracked: the store treats calibration as outliving any one session.
+- The usual `.venv/`, `node_modules/`, `dist/`, `__pycache__/`, `logs/`.
