@@ -249,3 +249,5 @@ tone guard because it is the twin most at risk of reading as a brochure.
 PowerProtect One, Precision fixed workstations, PowerVault entry storage,
 the Dell Pro / Latitude commercial-client line, Dell services and residency
 programs, and Dell displays/peripherals.
+
+**Post-loop build (2026-07-31):** `DellPowerScale/` built from its iteration-4 spec (8023/5196, 50 tests green) — chosen because the McLaren customer-setup page was already linking its spec as a missing block. Nine specs remain unbuilt.

@@ -102,6 +102,7 @@
     if (!groups.length) return;
 
     var idx = -1; // -1 = show everything, no step active
+    var playTimer = null;
 
     var count = document.createElement("span");
     count.className = "wt-count";
@@ -109,6 +110,8 @@
     prev.textContent = "Back";
     var next = document.createElement("button");
     next.textContent = "Walk through";
+    var play = document.createElement("button");
+    play.textContent = "Play";
     var reset = document.createElement("button");
     reset.textContent = "Show all";
     var text = document.createElement("div");
@@ -118,10 +121,19 @@
     buttons.className = "wt-buttons";
     buttons.appendChild(prev);
     buttons.appendChild(next);
+    buttons.appendChild(play);
     buttons.appendChild(reset);
     host.appendChild(buttons);
     host.appendChild(count);
     host.appendChild(text);
+
+    function stopPlay() {
+      if (playTimer !== null) {
+        clearInterval(playTimer);
+        playTimer = null;
+        play.textContent = "Play";
+      }
+    }
 
     function render() {
       var active = idx >= 0 ? steps[idx] : null;
@@ -140,9 +152,37 @@
       reset.disabled = idx < 0;
     }
 
-    prev.addEventListener("click", function () { idx = Math.max(0, idx - 1); render(); });
-    next.addEventListener("click", function () { idx = Math.min(steps.length - 1, idx + 1); render(); });
-    reset.addEventListener("click", function () { idx = -1; render(); });
+    prev.addEventListener("click", function () { stopPlay(); idx = Math.max(0, idx - 1); render(); });
+    next.addEventListener("click", function () { stopPlay(); idx = Math.min(steps.length - 1, idx + 1); render(); });
+    reset.addEventListener("click", function () { stopPlay(); idx = -1; render(); });
+
+    // Auto-play: advance every few seconds, matching the twins' run/step
+    // idiom; stops at the last step or on any manual interaction.
+    play.addEventListener("click", function () {
+      if (playTimer !== null) { stopPlay(); return; }
+      if (idx >= steps.length - 1) idx = -1;
+      play.textContent = "Pause";
+      var tick = function () {
+        if (idx >= steps.length - 1) { stopPlay(); return; }
+        idx += 1;
+        render();
+      };
+      tick();
+      playTimer = window.setInterval(tick, 5000);
+    });
+
+    // Arrow keys step the walkthrough (unless the reader is typing somewhere).
+    document.addEventListener("keydown", function (e) {
+      var tag = (e.target && e.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "ArrowRight") {
+        stopPlay(); idx = Math.min(steps.length - 1, idx + 1); render(); e.preventDefault();
+      } else if (e.key === "ArrowLeft") {
+        stopPlay(); idx = Math.max(-1, idx - 1); render(); e.preventDefault();
+      } else if (e.key === "Escape") {
+        stopPlay(); idx = -1; render();
+      }
+    });
     render();
   }
 

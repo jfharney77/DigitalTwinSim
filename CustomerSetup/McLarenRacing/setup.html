@@ -175,9 +175,9 @@
     </tr>
     <tr data-wt-ref="storage">
       <td>PowerScale scale-out file storage</td>
-      <td><code>DellPowerScale/</code> — specced, not yet built; ports 8023/5196 reserved</td>
+      <td><code>DellPowerScale/</code> — OneFS: one namespace, no volumes; the CFD file sets grow by adding a node, never by migrating</td>
       <td><span class="basis sourced">sourced</span></td>
-      <td><a href="../../DellPowerScale/initial_spec.md">initial_spec.md</a></td>
+      <td><a href="http://localhost:5196/" data-twin-port="5196" data-twin-start="DellPowerScale" data-twin-trace="namespace">localhost:5196</a> · <a href="http://localhost:5196/#anatomy">cluster anatomy</a></td>
     </tr>
   </table>
 
@@ -194,6 +194,7 @@
     <li><a href="http://localhost:5174/#phase=post">R760 at POST</a> — memory training, the longest stage of a server boot; a garage rig rebuilt 24 times a season does this every time.</li>
     <li><a href="http://localhost:5175/#phase=cluster">PowerStore forming its cluster</a> — the two controllers pairing up before a single CFD volume is served.</li>
     <li><a href="http://localhost:5180/#phase=analyze">CloudIQ mid-analysis</a> — the ML stage where a fleet's telemetry becomes a finding; the longest stage of its pipeline.</li>
+    <li><a href="http://localhost:5196/#phase=addnode">PowerScale adding a node</a> — capacity jumps, used-percent falls, and the namespace count never moves; how a CFD archive grows between race seasons without a migration window.</li>
     <li><a href="http://localhost:5173/">GPU twin's MLP workload</a> — pick the <em>mlp_step</em> workload to watch a training step, the shape of the AI side of McLaren's estate.</li>
   </ul>
 

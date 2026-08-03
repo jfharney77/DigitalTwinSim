@@ -6,6 +6,11 @@
       "proxyDefault": 8003,
       "backend": 8003
     },
+    "DellCircularDesign": {
+      "frontend": 5197,
+      "proxyDefault": 8024,
+      "backend": 8024
+    },
     "DellCloudIQ": {
       "frontend": 5180,
       "proxyDefault": 8007,
@@ -60,6 +65,11 @@
       "frontend": 5183,
       "proxyDefault": 8010,
       "backend": 8010
+    },
+    "DellPowerScale": {
+      "frontend": 5196,
+      "proxyDefault": 8023,
+      "backend": 8023
     },
     "DellPowerStore": {
       "frontend": 5175,

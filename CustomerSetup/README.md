@@ -14,7 +14,7 @@ per-block basis tags (sourced / inferred / representative) say exactly which is 
 |---|---|---|---|
 | `xAI-Colossus/` | xAI (Memphis, TN) | Colossus AI supercluster — 100k+ GPUs in 122 days, Dell PowerEdge GPU servers, Spectrum-X Ethernet, liquid cooling | XE9712, SN6000, IR7000, Exascale, GPU |
 | `TACC-Horizon/` | Texas Advanced Computing Center (Austin, TX) | Horizon — largest academic supercomputer in the US, Dell IRSS liquid-cooled racks, 4,000 NVIDIA GPUs, Quantum-X800 InfiniBand | XE9712, IR7000, SN6000, iDRAC, GPU |
-| `McLarenRacing/` | McLaren Racing (Woking, UK) | F1 factory HPC + trackside edge — PowerEdge, PowerStore, PowerScale, Dell AI Factory, ~1.5 TB per race weekend | R760, PowerStore, GPU, CloudIQ (+ PowerScale spec) |
+| `McLarenRacing/` | McLaren Racing (Woking, UK) | F1 factory HPC + trackside edge — PowerEdge, PowerStore, PowerScale, Dell AI Factory, ~1.5 TB per race weekend | R760, PowerStore, PowerScale, GPU, CloudIQ |
 | `RHB-Bank/` | RHB Banking Group (Malaysia) | Air-gapped cyber-recovery vault — PowerProtect Cyber Recovery + CyberSense over the production estate | PowerProtect, CyberDetect, PowerStore, PowerMax |
 | `Rackspace/` | Rackspace Technology | Managed private clouds — VMware Cloud Foundation on VxRail, PowerStore beside the HCI | VxRail, PowerStore, R760, PrivateCloud |
 | `F1Soft/` | F1Soft (Kathmandu, Nepal) | National payments platform on PowerFlex software-defined storage | PowerFlex, R760, SN6000, CloudIQ |

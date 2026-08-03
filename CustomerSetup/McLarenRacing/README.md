@@ -17,7 +17,7 @@ Twins referenced by the drawing (frontend ports — start each with its `scripts
 | The accelerators' work (CFD/AI matmuls) | `GPU/` | 5173 |
 | PowerStore block storage | `DellPowerStore/` | 5175 |
 | Fleet observability (representative) | `DellCloudIQ/` | 5180 |
-| PowerScale file storage | `DellPowerScale/initial_spec.md` (specced, unbuilt) | — |
+| PowerScale file storage | `DellPowerScale/` | 5196 |
 
 Sources:
 - https://www.mclaren.com/racing/latest-news/2026/mclaren-racing-extends-relationship-with-dell-technologies/

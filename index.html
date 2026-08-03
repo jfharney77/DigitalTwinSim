@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DigitalTwinSim — all twins</title>
+<style>
+  :root {
+    --dell-blue: #0672cb; --dell-blue-hover: #0059a8; --dell-tint: #ebf5fc;
+    --dell-text: #161616; --dell-muted: #636363; --dell-border: #d2d2d2;
+    --dell-page: #f5f6f7; --dell-ok: #217346; --dell-error: #ce1126;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--dell-page); color: var(--dell-text);
+         font-family: "Roboto", "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { color: var(--dell-blue); font-size: 28px; font-weight: 500; }
+  h2 { font-size: 20px; font-weight: 500; margin: 32px 0 8px; }
+  p.lede { margin: 12px 0 0; max-width: 82ch; color: var(--dell-muted); line-height: 1.55; }
+  a { color: var(--dell-blue); text-decoration: none; }
+  a:hover { color: var(--dell-blue-hover); text-decoration: underline; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-top: 16px; }
+  .twin { background: #fff; border: 1px solid var(--dell-border); border-radius: 8px; padding: 14px 16px; }
+  .twin .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .twin h3 { font-size: 15px; font-weight: 500; }
+  .twin .idea { color: var(--dell-muted); font-size: 13px; line-height: 1.45; margin-top: 4px; }
+  .twin .meta { font-size: 12px; color: var(--dell-muted); margin-top: 8px; }
+  .twin code { font-size: 11px; }
+  .chip { display: inline-block; font-size: 11px; border-radius: 10px; padding: 1px 8px; white-space: nowrap; }
+  .chip.up { background: #e3f2e8; color: var(--dell-ok); }
+  .chip.down { background: #fdecea; color: var(--dell-error); }
+  .chip.unknown { background: var(--dell-page); color: var(--dell-muted); }
+  .note { background: var(--dell-tint); border-radius: 6px; padding: 14px 16px; margin-top: 28px; max-width: 96ch; line-height: 1.5; }
+</style>
+</head>
+<body>
+<main>
+  <h1>DigitalTwinSim</h1>
+  <p class="lede">
+    Interactive digital twins of Dell hardware and platforms — each a pure simulation engine
+    behind a data-driven diagram, built to teach one idea per machine. Chips show which twins
+    are running right now; start one with <code>./&lt;Twin&gt;/scripts/start_all.sh</code>.
+    Real customer deployments assembled from these twins live in the
+    <a href="CustomerSetup/index.html">CustomerSetup gallery</a>.
+  </p>
+
+  <h2>Twins</h2>
+  <div class="grid" id="twins"></div>
+
+  <div class="note">
+    Port collisions are historical and recorded in <code>ports.json</code>: PowerMax and
+    PowerSwitch E3200 share 8005/5178 — run one at a time. Nine more twins exist as specs
+    only (<code>&lt;Dir&gt;/initial_spec.md</code>); see <code>LOOP_LOG.md</code>.
+  </div>
+</main>
+<script>
+  var TWINS = [
+    ["GPU", 5173, "What happens inside a GPU die during one matmul — and the roofline it lives under."],
+    ["DellPowerEdgeR760", 5174, "What happens when a server powers on, from BMC to OS."],
+    ["DellPowerStore", 5175, "A dual-controller all-NVMe array brings up both nodes in lockstep."],
+    ["DellAlienware", 5176, "The AC power path: adapter handshake, power budget, hybrid battery boost."],
+    ["DellIDRAC", 5177, "The BMC that boots before the server — and never sleeps."],
+    ["DellPowerMax", 5178, "Scale-out storage where the drives hang off an InfiniBand fabric."],
+    ["DellPowerSwitchE3200", 5178, "An open-networking switch boots via ONIE to line-rate forwarding."],
+    ["DellVxRail", 5179, "Four identical nodes fuse their drives into one vSAN datastore."],
+    ["DellCloudIQ", 5180, "A batch of telemetry becomes an actionable insight."],
+    ["DellPowerEdgeXE9712", 5181, "72 GPUs fuse into one NVLink domain — liquid before silicon."],
+    ["DellIR7000", 5182, "Heat in equals heat out, exactly — the liquid-cooling loop."],
+    ["DellPowerProtect", 5183, "The vaulted copy is sealed before the attack and survives it."],
+    ["DellExascale", 5184, "Metadata leaves the data path; clients read from every server at once."],
+    ["DellPowerSwitchSN6000", 5185, "The AI fabric never drops a packet — proven under congestion."],
+    ["DellProMaxPlus", 5186, "The model weights cross the PCIe link exactly once, then never leave."],
+    ["DellPowerFlex", 5189, "No controller: every surviving node rebuilds at once."],
+    ["DellCyberDetect", 5192, "Which backup is clean — the answer is a date, not an alert."],
+    ["DellFortZero", 5195, "Zero trust: no perimeter drawn, nothing trusted implicitly."],
+    ["DellPowerScale", 5196, "There are no volumes — one namespace, however many nodes."],
+    ["DellPrivateCloud", 5198, "The hypervisor is a choice, not a foundation."],
+    ["DellCircularDesign", 5197, "The only trace that closes: mass in equals mass out, loss stated."]
+  ];
+
+  var grid = document.getElementById("twins");
+  TWINS.forEach(function (t) {
+    var name = t[0], port = t[1], idea = t[2];
+    var card = document.createElement("div");
+    card.className = "twin";
+    card.innerHTML =
+      '<div class="top"><h3><a href="http://localhost:' + port + '/">' + name + "</a></h3>" +
+      '<span class="chip unknown">checking…</span></div>' +
+      '<div class="idea">' + idea + "</div>" +
+      '<div class="meta">:' + port + " · <code>./" + name + "/scripts/start_all.sh</code></div>";
+    grid.appendChild(card);
+    var chip = card.querySelector(".chip");
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 2000);
+    fetch("http://localhost:" + port + "/", { mode: "no-cors", cache: "no-store", signal: ctrl.signal })
+      .then(function () { clearTimeout(timer); chip.className = "chip up"; chip.textContent = "running"; },
+            function () { clearTimeout(timer); chip.className = "chip down"; chip.textContent = "not running"; });
+  });
+</script>
+</body>
+</html>
