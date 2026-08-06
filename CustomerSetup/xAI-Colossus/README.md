@@ -13,7 +13,8 @@ Twins referenced by the drawing (frontend ports — start each with its `scripts
 
 | Block | Twin | Port |
 |---|---|---|
-| GB200 rack-scale compute | `DellPowerEdgeXE9712/` | 5181 |
+| 8-GPU HGX servers (first build) | `DellPowerEdgeXE9680/` | 5201 |
+| GB200 rack-scale compute (expansion) | `DellPowerEdgeXE9712/` | 5181 |
 | One GPU die under a matmul | `GPU/` | 5173 |
 | Spectrum-X Ethernet fabric | `DellPowerSwitchSN6000/` | 5185 |
 | Liquid cooling loop | `DellIR7000/` | 5182 |

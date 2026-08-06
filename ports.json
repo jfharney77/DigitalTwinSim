@@ -46,6 +46,11 @@
       "proxyDefault": 8001,
       "backend": 8001
     },
+    "DellPowerEdgeXE9680": {
+      "frontend": 5201,
+      "proxyDefault": 8028,
+      "backend": 8028
+    },
     "DellPowerEdgeXE9712": {
       "frontend": 5181,
       "proxyDefault": 8008,

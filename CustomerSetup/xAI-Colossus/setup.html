@@ -86,7 +86,7 @@
         <!-- scale badge: four glyphs stand for the reported ~1,500 racks -->
         <rect x="452" y="212" width="84" height="20" rx="10" fill="var(--bg)" stroke="var(--gpu)"/>
         <text x="462" y="226" fill="var(--gpu)" font-size="10">4 of ~1,500</text>
-        <text x="40" y="422" fill="var(--txt)" font-size="11">twins: DellPowerEdgeXE9712 (rack) · GPU (one die, one matmul)</text>
+        <text x="40" y="422" fill="var(--txt)" font-size="11">twins: DellPowerEdgeXE9680 (8-GPU server) · DellPowerEdgeXE9712 (rack) · GPU (one die)</text>
       </g>
 
       <g data-wt="cooling">
@@ -147,7 +147,7 @@
       { focus: ["cooling"],
         text: "Liquid before silicon. Cold plates, CDUs, and facility water must be flowing and verified before dense GPUs are allowed to draw power — the IR7000 twin's whole trace is this step." },
       { focus: ["racks"],
-        text: "The compute: Dell PowerEdge GPU servers, eight GPUs each, 64 per liquid-cooled rack, ~1,500 racks at first build. In the GB200 expansion racks, NVLink fuses 72 GPUs into one domain — the XE9712 twin's signature step." },
+        text: "The compute: Dell PowerEdge XE9680-class servers, eight GPUs each, 64 per liquid-cooled rack, ~1,500 racks at first build — the XE9680 twin plays one box's bring-up, NVSwitch fusing its eight GPUs. In the GB200 expansion racks, NVLink instead fuses 72 GPUs into one rack-wide domain — the XE9712 twin's signature step." },
       { focus: ["fabric", "racks"],
         text: "Every GPU gets its own 400 GbE port onto the Spectrum-X Ethernet fabric — ~3.6 Tb/s of network per server. NVLink stops at the rack wall; this fabric is what makes 100,000 GPUs one machine." },
       { focus: ["storage", "fabric"],
@@ -160,6 +160,12 @@
   <h2>Blocks in this drawing, and the twins behind them</h2>
   <table>
     <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
+    <tr data-wt-ref="racks">
+      <td>8-GPU HGX servers (first build — 64 GPUs per rack)</td>
+      <td><code>DellPowerEdgeXE9680/</code> — eight GPUs fuse in the box; the NVLink domain stops at the chassis wall, one NIC per GPU</td>
+      <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5201/" data-twin-port="5201" data-twin-start="DellPowerEdgeXE9680" data-twin-trace="poweron">localhost:5201</a> · <a href="http://localhost:5201/#anatomy">server anatomy</a></td>
+    </tr>
     <tr data-wt-ref="racks">
       <td>GB200 GPU racks (expansion phase)</td>
       <td><code>DellPowerEdgeXE9712/</code> — 72 GPUs fusing into one NVLink domain, liquid before silicon</td>
@@ -203,6 +209,8 @@
     running first (see the chips above).
   </p>
   <ul>
+    <li><a href="http://localhost:5201/#phase=fuse">XE9680 at the fuse</a> — eight GPUs snap into one NVLink domain on the baseboard, atomically, and the counter never grows past 8: the domain stops at the chassis wall. Colossus's first build did this ~12,500 times.</li>
+    <li><a href="http://localhost:5201/#phase=fabric">XE9680 joining the fabric</a> — eight NICs train, one per GPU (~3.6 Tb/s per server): the step where a box becomes a cluster member.</li>
     <li><a href="http://localhost:5181/#phase=fused">XE9712 at the fuse</a> — the step where 72 GPUs snap into a single NVLink domain, all at once or not at all. Colossus's expansion racks do this 8,000+ times over.</li>
     <li><a href="http://localhost:5181/#phase=coolant">XE9712 waiting on coolant</a> — "liquid before silicon": the rack pauses until the loop proves itself.</li>
     <li><a href="http://localhost:5185/#phase=congestion">SN6000 under congestion</a> — the busiest link driven past 95% with zero packets dropped; Colossus's training traffic lives here.</li>
