@@ -251,3 +251,5 @@ the Dell Pro / Latitude commercial-client line, Dell services and residency
 programs, and Dell displays/peripherals.
 
 **Post-loop build (2026-07-31):** `DellPowerScale/` built from its iteration-4 spec (8023/5196, 50 tests green) — chosen because the McLaren customer-setup page was already linking its spec as a missing block. Nine specs remain unbuilt.
+
+**Post-loop build (2026-08-06):** `DellNativeEdge/` built from its iteration-1 spec (8014/5187, 46 tests green) — chosen because McLaren's sources name trackside operations and the setup page had no edge-management block. The spec's invariants landed as written (operator_actions ≤ 1, trust monotone, attestation max-dwell, uniform endpoint band, central singular Orchestrator). Eight specs remain unbuilt.

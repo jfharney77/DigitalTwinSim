@@ -41,6 +41,11 @@
       "proxyDefault": 8009,
       "backend": 8009
     },
+    "DellNativeEdge": {
+      "frontend": 5187,
+      "proxyDefault": 8014,
+      "backend": 8014
+    },
     "DellPowerEdgeR760": {
       "frontend": 5174,
       "proxyDefault": 8001,

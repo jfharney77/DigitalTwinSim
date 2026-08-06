@@ -1,8 +1,9 @@
 # DellNativeEdge — edge-orchestration digital twin (spec)
 
-Status: **spec only.** Chosen in loop iteration 1 as one of the top three
-untwinned Dell products; the Pro Max Plus was built first. Build this one
-by following the pattern in `DellCloudIQ/` and `DellProMaxPlus/`.
+Status: **built** (2026-08-06, post-loop — see `LOOP_LOG.md`). The twin
+follows this spec as written; this file is kept as the design record.
+Chosen in loop iteration 1 as one of the top three untwinned Dell
+products; the Pro Max Plus was built first.
 
 ## Subject
 

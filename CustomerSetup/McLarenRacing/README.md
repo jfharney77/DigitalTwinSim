@@ -17,6 +17,7 @@ Twins referenced by the drawing (frontend ports — start each with its `scripts
 | The accelerators' work (CFD/AI matmuls) | `GPU/` | 5173 |
 | PowerStore block storage | `DellPowerStore/` | 5175 |
 | Fleet observability (representative) | `DellCloudIQ/` | 5180 |
+| Trackside edge management (representative) | `DellNativeEdge/` | 5187 |
 | PowerScale file storage | `DellPowerScale/` | 5196 |
 
 Sources:

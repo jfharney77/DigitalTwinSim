@@ -118,7 +118,7 @@
         </g>
         <text x="640" y="330" fill="var(--txt-dim)" font-size="10">telemetry → garage edge → factory HPC, within a session</text>
         <path d="M720 190 v 30" fill="none" stroke="var(--edge)" stroke-width="2"/>
-        <text x="626" y="382" fill="var(--txt)" font-size="11">twin: R760 (edge servers are the same machine, racked rougher)</text>
+        <text x="626" y="382" fill="var(--txt)" font-size="11">twins: R760 (the edge servers, racked rougher) · NativeEdge (how an unstaffed rig rebuilds itself)</text>
       </g>
 
       <g data-wt="footer">
@@ -136,7 +136,7 @@
       { focus: ["storage", "hpc"],
         text: "The simulations read and write against Dell storage: PowerStore for block workloads, PowerScale for the huge CFD file sets. The PowerStore twin shows the dual-controller array those volumes live on." },
       { focus: ["trackside"],
-        text: "At the circuit: a portable edge rig — the same PowerEdge machines, racked for travel — ingests live telemetry from the car during every session, ~24 times a season." },
+        text: "At the circuit: a portable edge rig — the same PowerEdge machines, racked for travel — ingests live telemetry from the car during every session, ~24 times a season. Rebuilding it that often with no IT department on site is exactly the zero-touch problem the NativeEdge twin walks through: plug in power and a cable, and the estate does the rest." },
       { focus: ["link", "hpc", "trackside"],
         text: "The two sides trade up to 1.5 TB per race weekend: telemetry up to Woking, strategy and simulation results back to the pit wall — fast enough to change decisions mid-session." },
       { focus: ["observe", "hpc", "trackside"],
@@ -173,6 +173,12 @@
       <td><span class="basis representative">representative</span></td>
       <td><a href="http://localhost:5180/" data-twin-port="5180" data-twin-start="DellCloudIQ" data-twin-trace="pipeline">localhost:5180</a> · <a href="http://localhost:5180/#anatomy">platform map</a></td>
     </tr>
+    <tr data-wt-ref="trackside">
+      <td>Trackside edge management (zero-touch rebuilds)</td>
+      <td><code>DellNativeEdge/</code> — the estate platform: one human action per site, attestation before anything, everything pulled from the Orchestrator</td>
+      <td><span class="basis representative">representative</span></td>
+      <td><a href="http://localhost:5187/" data-twin-port="5187" data-twin-start="DellNativeEdge" data-twin-trace="onboard">localhost:5187</a> · <a href="http://localhost:5187/#architecture">platform map</a></td>
+    </tr>
     <tr data-wt-ref="storage">
       <td>PowerScale scale-out file storage</td>
       <td><code>DellPowerScale/</code> — OneFS: one namespace, no volumes; the CFD file sets grow by adding a node, never by migrating</td>
@@ -195,6 +201,7 @@
     <li><a href="http://localhost:5175/#phase=cluster">PowerStore forming its cluster</a> — the two controllers pairing up before a single CFD volume is served.</li>
     <li><a href="http://localhost:5180/#phase=analyze">CloudIQ mid-analysis</a> — the ML stage where a fleet's telemetry becomes a finding; the longest stage of its pipeline.</li>
     <li><a href="http://localhost:5196/#phase=addnode">PowerScale adding a node</a> — capacity jumps, used-percent falls, and the namespace count never moves; how a CFD archive grows between race seasons without a migration window.</li>
+    <li><a href="http://localhost:5187/#phase=power">NativeEdge at the one human action</a> — the operator-actions counter ticks to 1 (power and a cable) and never moves again; a garage rig rebuilt at ~24 circuits a season is this trace on repeat.</li>
     <li><a href="http://localhost:5173/">GPU twin's MLP workload</a> — pick the <em>mlp_step</em> workload to watch a training step, the shape of the AI side of McLaren's estate.</li>
   </ul>
 
@@ -203,14 +210,15 @@
     What the sources actually state: PowerEdge servers and HPC systems, PowerStore and
     PowerScale storage for modelling and CFD, the Dell AI Factory, up to 1.5 TB of data per
     race weekend, and support for factory, road, and trackside operations. The rack counts,
-    the split of workloads across boxes, and the presence of CloudIQ are illustrative —
-    McLaren has not published its internal topology.
+    the split of workloads across boxes, and the presence of CloudIQ and NativeEdge are
+    illustrative — McLaren has not published its internal topology or management tooling.
     </span>
     <span class="lvl-novice">
     What McLaren and Dell have actually said: the team uses Dell PowerEdge servers,
     PowerStore and PowerScale storage, and moves up to 1.5 terabytes per race weekend
     between factory and track. How many racks there are, which workload runs where, and the
-    monitoring layer are our illustration — the team doesn't publish its internal layout.
+    monitoring and management layers are our illustration — the team doesn't publish its
+    internal layout.
     </span>
   </div>
 
