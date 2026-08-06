@@ -91,6 +91,11 @@
       "proxyDefault": 8012,
       "backend": 8012
     },
+    "DellQuantumX800": {
+      "frontend": 5202,
+      "proxyDefault": 8029,
+      "backend": 8029
+    },
     "DellPrivateCloud": {
       "frontend": 5198,
       "proxyDefault": 8025,

@@ -19,7 +19,8 @@ Twins referenced by the drawing (frontend ports — start each with its `scripts
 |---|---|---|
 | IRSS Grace Blackwell racks | `DellPowerEdgeXE9712/` | 5181 |
 | Direct liquid cooling plant | `DellIR7000/` | 5182 |
-| Quantum-X800 InfiniBand fabric | `DellPowerSwitchSN6000/` (catalog's InfiniBand option) | 5185 |
+| Quantum-X800 InfiniBand fabric | `DellQuantumX800/` | 5202 |
+| The Ethernet fork, for contrast | `DellPowerSwitchSN6000/` | 5185 |
 | Management plane (BMCs) | `DellIDRAC/` | 5177 |
 | One GPU's work | `GPU/` | 5173 |
 

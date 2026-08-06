@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img"
+     aria-label="Schematic of a Quantum-X800 InfiniBand leaf/spine fabric">
+  <!-- Self-contained schematic drawn for this project — not an NVIDIA or
+       Dell product image. Palette matches the twin's dark diagram style. -->
+  <rect x="0" y="0" width="640" height="400" fill="#0d1420"/>
+  <text x="20" y="30" fill="#8fa3bd" font-family="monospace" font-size="15">QUANTUM-X800 INFINIBAND FABRIC — SCHEMATIC</text>
+  <text x="20" y="50" fill="#5a6b82" font-family="monospace" font-size="11">two-tier fat tree · programmed by one subnet manager · lossless by construction</text>
+
+  <!-- mesh lines under the blocks -->
+  <g stroke="#2b3950" stroke-width="1" fill="none">
+    <line x1="110" y1="210" x2="230" y2="140"/><line x1="110" y1="210" x2="450" y2="140"/>
+    <line x1="250" y1="210" x2="230" y2="140"/><line x1="250" y1="210" x2="450" y2="140"/>
+    <line x1="390" y1="210" x2="230" y2="140"/><line x1="390" y1="210" x2="450" y2="140"/>
+    <line x1="530" y1="210" x2="230" y2="140"/><line x1="530" y1="210" x2="450" y2="140"/>
+    <line x1="110" y1="250" x2="110" y2="300"/><line x1="250" y1="250" x2="250" y2="300"/>
+    <line x1="390" y1="250" x2="390" y2="300"/><line x1="530" y1="250" x2="530" y2="300"/>
+  </g>
+  <!-- SM control spur: dashed -->
+  <line x1="86" y1="105" x2="160" y2="120" stroke="#2e5666" stroke-width="1.5" stroke-dasharray="5 4" fill="none"/>
+
+  <!-- subnet manager: small, beside the tree -->
+  <rect x="20" y="90" width="66" height="30" rx="4" fill="#12282e" stroke="#2e5666"/>
+  <text x="30" y="109" fill="#4fa0c9" font-family="monospace" font-size="10">UFM / SM</text>
+  <text x="20" y="136" fill="#5a6b82" font-family="monospace" font-size="9">programs routes,</text>
+  <text x="20" y="148" fill="#5a6b82" font-family="monospace" font-size="9">then leaves the path</text>
+
+  <!-- spines -->
+  <rect x="160" y="100" width="140" height="40" rx="4" fill="#1c1f3f" stroke="#5a4fc9"/>
+  <text x="182" y="124" fill="#8f7fff" font-family="monospace" font-size="11">Q3400 SPINE 1</text>
+  <rect x="380" y="100" width="140" height="40" rx="4" fill="#1c1f3f" stroke="#5a4fc9"/>
+  <text x="402" y="124" fill="#8f7fff" font-family="monospace" font-size="11">Q3400 SPINE 2</text>
+
+  <!-- leaves -->
+  <g fill="#12233a" stroke="#3d5a9e">
+    <rect x="60"  y="210" width="100" height="40" rx="4"/>
+    <rect x="200" y="210" width="100" height="40" rx="4"/>
+    <rect x="340" y="210" width="100" height="40" rx="4"/>
+    <rect x="480" y="210" width="100" height="40" rx="4"/>
+  </g>
+  <g fill="#4f7cff" font-family="monospace" font-size="10">
+    <text x="88" y="234">LEAF 1</text><text x="228" y="234">LEAF 2</text>
+    <text x="368" y="234">LEAF 3</text><text x="508" y="234">LEAF 4</text>
+  </g>
+
+  <!-- endpoints -->
+  <g fill="#2b2412" stroke="#6b5a2b">
+    <rect x="60"  y="300" width="100" height="56" rx="4"/>
+    <rect x="200" y="300" width="100" height="56" rx="4"/>
+    <rect x="340" y="300" width="100" height="56" rx="4"/>
+    <rect x="480" y="300" width="100" height="56" rx="4"/>
+  </g>
+  <g fill="#c9a94f" font-family="monospace" font-size="10">
+    <text x="74" y="326">GPU RACK 1</text><text x="214" y="326">GPU RACK 2</text>
+    <text x="354" y="326">GPU RACK 3</text><text x="494" y="326">GPU RACK 4</text>
+  </g>
+  <g fill="#6b5a2b" font-family="monospace" font-size="9">
+    <text x="74" y="344">ConnectX-8 ×N</text><text x="214" y="344">ConnectX-8 ×N</text>
+    <text x="354" y="344">ConnectX-8 ×N</text><text x="494" y="344">ConnectX-8 ×N</text>
+  </g>
+
+  <text x="20" y="384" fill="#5a6b82" font-family="monospace" font-size="10">800 Gb/s per port · credits before transmission · SHARP reductions in the switch ASICs</text>
+</svg>

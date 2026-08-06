@@ -44,7 +44,7 @@
         <rect x="20" y="55" width="1020" height="85" rx="6" fill="var(--panel)" stroke="var(--fabric)"/>
         <text x="36" y="81" fill="var(--fabric)" font-size="13">NVIDIA QUANTUM-X800 INFINIBAND — scale-out fabric across every rack</text>
         <text x="36" y="101" fill="var(--txt-dim)" font-size="11">NVLink fuses GPUs inside a rack; InfiniBand carries the job past the rack wall</text>
-        <text x="36" y="121" fill="var(--txt)" font-size="11">twin: DellPowerSwitchSN6000 — Quantum-X800 is the InfiniBand option in its catalog</text>
+        <text x="36" y="121" fill="var(--txt)" font-size="11">twin: DellQuantumX800 — lossless by construction, routes programmed centrally, SHARP in the switches</text>
       </g>
 
       <g data-wt="racks">
@@ -118,7 +118,7 @@
 
       <g data-wt="footer">
         <rect x="20" y="470" width="1020" height="50" rx="6" fill="var(--panel)" stroke="var(--line)"/>
-        <text x="36" y="500" fill="var(--txt-dim)" font-size="11">Bring-up order the twins teach: BMCs first (iDRAC) → coolant flowing (IR7000) → trays boot, NVLink fuses the rack (XE9712) → InfiniBand joins the racks (SN6000 fabric trace) → the job runs (GPU twin)</text>
+        <text x="36" y="500" fill="var(--txt-dim)" font-size="11">Bring-up order the twins teach: BMCs first (iDRAC) → coolant flowing (IR7000) → trays boot, NVLink fuses the rack (XE9712) → InfiniBand joins the racks (QuantumX800 fabric trace) → the job runs (GPU twin)</text>
       </g>
     </svg>
     <div id="walkthrough" class="walkthrough"></div>
@@ -132,7 +132,7 @@
       { focus: ["racks", "cooling"],
         text: "The IRSS racks boot: Grace/Vera CPUs come up in lockstep, Blackwell GPUs wake on their cold plates, and NVLink trains until each rack's GPUs fuse into one domain — the XE9712 twin's atomic fuse, repeated per rack." },
       { focus: ["fabric", "racks"],
-        text: "NVLink stops at the rack wall. Quantum-X800 InfiniBand joins the racks into one 300-petaflop machine — the SN6000 twin's fabric trace (its catalog carries this exact InfiniBand option)." },
+        text: "NVLink stops at the rack wall. Quantum-X800 InfiniBand joins the racks into one 300-petaflop machine — the QuantumX800 twin's fabric trace: one subnet manager programs every route, credits make loss unexpressible, and SHARP does the all-reduce arithmetic in the switches." },
       { focus: ["racks", "fabric", "cooling", "mgmt", "flows", "footer"],
         text: "The whole machine: 1M CPU cores, 4,000 GPUs, one job. Three of the four AI Factory quartet pillars are exercised directly; open each twin below to watch its piece." },
       ];
@@ -155,8 +155,14 @@
     </tr>
     <tr data-wt-ref="fabric">
       <td>Quantum-X800 InfiniBand fabric</td>
-      <td><code>DellPowerSwitchSN6000/</code> — its catalog offers exactly this Quantum-X800 InfiniBand alternative; the fabric trace shows congestion absorbed without loss</td>
+      <td><code>DellQuantumX800/</code> — the fabric Horizon names: credit-based losslessness, one subnet manager programming every route, SHARP reductions in the switch ASICs</td>
       <td><span class="basis sourced">sourced</span></td>
+      <td><a href="http://localhost:5202/" data-twin-port="5202" data-twin-start="DellQuantumX800" data-twin-trace="fabric">localhost:5202</a> · <a href="http://localhost:5202/#anatomy">fabric anatomy</a></td>
+    </tr>
+    <tr data-wt-ref="fabric">
+      <td>The Ethernet fork of the same decision (for contrast)</td>
+      <td><code>DellPowerSwitchSN6000/</code> — Spectrum-X proves losslessness under congestion; reading both fabric twins side by side is the point</td>
+      <td><span class="basis representative">representative</span></td>
       <td><a href="http://localhost:5185/" data-twin-port="5185" data-twin-start="DellPowerSwitchSN6000" data-twin-trace="fabric">localhost:5185</a> · <a href="http://localhost:5185/#components">catalog</a></td>
     </tr>
     <tr data-wt-ref="mgmt">
@@ -187,7 +193,9 @@
     <li><a href="http://localhost:5182/#phase=verify">IR7000 at leak/flow verify</a> — the longest stage of the cooling trace, and the gate the racks wait behind.</li>
     <li><a href="http://localhost:5181/#phase=coolant">XE9712 waiting on coolant</a> — "liquid before silicon", the inversion no air-cooled twin has.</li>
     <li><a href="http://localhost:5181/#phase=fused">XE9712 at the fuse</a> — GPUs-in-domain snapping from 0 to 72; Horizon does this once per rack.</li>
-    <li><a href="http://localhost:5185/#phase=linktrain">SN6000 at link training</a> — the longest fabric stage; thousands of links must train before any traffic flows between racks.</li>
+    <li><a href="http://localhost:5202/#phase=routes">QuantumX800 computing routes</a> — the longest fabric stage: one subnet manager computes every forwarding table before a byte moves, then leaves the data path.</li>
+    <li><a href="http://localhost:5202/#phase=sharp">QuantumX800 at the SHARP crossing</a> — fabric traffic falls while the effective all-reduce rate rises: the switches are doing the arithmetic.</li>
+    <li><a href="http://localhost:5202/#phase=burst">QuantumX800 under the incast burst</a> — senders wait microseconds for credits instead of losing anything; the sent-without-credit counter cannot move.</li>
   </ul>
 
   <div class="note">
