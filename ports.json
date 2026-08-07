@@ -51,6 +51,11 @@
       "proxyDefault": 8001,
       "backend": 8001
     },
+    "DellPowerEdgeR760Thermal": {
+      "frontend": 5203,
+      "proxyDefault": 8030,
+      "backend": 8030
+    },
     "DellPowerEdgeXE9680": {
       "frontend": 5201,
       "proxyDefault": 8028,
@@ -96,11 +101,6 @@
       "proxyDefault": 8012,
       "backend": 8012
     },
-    "DellQuantumX800": {
-      "frontend": 5202,
-      "proxyDefault": 8029,
-      "backend": 8029
-    },
     "DellPrivateCloud": {
       "frontend": 5198,
       "proxyDefault": 8025,
@@ -110,6 +110,11 @@
       "frontend": 5186,
       "proxyDefault": 8013,
       "backend": 8013
+    },
+    "DellQuantumX800": {
+      "frontend": 5202,
+      "proxyDefault": 8029,
+      "backend": 8029
     },
     "DellVxRail": {
       "frontend": 5179,
