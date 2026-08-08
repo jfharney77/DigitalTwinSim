@@ -125,6 +125,86 @@
       "frontend": 5173,
       "proxyDefault": 8000,
       "backend": 8000
+    },
+    "PhysicsAIFactory": {
+      "frontend": 5219,
+      "proxyDefault": 8046,
+      "backend": 8046
+    },
+    "PhysicsCDU": {
+      "frontend": 5216,
+      "proxyDefault": 8043,
+      "backend": 8043
+    },
+    "PhysicsClient": {
+      "frontend": 5204,
+      "proxyDefault": 8031,
+      "backend": 8031
+    },
+    "PhysicsCompute": {
+      "frontend": 5205,
+      "proxyDefault": 8032,
+      "backend": 8032
+    },
+    "PhysicsData": {
+      "frontend": 5210,
+      "proxyDefault": 8037,
+      "backend": 8037
+    },
+    "PhysicsDataDomain": {
+      "frontend": 5215,
+      "proxyDefault": 8042,
+      "backend": 8042
+    },
+    "PhysicsDisplay": {
+      "frontend": 5218,
+      "proxyDefault": 8045,
+      "backend": 8045
+    },
+    "PhysicsFabric": {
+      "frontend": 5207,
+      "proxyDefault": 8034,
+      "backend": 8034
+    },
+    "PhysicsFleet": {
+      "frontend": 5208,
+      "proxyDefault": 8035,
+      "backend": 8035
+    },
+    "PhysicsLifecycle": {
+      "frontend": 5211,
+      "proxyDefault": 8038,
+      "backend": 8038
+    },
+    "PhysicsME5": {
+      "frontend": 5214,
+      "proxyDefault": 8041,
+      "backend": 8041
+    },
+    "PhysicsMX7000": {
+      "frontend": 5212,
+      "proxyDefault": 8039,
+      "backend": 8039
+    },
+    "PhysicsRackPower": {
+      "frontend": 5217,
+      "proxyDefault": 8044,
+      "backend": 8044
+    },
+    "PhysicsResilience": {
+      "frontend": 5209,
+      "proxyDefault": 8036,
+      "backend": 8036
+    },
+    "PhysicsStorage": {
+      "frontend": 5206,
+      "proxyDefault": 8033,
+      "backend": 8033
+    },
+    "PhysicsXR": {
+      "frontend": 5213,
+      "proxyDefault": 8040,
+      "backend": 8040
     }
   },
   "knownCollisions": {

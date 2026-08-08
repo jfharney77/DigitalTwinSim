@@ -638,6 +638,419 @@ Key points beyond the twin pattern:
 - **Teaching layer** (`presets.py`): Explain mode serves each key readout's equation with live-value substitution in the UI (spec §9.6's four required equations covered); seven guided scenarios (idle-to-full, fan-power feedback, kill-a-fan, the 350 W problem, recirculation death spiral, PSU sweet spot, altitude) set the scenario and narrate what to watch. Explain/scenario prose and the anatomy overview carry reading levels (1/3/5 authored; trace states are numbers, so leveling attaches to the teaching prose — `test_leveling.py` adapted accordingly).
 - Copy spells out platform vocabulary (TDP, HBM-less here — DVFS, ASHRAE A2, Titanium efficiency, ΔT, Tjmax proxy, incast-free — this is a one-box twin) on first use; the honest "what we don't model" footnote lists CFD, per-core DVFS, VR losses, humidity, acoustics. Cross-references: R760 (bring-up + floorplan), IR7000 (the facility side of this heat), Alienware (scenario→trace + energy identity precedents), GPU (roofline behind the AI preset), iDRAC (whose policies the fan loop models).
 
+## The physics suite (physics_specs/)
+
+`physics_specs/` specs a second family of apps — interactive physics simulators in the
+`DellPowerEdgeR760Thermal/` mold (scenario → deterministic trace, pure AST-checked engines,
+conservation identities as pytest, constants with units + `source`, estimates labeled) — built
+as `Physics*/` top-level directories. `physics_specs/BUILD_PLAN.md` maps spec files 01–08 to
+eight apps (ports 8031–8038 / 5204–5211); `physics_specs/10-additional-products.md` is the
+expansion roster, built as one app per product on ports 8039–8046 / 5212–5219. Registry of
+record is `ports.json`, as always. Sections for the built physics apps follow.
+
+## PhysicsClient — client-device physics simulator (first physics-suite app)
+
+First app of the eight-app physics suite (`physics_specs/BUILD_PLAN.md`; spec
+`physics_specs/07-client-devices.md`): the R760Thermal engine generalized to
+client devices, with **two product personalities in one process** — the
+Alienware gaming machines (laptop or desktop tower) and the Dell Pro Max Plus
+mobile workstation with its optional discrete NPU — because the spec's
+flagship lessons are A/B comparisons (laptop vs tower, GPU vs NPU inference)
+that need both live at once.
+
+```
+PhysicsClient/backend/   app/{models,constants,engine,validation,anatomy,brandmap,presets,leveling,main}.py + tests/
+PhysicsClient/frontend/  src/{api,types,level}.ts, App.tsx, components/{DeviceView,BuildPanel,Instruments,StripCharts,BrandMapPage,LevelControl}.tsx
+PhysicsClient/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsClient/scripts/start_all.sh` (backend :8031 background,
+  frontend :5204 foreground — the BUILD_PLAN's reservations, continuing from
+  R760Thermal's 8030/5203). Stop: `./PhysicsClient/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsClient/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsClient/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8031`. **Scenario-driven like
+  R760Thermal**: `POST /api/simulate` takes a `Scenario` (DeviceConfig +
+  Workload dials + Environment + timed events), returns `Validation[]` +
+  1 s-timestep `SimState[]` + `LogEntry[]` + `Summary`; `GET /api/simulate`
+  runs the default (Alienware laptop, AAA load). Other endpoints:
+  `/api/anatomy` (three device maps, `?product=&formFactor=`),
+  `/api/constants`, `/api/presets/{configs,workloads}`, `/api/scenarios`,
+  `/api/explain`, `/api/brandmap`, `/api/levels`.
+
+Key points beyond the R760Thermal pattern:
+
+- **Client physics** (`engine.py`, pure — AST-checked, `random` banned): the
+  mechanics servers never meet, each pinned in `tests/test_engine.py`. **The
+  supply identity every tick** — adapter DC + battery discharge = system +
+  charge (the DellAlienware twin's law carried into the physics suite; the
+  undersized-charger scenario is its hybrid column, the pack draining while
+  plugged in). **PL2 → PL1 burst-then-fade** (τ ≈ 28 s, re-armed per load
+  step) — `fps_minute_1 > fps_minute_15` under stress is a test. **The shared
+  thermal budget** — laptop CPU/GPU/NPU share heat pipes; the allocator
+  favors the GPU and clips the CPU to a floor; the desktop tower is the
+  control group (never budget- or skin-limited; its limits are the PSU curve
+  and the overcurrent trip, inherited from R760Thermal). **The skin cap** — a
+  slow (τ ≈ 120 s) human-contact zone whose 46 °C cap overrides fan logic;
+  quiet mode trades dB(A) for FPS measurably. **Battery arithmetic** —
+  runtime = Wh × health × 0.92 ÷ W live; exhaustion powers off. **Tokens per
+  joule** (Pro Max Plus) — the LLM preset on CPU/GPU/NPU ranks rate
+  GPU > NPU > CPU and efficiency NPU > GPU > CPU, the discrete-NPU argument
+  as an experiment.
+- **Device maps are backend data** (`anatomy.py` — three stylized interiors:
+  laptop and Pro Max Plus service views with skin + battery zones, the tower
+  side view with PSU and a deliberately non-binding "skin" panel; geometry
+  and kind invariants in `test_model_data.py`; engine↔map contract in
+  `test_region_temps_match_map`). Validation (`validation.py`) follows the
+  warn-then-simulate house rule: undersized charger and PSU oversubscription
+  warn and then demonstrate; promax-desktop and NPU-on-Alienware are errors.
+- **The brand-map page** (`#brands`, from `physics_specs/10` §8): Dell's
+  January 2025 client rebrand as a static leveled explainer served by
+  `GET /api/brandmap` (`brandmap.py`) — Dell (absorbing XPS/Inspiron),
+  Dell Pro (née Latitude/OptiPlex), Dell Pro Max (née Precision) with
+  Base/Plus/Premium tiers, Alienware untouched, and "Pro Max Plus" placed on
+  the map as this app's own subject. 2026 corrections carry sourcing labels:
+  the XPS revival (CES 2026) as fact, the reported "Pro Max" → "Dell Pro
+  Precision" rename as *reported* — `tests/test_brandmap.py` enforces the
+  labeling, tiers, placement, and the DellAlienware/DellProMaxPlus
+  cross-links.
+- Reading levels 1/3/5 are authored on the three map overviews, all guided-
+  scenario narration, and all Explain entries via the shared `leveling.py`;
+  `test_leveling.py` guards the scale. Wattages/rates/timings are
+  illustrative — every constant in `constants.py` carries units + source and
+  estimates are flagged through to the UI.
+
+## PhysicsMX7000 — MX7000 shared-infrastructure simulator (physics suite)
+
+Interactive physics model of the **Dell PowerEdge MX7000** 7U modular
+chassis, built from product #1 of `physics_specs/10-additional-products.md`
+on the R760Thermal template. The one idea: **nothing in the chassis
+belongs to a sled** — nine fans and up to six pooled 3000 W PSUs serve
+all eight bays, so the physics of sharing is the curriculum.
+
+```
+PhysicsMX7000/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsMX7000/frontend/  src/{api,types,level}.ts, App.tsx, components/{ChassisView,BuildPanel,Instruments,StripCharts,LevelControl}.tsx
+PhysicsMX7000/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsMX7000/scripts/start_all.sh` (backend :8039 background, frontend :5212 foreground). Stop: `./PhysicsMX7000/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsMX7000/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsMX7000/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8039`. **Scenario-driven**: `POST /api/simulate` takes a `Scenario` (8-slot sled config + PSU pool/redundancy policy/power cap, per-sled workload dials, environment, timed events), returns `Validation[]` + `SimState[]` trace + `LogEntry[]` + `Summary`; `GET /api/simulate` runs the default. Other endpoints: `/api/anatomy`, `/api/constants`, `/api/presets/{configs,workloads}`, `/api/scenarios`, `/api/explain`, `/api/levels`.
+
+Key points beyond the R760Thermal pattern:
+
+- **The fan controller targets the hottest sled** — `test_noisy_neighbor_taxes_the_shared_fans` pins the spec's "noisy neighbor, thermally" scenario: seven idle sleds' power unchanged, chassis fan power up, `hottestSlot` naming the culprit. Fan watts are inside the per-tick power balance (Σ sled powers + fabric + mgmt + fans = DC; AC = DC ÷ η), so the tax is an asserted identity, not a UI claim.
+- **Pooled redundancy is policy arithmetic** (`psu_feed` in `engine.py`): grid alternates PSUs across AC feeds A/B and `test_grid_redundancy_survives_a_whole_feed_loss` rides through a feed loss on the surviving half; `test_nplus1_does_not_survive_a_feed_loss` pins the opposite outcome for the same event — N+1 covers a PSU dying, not a feed dying. `lose-feed`/`restore-feed`/`kill-psu` are timed events.
+- **Composability**: storage sleds (MX5016s-class, 16 drives) carry an `owner_slot`; their draw follows the owner's storage dial and `reassign-storage` is a runtime event (`test_storage_sled_follows_its_owner`). Unowned storage sleds are a validation error.
+- **Chassis power budget** (`power_cap_w`): a global clamp walks every compute sled down together until DC fits (`test_power_cap_throttles_the_whole_chassis`) — the modular version of a rack power cap.
+- **Geometry carries the lesson** (`anatomy.py`, 100×62 front elevation): eight bay columns on top, then the fan wall, then the PSU row — `test_shared_plant_is_drawn_chassis_wide` pins the fan and PSU rows spanning ≥90% of the chassis width, because they belong to nobody's bay. Chassis facts (8 bays, 9 fans, 6× 3000 W) are sourced from Dell's spec sheet and pinned non-estimated by `test_chassis_facts_are_sourced_not_estimated`; the rest of the constants are labeled estimates.
+- Reading levels: anatomy overview, all five explain entries, and all five guided-scenario narrations authored at levels 1/3/5 via the shared `leveling.py` (copied byte-for-byte).
+
+## PhysicsXR — PowerEdge XR rugged-edge physics simulator
+
+Physics app for product #2 of `physics_specs/10-additional-products.md`:
+the **Dell PowerEdge XR-series** (XR8000 sled-based / XR4000 stackable
+rugged edge servers). The one idea: **the R760Thermal engine with the
+environment sliders unlocked to hostile ranges** — this app is a direct
+adaptation of `DellPowerEdgeR760Thermal/` and keeps its wire pattern
+(`POST /api/simulate` Scenario → Validation[] + SimState[] + LogEntry[] +
+Summary; GET runs the default; pure AST-checked engine; frontend owns the
+playback clock; Dell clean-design skin with dark instruments).
+
+```
+PhysicsXR/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsXR/frontend/  src/{api,types,level}.ts, App.tsx, components/{ThermalChassisView,BuildPanel,Instruments,StripCharts,LevelControl}.tsx
+PhysicsXR/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsXR/scripts/start_all.sh` (backend :8040 background,
+  frontend :5213 foreground). Stop: `./PhysicsXR/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsXR/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsXR/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8040`.
+
+Key points beyond the R760Thermal pattern:
+
+- **The environment model is the product** (`models.py`): `Environment`
+  carries `inlet_c` (−25…65), `altitude_m`, `dust` (clean/moderate/heavy),
+  `filter_months` (0–24), and `vibration` (none/roadside/vehicle);
+  `ServerConfig` swaps the R760's heatsink/fan menus for `platform`
+  (xr8000/xr4000, each with its own CPU tiers), `thermal_config`
+  (standard −5…55 °C / extended −20…65 °C — the extended envelope is a
+  *select-config* rating, enforced as an error rule), and `drive_type`
+  (ssd/hdd). Events add `set-filter-months`, `clean-filter`, and
+  `voltage-sag` (value = % of nominal, seconds = duration).
+- **Three rugged mechanisms in the engine** (`engine.py`, pure): filter
+  fouling folds into the airflow-resistance penalty (same rpm → less
+  CFM → the controller buys it back at the cubic price; `fouling_pct`
+  in every state); vibration applies a flat throughput derate to HDD
+  builds only (`storage_perf_lost_pct` — a tax, not a fault); the feed
+  sags per event and `input_current_a = AC/V` is checked against a
+  capacity-derived PSU input limit — the same sag rides through at idle
+  and trips at load, and deep sags (<60% nominal) drop out immediately.
+  The CPU inhales at its lane's *exit* (short-depth preheat), not the
+  lane midpoint as in the R760Thermal engine.
+- **Acceptance tests are the spec's scenarios** (`tests/test_engine.py`):
+  Phoenix-vs-Fargo (one config: 48 °C pins fans/throttles, −15 °C leaves
+  fans at floor), the-filter-nobody-changed (6 months heavy dust
+  throttles in a heat wave a clean filter survives), brownout
+  ride-through (idle rides, full load trips, deep sag kills), and the
+  HDD-vibration tax — plus the two house identities (per-tick power
+  balance, steady-state ΔT = DC/(ṁ·cp)).
+- **The rated envelopes are documented facts, pinned as such**:
+  `test_the_rated_envelopes_are_documented_not_estimated` requires the
+  −5…55/−20…65 constants to carry Dell sources with `estimated=False`;
+  everything else (fouling rates, vibration derates, fan curves, PSU
+  margins) is a labeled estimate.
+- **The chassis map draws the filter** (`anatomy.py`, 100×46, front at
+  x=0): the dust filter is a first-class full-height region ahead of the
+  drives — `test_the_filter_is_first_and_full_height` and the airflow-
+  axis test pin filter → drives → 4 fans → PSUs. In the UI the filter
+  darkens with fouling and click-to-change resets it; fans stay
+  click-to-kill.
+- Reading levels 1/3/5 authored on the anatomy overview, all six guided
+  scenarios (Phoenix rooftop, February in Fargo, the filter nobody
+  changed, brownout at the cell site, the HDD mistake, the mountain
+  site), and all six Explain entries; `leveling.py` is the shared
+  mechanism byte-for-byte.
+- Copy spells out edge vocabulary (NEBS Level 3, MIL-STD-810H, RAN/vRAN,
+  fronthaul, ride-through, derating) on first use. Cross-references:
+  DellPowerEdgeR760Thermal (the template, in its native data hall),
+  DellPowerEdgeR760, DellNativeEdge (managing the estate), and
+  DellTelecomBlocks' spec (the narrative twin this gives physics to).
+
+### ports.json entry (merge by hand)
+
+```json
+"PhysicsXR": { "frontend": 5213, "proxyDefault": 8040, "backend": 8040 }
+```
+
+## PhysicsME5 — PowerVault ME5 RAID physics simulator
+
+The physics-suite treatment of Dell's entry SAN (product #3 of
+`physics_specs/10-additional-products.md`), built on the R760Thermal
+scenario→trace template: `POST /api/simulate` takes a Scenario (array
+config + workload dials + timed events) and returns Validation[] +
+SimState[] trace + LogEntry[] + Summary; GET runs the default. The one
+idea: **the perfect first storage sim** — classic RAID with nothing else
+in the way (no dedupe, no tiering), so the write-penalty and
+rebuild-window arithmetic is the whole show and the bigger arrays'
+machinery becomes legible by contrast.
+
+```
+PhysicsME5/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsME5/frontend/  src/{api,types,level}.ts, App.tsx, components/{ArrayView,BuildPanel,Instruments,StripCharts,LevelControl}.tsx
+PhysicsME5/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsME5/scripts/start_all.sh` (backend :8041 background,
+  frontend :5214 foreground). Stop: `./PhysicsME5/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsME5/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsME5/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8041`.
+
+Key points beyond the R760Thermal pattern:
+
+- **Time is minutes, not seconds** — `Scenario.tick_minutes` (1–120)
+  coarsens the timestep because storage time is long: a 20 TB spindle
+  rebuild is ~a week, and one run must hold the whole window. Interactive
+  clicks (fail a drive, fail a controller) become timed events, engine
+  stays pure (AST-checked, `random` banned).
+- **Two conservation identities asserted per tick** (`test_engine.py`,
+  house style): the IOPS ledger — backend disk I/O = reads×read_cost +
+  writes×write_penalty (penalties 2/4/6 by RAID level, the classic
+  arithmetic pinned in `test_model_data.py`) — and the capacity ledger —
+  raw = usable + protection overhead + spares, exactly.
+- **Signature acceptance tests**: R10 vs R6 on identical drives serve
+  write IOPS exactly 3× apart under saturation; a 20 TB rebuild takes
+  days and scales linearly with drive size; the risk gauge prices RAID 5
+  far above RAID 6 inside the window; a second mid-rebuild failure kills
+  R5 but not R6; controller failover survives at the price of a halved
+  front-end ceiling and write-through cache; all-flash saturates against
+  the *controller* ceiling, not the drives (latency rides
+  max(disk queue, front-end queue)). RAID 10's second failure is
+  deliberately the unlucky mirror, logged as such.
+- **Enclosure map** (`anatomy.py`, 100×40): 24 uniform drive slots on
+  top (`test_the_enclosure_is_24_slots_and_dual_everything`), dual
+  controllers + mirrored cache + dual PSUs below; cache state flips to
+  `write-through` when a controller dies. `ArrayView.tsx` paints regions
+  by state string and draws a per-slot rebuild progress bar.
+- **Constants discipline**: every constant in `constants.py` carries
+  units + source; drive IOPS/rebuild rates/controller ceiling are
+  estimates and say so; the ME5 spec-sheet 640K-IOPS figure is carried
+  halved per controller and flagged `verify`.
+- Reading levels 1/3/5 authored on the overview, all five guided
+  scenarios, and all four explain entries (leveling.py byte-identical to
+  the shared mechanism; resolution in `main.py` only).
+- Copy spells out storage vocabulary (IOPS, RAID levels, hot spare,
+  write-through, rebuild window, active-active) on first use;
+  IOPS/rates/timings are illustrative. Cross-reference: PowerStore/
+  PowerMax twins (the machinery this sim omits on purpose), PowerFlex
+  (the no-controller counterargument), PowerProtect (where backups go
+  when the window loses).
+
+## PhysicsDataDomain — dedupe physics simulator (expansion roster #4)
+
+The physics-suite treatment of **PowerProtect Data Domain** — a
+physics-grade deep dive on variable-length deduplication, from
+`physics_specs/10-additional-products.md` product #4, on the
+R760Thermal template (scenario → trace, pure engine, constants
+discipline). Companion to the narrative `DellPowerProtect/` twin (the
+vault; this is the arithmetic inside the appliance) and to
+`DellCyberDetect/` (the entropy bridge: ransomware's high-entropy writes
+are this app's smoke-alarm scenario, read from the ingest side).
+
+```
+PhysicsDataDomain/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsDataDomain/frontend/  src/{api,types,level}.ts, App.tsx, components/{PipelineView,CapacityChart,DatasetPanel,Instruments,StripCharts,LevelControl}.tsx
+PhysicsDataDomain/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsDataDomain/scripts/start_all.sh` (backend :8042 background, frontend :5215 foreground). Stop: `./PhysicsDataDomain/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsDataDomain/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsDataDomain/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8042`. **Scenario-driven**: `POST /api/simulate` takes a `Scenario` (appliance, dataset {full TB, daily change %, entropy}, retention, timed events — `enable-host-encryption`, `ransomware-start`, …) and returns Validation[] + day-by-day SimState[] + LogEntry[] + Summary; `GET /api/simulate` runs the "thirty fulls" default. Other endpoints: `/api/anatomy`, `/api/constants`, `/api/appliances`, `/api/presets/datasets`, `/api/scenarios`, `/api/explain`, `/api/levels`.
+
+Key points beyond the twin pattern:
+
+- **The one idea: the dedupe ratio is emergent, never configured.** `engine.py` (pure — AST-checked, `random` banned) keeps a capacity ledger — current image + a history window of stranded old versions, GC popping expired generations — and the house identity is **capacity conservation every day**: `physical(t) = physical(t−1) + (novel − reclaimed)·(1+overhead)`, with `ratio = logical ÷ physical` its quotient (`test_capacity_conservation_every_day`). The no-events run matches its own closed form exactly: `physical = (1+ovh)·(full/cf)·(1+(retained−1)·c)`.
+- **Signature invariants** (`test_engine.py`): ratio grows with retention (generational dedupe); host-side encryption (fresh session keys) collapses it to ~1:1 while **static** high-entropy data still dedupes but won't compress — the honest distinction; the spec's three scenarios are acceptance tests: 30 dailies land under 2× the first backup's footprint, the encrypted-source day-30 event breaks the capacity curve >10× and fills the 1.5 PB flagship mid-run, and the **entropy of today's changed data** alarms within 2 days of ransomware while the capacity trend-break arrives weeks later (`alarm_day < capacity_notice`, computed in-test). The fingerprint index knees ingest before the disks fill on the entry box; GC starts exactly at day retention+1.
+- **The anatomy is the ingest path**, left→right (streams → DD Boost → chunker → fingerprint index above the container store → cleaning), pinned by `test_the_pipeline_reads_left_to_right`; the engine's `region_load` keys match the map ids every day. `PipelineView.tsx` thickens the chunker→store arrow with today's novelty — on a quiet estate almost nothing flows past Boost, which is the pitch.
+- **Constants discipline**: every constant and all three appliances carry units + `source`, estimates flagged (capacities follow the DD family data-sheet classes via the PowerProtect twin; chunk size, index RAM, compression curve, knee slope are labeled estimates). Validation warns-don't-blocks (capacity forecast, encrypted source, index pressure); the only error is a first full that can't physically fit. Presets pass their own hard rules.
+- Reading levels 1/3/5 authored on the anatomy overview, all five guided scenarios, and all five explain entries via the shared `leveling.py` (byte-for-byte); resolution in `main.py` only.
+
+## PhysicsCDU — PowerCool CDU / PowerRack / IRC physics simulator
+
+Interactive physics simulator of the facility layer under a liquid-cooled AI rack — the **PowerCool CDU C7000** (4U in-rack coolant distribution unit, 220+ kW class, announced DTW May 2026) with **PowerRack**/**Integrated Rack Controller** as the policy plane. Product #5 of `physics_specs/10-additional-products.md`, built on the R760Thermal template (scenario → deterministic trace; pure engine; playback clock in the frontend). The CDU is the star: primary (facility water) loop ↔ plate heat exchanger ↔ secondary (rack coolant) loop, with the IRC deciding what gives when the loop can't keep up.
+
+```
+PhysicsCDU/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsCDU/frontend/  src/{api,types,level}.ts, App.tsx, components/{LoopView,ControlPanel,Instruments,StripCharts,LevelControl}.tsx
+PhysicsCDU/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsCDU/scripts/start_all.sh` (backend :8043 background, frontend :5216 foreground). Stop: `./PhysicsCDU/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsCDU/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsCDU/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8043`. `POST /api/simulate` takes a `Scenario` (CDU config: tray banks / pumps N vs N+1 / flow setpoint / min-supply / IRC policy; utilization; facility supply + dew point; timed events — warm-water step, pump kills, bank adds) and returns `Validation[]` + `SimState[]` trace + `LogEntry[]` + `Summary`; `GET /api/simulate` runs the default. Other endpoints: `/api/anatomy`, `/api/constants`, `/api/presets/{configs,workloads}`, `/api/scenarios`, `/api/explain`, `/api/levels`.
+
+Key points beyond the R760Thermal pattern:
+
+- **The identity is two-loop heat balance** (`tests/test_engine.py`): IT heat == ṁ·cp·ΔT on the secondary loop == ṁ·cp·ΔT on the primary loop, every tick of every scenario — a CDU is a device for making three numbers equal. Supply can never fall below facility water (the approach is Q/(UA·flow^0.6)); silicon = supply + half the loop rise + cold-plate R_th·q — the additive chain the Explain mode substitutes live.
+- **The IRC comparison is the twin's argument, and it's tested**: on a +6 °C warm-water day, coordinated policy caps all banks uniformly (zero trips, silicon held under the tray firmware's trip line) while `policy="uncoordinated"` produces a **staggered trip cascade that over-sheds** — the loop's 60 s lag keeps survivors above the trip line after the first bank drops, so ≥2 banks trip where the physics needed ~15% (`test_acceptance_warm_water_day_uncoordinated_cascades`), and `test_coordination_delivers_more_compute_than_panic` pins the delivered-kWh comparison. Tripped banks latch off (recovery is a service visit, not a sim event).
+- **The dew-point floor is a hard per-tick constraint**, not a controller: supply = max(emergent, setpoint, dew + 2 K) with the mixing valve applied post-lag, so `test_condensation_floor_holds_on_every_tick` holds even while events move the dew point. Setpoint below dew+2 is a validation **error**; within 5 K a warning.
+- **Pump hydraulics carry the N vs N+1 lesson**: parallel flow scales like k^0.65 (two pumps ≈ 1.6× one), power like speed³; on N+1 a pump death costs ~3% flow and no caps, on N the survivor delivers ~62% of setpoint and the IRC must cap — both pinned as acceptance tests. Sizing: five 40 kW banks run uncapped, the sixth binds the HX near the 220 kW nameplate (`test_acceptance_size_the_cdu`).
+- **Anatomy is the loop drawn as a circuit** (`anatomy.py`, 100×60): facility plant → facility pipes → HX (pumps below, **IRC above** — `test_the_controller_sits_above_the_loop` pins the policy plane over the wet parts) → supply/return manifolds bracketing six identical tray banks; `test_the_loop_reads_left_to_right` pins the axis. `LoopView.tsx` paints regions on a fixed 10–80 °C scale, animates flow dashes with pump speed, and pumps are click-to-fail (fan idiom); per-bank status rides `SimState.bankStatus`.
+- **Constants honesty, 2026-product edition** (`test_the_2026_products_keep_their_receipts`): the 220 kW class cites the DTW 2026 announcement; UA, pump curves, R_th, taus, and trip thresholds are estimates and the test enforces the labeling both directions. Six guided scenarios + five Explain entries carry reading levels 1/3/5 via the shared `leveling.py`.
+- Cross-references: `DellIR7000/` (same loop, commissioning story, the inherited heat identity) and `DellPowerEdgeXE9712/` (the trays making the heat — its "liquid before silicon" pause is this twin's verify phase, one layer out).
+
+## PhysicsRackPower — rack PDU & UPS physics simulator
+
+The physics-suite treatment of product #6 in `physics_specs/10-additional-products.md`: Dell's rack power accessories (resold APC NetShelter metered/switched PDUs + rack UPS), built in the `DellPowerEdgeR760Thermal/` mold — the natural home of module M11 (three-phase balancing, per-outlet metering, breaker limits) plus battery aging.
+
+```
+PhysicsRackPower/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsRackPower/frontend/  src/{api,types,level}.ts, App.tsx, components/{RackView,ConfigPanel,PhaseMeters,UpsPanel,StripCharts,LevelControl}.tsx
+PhysicsRackPower/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsRackPower/scripts/start_all.sh` (backend :8044 background, frontend :5217 foreground). Stop: `./PhysicsRackPower/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsRackPower/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsRackPower/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8044`. **The trace is scenario-driven**: `POST /api/simulate` takes a `Scenario` (eight rack loads on A/B/C phase feeds, per-phase breaker rating, UPS chemistry/nameplate-Wh/age, room temperature, timed events — utility-fail/restore, move-load, set-load, self-test) and returns the deterministic trace; `GET /api/simulate` runs the default scenario. Other endpoints: `/api/anatomy`, `/api/constants`, `/api/presets/configs`, `/api/scenarios`, `/api/explain`, `/api/levels`.
+
+Key points beyond the R760Thermal pattern:
+
+- **Scenario model shapes** (`models.py`): `RackConfig` (8 fixed `RackLoad` slots, 0 W = empty) + `Environment` (room temp) in; `SimResponse` out. `SimState` carries per-phase W/A/% and `trippedPhases`, UPS state (`chargePct`, `batteryWhRemaining`), and the two hero fields — **`predictedRuntimeMin` (what the front panel believes, from nameplate Wh until a self-test) and `actualRuntimeMin` (what the faded pack delivers)**. `regionWatts` keys the rack elevation (engine↔anatomy contract pinned in tests).
+- **Conservation identities as pytest**, house style: live outlet W = per-phase W = PDU input W on every tick; on utility, wall = PDU ÷ pass-through η + charger; on battery, battery W × inverter η (0.93, estimate) = PDU input. Moving a load between phases changes imbalance, never the total — asserted across the guided scenario's moves.
+- **The runtime gap is arithmetic**: fade = max(floor, 1 − rate × age × 2^((T−25)/ΔT_double)) — VRLA 6%/yr doubling per +10 °C, lithium 2%/yr per +20 °C, all estimates. `test_old_batteries_runtime_gap_is_the_capacity_fraction` pins actual/predicted = capacity fraction; a prior `self-test` event corrects the prediction and the test asserts agreement.
+- **Breaker model**: NEC 80% continuous-load rule as a validation warning (warn, don't block); a simplified I²t curve — heat += (overload²−1)/s, trip at threshold, magnetic at 5× — trips the phase and drops every load on it; the acceptance test pins trip-lags-overload ordering and that other phases are untouched.
+- **Geometry carries the lesson** (`anatomy.py`, stylized 100×64 elevation): eight uniform load slots in one column, three uniform phase strips beside them, the UPS layer across the bottom underlying everything — pinned by `test_the_geometry_tells_the_power_story`. `RackView.tsx` paints loads by phase (click to cycle A→B→C), strips by live watts, TRIPPED in red.
+- Reading levels 1/3/5 authored on the anatomy overview, all five guided scenarios, and all six Explain entries (phase current, imbalance, breaker curve, runtime, fade, wall power) via the shared `leveling.py`; resolution in `main.py` only.
+- Copy spells out electrical vocabulary (phase, power factor, continuous load, I²t, VRLA, inverter, self-test) on first use; the honest footnote lists transfer-time gaps, harmonics, vector math, metering electronics, internal resistance, and DoD limits as unmodeled. Feeds every rack-scale sim as an optional layer (spec's framing); the R760Thermal twin's PSUs are what these phases feed.
+
+## PhysicsDisplay — UltraSharp display physics simulator (physics suite, file 10 #7)
+
+The smallest app in the physics suite, on purpose — spec file 10 calls the
+display "a small module, not a full sim". Two panel personalities in one
+engine: **edge-27** (U2723QE-class edge-lit 27″ 4K) and **miniled-32**
+(UP3221Q-class 32″ with 2,000 mini-LED local-dimming zones). The one idea:
+**panel power = max backlight × brightness × lit fraction**, and the lit
+fraction only exists as a lever when the backlight has zones — dark
+content is nearly free on mini-LED and saves nothing on the strip
+(`test_dark_content_saves_on_miniled_not_on_edge` pins both halves).
+
+```
+PhysicsDisplay/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsDisplay/frontend/  src/{api,types,level}.ts, App.tsx, components/{MonitorView,Instruments,StripChart,LevelControl}.tsx
+PhysicsDisplay/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsDisplay/scripts/start_all.sh` (backend :8045 background, frontend :5218 foreground). Stop: `./PhysicsDisplay/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsDisplay/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsDisplay/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8045`. `POST /api/simulate` takes a Scenario (panel config + lifecycle assumptions + timed events: brightness/content/dimming changes, dock/undock a 90 W laptop, standby/wake); `GET /api/simulate` runs the default (CustomerSetup-compatible).
+
+Key points beyond the R760Thermal pattern it copies:
+
+- **Identities as pytest, house style**: power balance every tick (electronics + backlight + hub delivered + hub loss = DC; AC = DC ÷ η); **heat vs delivery** (heat = DC − delivered — docking a 90 W laptop jumps the wall meter ~100 W while room heat rises ~10 W, which is why the "220 W maximum" nameplate is mostly hub, not display); and **carbon closure** (embodied + use = lifetime, shares sum to 100 — the Circular Design rule applied to one product; `test_carbon_constants_are_cited_not_invented` requires every kgCO2e constant to cite a Dell PCF document and forbids estimated ones).
+- **The embodied-vs-use contrast is a test**: at desk duty the monitor's use-phase share must exceed a business laptop's ~20% (Latitude PCF whitepapers) — a monitor's carbon lever is partly the brightness slider, a laptop's is service life. Cross-references `DellCircularDesign/initial_spec.md` for the portfolio ledger.
+- **Fanless is pinned**: `test_there_is_no_cooling_region` — acoustics is one honest sentence (0 dBA by construction), the M12 module's degenerate case, never a gauge. The panel map's screen region must dominate the geometry (`test_the_panel_dominates_the_map`).
+- **HDR is a burst regime**: lit zones overdrive at the UP3221Q's 1000-nit-peak/400-nit-SDR luminance ratio; the HDR peak must exceed the SDR bright-field peak on both classes (`test_hdr_burst_exceeds_sdr_peak`).
+- **Determinism reaches the pixels**: the UI's 200-cell zone grid (10× scale for the 2,000 real zones, labeled) uses a deterministic hash pattern — no randomness on either side of the wire.
+- Reading levels via the shared `leveling.py` byte-for-byte (1/3/5 authored on overview, region descriptions, scenario narration, Explain entries). Alias gotcha honored: carbon fields are `embodied_kg`/`use_kg`/`lifetime_kg` because `_kgco2e` camelizes to the unusable `Kgco2E`.
+- Copy spells out display vocabulary (backlight, local dimming/FALD, edge-lit, nits, HDR, USB-C PD, embodied carbon, PCF) on first use; wattages/timings illustrative, PCF figures class proxies.
+
+## PhysicsAIFactory — AI Factory capstone simulator (physics suite, file 10 §9)
+
+The capstone of the physics suite: **"stand up an AI factory"** — one
+integrated dashboard over compute, fabric, data, facility, resilience, and
+cost, built from `physics_specs/10-additional-products.md` §9. The spec
+wanted a grand scenario spanning the eight per-spec physics apps; those are
+not built yet, so this app sits the exam alone: every subsystem is a
+first-order aggregate (one efficiency number per block, honestly labeled),
+and the `Scenario` shape is the interface the per-product engines could
+later feed. What it genuinely owns is the couplings.
+
+```
+PhysicsAIFactory/backend/   app/{models,constants,engine,validation,anatomy,presets,leveling,main}.py + tests/
+PhysicsAIFactory/frontend/  src/{api,types,level}.ts, App.tsx, components/{FactoryView,Headline,BuildPanel,StripCharts,LevelControl}.tsx
+PhysicsAIFactory/scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
+```
+
+- Run: `./PhysicsAIFactory/scripts/start_all.sh` (backend :8046 background, frontend :5219 foreground). Stop: `./PhysicsAIFactory/scripts/stop_all.sh`.
+- Backend tests: `cd PhysicsAIFactory/backend && . .venv/bin/activate && python -m pytest -q`
+- Frontend typecheck/build: `cd PhysicsAIFactory/frontend && npm run build`
+- Vite proxies `/api` → `http://localhost:8046`. `POST /api/simulate` takes a Scenario (compute/fabric/data/facility/resilience/cost blocks + a TrainingJob + timed events), returns Validation[] + hour-tick SimState[] trace + LogEntry[] + Summary; `GET /api/simulate` runs the default 8-rack factory (CustomerSetup-style liveness GET).
+
+Key points beyond the R760Thermal pattern it copies:
+
+- **Six headline instruments are the product**: tokens/s, facility MW, PUE, **GPU-idle-due-to-data %** (the hero counter), $/Mtok, and time-to-first-token. The trace covers the whole arc procure → install (~2 h/rack, the Colossus arithmetic) → bring-up → ramp → steady, so TTFT is real dead capex time, not a label.
+- **Identities as pytest** (`test_engine.py`): power balance every tick (gpu+fabric+storage+other = IT; facility = IT × PUE; **budget is a wall** — the engine sheds GPU clocks so facility sits exactly on the ceiling, warm-day event included); **starvation is emergent** (halve storage below demand → idle % rises to the shortfall and tokens/s falls proportionally — the GPU twin's memory-bound roofline, factory-sized); **checkpoint economics is emergent** (failures arrive on deterministic MTBF arithmetic — Meta's Llama-3 cadence — and literally rewind the token counter to the last checkpoint; the 5/60/480-min Goldilocks test pins the interior Young/Daly optimum).
+- **No randomness, ever**: failures come from MTBF division, not dice — same purity rule (AST-checked) as every twin; the playback clock lives in `App.tsx`.
+- **The map is a coupling graph, not a floorplan** (`anatomy.py`, 100×60): ops strip on top, compute–fabric–data on the work row with `test_the_fabric_sits_between_compute_and_data` pinning the fabric physically between them, and power/cooling/resilience on a facility row that `test_the_facility_row_underlies_everything` keeps beneath the blocks it feeds. `FactoryView.tsx` paints blocks by the engine's `regionStatus` and draws the rack grid sized by the scenario.
+- **Constants discipline**: several constants are arithmetic on public reporting with the sum shown in the `source` field (Colossus 1,500 racks / 122 days; Llama-3 405B's 419 interruptions / 16,384 GPUs / 54 days → ~50k h MTBF and ~200 tokens/s per GPU); everything else is a labeled estimate. Honest footnote lists what's not modeled (parallelism, sub-aggregate anything, real prices; sub-hour losses round to the 1 h tick).
+- Reading levels 1/3/5 on the overview, guided-scenario narration, and explain entries via the shared `leveling.py`; validation panel computes the Young/Daly optimum for the current build. Cross-links in the app footer to XE9712, SN6000, Quantum-X800, IR7000, Exascale, and GPU.
+
+## The physics suite (specs 01–08) — eight apps, products as personalities
+
+`physics_specs/01..08-*.md` are second-generation specs: **interactive physics simulators** in the `DellPowerEdgeR760Thermal/` mold (Scenario → pure engine → per-tick `SimState[]` trace, timed events, constants with `source`/`estimated` fields, validation rules that warn-then-demonstrate, explain-mode equations with live substitution, guided scenarios, reading levels 1/3/5 on the teaching prose). Per `physics_specs/BUILD_PLAN.md` (owner-confirmed) they are built as **eight apps, one per spec file, with products as selectable personalities** — not one dir per product — because the specs' shared-engine instruction and the cross-product A/B scenarios need the products in one process. Engine sharing is **by copy, not import** (each app self-contained, own `.venv`, AST-checked purity, no randomness ever); the apps are **companions to the narrative twins, not replacements** (the R760 ↔ R760Thermal precedent), and the eight unbuilt `initial_spec.md` twins keep their port reservations.
+
+| App | Spec | Products (personalities) | Ports | Tick | The one identity |
+|---|---|---|---|---|---|
+| `PhysicsClient/` | 07 | Alienware laptop/tower, Pro Max Plus (+NPU) | 8031/5204 | 1 s | adapter + battery = system + charge; PL2→PL1; 46 °C skin cap; NPU wins tok/J |
+| `PhysicsCompute/` | 01 | XE7745, XE9680, XE9712+IR7000 (one model), iDRAC Redfish tab | 8032/5205 | 1 s | liquid + air = DC exact; ΔT = Q/(ṁ·cp); positional throttle order; `gpusThrottled ∈ {0,8}` on HGX |
+| `PhysicsStorage/` | 02 | PowerStore, PowerMax, PowerScale, ObjectScale, PowerFlex, Exascale meta-sim | 8033/5206 | 1 h | the 1/(1−ρ) knee; raw→usable→effective; rebuild rate ∝ survivors (the inversion); sync SRDF = c in fiber |
+| `PhysicsFabric/` | 03 | E3200 (PoE), SN6000 (ECMP/AR/RoCE/CPO), Quantum-X800 (credits/SHARP) | 8034/5207 | 1 s | demand = delivered + lost + deferred; IB drops structurally 0; gray failure = green ∧ FCT ×3 (both asserted) |
+| `PhysicsFleet/` | 04 | VxRail, Private Cloud, APEX, NativeEdge, Automation Studio | 8035/5208 | 1 d | admin-hours ×10 by ops mode; N+1 branch 2/240/1440 min; APEX crossover pinned both ways |
+| `PhysicsResilience/` | 05 | PowerProtect, Cyber Detect, MDR, Fort Zero (access graph) | 8036/5209 | 1 h | the air gap holds (asserted); RTO = decide + TB/BW; blast = rate × TTC; **hard scope boundary test-enforced** |
+| `PhysicsData/` | 06 | AI Data Platform pipeline, CloudIQ/APEX AIOps console | 8037/5210 | 1 h | throughput = min(stages), the constraint relocates; detector graded vs planted ground truth (P/R/MTTD) |
+| `PhysicsLifecycle/` | 08 | Telecom Blocks, Circular Design | 8038/5211 | 1 d | carbon ledger closes (total = embodied + use, asserted); **no invented sustainability numbers** (test-enforced, PCF-pointing) |
+
+Cross-app hooks are deliberate and load-bearing: PhysicsCompute's `data_feed_pct` slider ↔ PhysicsStorage's Exascale `gpu_idle_due_to_data` gauge ↔ PhysicsData's north-star instrument; PhysicsFabric's gray-failure toggle is PhysicsData's green-but-sick payoff; PhysicsResilience's sensitivity knob and PhysicsData's anomaly-k are the same ROC trade on purpose (spec 06 asks for the rhyme). Run/tests/build per app: `./PhysicsX/scripts/start_all.sh`, `cd PhysicsX/backend && . .venv/bin/activate && python -m pytest -q`, `cd PhysicsX/frontend && npm run build`. All eight are registered in `ports.json`. (A parallel expansion — `physics_specs/10-additional-products.md` and `PhysicsAIFactory/`, `PhysicsCDU/`, `PhysicsDataDomain/`, `PhysicsDisplay/`, `PhysicsME5/`, `PhysicsMX7000/`, `PhysicsRackPower/`, `PhysicsXR/`, plus PhysicsClient's `#brands` page — follows the same rules; see those apps' sections/READMEs.)
+
 ## Reading levels (all twins)
 
 Every twin's header carries a **1–5 reading-level control**: 1 opens the jargon up for a newcomer, 3 is the register the twins were written in, 5 leaves the vocabulary in and takes the explanations out. The choice persists in `localStorage` and applies across all four pages of a twin.
