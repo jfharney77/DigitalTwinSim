@@ -33,6 +33,21 @@ The mechanics servers never meet, each asserted in the tests:
 Backend tests: `cd backend && . .venv/bin/activate && python -m pytest -q`
 Frontend build: `cd frontend && npm run build`
 
+## Brand-map page (`#brands`)
+
+The static explainer from `physics_specs/10-additional-products.md` §8:
+Dell's January 2025 client rebrand — **Dell** (consumer, absorbing
+XPS/Inspiron), **Dell Pro** (née Latitude/OptiPlex), **Dell Pro Max** (née
+Precision), each with Base/Plus/Premium tiers, Alienware left unchanged —
+the scheme that names both of this app's products ("Pro Max Plus" = the
+workstation brand's Plus tier). Served leveled from `GET /api/brandmap`,
+so the reading-level control applies to it like everything else. The 2026
+course corrections are labeled by sourcing strength: the XPS revival
+(CES 2026) is confirmed; the reported "Pro Max" → "Dell Pro Precision"
+workstation rename is marked *reported*, per the spec's `verify`
+discipline — `tests/test_brandmap.py` enforces the labeling, the tier
+ladder, the placement of "Pro Max Plus", and the twin cross-links.
+
 ## Companions
 
 - `DellAlienware/` (:5176) — the same laptop's AC power path as a

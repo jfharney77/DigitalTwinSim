@@ -190,3 +190,22 @@ export interface Explain {
   inputs: string[];
   explanation: string;
 }
+
+// Client-brand map (physics_specs/10 §8 — static explainer page).
+
+export interface Brand {
+  id: string;
+  name: string;
+  formerly: string;
+  audience: string;
+  tiers: string[];
+  description: string;
+}
+
+export interface BrandMap {
+  overview: string;
+  namingNote: string;
+  sinceNote: string;
+  brands: Brand[];
+  sources: { label: string; url: string }[];
+}

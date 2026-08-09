@@ -7,6 +7,7 @@ import {
   fetchWorkloadPresets,
   simulate,
 } from "./api";
+import { BrandMapPage } from "./components/BrandMapPage";
 import { BuildPanel } from "./components/BuildPanel";
 import { DeviceView } from "./components/DeviceView";
 import { Instruments } from "./components/Instruments";
@@ -45,10 +46,26 @@ const DEFAULT_ENV: Environment = {
 
 const SPEEDS = [1, 10, 60];
 
+type Page = "sim" | "brands";
+
+function pageFromHash(): Page {
+  return window.location.hash === "#brands" ? "brands" : "sim";
+}
+
 export function App() {
   useEffect(() => {
     document.body.classList.add("dell-body");
   }, []);
+
+  const [page, setPage] = useState<Page>(pageFromHash());
+  useEffect(() => {
+    const onHash = () => setPage(pageFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const goto = (p: Page) => {
+    window.location.hash = p === "brands" ? "#brands" : "";
+  };
 
   const [anatomy, setAnatomy] = useState<DeviceMap | null>(null);
   const [configPresets, setConfigPresets] = useState<ConfigPreset[]>([]);
@@ -160,11 +177,25 @@ export function App() {
         <h1>Client Devices · Power &amp; Thermal</h1>
         <nav className="nav">
           <button
-            className={explainOn ? "active" : ""}
-            onClick={() => setExplainOn(!explainOn)}
+            className={page === "sim" ? "active" : ""}
+            onClick={() => goto("sim")}
           >
-            Explain mode
+            Simulator
           </button>
+          <button
+            className={page === "brands" ? "active" : ""}
+            onClick={() => goto("brands")}
+          >
+            Brand map
+          </button>
+          {page === "sim" && (
+            <button
+              className={explainOn ? "active" : ""}
+              onClick={() => setExplainOn(!explainOn)}
+            >
+              Explain mode
+            </button>
+          )}
         </nav>
         <span className="sub">
           {state
@@ -174,6 +205,22 @@ export function App() {
         <LevelControl />
       </header>
 
+      {page === "brands" ? (
+        <>
+          <div className="an-hero">
+            <h2>Dell's client brands, mapped</h2>
+            <p>
+              The January 2025 rebrand named the machines this simulator
+              models: three audience brands with a Base/Plus/Premium
+              ladder, Alienware left as itself — and the 2026 course
+              corrections, labeled by how well they are sourced. The
+              reading-level control above applies here too.
+            </p>
+          </div>
+          <BrandMapPage />
+        </>
+      ) : (
+        <>
       <div className="an-hero">
         <h2>Burst, budget, skin, battery — the client-device physics</h2>
         <p>
@@ -367,6 +414,8 @@ export function App() {
           <StripCharts trace={trace} cursor={cursor} />
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

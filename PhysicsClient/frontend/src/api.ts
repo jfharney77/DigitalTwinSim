@@ -1,5 +1,6 @@
 import { getLevel } from "./level";
 import type {
+  BrandMap,
   ConfigPreset,
   DeviceMap,
   Explain,
@@ -47,6 +48,12 @@ export async function fetchScenarios(): Promise<GuidedScenario[]> {
 export async function fetchExplain(): Promise<Explain[]> {
   const r = await fetch(url("/explain"));
   if (!r.ok) throw new Error(`explain ${r.status}`);
+  return r.json();
+}
+
+export async function fetchBrandMap(): Promise<BrandMap> {
+  const r = await fetch(url("/brandmap"));
+  if (!r.ok) throw new Error(`brandmap ${r.status}`);
   return r.json();
 }
 
