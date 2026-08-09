@@ -5,6 +5,7 @@ only; ``tests/test_media.py`` enforces the credit rule."""
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import CamelModel
 
 
@@ -27,6 +28,27 @@ MEDIA: dict[str, ProductMedia] = {
         kind="photo", src="/powerstore1.webp",
         credit="Dell Technologies product image",
         underlay="/powerstore2.webp",
+        caption=L(
+            novice=(
+                "The photograph is the appliance's real front: "
+                "twenty-five drive slots and two controller canisters "
+                "behind them. The diagram over it is not a picture of "
+                "that metal — it is a map of where the work happens: "
+                "two controllers, a cache, a shelf of media. The "
+                "simulator's claims are about the map; the photo is "
+                "what the map is loyal to."
+            ),
+            standard=(
+                "The schematic is an architecture map (controllers, "
+                "cache, media), not a chassis trace — the photo behind "
+                "it shows the machine the map abstracts. The x-ray "
+                "toggle keeps the difference visible."
+            ),
+            expert=(
+                "Architecture map over chassis photo. Abstraction, "
+                "labeled."
+            ),
+        ),
     ),
     "powermax": ProductMedia(
         name="PowerMax", tagline="Blip, not outage — and replication at the speed of light.",

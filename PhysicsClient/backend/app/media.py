@@ -6,6 +6,7 @@ image, and ``tests/test_media.py`` enforces it."""
 
 from __future__ import annotations
 
+from .leveling import L
 from .models import CamelModel
 
 
@@ -28,6 +29,26 @@ MEDIA: dict[str, ProductMedia] = {
         src="/alienware-interior.jpg",
         credit="Dell Alienware service photo",
         underlay="/alienware-interior.jpg",
+        caption=L(
+            novice=(
+                "The photograph shows the real machine with its bottom "
+                "cover off — hundreds of visible parts, screws, cables, "
+                "and copper. The colored schematic on top of it shows "
+                "what the simulator actually reasons about: nine thermal "
+                "zones. Everything the model says is true of the zones; "
+                "the photograph is what those zones stand for."
+            ),
+            standard=(
+                "The model sees nine thermal zones where the camera sees "
+                "hundreds of parts. The schematic is a functional map, "
+                "not a photo trace — the x-ray view exists to keep that "
+                "abstraction honest."
+            ),
+            expert=(
+                "Nine zones vs the parts they abstract. Map, not "
+                "territory — shown."
+            ),
+        ),
     ),
     "promax": ProductMedia(
         name="Dell Pro Max Plus",

@@ -88,9 +88,10 @@ def get_brandmap(level: int = Level) -> BrandMap:
 
 
 @app.get("/api/media")
-def get_media() -> dict[str, object]:
-    """V1/V9 product media — photos/facsimiles with mandatory credits."""
-    return {k: v.model_dump(by_alias=True) for k, v in MEDIA.items()}
+def get_media(level: int = Level) -> dict[str, object]:
+    """V1/V9 product media — photos/facsimiles with mandatory credits.
+    Captions (the V10 x-ray text) are leveled like all teaching prose."""
+    return {k: leveled(v, level).model_dump(by_alias=True) for k, v in MEDIA.items()}
 
 
 @app.get("/api/constants")

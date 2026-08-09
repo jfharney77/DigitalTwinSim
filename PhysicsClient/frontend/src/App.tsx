@@ -90,6 +90,7 @@ export function App() {
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState(10);
   const [regionId, setRegionId] = useState<string | null>(null);
+  const [xray, setXray] = useState<"schematic" | "hybrid" | "photo">("schematic");
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
 
@@ -173,6 +174,8 @@ export function App() {
     setRunning(true);
   };
 
+  const productMedia = media[config.product];
+  const underlay = productMedia?.underlay ?? null;
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.t <= (state?.t ?? 0));
 
@@ -292,14 +295,34 @@ export function App() {
         <div className="thermal-col thermal-center">
           <div className="an-card">
             {error && <div className="mini an-error">{error}</div>}
-            {anatomy && (
+            {anatomy && (<>
               <DeviceView
                 anatomy={anatomy}
                 state={state}
                 selected={regionId}
                 onSelect={setRegionId}
+                underlay={underlay}
+                xray={underlay ? xray : "schematic"}
               />
-            )}
+              {underlay && (
+                <div className="btnrow xray-row">
+                  {(["schematic", "hybrid", "photo"] as const).map((m) => (
+                    <button
+                      key={m}
+                      className={xray === m ? "active" : ""}
+                      onClick={() => setXray(m)}
+                    >
+                      {m === "schematic" ? "Schematic" : m === "hybrid" ? "X-ray" : "Photo"}
+                    </button>
+                  ))}
+                  {xray !== "schematic" && productMedia?.caption && (
+                    <span className="mini xray-caption">
+                      {productMedia.caption} <em>({productMedia.credit})</em>
+                    </span>
+                  )}
+                </div>
+              )}
+            </>)}
             <div className="btnrow playback-row">
               <button className="primary" onClick={() => setRunning(!running)}>
                 {running ? "Pause" : "Run"}

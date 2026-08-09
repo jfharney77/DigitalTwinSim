@@ -44,11 +44,15 @@ export function DeviceView({
   state,
   selected,
   onSelect,
+  underlay,
+  xray = "schematic",
 }: {
   anatomy: DeviceMap;
   state: SimState | null;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
+  underlay?: string | null;
+  xray?: "schematic" | "hybrid" | "photo";
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
@@ -65,6 +69,18 @@ export function DeviceView({
         x={0.5} y={0.5} width={W - 1} height={H - 1} rx={1.5}
         fill="#0d1420" stroke="#1f2935" strokeWidth={0.6}
       />
+      {underlay && xray !== "schematic" && (
+        <image
+          href={underlay}
+          x={MARGIN}
+          y={MARGIN}
+          width={W - 2 * MARGIN}
+          height={H - 2 * MARGIN}
+          preserveAspectRatio="xMidYMid slice"
+          opacity={xray === "photo" ? 1 : 0.85}
+        />
+      )}
+      <g opacity={xray === "photo" ? 0.12 : xray === "hybrid" ? 0.6 : 1}>
       {anatomy.regions.map((r) => {
         const temp = state?.regionTemps[r.id] ?? T_MIN;
         const isSel = r.id === selected;
@@ -133,6 +149,7 @@ export function DeviceView({
           </g>
         );
       })}
+      </g>
       {/* Fixed color legend with the skin cap marked. */}
       <g>
         {Array.from({ length: 30 }, (_, i) => (
