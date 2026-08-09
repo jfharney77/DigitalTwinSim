@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 function substituted(id: string, s: SimState): string {
@@ -45,6 +46,26 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && telecom && (
+        <div className="gauge-row">
+          <Gauge label="coverage" unit="%" value={s.coveragePct} min={0} max={100}
+            bands={[{ to: 90, color: "#c8281e" }, { to: 99, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+          <Gauge label="availability" unit="%" value={s.availabilityPct} min={98} max={100}
+            bands={[{ to: 99.9, color: "#c8281e" }, { to: 99.99, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[99.999]} format={(v) => `${v.toFixed(2)}%`} />
+        </div>
+      )}
+      {s && !telecom && (
+        <div className="gauge-row">
+          <Gauge label="kg CO2e / useful-year" unit="" value={s.carbonPerUsefulYear} min={0} max={200}
+            bands={[{ to: 60, color: "#7fbf5a" }, { to: 100, color: "#e8c33d" }, { to: 200, color: "#c8281e" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}`} />
+          <Gauge label="devices consumed" unit="" value={s.devicesConsumed} min={0} max={5}
+            bands={[{ to: 1.5, color: "#7fbf5a" }, { to: 2.5, color: "#e8c33d" }, { to: 5, color: "#c8281e" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}`} />
+        </div>
+      )}
       {telecom ? (
         <>
           {s && s.sitesUp < s.sitesTotal && (

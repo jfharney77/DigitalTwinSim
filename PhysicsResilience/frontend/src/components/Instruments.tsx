@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 function fmtH(h: number): string {
@@ -49,6 +50,26 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && product !== "fortzero" && (
+        <div className="gauge-row">
+          <Gauge label="RPO (clean-point age)" unit="h" value={s.lastCleanPointAgeH} min={0} max={336}
+            bands={[{ to: 24, color: "#7fbf5a" }, { to: 72, color: "#e8c33d" }, { to: 336, color: "#c8281e" }]}
+            ticks={[24]} format={(v) => (v >= 48 ? `${(v / 24).toFixed(1)}d` : `${v.toFixed(0)}h`)} />
+          <Gauge label="RTO" unit="h" value={s.rtoHours} min={0} max={150}
+            bands={[{ to: 24, color: "#7fbf5a" }, { to: 72, color: "#e8c33d" }, { to: 150, color: "#c8281e" }]}
+            ticks={[]} format={(v) => (v >= 48 ? `${(v / 24).toFixed(1)}d` : `${v.toFixed(0)}h`)} />
+        </div>
+      )}
+      {s && product === "fortzero" && (
+        <div className="gauge-row">
+          <Gauge label="reachable assets" unit="" value={s.reachableAssets} min={0} max={100}
+            bands={[{ to: 10, color: "#7fbf5a" }, { to: 30, color: "#e8c33d" }, { to: 100, color: "#c8281e" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}`} />
+          <Gauge label="stale grants" unit="" value={s.staleGrants} min={0} max={200}
+            bands={[{ to: 30, color: "#7fbf5a" }, { to: 80, color: "#e8c33d" }, { to: 200, color: "#c8281e" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}`} />
+        </div>
+      )}
       {s?.incidentActive && !s.contained && (
         <div className="mini rule-error">■ CORRUPTION SPREADING — uncontained</div>
       )}

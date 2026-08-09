@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 // The instruments column: live readouts with explain-mode equations
@@ -67,6 +68,19 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && (
+        <div className="gauge-row">
+          <Gauge label="skin temp" unit="°C" value={s.skinTempC} min={15} max={60}
+            bands={[{ to: 42, color: "#2596be" }, { to: 46, color: "#e8c33d" }, { to: 60, color: "#c8281e" }]}
+            ticks={[46]} format={(v) => `${v.toFixed(1)}°`} />
+          <Gauge label="CPU temp" unit="°C" value={s.cpuTempC} min={15} max={110}
+            bands={[{ to: 85, color: "#2596be" }, { to: 100, color: "#e8c33d" }, { to: 110, color: "#c8281e" }]}
+            ticks={[100]} format={(v) => `${v.toFixed(0)}°`} />
+          <Gauge label="battery" unit="%" value={s.batteryPct} min={0} max={100}
+            bands={[{ to: 15, color: "#c8281e" }, { to: 40, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+        </div>
+      )}
       {s && !s.poweredOn && (
         <div className="mini rule-error">■ POWERED OFF — see the event log</div>
       )}

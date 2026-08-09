@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 function fmtTb(tb: number): string {
@@ -63,6 +64,16 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && (
+        <div className="gauge-row">
+          <Gauge label="utilization ρ" unit="%" value={s.utilizationPct} min={0} max={150}
+            bands={[{ to: 70, color: "#7fbf5a" }, { to: 90, color: "#e8c33d" }, { to: 150, color: "#c8281e" }]}
+            ticks={[100]} format={(v) => `${v.toFixed(0)}%`} />
+          <Gauge label="capacity used" unit="%" value={s.usedPct} min={0} max={100}
+            bands={[{ to: 80, color: "#7fbf5a" }, { to: 90, color: "#e8c33d" }, { to: 100, color: "#c8281e" }]}
+            ticks={[80, 90, 95]} format={(v) => `${v.toFixed(0)}%`} />
+        </div>
+      )}
       {s && !s.online && (
         <div className="mini rule-error">■ OFFLINE — data loss; see the log</div>
       )}

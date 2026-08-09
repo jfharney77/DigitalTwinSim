@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 function fmtW(w: number): string {
@@ -55,6 +56,25 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && (
+        <div className="gauge-row">
+          {liquid ? (
+            <Gauge label="coolant return" unit="°C" value={s.coolantReturnC} min={15} max={80}
+              bands={[{ to: 65, color: "#2596be" }, { to: 75, color: "#e8c33d" }, { to: 80, color: "#c8281e" }]}
+              ticks={[65, 75]} format={(v) => `${v.toFixed(1)}°`} />
+          ) : (
+            <Gauge label="hottest GPU" unit="°C" value={s.gpuTempHotC} min={15} max={105}
+              bands={[{ to: 78, color: "#2596be" }, { to: 90, color: "#e8c33d" }, { to: 105, color: "#c8281e" }]}
+              ticks={[90]} format={(v) => `${v.toFixed(0)}°`} />
+          )}
+          <Gauge label="effective GPU util" unit="%" value={s.effectiveGpuUtilPct} min={0} max={100}
+            bands={[{ to: 50, color: "#c8281e" }, { to: 85, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+          <Gauge label="cooling overhead" unit="%" value={s.coolingOverheadPct} min={0} max={10}
+            bands={[{ to: 2, color: "#7fbf5a" }, { to: 5, color: "#e8c33d" }, { to: 10, color: "#c8281e" }]}
+            ticks={[]} format={(v) => `${v.toFixed(1)}%`} />
+        </div>
+      )}
       {s && !s.poweredOn && (
         <div className="mini rule-error">■ SYSTEM OFF — see the event log</div>
       )}

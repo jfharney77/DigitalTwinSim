@@ -874,3 +874,7 @@ body.dell-body {
 /* V2/V10 x-ray toggle */
 .xray-row { align-items: center; margin-top: 6px; }
 .xray-caption { flex: 1; min-width: 200px; color: #6a7686; }
+
+/* V6 gauges */
+.gauge-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.gauge { flex: 1; min-width: 0; }

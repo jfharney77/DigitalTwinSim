@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 function fmtG(g: number): string {
@@ -51,6 +52,17 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && (
+        <div className="gauge-row">
+          <Gauge label="worst link" unit="%" value={s.worstLinkPct} min={0} max={150}
+            bands={[{ to: 70, color: "#7fbf5a" }, { to: 90, color: "#e8c33d" }, { to: 150, color: "#c8281e" }]}
+            ticks={[90, 100]} format={(v) => `${v.toFixed(0)}%`} />
+          <Gauge label="delivered" unit="%" min={0} max={100}
+            value={s.demandedGbps > 0 ? (100 * s.deliveredGbps) / s.demandedGbps : 100}
+            bands={[{ to: 90, color: "#c8281e" }, { to: 99, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+        </div>
+      )}
       {s && (
         <div className={`mini ${s.statusAllGreen ? "rule-ok" : "rule-error"}`}>
           {s.statusAllGreen ? "● ALL GREEN (says the fabric)" : "■ FAULT VISIBLE"}

@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 function substituted(id: string, s: SimState): string {
@@ -45,6 +46,16 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && (
+        <div className="gauge-row">
+          <Gauge label="availability" unit="%" value={s.availabilityPct} min={98} max={100}
+            bands={[{ to: 99.9, color: "#c8281e" }, { to: 99.99, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[99.9]} format={(v) => `${v.toFixed(2)}%`} />
+          <Gauge label="headroom" unit="%" value={Math.max(0, s.headroomPct)} min={0} max={100}
+            bands={[{ to: 10, color: "#c8281e" }, { to: 25, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+        </div>
+      )}
       {s?.exposure && (
         <div className="mini rule-error">
           ⚠ EXPOSURE — served but unprotected; a second failure loses data

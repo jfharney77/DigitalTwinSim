@@ -870,3 +870,7 @@ body.dell-body {
 .gallery-hero { display: flex; gap: 12px; align-items: flex-start; }
 .gallery-hero-text { flex: 1; min-width: 0; }
 .gallery-credit { color: #8a95a5; font-style: italic; margin-top: 4px; }
+
+/* V6 gauges */
+.gauge-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.gauge { flex: 1; min-width: 0; }

@@ -1,3 +1,4 @@
+import { Gauge } from "./Gauge";
 import type { Explain, SimState } from "../types";
 
 function substituted(id: string, s: SimState): string {
@@ -47,6 +48,26 @@ export function Instruments({
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
+      {s && product === "aidataplatform" && (
+        <div className="gauge-row">
+          <Gauge label="GPU idle (data)" unit="%" value={s.gpuIdleDueToDataPct} min={0} max={100}
+            bands={[{ to: 2, color: "#7fbf5a" }, { to: 10, color: "#e8c33d" }, { to: 100, color: "#c8281e" }]}
+            ticks={[5]} format={(v) => `${v.toFixed(1)}%`} />
+          <Gauge label="freshness lag" unit="h" value={s.freshnessLagH} min={0} max={72}
+            bands={[{ to: 6, color: "#7fbf5a" }, { to: 24, color: "#e8c33d" }, { to: 72, color: "#c8281e" }]}
+            ticks={[24]} format={(v) => `${v.toFixed(0)}h`} />
+        </div>
+      )}
+      {s && product === "cloudiq" && (
+        <div className="gauge-row">
+          <Gauge label="precision" unit="%" value={s.precisionPct} min={0} max={100}
+            bands={[{ to: 50, color: "#c8281e" }, { to: 80, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+          <Gauge label="recall" unit="%" value={s.recallPct} min={0} max={100}
+            bands={[{ to: 50, color: "#c8281e" }, { to: 80, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
+            ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+        </div>
+      )}
       {product === "aidataplatform" ? (
         <>
           <div className="stat"><span>throughput</span><span>{s ? `${s.throughputTbh.toFixed(1)} TB/h` : "—"}</span></div>
