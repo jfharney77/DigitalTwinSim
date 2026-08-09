@@ -13,6 +13,7 @@ from .anatomy import MAPS, map_for
 from .brandmap import BRAND_MAP
 from .constants import CONSTANTS, PSU_CURVE_SOURCE, PSU_EFFICIENCY_CURVE
 from .engine import simulate
+from .media import MEDIA
 from .leveling import DEFAULT_LEVEL, LEVEL_NAMES, leveled, leveled_all
 from .models import (
     BrandMap,
@@ -84,6 +85,12 @@ def get_brandmap(level: int = Level) -> BrandMap:
     """The 2025 client-brand map (physics_specs/10 §8) — the naming
     scheme this app's two products live inside."""
     return leveled(BRAND_MAP, level)
+
+
+@app.get("/api/media")
+def get_media() -> dict[str, object]:
+    """V1/V9 product media — photos/facsimiles with mandatory credits."""
+    return {k: v.model_dump(by_alias=True) for k, v in MEDIA.items()}
 
 
 @app.get("/api/constants")

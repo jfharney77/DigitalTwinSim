@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  fetchMedia,
+  type ProductMediaWire,
   fetchAnatomy,
   fetchConfigPresets,
   fetchExplain,
@@ -8,6 +10,7 @@ import {
   simulate,
 } from "./api";
 import { BuildPanel } from "./components/BuildPanel";
+import { ProductGallery } from "./components/ProductGallery";
 import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
 import { ResilienceView } from "./components/ResilienceView";
@@ -49,6 +52,7 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<ResilienceMap | null>(null);
   const [configPresets, setConfigPresets] = useState<ConfigPreset[]>([]);
+  const [media, setMedia] = useState<Record<string, ProductMediaWire>>({});
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [scope, setScope] = useState("");
@@ -78,6 +82,7 @@ export function App() {
   }, [level, config.product]);
 
   useEffect(() => {
+    fetchMedia().then(setMedia).catch(() => {});
     Promise.all([fetchConfigPresets(), fetchScope()])
       .then(([cp, sc]) => {
         setConfigPresets(cp);
@@ -179,6 +184,13 @@ export function App() {
 
       <div className="thermal-grid">
         <div className="thermal-col">
+          <ProductGallery
+            media={media}
+            selected={config.product}
+            onSelect={(p) =>
+              setConfig({ ...config, product: p as ResilienceConfig["product"] })
+            }
+          />
           <BuildPanel
             config={config}
             presets={configPresets}

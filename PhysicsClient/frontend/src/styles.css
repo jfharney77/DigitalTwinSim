@@ -842,3 +842,17 @@ body.dell-body {
 .flow-mid line { animation: flowdash 1.5s linear infinite; }
 .flow-fast line { animation: flowdash 0.6s linear infinite; }
 @keyframes flowdash { to { stroke-dashoffset: -9; } }
+
+/* V1/V9 product gallery */
+.product-gallery { padding-bottom: 10px; }
+.gallery-cards { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.gallery-card {
+  background: #0d1420; border: 1px solid #1f2935; border-radius: 6px;
+  padding: 6px; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; color: inherit;
+}
+.gallery-card.active { border-color: #0672cb; box-shadow: 0 0 0 1px #0672cb; }
+.gallery-card-name { font-size: 11px; }
+.gallery-hero { display: flex; gap: 12px; align-items: flex-start; }
+.gallery-hero-text { flex: 1; min-width: 0; }
+.gallery-credit { color: #8a95a5; font-style: italic; margin-top: 4px; }

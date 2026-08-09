@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .anatomy import MAPS
 from .constants import CONSTANTS
 from .engine import simulate
+from .media import MEDIA
 from .leveling import DEFAULT_LEVEL, LEVEL_NAMES, leveled, leveled_all
 from .models import (
     SCOPE_NOTE,
@@ -69,6 +70,12 @@ def get_anatomy(product: str = Query("powerprotect"), level: int = Level) -> Res
     if product not in MAPS:
         raise HTTPException(404, f"unknown product {product}")
     return leveled(MAPS[product], level)
+
+
+@app.get("/api/media")
+def get_media() -> dict[str, object]:
+    """V1/V9 product media — photos/facsimiles with mandatory credits."""
+    return {k: v.model_dump(by_alias=True) for k, v in MEDIA.items()}
 
 
 @app.get("/api/constants")

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  fetchMedia,
+  type ProductMediaWire,
   fetchAnatomy,
   fetchConfigPresets,
   fetchExplain,
@@ -9,6 +11,7 @@ import {
 } from "./api";
 import { BrandMapPage } from "./components/BrandMapPage";
 import { BuildPanel } from "./components/BuildPanel";
+import { ProductGallery } from "./components/ProductGallery";
 import { DeviceView } from "./components/DeviceView";
 import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
@@ -69,6 +72,7 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<DeviceMap | null>(null);
   const [configPresets, setConfigPresets] = useState<ConfigPreset[]>([]);
+  const [media, setMedia] = useState<Record<string, ProductMediaWire>>({});
   const [workloadPresets, setWorkloadPresets] = useState<WorkloadPreset[]>([]);
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
@@ -105,6 +109,7 @@ export function App() {
   }, [level, config.product, config.formFactor]);
 
   useEffect(() => {
+    fetchMedia().then(setMedia).catch(() => {});
     Promise.all([fetchConfigPresets(), fetchWorkloadPresets()])
       .then(([cp, wp]) => {
         setConfigPresets(cp);
@@ -238,6 +243,17 @@ export function App() {
       <div className="thermal-grid">
         {/* Left — build panel + guided scenarios */}
         <div className="thermal-col">
+          <ProductGallery
+            media={media}
+            selected={config.product}
+            onSelect={(p) =>
+              setConfig({
+                ...config,
+                product: p as DeviceConfig["product"],
+                ...(p === "promax" ? { formFactor: "laptop" as const } : { npu: false }),
+              })
+            }
+          />
           <BuildPanel
             config={config}
             presets={configPresets}

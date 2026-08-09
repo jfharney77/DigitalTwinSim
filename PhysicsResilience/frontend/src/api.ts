@@ -53,3 +53,21 @@ export async function simulate(scenario: Scenario): Promise<SimResponse> {
   if (!r.ok) throw new Error(`simulate ${r.status}`);
   return r.json();
 }
+
+
+export interface ProductMediaWire {
+  name: string;
+  tagline: string;
+  kind: "photo" | "illustration";
+  src?: string | null;
+  shape?: string | null;
+  credit: string;
+  underlay?: string | null;
+  caption?: string | null;
+}
+
+export async function fetchMedia(): Promise<Record<string, ProductMediaWire>> {
+  const r = await fetch(`${BASE}/media`);
+  if (!r.ok) throw new Error(`media ${r.status}`);
+  return r.json();
+}

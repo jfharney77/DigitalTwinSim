@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  fetchMedia,
+  type ProductMediaWire,
   fetchAnatomy,
   fetchConfigPresets,
   fetchExplain,
@@ -7,6 +9,7 @@ import {
   simulate,
 } from "./api";
 import { BuildPanel } from "./components/BuildPanel";
+import { ProductGallery } from "./components/ProductGallery";
 import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
 import { LifecycleView } from "./components/LifecycleView";
@@ -45,6 +48,7 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<LifecycleMap | null>(null);
   const [configPresets, setConfigPresets] = useState<ConfigPreset[]>([]);
+  const [media, setMedia] = useState<Record<string, ProductMediaWire>>({});
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
@@ -73,6 +77,7 @@ export function App() {
   }, [level, config.product]);
 
   useEffect(() => {
+    fetchMedia().then(setMedia).catch(() => {});
     fetchConfigPresets()
       .then(setConfigPresets)
       .catch((e) => setError(String(e)));
@@ -180,6 +185,13 @@ export function App() {
 
       <div className="thermal-grid">
         <div className="thermal-col">
+          <ProductGallery
+            media={media}
+            selected={config.product}
+            onSelect={(p) =>
+              setConfig({ ...config, product: p as LifecycleConfig["product"] })
+            }
+          />
           <BuildPanel
             config={config}
             presets={configPresets}
