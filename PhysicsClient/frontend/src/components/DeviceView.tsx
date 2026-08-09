@@ -80,6 +80,23 @@ export function DeviceView({
           opacity={xray === "photo" ? 1 : 0.85}
         />
       )}
+      {state && state.poweredOn && state.fanRpmPct > 0 && xray !== "photo" && (
+        <g
+          className="flowline-group"
+          stroke="#2596be"
+          strokeWidth={0.5}
+          opacity={0.7}
+        >
+          {[14, 30, 46].map((y) => (
+            <line
+              key={y}
+              className="flowline"
+              x1={4} y1={y} x2={W - 4} y2={y}
+              style={{ animationDuration: `${Math.max(0.6, 6 - state.fanRpmPct / 20)}s` }}
+            />
+          ))}
+        </g>
+      )}
       <g opacity={xray === "photo" ? 0.12 : xray === "hybrid" ? 0.6 : 1}>
       {anatomy.regions.map((r) => {
         const temp = state?.regionTemps[r.id] ?? T_MIN;

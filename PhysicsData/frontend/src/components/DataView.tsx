@@ -60,6 +60,16 @@ export function DataView({
         x={0.5} y={0.5} width={W - 1} height={H - 1} rx={1.5}
         fill="#0d1420" stroke="#1f2935" strokeWidth={0.6}
       />
+      {state && state.throughputTbh > 0 && (
+        <line
+          className="flowline"
+          x1={4} y1={11.5} x2={W - 4} y2={11.5}
+          stroke="#7fbf5a"
+          strokeWidth={0.9}
+          opacity={0.85}
+          style={{ animationDuration: `${Math.max(0.5, 8 / Math.max(state.throughputTbh / 5, 0.5))}s` }}
+        />
+      )}
       {anatomy.regions.map((r) => {
         const load = state?.regionLoad[r.id] ?? 0;
         const isSel = r.id === selected;

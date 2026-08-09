@@ -75,6 +75,28 @@ export function ProductView({
           opacity={xray === "photo" ? 1 : 0.85}
         />
       )}
+      {state && state.iopsDeliveredK > 0 && xray !== "photo" && (
+        <line
+          className="flowline"
+          x1={50} y1={5} x2={50} y2={H - 6}
+          stroke="#7fbf5a"
+          strokeWidth={0.9}
+          opacity={0.8}
+          style={{ animationDuration: `${Math.max(0.4, 6 / Math.max(state.iopsDeliveredK / 200, 0.4))}s` }}
+        />
+      )}
+      {state?.rebuilding && (
+        <g stroke="#e8c33d" strokeWidth={0.6} opacity={0.8}>
+          {[30, 50, 70].map((x) => (
+            <line
+              key={x}
+              className="flowline"
+              x1={x} y1={H - 20} x2={x + 12} y2={H - 8}
+              style={{ animationDuration: "1.2s" }}
+            />
+          ))}
+        </g>
+      )}
       <g opacity={xray === "photo" ? 0.12 : xray === "hybrid" ? 0.6 : 1}>
       {anatomy.regions.map((r) => {
         const load = state?.regionLoad[r.id] ?? 0;

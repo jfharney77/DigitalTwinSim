@@ -63,6 +63,35 @@ export function SystemView({
         x={0.5} y={0.5} width={W - 1} height={H - 1} rx={1.5}
         fill="#0d1420" stroke="#1f2935" strokeWidth={0.6}
       />
+      {state && isRack && state.flowLpm > 0 && (
+        <g strokeWidth={0.8} opacity={0.85} fill="none">
+          {/* supply riser: cool, upward; return riser: warm, downward */}
+          <line
+            className="flowline"
+            x1={86.5} y1={H - 4} x2={86.5} y2={6}
+            stroke={tempColor(state.coolantSupplyC)}
+            style={{ animationDuration: `${Math.max(0.5, 30 / Math.max(state.flowLpm / 10, 1))}s` }}
+          />
+          <line
+            className="flowline"
+            x1={96.5} y1={6} x2={96.5} y2={H - 4}
+            stroke={tempColor(state.coolantReturnC)}
+            style={{ animationDuration: `${Math.max(0.5, 30 / Math.max(state.flowLpm / 10, 1))}s` }}
+          />
+        </g>
+      )}
+      {state && !isRack && state.fanRpmPct > 0 && (
+        <g stroke="#2596be" strokeWidth={0.5} opacity={0.7}>
+          {[12, 27, 42].map((y) => (
+            <line
+              key={y}
+              className="flowline"
+              x1={4} y1={y} x2={W - 4} y2={y}
+              style={{ animationDuration: `${Math.max(0.6, 6 - state.fanRpmPct / 20)}s` }}
+            />
+          ))}
+        </g>
+      )}
       {anatomy.regions.map((r) => {
         const temp = state?.regionTemps[r.id] ?? T_MIN;
         const isSel = r.id === selected;
