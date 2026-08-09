@@ -241,3 +241,23 @@ def test_engine_is_pure():
     assert not imported & {
         "fastapi", "time", "asyncio", "threading", "os", "io", "random",
     }
+
+
+def test_link_load_vector_matches_the_topology():
+    """V4: one load entry per drawn link; the worst entry equals the
+    worst-link instrument; dead spines' links read zero."""
+    trace, _, _ = run(
+        Scenario(
+            config=SN6000_ADAPTIVE, workload=STEADY, duration_s=200,
+            events=[SimEvent(at_s=100, action="kill-spine")],
+        )
+    )
+    before = trace[50]
+    assert len(before.link_load) == SN6000_ADAPTIVE.leaves * SN6000_ADAPTIVE.spines
+    assert abs(max(before.link_load.values()) - before.worst_link_pct) < 0.2
+    after = trace[150]
+    dead = [v for k, v in after.link_load.items()
+            if k.endswith(f"-s{SN6000_ADAPTIVE.spines - 1}")]
+    assert all(v == 0.0 for v in dead), "the dead spine's links go slack"
+    campus, _, _ = run(Scenario(config=CAMPUS, workload=CAMPUS_DAY, duration_s=30))
+    assert len(campus[-1].link_load) == CAMPUS.leaves * 2

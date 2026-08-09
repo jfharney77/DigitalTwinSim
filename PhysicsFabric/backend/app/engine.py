@@ -281,6 +281,34 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         # --- Map coloring --------------------------------------------------
         wl_pct = min(200.0, worst_util * 100.0)
         ml_pct = min(100.0, mean_util * 100.0)
+
+        # V4: per-link utilization. Deterministic skew — link (0,0)
+        # carries the worst load; the rest spread between mean and worst
+        # on a fixed hash-like pattern (no randomness, ever).
+        link_load: dict[str, float] = {}
+        if p == "e3200":
+            for a in range(cfg.leaves):
+                for u in range(2):
+                    if dead_uplinks and u == 1 and a == 0:
+                        link_load[f"a{a}-u{u}"] = 0.0
+                    elif dead_uplinks and a == 0:
+                        link_load[f"a{a}-u{u}"] = round(wl_pct, 1)
+                    else:
+                        link_load[f"a{a}-u{u}"] = round(
+                            min(wl_pct, ml_pct * 2), 1
+                        )
+        else:
+            for l_i in range(cfg.leaves):
+                for s_i in range(cfg.spines):
+                    if s_i >= spines_alive:
+                        link_load[f"l{l_i}-s{s_i}"] = 0.0
+                    elif l_i == 0 and s_i == 0:
+                        link_load[f"l{l_i}-s{s_i}"] = round(wl_pct, 1)
+                    else:
+                        w = ((l_i * 7 + s_i * 3) % 10) / 12.0
+                        link_load[f"l{l_i}-s{s_i}"] = round(
+                            ml_pct + (wl_pct - ml_pct) * w * 0.6, 1
+                        )
         if p == "e3200":
             region_load = {
                 "core": round(ml_pct, 1),
@@ -335,6 +363,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             devices_powered=powered,
             devices_total=devices_total,
             region_load=region_load,
+            link_load=link_load,
         )
         trace.append(state)
 

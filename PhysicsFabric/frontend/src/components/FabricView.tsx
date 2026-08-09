@@ -70,6 +70,73 @@ export function FabricView({
           style={{ animationDuration: `${Math.max(0.4, 5 / Math.max(state.deliveredGbps / 4000, 0.4))}s` }}
         />
       )}
+      {state && Object.keys(state.linkLoad).length > 0 && (() => {
+        // V4: the drawn topology. Fabric keys "l{i}-s{j}" run between
+        // the leaf band (top edge y=22) and the spine band (bottom edge
+        // y=10); campus keys "a{i}-u{j}" run access (y=25) → distribution
+        // (y=21). Colors follow the load ramp; the worst link is thick
+        // and dashed white; slack (dead) links hang gray.
+        const entries = Object.entries(state.linkLoad);
+        const fabric = entries[0][0].startsWith("l");
+        const worst = Math.max(...entries.map(([, v]) => v));
+        const M = 2.5;
+        if (fabric) {
+          const leaves = new Set(entries.map(([k]) => k.split("-")[0])).size;
+          const spines = new Set(entries.map(([k]) => k.split("-")[1])).size;
+          const leafX = (i: number) => M + 8 + ((i + 0.5) * 84) / leaves;
+          const spineX = (j: number) => M + 20 + ((j + 0.5) * 60) / spines;
+          return (
+            <g>
+              {entries.map(([k, v]) => {
+                const [li, sj] = k.split("-").map((t) => parseInt(t.slice(1)));
+                const isWorst = v === worst && v > 0;
+                const dead = v === 0;
+                return (
+                  <g key={k}>
+                    <line
+                      x1={spineX(sj)} y1={M + 10} x2={leafX(li)} y2={M + 22}
+                      stroke={dead ? "#2a3a52" : loadColor(v)}
+                      strokeWidth={isWorst ? 1.4 : 0.55}
+                      opacity={dead ? 0.5 : 0.9}
+                    >
+                      <title>{`${k}: ${v.toFixed(0)}%`}</title>
+                    </line>
+                    {isWorst && v > 90 && (
+                      <line
+                        x1={spineX(sj)} y1={M + 10} x2={leafX(li)} y2={M + 22}
+                        stroke="#ffffff" strokeWidth={0.4}
+                        strokeDasharray="1.5 1.5"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+            </g>
+          );
+        }
+        const accesses = new Set(entries.map(([k]) => k.split("-")[0])).size;
+        const accX = (i: number) => M + 8 + ((i + 0.5) * 84) / accesses;
+        return (
+          <g>
+            {entries.map(([k, v]) => {
+              const [ai, uj] = k.split("-").map((t) => parseInt(t.slice(1)));
+              const dead = v === 0;
+              return (
+                <line
+                  key={k}
+                  x1={accX(ai) + (uj === 0 ? -1.5 : 1.5)} y1={M + 25}
+                  x2={M + 20 + 30 + (accX(ai) - M - 50) * 0.5} y2={M + 21}
+                  stroke={dead ? "#2a3a52" : loadColor(v)}
+                  strokeWidth={v === worst && v > 0 ? 1.2 : 0.55}
+                  opacity={dead ? 0.5 : 0.9}
+                >
+                  <title>{`${k}: ${v.toFixed(0)}%`}</title>
+                </line>
+              );
+            })}
+          </g>
+        );
+      })()}
       {anatomy.regions.map((r) => {
         const load = state?.regionLoad[r.id] ?? 0;
         const isSel = r.id === selected;

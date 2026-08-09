@@ -86,6 +86,7 @@ export interface SimState {
   devicesPowered: number;
   devicesTotal: number;
   regionLoad: Record<string, number>;
+  linkLoad: Record<string, number>;
 }
 
 export interface LogEntry {

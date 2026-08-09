@@ -140,6 +140,9 @@ class SimState(CamelModel):
     devices_powered: int
     devices_total: int
     region_load: dict[str, float]
+    # V4: per-link utilization (%) — "l{leaf}-s{spine}" in the fabrics,
+    # "a{access}-u{uplink}" in the campus tree. The drawn mesh's data.
+    link_load: dict[str, float]
 
 
 class LogEntry(CamelModel):
