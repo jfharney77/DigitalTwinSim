@@ -15,6 +15,7 @@ import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
 import { ResilienceView } from "./components/ResilienceView";
 import { StripCharts } from "./components/StripCharts";
+import { Timeline, bandsWhere } from "./components/Timeline";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -108,7 +109,7 @@ export function App() {
         })
         .catch((e) => setError(String(e)));
     }, 250);
-    return () => {
+return () => {
       if (debounce.current !== null) clearTimeout(debounce.current);
     };
   }, [scenario]);
@@ -147,6 +148,17 @@ export function App() {
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.tH <= (state?.tH ?? 0));
   const fz = config.product === "fortzero";
+
+  const pins = (result?.log ?? []).map((e) => ({
+    i: e.tH,
+    severity: e.severity,
+    message: e.message,
+  }));
+  const bands = [
+    ...bandsWhere(trace, (s) => s.incidentActive && !s.contained, "#c8281e", "corruption spreading"),
+    ...bandsWhere(trace, (s) => s.restoring, "#2596be", "restore running"),
+    ...bandsWhere(trace, (s) => s.detected && !s.recovered && !s.restoring, "#e8c33d", "detected, not yet recovered"),
+  ];
 
   return (
     <div className="app dell thermal-app">
@@ -250,16 +262,15 @@ export function App() {
                 </button>
               ))}
               <button onClick={clearScript}>Clear script</button>
-              <input
-                type="range"
-                min={0}
-                max={Math.max(trace.length - 1, 0)}
-                value={cursor}
-                onChange={(e) => {
+              <Timeline
+                length={trace.length}
+                cursor={cursor}
+                onScrub={(i) => {
                   setRunning(false);
-                  setCursor(+e.target.value);
+                  setCursor(i);
                 }}
-                style={{ flex: 1 }}
+                pins={pins}
+                bands={bands}
               />
             </div>
             {selectedRegion && (

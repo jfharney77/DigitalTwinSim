@@ -14,6 +14,7 @@ import { DataView } from "./components/DataView";
 import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
+import { Timeline, bandsWhere } from "./components/Timeline";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -99,7 +100,7 @@ export function App() {
         })
         .catch((e) => setError(String(e)));
     }, 250);
-    return () => {
+return () => {
       if (debounce.current !== null) clearTimeout(debounce.current);
     };
   }, [scenario]);
@@ -139,6 +140,17 @@ export function App() {
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.tH <= (state?.tH ?? 0));
   const pipeline = config.product === "aidataplatform";
+
+  const pins = (result?.log ?? []).map((e) => ({
+    i: e.tH,
+    severity: e.severity,
+    message: e.message,
+  }));
+  const bands = [
+    ...bandsWhere(trace, (s) => s.gpuIdleDueToDataPct > 5, "#e07b28", "GPUs starving"),
+    ...bandsWhere(trace, (s) => s.freshnessLagH > 24, "#e8c33d", "stale data"),
+    ...bandsWhere(trace, (s) => s.arrayFillPct > 80, "#c8281e", "capacity red zone"),
+  ];
 
   return (
     <div className="app dell thermal-app">
@@ -245,16 +257,15 @@ export function App() {
                 </button>
               ))}
               <button onClick={coldStart}>Reset</button>
-              <input
-                type="range"
-                min={0}
-                max={Math.max(trace.length - 1, 0)}
-                value={cursor}
-                onChange={(e) => {
+              <Timeline
+                length={trace.length}
+                cursor={cursor}
+                onScrub={(i) => {
                   setRunning(false);
-                  setCursor(+e.target.value);
+                  setCursor(i);
                 }}
-                style={{ flex: 1 }}
+                pins={pins}
+                bands={bands}
               />
             </div>
             {selectedRegion && (

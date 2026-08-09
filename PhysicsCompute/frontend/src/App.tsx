@@ -15,6 +15,7 @@ import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
 import { RedfishPanel } from "./components/RedfishPanel";
 import { StripCharts } from "./components/StripCharts";
+import { Timeline, bandsWhere } from "./components/Timeline";
 import { SystemView } from "./components/SystemView";
 import { useLevel } from "./level";
 import type {
@@ -56,7 +57,7 @@ export function App() {
     const onHash = () =>
       setPage(window.location.hash === "#idrac" ? "idrac" : "sim");
     window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   const [anatomy, setAnatomy] = useState<SystemMap | null>(null);
@@ -160,6 +161,16 @@ export function App() {
   const liquid = config.product === "xe9712";
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.t <= (state?.t ?? 0));
+
+  const pins = (result?.log ?? []).map((e) => ({
+    i: e.t,
+    severity: e.severity,
+    message: e.message,
+  }));
+  const bands = [
+    ...bandsWhere(trace, (s) => s.gpusThrottled > 0, "#e07b28", "GPUs throttled"),
+    ...bandsWhere(trace, (s) => s.coolantReturnC > 65, "#c8281e", "coolant over the throttle line"),
+  ];
 
   return (
     <div className="app dell thermal-app">
@@ -286,17 +297,16 @@ export function App() {
                   </button>
                 ))}
                 <button onClick={coldStart}>Reset</button>
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(trace.length - 1, 0)}
-                  value={cursor}
-                  onChange={(e) => {
-                    setRunning(false);
-                    setCursor(+e.target.value);
-                  }}
-                  style={{ flex: 1 }}
-                />
+                <Timeline
+                length={trace.length}
+                cursor={cursor}
+                onScrub={(i) => {
+                  setRunning(false);
+                  setCursor(i);
+                }}
+                pins={pins}
+                bands={bands}
+              />
               </div>
               {selectedRegion && (
                 <div className="mini region-card">

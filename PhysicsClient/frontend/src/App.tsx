@@ -16,6 +16,7 @@ import { DeviceView } from "./components/DeviceView";
 import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
+import { Timeline, bandsWhere } from "./components/Timeline";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -64,7 +65,7 @@ export function App() {
   useEffect(() => {
     const onHash = () => setPage(pageFromHash());
     window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+return () => window.removeEventListener("hashchange", onHash);
   }, []);
   const goto = (p: Page) => {
     window.location.hash = p === "brands" ? "#brands" : "";
@@ -178,6 +179,17 @@ export function App() {
   const underlay = productMedia?.underlay ?? null;
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.t <= (state?.t ?? 0));
+
+  const pins = (result?.log ?? []).map((e) => ({
+    i: e.t,
+    severity: e.severity,
+    message: e.message,
+  }));
+  const bands = [
+    ...bandsWhere(trace, (s) => s.cpuThrottling || s.gpuThrottling, "#e07b28", "silicon throttling"),
+    ...bandsWhere(trace, (s) => s.plState === "skin-limited", "#c8281e", "skin-limited"),
+    ...bandsWhere(trace, (s) => s.plState === "pl2-boost", "#2596be", "PL2 boost window"),
+  ];
 
   return (
     <div className="app dell thermal-app">
@@ -337,16 +349,15 @@ export function App() {
                 </button>
               ))}
               <button onClick={coldStart}>Reset</button>
-              <input
-                type="range"
-                min={0}
-                max={Math.max(trace.length - 1, 0)}
-                value={cursor}
-                onChange={(e) => {
+              <Timeline
+                length={trace.length}
+                cursor={cursor}
+                onScrub={(i) => {
                   setRunning(false);
-                  setCursor(+e.target.value);
+                  setCursor(i);
                 }}
-                style={{ flex: 1 }}
+                pins={pins}
+                bands={bands}
               />
             </div>
             {selectedRegion && (
