@@ -26,13 +26,13 @@ CONSOLE_TOUCHY = CONSOLE.model_copy(update={"anomaly_k": 1.5})
 CONSOLE_DEAF = CONSOLE.model_copy(update={"anomaly_k": 5.5})
 
 CONFIG_PRESETS = [
-    ConfigPreset(id="pipeline-cpu", name="Pipeline · CPU process", config=PIPELINE_CPU,
+    ConfigPreset(id="pipeline-cpu", compare_preset_id="pipeline-gpu", name="Pipeline · CPU process", config=PIPELINE_CPU,
                  blurb="The clean/transform stage is the constraint."),
     ConfigPreset(id="pipeline-gpu", name="Pipeline · GPU process", config=PIPELINE_GPU,
                  blurb="×6 on the old bottleneck — meet the new one."),
     ConfigPreset(id="pipeline-kv", name="Pipeline + KV offload", config=PIPELINE_KV,
                  blurb="×4 long-context sessions for a 12% token tax."),
-    ConfigPreset(id="console", name="Console · k=3", config=CONSOLE,
+    ConfigPreset(id="console", compare_preset_id="console-touchy", name="Console · k=3", config=CONSOLE,
                  blurb="The balanced detector, ready to be graded."),
     ConfigPreset(id="console-touchy", name="Console · k=1.5", config=CONSOLE_TOUCHY,
                  blurb="Everything is an anomaly."),

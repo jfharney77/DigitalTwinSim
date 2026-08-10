@@ -34,3 +34,15 @@ def test_referenced_assets_exist_and_are_local():
             if ref:
                 assert ref.startswith("/"), f"{pid}: assets must be local"
                 assert (PUBLIC / ref.lstrip("/")).exists(), (pid, ref)
+
+
+def test_compare_pairs_resolve():
+    """V8: every declared A/B foil names a real preset (and never itself)."""
+    from app.presets import CONFIG_PRESETS
+
+    ids = {p.id for p in CONFIG_PRESETS}
+    declared = [p for p in CONFIG_PRESETS if p.compare_preset_id]
+    assert declared, "at least one canonical foil pair must exist"
+    for p in declared:
+        assert p.compare_preset_id in ids, (p.id, p.compare_preset_id)
+        assert p.compare_preset_id != p.id

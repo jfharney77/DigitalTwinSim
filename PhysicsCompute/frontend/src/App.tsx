@@ -12,6 +12,7 @@ import {
 import { BuildPanel } from "./components/BuildPanel";
 import { ProductGallery } from "./components/ProductGallery";
 import { Instruments } from "./components/Instruments";
+import { ComparePanel } from "./components/ComparePanel";
 import { LevelControl } from "./components/LevelControl";
 import { RedfishPanel } from "./components/RedfishPanel";
 import { StripCharts } from "./components/StripCharts";
@@ -124,6 +125,19 @@ return () => window.removeEventListener("hashchange", onHash);
       if (debounce.current !== null) clearTimeout(debounce.current);
     };
   }, [scenario]);
+
+  const [comparePresetId, setComparePresetId] = useState("");
+  const [ghost, setGhost] = useState<SimResponse | null>(null);
+  useEffect(() => {
+    const preset = configPresets.find((p) => p.id === comparePresetId);
+    if (!preset) {
+      setGhost(null);
+      return;
+    }
+    simulate({ ...scenario, config: preset.config })
+      .then(setGhost)
+      .catch(() => setGhost(null));
+  }, [comparePresetId, scenario, configPresets]);
 
   const trace = result?.trace ?? [];
   const state = trace[cursor] ?? null;
@@ -246,8 +260,22 @@ return () => window.removeEventListener("hashchange", onHash);
               onPreset={(p) => {
                 setConfig(p.config);
                 setActiveScenario(null);
+                setComparePresetId(p.comparePresetId ?? "");
               }}
             />
+            <div className="an-panel">
+              <h2>Compare (A/B)</h2>
+              <select
+                value={comparePresetId}
+                onChange={(e) => setComparePresetId(e.target.value)}
+                style={{ width: "100%" }}
+              >
+                <option value="">— off —</option>
+                {configPresets.map((p) => (
+                  <option key={p.id} value={p.id}>vs {p.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="an-panel">
               <h2>Guided scenarios</h2>
               <div className="scenario-list">
@@ -401,6 +429,21 @@ return () => window.removeEventListener("hashchange", onHash);
                 </button>
               </div>
             </div>
+            {ghost && result && (
+              <ComparePanel
+                aName="current build"
+                bName={configPresets.find((p) => p.id === comparePresetId)?.name ?? "B"}
+                headline="training throughput"
+                unit="tok/s"
+                a={trace.map((s) => s.tokensPerS)}
+                b={ghost.trace.map((s) => s.tokensPerS)}
+                deltas={[
+                  { label: "peak tok/s", a: result.summary.peakTokensPerS, b: ghost.summary.peakTokensPerS, unit: "" },
+                  { label: "GPU-hours wasted", a: result.summary.gpuHoursWasted, b: ghost.summary.gpuHoursWasted, unit: "h" },
+                  { label: "peak DC", a: result.summary.peakDcW, b: ghost.summary.peakDcW, unit: "W" },
+                ]}
+              />
+            )}
             <Instruments
               state={state}
               explains={explains}

@@ -36,9 +36,9 @@ STUDIO = FleetConfig(product="automationstudio", sites=1, nodes_per_site=12,
                      ops_mode="automated", test_gate=True)
 
 CONFIG_PRESETS = [
-    ConfigPreset(id="vxrail-8", name="VxRail ×8 · automated", config=VXRAIL_8,
+    ConfigPreset(id="vxrail-8", compare_preset_id="vxrail-manual", name="VxRail ×8 · automated", config=VXRAIL_8,
                  blurb="The lifecycle bundle doing its job."),
-    ConfigPreset(id="vxrail-manual", name="VxRail ×8 · manual", config=VXRAIL_MANUAL,
+    ConfigPreset(id="vxrail-manual", compare_preset_id="vxrail-8", name="VxRail ×8 · manual", config=VXRAIL_MANUAL,
                  blurb="Same cluster, artisanal ops — watch the ledger."),
     ConfigPreset(id="vxrail-3", name="VxRail ×3 (the trap)", config=VXRAIL_3NODE,
                  blurb="The minimum cluster, and why minimums exist."),

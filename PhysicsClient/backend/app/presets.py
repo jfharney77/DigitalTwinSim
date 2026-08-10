@@ -47,13 +47,13 @@ PROMAX_GPU = DeviceConfig(
 )
 
 CONFIG_PRESETS = [
-    ConfigPreset(id="aw-laptop", name="Alienware 16 laptop", config=AW_LAPTOP,
+    ConfigPreset(id="aw-laptop", compare_preset_id="aw-desktop", name="Alienware 16 laptop", config=AW_LAPTOP,
                  blurb="55 W CPU, 140 W GPU, 90 Wh — the mainstream gaming laptop."),
     ConfigPreset(id="aw-laptop-max", name="Alienware 18 max", config=AW_LAPTOP_MAX,
                  blurb="65 W CPU, 175 W TGP, 330 W brick — the biggest laptop build."),
     ConfigPreset(id="aw-desktop", name="Alienware tower", config=AW_DESKTOP,
                  blurb="125 W CPU, 450 W GPU, 1000 W PSU — the control group."),
-    ConfigPreset(id="promax-npu", name="Pro Max Plus + NPU", config=PROMAX_NPU,
+    ConfigPreset(id="promax-npu", compare_preset_id="promax-gpu", name="Pro Max Plus + NPU", config=PROMAX_NPU,
                  blurb="Workstation with the discrete AI-100-class NPU card."),
     ConfigPreset(id="promax-gpu", name="Pro Max Plus (GPU only)", config=PROMAX_GPU,
                  blurb="Same workstation without the NPU — the honest contrast."),

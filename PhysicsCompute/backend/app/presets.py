@@ -39,13 +39,13 @@ XE9712_FULL = SystemConfig(
 )
 
 CONFIG_PRESETS = [
-    ConfigPreset(id="xe7745-8", name="XE7745 · 8× 600 W", config=XE7745_8GPU,
+    ConfigPreset(id="xe7745-8", compare_preset_id="xe7745-4", name="XE7745 · 8× 600 W", config=XE7745_8GPU,
                  blurb="Max PCIe density — the positional-inequality machine."),
     ConfigPreset(id="xe7745-4", name="XE7745 · 4× 450 W", config=XE7745_4GPU,
                  blurb="The moderate build — margin everywhere."),
     ConfigPreset(id="xe9680-h100", name="XE9680 · H100", config=XE9680_H100,
                  blurb="8× 700 W SXM — the flagship air-cooled trainer."),
-    ConfigPreset(id="xe9680-b200", name="XE9680 · B200", config=XE9680_B200,
+    ConfigPreset(id="xe9680-b200", compare_preset_id="xe9712", name="XE9680 · B200", config=XE9680_B200,
                  blurb="8× 1000 W SXM — air cooling near its ceiling."),
     ConfigPreset(id="xe9712", name="XE9712 rack (72 GPUs)", config=XE9712_FULL,
                  blurb="The liquid-cooled rack — heat leaves in water."),

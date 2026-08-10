@@ -34,13 +34,13 @@ COAL = SERVICEABLE.model_copy(update={"grid": "coal", "annual_kwh": 120})
 CLEAN = SERVICEABLE.model_copy(update={"grid": "clean"})
 
 CONFIG_PRESETS = [
-    ConfigPreset(id="blocks", name="Telecom · Blocks", config=BLOCKS,
+    ConfigPreset(id="blocks", compare_preset_id="diy", name="Telecom · Blocks", config=BLOCKS,
                  blurb="Pre-validated bundles, XR-class, N+1 spares."),
     ConfigPreset(id="diy", name="Telecom · DIY", config=DIY,
                  blurb="The same network as an integration project."),
     ConfigPreset(id="standard-temp", name="Telecom · standard temp", config=STANDARD_TEMP,
                  blurb="Saved money on the spec sheet; meet the heatwave."),
-    ConfigPreset(id="serviceable", name="Laptop · serviceable", config=SERVICEABLE,
+    ConfigPreset(id="serviceable", compare_preset_id="sealed", name="Laptop · serviceable", config=SERVICEABLE,
                  blurb="Screwed, socketed, modular, recycled."),
     ConfigPreset(id="sealed", name="Laptop · sealed", config=SEALED,
                  blurb="Glued, soldered, integrated — the cascade."),

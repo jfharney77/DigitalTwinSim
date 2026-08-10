@@ -46,9 +46,9 @@ EXASCALE_32 = StorageConfig(
 )
 
 CONFIG_PRESETS = [
-    ConfigPreset(id="powerstore", name="PowerStore ×2", config=POWERSTORE_2,
+    ConfigPreset(id="powerstore", compare_preset_id="powerflex", name="PowerStore ×2", config=POWERSTORE_2,
                  blurb="Dual-controller mid-range — the knee's natural habitat."),
-    ConfigPreset(id="powermax", name="PowerMax ×4 bricks", config=POWERMAX_4,
+    ConfigPreset(id="powermax", compare_preset_id="powerscale", name="PowerMax ×4 bricks", config=POWERMAX_4,
                  blurb="Six-nines personality; add SRDF and a distance."),
     ConfigPreset(id="powerscale", name="PowerScale ×20", config=POWERSCALE_20,
                  blurb="Scale-out NAS — rebuilds get faster as it grows."),

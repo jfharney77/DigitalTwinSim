@@ -38,11 +38,11 @@ X800_FABRIC = FabricConfig(
 CONFIG_PRESETS = [
     ConfigPreset(id="campus", name="E3200 campus floor", config=CAMPUS,
                  blurb="4 access switches, 57 PoE devices — the human-scale fabric."),
-    ConfigPreset(id="sn6000-static", name="SN6000 · static ECMP", config=SN6000_STATIC,
+    ConfigPreset(id="sn6000-static", compare_preset_id="sn6000-adaptive", name="SN6000 · static ECMP", config=SN6000_STATIC,
                  blurb="RoCE lossless, hashing left alone — collisions included."),
     ConfigPreset(id="sn6000-adaptive", name="SN6000 · adaptive", config=SN6000_ADAPTIVE,
                  blurb="Spectrum-X adaptive routing on — the before/after."),
-    ConfigPreset(id="x800", name="Quantum-X800 + SHARP", config=X800_FABRIC,
+    ConfigPreset(id="x800", compare_preset_id="sn6000-adaptive", name="Quantum-X800 + SHARP", config=X800_FABRIC,
                  blurb="Credit-lossless InfiniBand with in-network collectives."),
 ]
 

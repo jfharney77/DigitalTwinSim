@@ -224,6 +224,8 @@ class ConfigPreset(CamelModel):
     id: str
     name: str
     blurb: str
+    # V8: the canonical foil to run beside this preset (A/B compare).
+    compare_preset_id: str | None = None
     config: SystemConfig
 
 

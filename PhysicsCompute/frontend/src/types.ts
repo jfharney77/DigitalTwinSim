@@ -156,6 +156,7 @@ export interface ConfigPreset {
   id: string;
   name: string;
   blurb: string;
+  comparePresetId?: string | null;
   config: SystemConfig;
 }
 
