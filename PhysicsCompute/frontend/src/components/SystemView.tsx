@@ -157,6 +157,80 @@ export function SystemView({
           </g>
         );
       })}
+      {isRack && (
+        <g pointerEvents="none">
+          {/* V5 bezel facsimile: tray faceplates with handles and state
+              LEDs, PSU faces on the shelf, NVSwitch port row, CDU
+              grille — recognizably the machine, honestly an
+              illustration (labeled in the legend). */}
+          {anatomy.regions.map((r) => {
+            const temp = state?.regionTemps[r.id] ?? T_MIN;
+            const led = temp < 55 ? "#7fbf5a" : temp < 70 ? "#e8c33d" : "#c8281e";
+            const x0 = rx(r);
+            const y0 = ry(r);
+            if (r.kind === "tray") {
+              const n = 4;
+              return (
+                <g key={r.id}>
+                  {Array.from({ length: n }, (_, i) => {
+                    const tx = x0 + 1 + (i * (r.w - 2)) / n;
+                    const tw = (r.w - 2) / n - 1;
+                    return (
+                      <g key={i}>
+                        <rect x={tx} y={y0 + 1} width={tw} height={r.h - 2}
+                          rx={0.6} fill="none" stroke="#0d1420" strokeWidth={0.35} />
+                        <rect x={tx + 1} y={y0 + r.h / 2 - 0.5} width={2.2}
+                          height={1} rx={0.3} fill="#0d1420" opacity={0.55} />
+                        <circle cx={tx + tw - 1.4} cy={y0 + 2.2} r={0.7} fill={led} />
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            }
+            if (r.kind === "power") {
+              const n = 6;
+              return (
+                <g key={r.id}>
+                  {Array.from({ length: n }, (_, i) => {
+                    const px = x0 + 1 + (i * (r.w - 2)) / n;
+                    const pw = (r.w - 2) / n - 0.8;
+                    return (
+                      <g key={i}>
+                        <rect x={px} y={y0 + 1.2} width={pw} height={r.h - 2.4}
+                          rx={0.4} fill="none" stroke="#0d1420" strokeWidth={0.3} />
+                        <circle cx={px + pw / 2} cy={y0 + r.h - 2} r={0.55}
+                          fill={state?.poweredOn === false ? "#5a6b82" : "#7fbf5a"} />
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            }
+            if (r.kind === "nvswitch") {
+              return (
+                <g key={r.id} opacity={0.6}>
+                  {Array.from({ length: 18 }, (_, i) => (
+                    <rect key={i} x={x0 + 2 + i * 4} y={y0 + r.h - 2.6}
+                      width={2.6} height={1.4} rx={0.2} fill="#0d1420" />
+                  ))}
+                </g>
+              );
+            }
+            if (r.kind === "cdu") {
+              return (
+                <g key={r.id} stroke="#0d1420" strokeWidth={0.3} opacity={0.5}>
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <line key={i} x1={x0 + 2} y1={y0 + 2 + i * 2}
+                      x2={x0 + r.w - 2} y2={y0 + 2 + i * 2} />
+                  ))}
+                </g>
+              );
+            }
+            return null;
+          })}
+        </g>
+      )}
       <g>
         {Array.from({ length: 30 }, (_, i) => (
           <rect
@@ -186,7 +260,7 @@ export function SystemView({
           {T_MAX} °C
         </text>
         <text x={W - MARGIN} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
-          {isRack ? "front elevation · click a zone" : "top-down, FRONT left · click a zone"}
+          {isRack ? "front elevation (bezels are illustration) · click a zone" : "top-down, FRONT left · click a zone"}
         </text>
       </g>
     </svg>
