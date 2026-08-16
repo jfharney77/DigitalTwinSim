@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchLessonTour, fetchTourRecording } from "../api";
-import type { GpuProfile, LessonTour as Tour, LiveState } from "../types";
+import { fetchAtlas, fetchLessonTour, fetchTourRecording } from "../api";
+import { useLevel } from "../level";
+import type { Atlas, GpuProfile, LessonTour as Tour, LiveState } from "../types";
+import { dieForDevice } from "../types";
 import { GanttStrip } from "./GanttStrip";
 import { dieGrid, LiveCounters, LiveDieView } from "./LiveViz";
 
@@ -20,26 +22,53 @@ export function LessonTour({
   const [stepIdx, setStepIdx] = useState(0);
   const [frame, setFrame] = useState<LiveState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // spec_30: the atlas drives the recording's die-anatomy badge.
+  const [atlas, setAtlas] = useState<Atlas | null>(null);
+  // spec_29: the tour's prose rides the reading level. A level change
+  // refetches the tour but never resets the reader's step (house rule —
+  // step count is level-invariant), and never refetches the recording.
+  const level = useLevel();
 
   useEffect(() => {
     fetchLessonTour().then(setTour).catch((e) => setError(String(e)));
+  }, [level]);
+
+  useEffect(() => {
+    fetchAtlas().then(setAtlas).catch(() => setAtlas(null));
   }, []);
 
   const step = tour?.steps[stepIdx] ?? null;
+  const lessonId = step?.lessonId ?? null;
+  const cursor = step?.cursor ?? 0;
 
   useEffect(() => {
-    if (!step) return;
+    if (!lessonId) return;
     setFrame(null);
-    fetchTourRecording(step.lessonId)
-      .then((trace) => setFrame(trace[step.cursor] ?? null))
+    fetchTourRecording(lessonId)
+      .then((trace) => setFrame(trace[cursor] ?? null))
       .catch((e) => setError(String(e)));
-  }, [step]);
+    // spec_29: keyed on the lesson, not the step object — a level change
+    // swaps prose only and must not re-run this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId]);
 
   if (error) return <div className="mini an-error">{error}</div>;
   if (!tour || !step) return <p className="mini">loading tour…</p>;
 
   const last = stepIdx === tour.steps.length - 1;
   const smCount = frame ? dieGrid(frame, profile).count : 24;
+  // spec_30: badge the recorded device with its die's anatomy when the
+  // atlas recognizes the name (the lesson-07 H100/B300 goldens).
+  const badgeDie = dieForDevice(atlas, frame?.device?.name);
+  // spec_30: the authored step link, rendered as a real button.
+  const linkLabel = (link: string) =>
+    link.startsWith("#anatomy")
+      ? link.includes("/vs/")
+        ? "Compare the dies →"
+        : "Open in die anatomy →"
+      : link.startsWith("#live")
+        ? "Open live →"
+        : "Open the simulator →";
 
   return (
     <div>
@@ -58,6 +87,12 @@ export function LessonTour({
           ? "recorded on real hardware"
           : "representative recording — capture your own with make run-" +
             step.lessonId.slice(0, 2)}
+        {badgeDie && (
+          <>
+            {" · "}
+            <a href={`#anatomy/${badgeDie}`}>die anatomy →</a>
+          </>
+        )}
       </p>
       <LiveDieView profile={profile} state={frame} />
       <LiveCounters state={frame} />
@@ -66,6 +101,17 @@ export function LessonTour({
         <p className="mini">
           <strong>Try it:</strong> {step.experiment}
         </p>
+      )}
+      {step.link != null && (
+        <button
+          onClick={() => {
+            // spec_30: a real button where the prose used to name tabs in
+            // words. Setting the hash lets App's hashchange sync switch tabs.
+            window.location.hash = step.link!;
+          }}
+        >
+          {linkLabel(step.link)}
+        </button>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button

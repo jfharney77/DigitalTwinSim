@@ -121,13 +121,23 @@ export function LiveDieView({
         stroke="#1f2935"
         strokeWidth={2}
       />
-      <text x={M + 8} y={30} fill="#3a4a60" letterSpacing="4" fontSize={11}>
+      <text
+        x={M + 8}
+        y={30}
+        fill={state?.placement === "modeled" ? "#c77700" : "#3a4a60"}
+        letterSpacing="4"
+        fontSize={11}
+      >
         {label.toUpperCase()} ·{" "}
-        {timingOnly
-          ? "CUPTI CAPTURE (TIMING ONLY — NO PLACEMENT DATA)"
-          : state?.running
-            ? "KERNEL RUNNING — STREAMED COUNTS"
-            : "REAL BLOCK PLACEMENT (%smid)"}
+        {state?.placement === "modeled"
+          ? // spec_28: the honesty rule — every remapped view says so, in the
+            // same load-bearing style as spec_18's provenance captions.
+            `MODELED PLACEMENT (RECORDED ON ${(state.recordedOn ?? "another device").toUpperCase()})`
+          : timingOnly
+            ? "CUPTI CAPTURE (TIMING ONLY — NO PLACEMENT DATA)"
+            : state?.running
+              ? "KERNEL RUNNING — STREAMED COUNTS"
+              : "REAL BLOCK PLACEMENT (%smid)"}
       </text>
       {tiles}
       <text x={M + 8} y={H - 12} fill="#3a4a60" fontSize={10}>

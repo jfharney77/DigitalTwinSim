@@ -43,7 +43,14 @@ export function ComparePane({
   push("occupancy", a.occupancyPct, b.occupancyPct, "%", 1);
   push("blocks/SM spread", spread(a), spread(b), "", 0);
 
-  const smCount = dieGrid(a, profile).count;
+  // spec_28: recorded-vs-remapped puts two different dies side by side, so
+  // each pane's Gantt sizes to its own device.
+  const smCountA = dieGrid(a, profile).count;
+  const smCountB = dieGrid(b, profile).count;
+  const paneLabel = (s: LiveState) =>
+    s.placement === "modeled"
+      ? ` · modeled placement (recorded on ${s.recordedOn ?? "another device"})`
+      : "";
 
   return (
     <div style={{ marginTop: 12 }}>
@@ -61,6 +68,7 @@ export function ComparePane({
           <div className="mini">
             A · {a.kernel} · grid {a.grid?.join("×")} · block{" "}
             {a.block?.join("×")}
+            {paneLabel(a)}
           </div>
           <LiveDieView profile={profile} state={a} compact />
         </div>
@@ -68,6 +76,7 @@ export function ComparePane({
           <div className="mini">
             B · {b.kernel} · grid {b.grid?.join("×")} · block{" "}
             {b.block?.join("×")}
+            {paneLabel(b)}
           </div>
           <LiveDieView profile={profile} state={b} compact />
         </div>
@@ -92,8 +101,8 @@ export function ComparePane({
           ))}
         </tbody>
       </table>
-      <GanttStrip state={a} smCount={smCount} />
-      <GanttStrip state={b} smCount={smCount} />
+      <GanttStrip state={a} smCount={smCountA} />
+      <GanttStrip state={b} smCount={smCountB} />
     </div>
   );
 }

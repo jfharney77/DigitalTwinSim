@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   deleteLiveSession,
+  fetchAtlas,
   fetchLiveSessions,
   fetchLiveTrace,
+  fetchProfiles,
   fetchSessionSummary,
   importLiveSession,
   liveStreamUrl,
@@ -12,7 +14,8 @@ import {
   stopLiveSession,
 } from "../api";
 import { downloadSvgFrom } from "../svgExport";
-import type { GpuProfile, LiveSessionInfo, LiveState } from "../types";
+import type { Atlas, GpuProfile, LiveSessionInfo, LiveState } from "../types";
+import { dieForDevice } from "../types";
 import { ComparePane } from "./ComparePane";
 import { GanttStrip } from "./GanttStrip";
 import { LessonTour } from "./LessonTour";
@@ -71,6 +74,23 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
   const [active, setActive] = useState<string | null>(null);
   const [replayCursor, setReplayCursor] = useState(0);
   const [replayTrace, setReplayTrace] = useState<LiveState[] | null>(null);
+  // spec_28: fleet replay — which die the recording is viewed on (null =
+  // the recorded device), the recorded trace kept for side-by-side, and
+  // the fleet names for the picker.
+  const [replaySession, setReplaySession] = useState<string | null>(null);
+  const [viewProfile, setViewProfile] = useState<string | null>(null);
+  const [baseTrace, setBaseTrace] = useState<LiveState[] | null>(null);
+  const [compareRemap, setCompareRemap] = useState(false);
+  const [profileNames, setProfileNames] = useState<string[]>([]);
+  // spec_30: the atlas's deviceMatch substrings drive the die badge on the
+  // device line — the local 4060 gets none until an AD107 anatomy lands.
+  const [atlas, setAtlas] = useState<Atlas | null>(null);
+  useEffect(() => {
+    fetchProfiles()
+      .then((ps) => setProfileNames(ps.map((p) => p.name)))
+      .catch(() => setProfileNames([]));
+    fetchAtlas().then(setAtlas).catch(() => setAtlas(null));
+  }, []);
   const [replayPaused, setReplayPaused] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(1); // spec_20 #12
   const [showAllChips, setShowAllChips] = useState(false);
@@ -171,6 +191,18 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
   const compareA = byKey(compareKeys.a);
   const compareB = byKey(compareKeys.b);
   const smCount = shown ? dieGrid(shown, profile).count : 24;
+  // spec_30: when the session/recording's device name matches an atlas
+  // deviceMatch substring, badge it with that die's anatomy (the lesson-07
+  // H100/B300 goldens are the payoff). Device info carries forward on every
+  // folded frame, so the badge holds for the whole session.
+  const badgeDie = dieForDevice(atlas, shown?.device?.name);
+
+  // spec_28: the recorded frame matching the shown remapped frame — remap is
+  // 1:1 on frames and keeps tMs/kernel/kind, so frameKey() resolves it.
+  const remapBase =
+    compareRemap && baseTrace && shown
+      ? (baseTrace.find((s) => frameKey(s) === frameKey(shown)) ?? null)
+      : null;
 
   // spec_20 #13: while pinned, count kernels that arrived after the pin.
   const pinnedFrame = byKey(pinnedKey);
@@ -223,9 +255,29 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
     fetchLiveTrace(id).then((t) => {
       setPinnedKey(null);
       setCompareKeys({ a: null, b: null });
+      setReplaySession(id);
+      setViewProfile(null);
+      setBaseTrace(null);
+      setCompareRemap(false);
       setReplayCursor(0);
       setReplayPaused(false);
       setReplayTrace(t);
+    });
+  };
+
+  // spec_28: refetch the same recording remapped onto another die. The remap
+  // is 1:1 on frames (frameKey still resolves), so the cursor is kept.
+  const viewOn = (name: string | null) => {
+    if (!replaySession) return;
+    Promise.all([
+      fetchLiveTrace(replaySession, name),
+      name ? fetchLiveTrace(replaySession) : Promise.resolve(null),
+    ]).then(([t, base]) => {
+      setViewProfile(name);
+      setBaseTrace(name ? base : null);
+      if (!name) setCompareRemap(false);
+      setReplayTrace(t);
+      setReplayCursor((c) => Math.min(c, t.length - 1));
     });
   };
 
@@ -234,6 +286,10 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
     downloadSvgFrom(stageRef.current, `${shown?.kernel ?? "die"}-live`);
   const backToLive = () => {
     setReplayTrace(null);
+    setReplaySession(null);
+    setViewProfile(null);
+    setBaseTrace(null);
+    setCompareRemap(false);
     setPinnedKey(null);
     setConn("reconnecting");
   };
@@ -317,8 +373,39 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
                 )}
               </span>
             )}
+            {badgeDie && (
+              <a
+                className="mini"
+                href={`#anatomy/${badgeDie}`}
+                title={`${shown?.device?.name ?? "this device"} in the anatomy tab`}
+              >
+                die anatomy →
+              </a>
+            )}
             {replayTrace && (
               <>
+                <select
+                  value={viewProfile ?? ""}
+                  onChange={(e) => viewOn(e.target.value || null)}
+                  title="fleet replay (spec_28): view this recording remapped onto another die"
+                >
+                  <option value="">View on: recorded device</option>
+                  {profileNames.map((n) => (
+                    <option key={n} value={n}>
+                      View on: {n}
+                    </option>
+                  ))}
+                </select>
+                {baseTrace && (
+                  <label className="mini" style={{ whiteSpace: "nowrap" }}>
+                    <input
+                      type="checkbox"
+                      checked={compareRemap}
+                      onChange={(e) => setCompareRemap(e.target.checked)}
+                    />{" "}
+                    vs recorded
+                  </label>
+                )}
                 <input
                   type="range"
                   min={0}
@@ -348,6 +435,13 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
           <div ref={stageRef}>
             <LiveDieView profile={profile} state={shown} />
           </div>
+          {shown?.placement === "modeled" && (
+            <p className="mini" style={{ color: "#c77700", marginTop: 4 }}>
+              modeled placement (recorded on {shown.recordedOn ?? "another device"})
+              — durations recorded on {shown.recordedOn ?? "the original die"}; a
+              bigger die changes queueing, not the work.
+            </p>
+          )}
           {shown && (
             <button className="mini" onClick={downloadSvg}>
               Download die SVG
@@ -365,6 +459,15 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
           )}
           <LiveCounters state={shown} />
           <GanttStrip state={shown} smCount={smCount} />
+          {remapBase && shown && (
+            <ComparePane
+              a={remapBase}
+              b={shown}
+              profile={profile}
+              onClose={() => setCompareRemap(false)}
+              onSwap={() => {}}
+            />
+          )}
           {compareA && compareB && (
             <ComparePane
               a={compareA}

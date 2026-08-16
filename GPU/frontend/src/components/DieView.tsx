@@ -29,14 +29,21 @@ const CORE_FILL: Record<CoreState, string> = {
   loading: "var(--sm-edge)",
   computing: "var(--core-on)",
   wrote: "var(--core-hot)",
+  mma: "var(--core-mma)", // spec_23: the whole SM flashes as one MMA block
 };
 
 export function DieView({
   profile,
   state,
+  label = "DIE",
+  dimmed = false,
 }: {
   profile: GpuProfile;
   state: SimState | null;
+  // spec_27: two-die mode names each schematic ("GPU 0 · DIE") and dims the
+  // die whose states are not currently playing (and both during exchange).
+  label?: string;
+  dimmed?: boolean;
 }) {
   const { sm, coresPerSM } = profile;
   const coresPerSMCount = coresPerSM.rows * coresPerSM.cols;
@@ -82,20 +89,34 @@ export function DieView({
       loading: 0,
       computing: 0,
       wrote: 0,
+      mma: 0,
     };
     for (let i = 0; i < coresPerSMCount; i++) {
       counts[state?.coreState[base + i] ?? "idle"]++;
     }
     const active = coresPerSMCount - counts.idle;
     const dominant: CoreState =
-      counts.wrote >= counts.computing && counts.wrote >= counts.loading && counts.wrote > 0
-        ? "wrote"
-        : counts.computing >= counts.loading && counts.computing > 0
-          ? "computing"
-          : counts.loading > 0
-            ? "loading"
-            : "idle";
+      counts.mma > 0 // spec_23: an MMA SM is all-or-nothing by construction
+        ? "mma"
+        : counts.wrote >= counts.computing && counts.wrote >= counts.loading && counts.wrote > 0
+          ? "wrote"
+          : counts.computing >= counts.loading && counts.computing > 0
+            ? "computing"
+            : counts.loading > 0
+              ? "loading"
+              : "idle";
     return { active, dominant };
+  };
+
+  // spec_23: whole-SM MMA flash — an SM is either fully "mma" or not at all,
+  // so one lane's state answers for the block; the badge shows ranks/step.
+  const mmaRanks = state?.ranksPerStep ?? null;
+  const smHasMma = (idx: number) => {
+    const base = idx * coresPerSMCount;
+    for (let i = 0; i < coresPerSMCount; i++) {
+      if (state?.coreState[base + i] === "mma") return true;
+    }
+    return false;
   };
 
   const sms = [];
@@ -155,6 +176,17 @@ export function DieView({
             <text x={x + 10} y={y + 56} fill="#46566e" fontSize={9}>
               {active}/{coresPerSMCount} lanes
             </text>
+            {smHasMma(idx) && (
+              <text
+                x={x + smW - 8}
+                y={y + 56}
+                fill="var(--core-mma)"
+                fontSize={9}
+                textAnchor="end"
+              >
+                MMA{mmaRanks != null ? ` ×${mmaRanks}` : ""}
+              </text>
+            )}
           </g>,
         );
       } else {
@@ -208,6 +240,17 @@ export function DieView({
             </text>
             {/* warp scheduler tick */}
             <rect x={x + smW - 30} y={y + 6} width={22} height={8} rx={2} fill="#243042" />
+            {smHasMma(smIndex) && (
+              <text
+                x={x + smW - 8}
+                y={y + 22}
+                fill="var(--core-mma)"
+                fontSize={9}
+                textAnchor="end"
+              >
+                MMA{mmaRanks != null ? ` ×${mmaRanks}` : ""}
+              </text>
+            )}
             {coreRects}
           </g>,
         );
@@ -281,7 +324,11 @@ export function DieView({
   ));
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} aria-label="GPU die schematic">
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      aria-label={`GPU die schematic${label !== "DIE" ? ` (${label})` : ""}`}
+      style={dimmed ? { opacity: 0.45, transition: "opacity 0.2s" } : undefined}
+    >
       <rect
         x={MARGIN}
         y={MARGIN}
@@ -293,7 +340,7 @@ export function DieView({
         strokeWidth={2}
       />
       <text x={gx} y={34} fill="#3a4a60" letterSpacing="4" fontSize={11}>
-        DIE
+        {label}
       </text>
       {profile.hasL2Bus && (
         <>

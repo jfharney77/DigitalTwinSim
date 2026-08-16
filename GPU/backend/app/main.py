@@ -9,19 +9,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from .anatomy import ANATOMIES, DieAnatomy
-from .engine import analyze, effective_tile_size, simulate
+from .engine import (
+    analyze,
+    attach_energy,
+    effective_tile_size,
+    resolve_dims,
+    simulate,
+)
 from .leveling import DEFAULT_LEVEL, LEVEL_NAMES, leveled, leveled_all
 from pathlib import Path
 
-from .live import LiveState, ProbeEvent, SessionSummary, summarize
-from .live_store import HUB, SessionInfo, load_recording
+from .live import LiveState, ProbeEvent, SessionSummary, replay, summarize
+from .live_store import HUB, SessionInfo, load_events, load_recording
+from .remap import remap_events
 from .tour import LessonTour, build_tour
 
 TOURS_DIR = Path(__file__).resolve().parent.parent / "tours" / "lessons"
+from .llm import analyze_llm, mac_total_decode, mac_total_prefill, simulate_llm
 from .matrices import make_operands
 from .mlp import MATMULS_PER_STEP, analyze_mlp, simulate_mlp
 from .models import CamelModel, GpuProfile, SimulateRequest, SimulateResponse
-from .profiles import DEFAULT_PROFILE, PROFILES
+from .profiles import DEFAULT_PROFILE, DEVICE_MATCHES, PROFILES
 
 app = FastAPI(title="GPU Matmul Visualizer", version="0.1.0")
 
@@ -81,6 +89,36 @@ def default_profile() -> GpuProfile:
     return DEFAULT_PROFILE
 
 
+# -- Cross-navigation atlas (spec_30) -----------------------------------------
+
+
+class AtlasPair(CamelModel):
+    profile_name: str
+    die_id: str
+    device_match: list[str]  # substrings matched against live device names
+
+
+class Atlas(CamelModel):
+    pairs: list[AtlasPair]
+
+
+@app.get("/api/atlas", response_model=Atlas)
+def get_atlas() -> Atlas:
+    """spec_30: the profile↔die correspondences as data. Only mapped pairs
+    appear — unmapped profiles/dies are honest gaps, not empty entries."""
+    return Atlas(
+        pairs=[
+            AtlasPair(
+                profile_name=p.name,
+                die_id=p.die_id,
+                device_match=DEVICE_MATCHES.get(p.name, []),
+            )
+            for p in PROFILES.values()
+            if p.die_id is not None
+        ]
+    )
+
+
 @app.get("/api/anatomy", response_model=list[DieAnatomy])
 def list_anatomies(level: int = Level) -> list[DieAnatomy]:
     return leveled_all(list(ANATOMIES.values()), level)
@@ -109,6 +147,26 @@ class TraceResponse(CamelModel):
     total: int | None = None  # full frame count when the trace is paginated
 
 
+# spec_28: fleet replay rides a query param on the two existing trace routes —
+# deliberately NOT a new route, so test_api_surface_snapshot stays untouched.
+AsProfile = Query(
+    None,
+    alias="asProfile",
+    description="Remap the recording onto this fleet profile's die (spec_28).",
+)
+
+
+def _as_profile(name: str | None) -> GpuProfile | None:
+    if name is None:
+        return None
+    if not name.strip():
+        raise HTTPException(status_code=422, detail="asProfile must name a profile")
+    profile = PROFILES.get(name)
+    if profile is None:
+        raise HTTPException(status_code=404, detail=f"unknown profile {name!r}")
+    return profile
+
+
 @app.post("/api/live/ingest", response_model=LiveState)
 def live_ingest(event: ProbeEvent = Body(...)) -> LiveState:
     try:
@@ -128,19 +186,26 @@ def get_measurements() -> dict:
 
 
 @app.get("/api/tour", response_model=LessonTour)
-def get_tour() -> LessonTour:
-    return build_tour()
+def get_tour(level: int = Level) -> LessonTour:
+    # spec_29: resolution at the transport edge — tour.py stays level-3 data.
+    return leveled(build_tour(), level)
 
 
 @app.get("/api/tour/recordings/{lesson_id}", response_model=TraceResponse)
-def get_tour_recording(lesson_id: str) -> TraceResponse:
+def get_tour_recording(
+    lesson_id: str, as_profile: str | None = AsProfile
+) -> TraceResponse:
     if "/" in lesson_id or ".." in lesson_id:
         raise HTTPException(status_code=404, detail="unknown lesson")
+    target = _as_profile(as_profile)
     path = TOURS_DIR / f"{lesson_id}.jsonl"
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"unknown lesson {lesson_id!r}")
     try:
-        trace = load_recording(path, lesson_id)
+        if target is None:
+            trace = load_recording(path, lesson_id)
+        else:
+            trace = replay(lesson_id, remap_events(load_events(path), target))
     except ValueError as e:
         raise HTTPException(status_code=422, detail=f"recording corrupt: {e}")
     return TraceResponse(session_id=lesson_id, trace=trace)
@@ -329,9 +394,18 @@ def live_trace(
     session_id: str,
     from_: int = Query(0, ge=0, alias="from"),
     limit: int | None = Query(None, ge=1, le=100_000),
+    as_profile: str | None = AsProfile,
 ) -> TraceResponse:
+    target = _as_profile(as_profile)
     try:
-        trace = HUB.load_trace(session_id)
+        if target is None:
+            trace = HUB.load_trace(session_id)
+        else:
+            # Read path only: the remap rewrites events in memory and the
+            # pure replay folds them — the session file is never touched.
+            trace = replay(
+                session_id, remap_events(HUB.load_events(session_id), target)
+            )
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"unknown session {session_id!r}")
     except ValueError as e:
@@ -352,7 +426,41 @@ def post_simulate(req: SimulateRequest) -> SimulateResponse:
     if total_cores < 1:
         raise HTTPException(status_code=422, detail="profile has no cores")
 
-    tile_size = effective_tile_size(workload.n, workload.tile_size)
+    # spec_23: tensor mode requires the die to declare the dtype. Validate at
+    # the API edge so the pure engine never sees an unsupported pair (its own
+    # fallback is the scalar path, but that fallback is defense, not UX).
+    if workload.execution == "tensor":
+        ts = profile.tensor
+        supported = sorted(ts.multipliers) if ts else []
+        if workload.dtype not in supported:
+            detail = (
+                f"{profile.name} has no tensor path for {workload.dtype}: "
+                + (
+                    f"supported dtypes are {', '.join(supported)}"
+                    if supported
+                    else "this profile has no tensor units"
+                )
+            )
+            raise HTTPException(status_code=422, detail=detail)
+
+    # spec_27: the link is a feature of the die, not the workload. A profile
+    # without one cannot scale up — the refusal is the lesson, not a fallback
+    # (the engine's own single-die fallback is defense, not UX). mlp_step /
+    # llm_decode with gpus=2 already 422 at model validation.
+    if workload.gpus == 2 and profile.link is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"{profile.name} has no die-to-die link: consumer dies scale "
+                "out over PCIe or not at all. Pick H100-SXM (NVLink4) or "
+                "B300-Blackwell-Ultra (NVLink5) to run gpus=2."
+            ),
+        )
+
+    # spec_22: resolve the M/K sentinels once, server-side. mlp_step is
+    # square-only (nonzero M/K already 422 at model validation).
+    m_dim, k_dim, n = resolve_dims(workload)
+    tile_size = effective_tile_size(max(m_dim, k_dim, n), workload.tile_size)
 
     if workload.kind == "mlp_step":
         trace, info = simulate_mlp(profile, workload)
@@ -362,23 +470,50 @@ def post_simulate(req: SimulateRequest) -> SimulateResponse:
             workload=workload,
             total_cores=total_cores,
             mac_total=workload.steps * MATMULS_PER_STEP * workload.n ** 3,
+            m=m_dim,
+            k=k_dim,
+            n=n,
             tile_size=tile_size,
-            summary=analyze_mlp(profile, workload),
+            summary=attach_energy(analyze_mlp(profile, workload), trace),
             a=first.a or [],
             b=first.b or [],
             trace=trace,
             mlp=info,
         )
 
+    if workload.kind == "llm_decode":
+        trace, info = simulate_llm(profile, workload)
+        first = next(op for op in info.ops if op.kind == "matmul")
+        return SimulateResponse(
+            profile=profile,
+            workload=workload,
+            total_cores=total_cores,
+            mac_total=mac_total_prefill(n, workload.steps)
+            if workload.prefill
+            else mac_total_decode(n, workload.kv_len, workload.steps),
+            m=m_dim,
+            k=k_dim,
+            n=n,
+            tile_size=tile_size,
+            summary=attach_energy(analyze_llm(profile, workload), trace),
+            a=first.a or [],
+            b=first.b or [],
+            trace=trace,
+            llm=info,
+        )
+
     trace = simulate(profile, workload)
-    a, b = make_operands(workload.n, workload.seed)
+    a, b = make_operands(workload.n, workload.seed, m=workload.m, k=workload.k_dim)
     return SimulateResponse(
         profile=profile,
         workload=workload,
         total_cores=total_cores,
-        mac_total=workload.n ** 3,
+        mac_total=m_dim * k_dim * n,
+        m=m_dim,
+        k=k_dim,
+        n=n,
         tile_size=tile_size,
-        summary=analyze(profile, workload),
+        summary=attach_energy(analyze(profile, workload), trace),
         a=a,
         b=b,
         trace=trace,

@@ -2,6 +2,7 @@
 #   make            build every lesson into bin/
 #   make run-01     build + run one lesson (any NN prefix works: run-00..run-06)
 #   make lint       compile-check every lesson without linking (no GPU needed)
+#   make verify-hardware   the spec_31 campaign re-verify (nvcc + backend up)
 #   make clean
 #
 # ARCH defaults to Ada (sm_89, the RTX 4060 Laptop GPU). Override for other
@@ -59,6 +60,17 @@ watch-%:
 run-all: all
 	@for b in $(sort $(BINS)); do echo "--- $$b"; ./$$b || true; done
 
+# spec_31 Phase 4 — the rerunnable form of the hardware campaign. Lint and
+# build first (a header bug should surface before any capture), preflight the
+# backend and open a named session, run the whole curriculum, then assert
+# every probed lesson landed ≥1 kernel frame (lesson 00: device_info) in the
+# session. Driver updates get a one-command re-verify. Requires nvcc AND a
+# running backend (:8000 or TWIN_URL); see README.md "First hardware run".
+verify-hardware: lint all
+	python3 verify_hardware.py --preflight
+	$(MAKE) --no-print-directory run-all
+	python3 verify_hardware.py
+
 lint:
 	@for f in $(LESSONS); do \
 	  echo "lint $$f"; \
@@ -68,4 +80,4 @@ lint:
 clean:
 	rm -rf bin
 
-.PHONY: all lint clean run-% watch-%
+.PHONY: all lint clean run-% watch-% verify-hardware

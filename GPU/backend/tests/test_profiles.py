@@ -57,3 +57,53 @@ def test_small_matmul_cannot_fill_the_die() -> None:
     trace = simulate(RTX_4060_LAPTOP, Workload(n=8))
     assert max(s.active_cores for s in trace) <= 64
     assert max(s.utilization for s in trace) <= 64 / 3072 + 1e-9
+
+
+# --- The wider fleet (H100 SXM, B300 Blackwell Ultra, RTX 5090, MI300X) ------
+# SM/CU counts match the shipping parts (that is what the die view draws and
+# what a live session's device_info would report); lanes per SM are
+# representative, and that is deliberate — the scope guardrail caps drawn
+# elements, and above 512 lanes the UI is in per-SM dense mode anyway.
+
+FLEET_SM_COUNTS = {
+    "H100-SXM": 132,
+    "B300-Blackwell-Ultra": 160,
+    "RTX-5090": 170,
+    "MI300X": 304,
+}
+
+
+def test_fleet_registered_with_hardware_sm_counts() -> None:
+    for name, sms in FLEET_SM_COUNTS.items():
+        p = PROFILES[name]
+        assert p.sm.rows * p.sm.cols == sms, name
+
+
+def test_fleet_ridge_points_order_like_the_real_parts() -> None:
+    # Illustrative magnitudes, honest ratios: ridge (macs/byte) must order the
+    # way the real FP32-per-byte figures do. GDDR flagships sit far right
+    # (memory-bound early); the HBM3e Blackwell sits far left.
+    ridge = lambda p: p.bandwidth.macs_per_cycle / p.bandwidth.bytes_per_cycle  # noqa: E731
+    order = ["RTX-5090", "RTX-4060-Laptop", "MI300X", "H100-SXM",
+             "B300-Blackwell-Ultra"]
+    ridges = [ridge(PROFILES[n]) for n in order]
+    assert ridges == sorted(ridges, reverse=True), dict(zip(order, ridges))
+
+
+def test_engine_invariants_hold_across_the_fleet() -> None:
+    n = 8
+    for name in FLEET_SM_COUNTS:
+        p = PROFILES[name]
+        trace = simulate(p, Workload(n=n, tile_size=4))
+        total = p.total_cores()
+        assert trace, f"{name}: empty trace"
+        prev_mac = 0
+        for s in trace:
+            assert len(s.core_state) == total
+            assert s.active_cores <= total
+            assert abs(s.utilization - s.active_cores / total) < 1e-9
+            assert s.mac_done >= prev_mac
+            prev_mac = s.mac_done
+        last = trace[-1]
+        assert last.phase == "done"
+        assert last.mac_done == last.mac_total == n * n * n

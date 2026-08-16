@@ -69,6 +69,11 @@ class DeviceInfoEvent(CamelModel):
     max_threads_per_sm: int | None = Field(default=None, ge=1)
     warp_size: int | None = Field(default=None, ge=1)
     vram_mb: float | None = Field(default=None, ge=0)
+    # spec_28: the remap marker. Set only by remap.py on the read path; names
+    # the die the stream was actually recorded on. The fold turns it into
+    # placement="modeled" frames, and ingest REJECTS any event carrying it —
+    # modeled data must never enter a session recording.
+    modeled_from: str | None = None
 
     def device(self) -> DeviceInfo:
         return DeviceInfo(
@@ -154,7 +159,10 @@ class GpuSampleEvent(CamelModel):
     temp_c: float | None = None
 
 
-MeasurementMetric = Literal["stream_gbps"]
+# spec_15's calibration metrics. spec_25 adds peak_power_w: the max sampled
+# watts over a kernel window, fed from gpu_sample.powerW — either POSTed by
+# tooling directly or derived by the store when a sampled session stops.
+MeasurementMetric = Literal["stream_gbps", "peak_power_w"]
 
 
 class MeasurementEvent(CamelModel):
@@ -229,6 +237,11 @@ class LiveState(CamelModel):
     # spec_17: where the kernel data came from; "cupti" means timing-only.
     source: Literal["probe", "cupti"] = "probe"
     occupancy_source: Literal["theoretical", "measured"] = "theoretical"
+    # spec_28: provenance is structural. "modeled" means the SM placement was
+    # invented by a remap onto another die; recorded_on then names the die
+    # the data was actually measured on. Measured frames never carry it.
+    placement: Literal["measured", "modeled"] = "measured"
+    recorded_on: str | None = None
     occupancy_pct: float | None = None
     elapsed_ms: float | None = None
     util_pct: float | None = None
@@ -297,11 +310,17 @@ def fold(prev: LiveState | None, session_id: str, stamped: StampedEvent) -> Live
     """
     ev = stamped.event
     limit = _sm_limit(prev)
+    # spec_28: provenance carries forward — once a stream is modeled (the
+    # remap marker on its device_info), every downstream frame says so.
+    placement = prev.placement if prev else "measured"
+    recorded_on = prev.recorded_on if prev else None
 
     if isinstance(ev, MeasurementEvent):  # pragma: no cover — replay skips these
         raise ValueError("measurement events are not frames")
 
     if isinstance(ev, DeviceInfoEvent):
+        if ev.modeled_from is not None:
+            placement, recorded_on = "modeled", ev.modeled_from
         new_count = ev.sm_count
         if prev is not None and prev.kernel is not None and new_count != limit:
             raise ValueError(
@@ -324,6 +343,8 @@ def fold(prev: LiveState | None, session_id: str, stamped: StampedEvent) -> Live
             records_dropped=prev.records_dropped if prev else 0,
             source=prev.source if prev else "probe",
             occupancy_source=prev.occupancy_source if prev else "theoretical",
+            placement=placement,
+            recorded_on=recorded_on,
             occupancy_pct=prev.occupancy_pct if prev else None,
             elapsed_ms=prev.elapsed_ms if prev else None,
             util_pct=prev.util_pct if prev else None,
@@ -362,6 +383,8 @@ def fold(prev: LiveState | None, session_id: str, stamped: StampedEvent) -> Live
             spans_sampled=spans_sampled,
             source=ev.source,
             occupancy_source=ev.occupancy_source,
+            placement=placement,
+            recorded_on=recorded_on,
             occupancy_pct=ev.occupancy_pct,
             elapsed_ms=ev.elapsed_ms,
         )
@@ -398,6 +421,8 @@ def fold(prev: LiveState | None, session_id: str, stamped: StampedEvent) -> Live
             ],
             records_dropped=0,
             running=True,
+            placement=placement,
+            recorded_on=recorded_on,
         )
         return _carry_telemetry(state, prev)
 
@@ -423,6 +448,8 @@ def fold(prev: LiveState | None, session_id: str, stamped: StampedEvent) -> Live
         running=prev.running if prev else False,
         source=prev.source if prev else "probe",
         occupancy_source=prev.occupancy_source if prev else "theoretical",
+        placement=placement,
+        recorded_on=recorded_on,
         occupancy_pct=prev.occupancy_pct if prev else None,
         elapsed_ms=prev.elapsed_ms if prev else None,
         util_pct=ev.util_pct,

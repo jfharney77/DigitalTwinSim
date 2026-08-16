@@ -103,3 +103,15 @@ def test_coverage_is_reported_and_the_ends_are_not_empty():
     assert counts[3] == len(registry())
     assert counts[1] > 0, "no novice-level prose authored"
     assert counts[5] > 0, "no expert-level prose authored"
+
+
+def test_coverage_floor_after_spec_29():
+    """spec_29 authored the ends of the scale for the 8 die overviews, all
+    40 unique region descriptions, and the 15 lesson-tour blocks — 63
+    registered blocks with levels 1 and 5. Floor set just under that count
+    so the registry can't quietly regress to overviews-only."""
+    import app.main  # noqa: F401 — ensures anatomy and tour are loaded
+
+    counts = coverage()
+    assert counts[1] >= 60, f"novice coverage regressed: {counts[1]}"
+    assert counts[5] >= 60, f"expert coverage regressed: {counts[5]}"

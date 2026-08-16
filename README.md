@@ -112,3 +112,5 @@ behavior oracle.
 | 19 | Twenty small wins: latest/delete/download/CSV-less… see `spec_19` |
 | 20 | Twenty more: summary/import/rename/history/deltas… see `spec_20` |
 | 21 | Round three: sim/anatomy/a11y/robustness… see `spec_21` |
+| — | The wider fleet: H100-SXM / B300-Blackwell-Ultra / RTX-5090 / MI300X sim profiles, GB300 + GB202 + MI300X die anatomies, lesson 07 (`07_bigger_dies.cu`, "the die is a parameter") with H100 + Blackwell-Ultra tour recordings |
+| 22–31 | The review round, built in dependency order: rectangular M×K×N, occupancy model, `llm_decode` (KV-cache roofline), tensor-core/MMA mode (fp8/fp4), power & energy ledger, two-GPU NVLink scale-up, fleet replay (modeled-placement labels), cross-tab atlas + die compare, reading levels everywhere (registry 8→63), and the `make verify-hardware` campaign tooling |

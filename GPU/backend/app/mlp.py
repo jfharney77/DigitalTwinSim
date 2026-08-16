@@ -17,7 +17,15 @@ from __future__ import annotations
 
 from .engine import analyze, simulate
 from .matrices import MatrixF, make_mlp_data
-from .models import GpuProfile, MlpInfo, MlpOp, SimState, Summary, Workload
+from .models import (
+    GpuProfile,
+    MlpInfo,
+    MlpOp,
+    SimState,
+    Summary,
+    Workload,
+    state_power_watts,
+)
 
 ETA = 0.01  # fixed learning rate (spec_06 §1); not a UI control (§5)
 OPS_PER_STEP = 8  # 5 matmuls + relu + loss + update
@@ -70,8 +78,9 @@ def _rounded(a: MatrixF) -> MatrixF:
 
 # --- trace assembly ----------------------------------------------------------
 
-def _pointwise_state(total_cores: int, n: int) -> SimState:
+def _pointwise_state(profile: GpuProfile, n: int) -> SimState:
     """All mapped lanes flash for one cycle; memory idle (spec_06 §2)."""
+    total_cores = profile.total_cores()
     active = min(n * n, total_cores)
     return SimState(
         cycle=0,  # restamped by the caller
@@ -83,6 +92,12 @@ def _pointwise_state(total_cores: int, n: int) -> SimState:
         core_state=["computing"] * active + ["idle"] * (total_cores - active),
         active_cores=active,
         utilization=(active / total_cores) if total_cores else 0.0,
+        # spec_25: lanes flashing, memory idle.
+        power_watts=state_power_watts(
+            profile.power, profile.bandwidth.bytes_per_cycle,
+            active_cores=active, stalled=False,
+            mem_active=False, prefetching=False,
+        ),
     )
 
 
@@ -113,6 +128,7 @@ def simulate_mlp(
             cycle=cycle, phase=phase, k=0, mac_done=mac_done,  # type: ignore[arg-type]
             mac_total=grand_total, mem_active=False,
             core_state=["idle"] * total_cores, active_cores=0, utilization=0.0,
+            power_watts=profile.power.idle_w,  # spec_25: bookends idle
         )
 
     def add_matmul(name: str, a: MatrixF, b: MatrixF,
@@ -140,7 +156,7 @@ def simulate_mlp(
         op_index = len(ops)
         ops.append(MlpOp(name=name, kind="pointwise"))
         cycle += 1
-        trace.append(_pointwise_state(total_cores, n).model_copy(update={
+        trace.append(_pointwise_state(profile, n).model_copy(update={
             "cycle": cycle,
             "mac_done": mac_offset,
             "mac_total": grand_total,

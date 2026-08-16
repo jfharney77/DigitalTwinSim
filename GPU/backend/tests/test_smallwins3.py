@@ -58,7 +58,7 @@ def test_trace_pagination(client: TestClient) -> None:
 
 
 def test_health_reports_tours(client: TestClient) -> None:
-    assert client.get("/api/health").json()["toursAvailable"] == 6
+    assert client.get("/api/health").json()["toursAvailable"] == 8
 
 
 def test_sessions_dir_gitignores_itself(client: TestClient, tmp_path) -> None:
@@ -77,6 +77,9 @@ def test_api_surface_snapshot() -> None:
     assert paths == [
         "/api/anatomy",
         "/api/anatomy/{anatomy_id}",
+        # spec_30: the cross-navigation atlas — the deliberate 23 -> 24 route
+        # addition (the only snapshot change that spec is allowed to make).
+        "/api/atlas",
         "/api/health",
         "/api/levels",
         "/api/live/config",

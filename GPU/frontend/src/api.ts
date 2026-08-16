@@ -1,5 +1,6 @@
 import { getLevel } from "./level";
 import type {
+  Atlas,
   DieAnatomy,
   GpuProfile,
   LessonTour,
@@ -28,6 +29,14 @@ export async function fetchDefaultProfile(): Promise<GpuProfile> {
 export async function fetchProfiles(): Promise<GpuProfile[]> {
   const r = await fetch(`${BASE}/profiles`);
   if (!r.ok) throw new Error(`profiles ${r.status}`);
+  return r.json();
+}
+
+// spec_30: the profile↔die pairs + deviceMatch substrings, served as data
+// so the frontend hardcodes nothing.
+export async function fetchAtlas(): Promise<Atlas> {
+  const r = await fetch(`${BASE}/atlas`);
+  if (!r.ok) throw new Error(`atlas ${r.status}`);
   return r.json();
 }
 
@@ -60,8 +69,14 @@ export async function fetchLiveSessions(): Promise<LiveSessionInfo[]> {
   return r.json();
 }
 
-export async function fetchLiveTrace(id: string): Promise<LiveState[]> {
-  const r = await fetch(`${BASE}/live/sessions/${encodeURIComponent(id)}/trace`);
+export async function fetchLiveTrace(
+  id: string,
+  asProfile?: string | null, // spec_28: remap the replay onto a fleet die
+): Promise<LiveState[]> {
+  const q = asProfile ? `?asProfile=${encodeURIComponent(asProfile)}` : "";
+  const r = await fetch(
+    `${BASE}/live/sessions/${encodeURIComponent(id)}/trace${q}`,
+  );
   if (!r.ok) throw new Error(`live trace ${r.status}`);
   const body = await r.json();
   return body.trace as LiveState[];
@@ -112,13 +127,20 @@ export async function fetchMeasurements(): Promise<Measurements> {
 }
 
 export async function fetchLessonTour(): Promise<LessonTour> {
-  const r = await fetch(`${BASE}/tour`);
+  // spec_29: the tour carries prose, so it rides the reading level.
+  const r = await fetch(`${BASE}/tour${lv()}`);
   if (!r.ok) throw new Error(`tour ${r.status}`);
   return r.json();
 }
 
-export async function fetchTourRecording(lessonId: string): Promise<LiveState[]> {
-  const r = await fetch(`${BASE}/tour/recordings/${encodeURIComponent(lessonId)}`);
+export async function fetchTourRecording(
+  lessonId: string,
+  asProfile?: string | null, // spec_28
+): Promise<LiveState[]> {
+  const q = asProfile ? `?asProfile=${encodeURIComponent(asProfile)}` : "";
+  const r = await fetch(
+    `${BASE}/tour/recordings/${encodeURIComponent(lessonId)}${q}`,
+  );
   if (!r.ok) throw new Error(`tour recording ${r.status}`);
   return (await r.json()).trace as LiveState[];
 }

@@ -20,6 +20,9 @@ import uuid
 from pathlib import Path
 
 from .live import (
+    DeviceInfoEvent,
+    GpuSampleEvent,
+    KernelLaunchEvent,
     LiveState,
     MeasurementEvent,
     ProbeEvent,
@@ -76,6 +79,11 @@ class LiveHub:
         self._latest: LiveState | None = None
         self._event_count = 0
         self._subscribers: set[Subscriber] = set()
+        # spec_25: peak sampled watts inside this session's kernel window
+        # (samples only count once a kernel has launched). Transport-edge
+        # state, deliberately outside the pure fold — same rule as time.
+        self._kernel_last: str | None = None
+        self._peak_power_w: float | None = None
 
     # -- sessions -------------------------------------------------------------
 
@@ -104,11 +112,23 @@ class LiveHub:
         return self.active_session()  # type: ignore[return-value]
 
     def stop_session(self) -> None:
+        # spec_25: a closing session with sampled watts inside its kernel
+        # window calibrates peak_power_w — the spec_15 path, second metric.
+        if self._peak_power_w is not None and self._peak_power_w > 0:
+            self.record_measurement(
+                MeasurementEvent(
+                    metric="peak_power_w",
+                    value=self._peak_power_w,
+                    kernel=self._kernel_last,
+                )
+            )
         self._session_id = None
         self._session_name = None
         self._t0 = None
         self._latest = None
         self._event_count = 0
+        self._kernel_last = None
+        self._peak_power_w = None
 
     def active_session(self) -> SessionInfo | None:
         if self._session_id is None:
@@ -155,6 +175,8 @@ class LiveHub:
             raise ValueError("empty recording")
         if len(events) > MAX_SESSION_EVENTS:
             raise ValueError("recording exceeds the event cap")
+        for e in events:  # spec_28: a remapped download is not a recording
+            _reject_modeled(e.event)
         replay("import", events)  # raises on anything unreplayable
         stamp = time.strftime("%Y%m%d-%H%M%S")
         sid = f"{stamp}-{uuid.uuid4().hex[:6]}-{_slug(name)}"
@@ -218,6 +240,14 @@ class LiveHub:
             raise FileNotFoundError(session_id)
         return load_recording(path, session_id)
 
+    def load_events(self, session_id: str) -> list[StampedEvent]:
+        """The raw stamped events of a recording (spec_28: the remap's
+        input — remap rewrites events, then the pure replay folds them)."""
+        path = self._path(session_id)
+        if not path.exists():
+            raise FileNotFoundError(session_id)
+        return load_events(path)
+
     # -- measurements (spec_15) ----------------------------------------------
 
     def record_measurement(self, ev: MeasurementEvent) -> None:
@@ -243,6 +273,9 @@ class LiveHub:
     # -- ingest + fan-out -----------------------------------------------------
 
     def ingest(self, event: ProbeEvent) -> LiveState:
+        # spec_28: a remapped stream is modeled, and modeled data must never
+        # enter a recording — remap exists only on the read path.
+        _reject_modeled(event)
         self._ensure_session()
         assert self._session_id is not None and self._t0 is not None
 
@@ -274,6 +307,17 @@ class LiveHub:
             f.write(stamped.model_dump_json(by_alias=True) + "\n")
         self._event_count += 1
         self._latest = folded
+        # spec_25: track the kernel window's sampled-watts peak (edge state;
+        # the calibration is recorded when the session stops).
+        if isinstance(event, KernelLaunchEvent):
+            self._kernel_last = event.kernel
+        elif (
+            isinstance(event, GpuSampleEvent)
+            and event.power_w is not None
+            and self._kernel_last is not None
+        ):
+            if self._peak_power_w is None or event.power_w > self._peak_power_w:
+                self._peak_power_w = event.power_w
         payload = self._latest.model_dump_json(by_alias=True)
         for sub in list(self._subscribers):
             try:
@@ -298,12 +342,24 @@ class LiveHub:
 HUB = LiveHub()
 
 
-def load_recording(path: Path, session_id: str | None = None) -> list[LiveState]:
-    """Replay any JSONL recording (a session file, or a golden lesson
-    recording under backend/tours/ — spec_18)."""
-    events = [
+def _reject_modeled(event: ProbeEvent) -> None:
+    if isinstance(event, DeviceInfoEvent) and event.modeled_from is not None:
+        raise ValueError(
+            "modeled (remapped) events cannot be recorded — "
+            "remap exists only on the read path"
+        )
+
+
+def load_events(path: Path) -> list[StampedEvent]:
+    """Parse any JSONL recording into stamped events."""
+    return [
         StampedEvent.model_validate_json(line)
         for line in path.read_text().splitlines()
         if line.strip()
     ]
-    return replay(session_id or path.stem, events)
+
+
+def load_recording(path: Path, session_id: str | None = None) -> list[LiveState]:
+    """Replay any JSONL recording (a session file, or a golden lesson
+    recording under backend/tours/ — spec_18)."""
+    return replay(session_id or path.stem, load_events(path))

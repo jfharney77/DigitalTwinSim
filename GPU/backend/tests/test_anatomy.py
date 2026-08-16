@@ -43,6 +43,14 @@ def test_regions_do_not_overlap(anatomy: DieAnatomy) -> None:
             assert separated, f"{anatomy.id}: {a.id} overlaps {b.id}"
 
 
+def test_vs_is_a_reserved_id(anatomy: DieAnatomy) -> None:
+    # spec_30: "#anatomy/<a>/vs/<b>" is the compare deep link. A die or
+    # region named "vs" would make the hash grammar ambiguous, so the id is
+    # reserved forever — the vs form must stay unreachable by accident.
+    assert anatomy.id != "vs"
+    assert all(r.id != "vs" for r in anatomy.regions)
+
+
 def test_has_metadata(anatomy: DieAnatomy) -> None:
     assert anatomy.regions, "die has no regions"
     assert anatomy.stats, "die has no stats"

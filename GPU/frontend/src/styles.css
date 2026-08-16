@@ -15,6 +15,7 @@
   --mem: #1b2740;
   --mem-active: #4f7cff;
   --stall: #7a3b52; /* cores waiting on HBM (spec_04) */
+  --core-mma: #35d0ba; /* whole-SM MMA flash — tensor-core mode (spec_23) */
 }
 * {
   box-sizing: border-box;
@@ -835,6 +836,13 @@ body.dell-body {
   border: 1px solid var(--line);
   color: var(--txt);
 }
+/* rectangular shapes (spec_22): shrink cells when a panel gets wide/tall */
+.matrix-grid.compact .cell {
+  min-width: 15px;
+  height: 15px;
+  padding: 0 2px;
+  font-size: 9px;
+}
 /* operand cells resident in shared memory, feeding the current MAC step */
 .cell.op-active {
   background: var(--core-on);
@@ -929,4 +937,49 @@ body.dell-body {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+
+/* --- NVLink scale-up (spec_27): two die views + the link strip ------------- */
+/* Diagram palette, not page chrome: the dies are dark and so is the seam. */
+.scaleup-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+.scaleup-row svg {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.link-strip {
+  flex: 0 0 34px;
+  border-radius: 8px;
+  background: var(--die);
+  border: 1.5px solid var(--sm-edge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wire);
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.link-strip span {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+/* Lit and pulsing only during the exchange phase — the only moment it does. */
+.link-strip.exchanging {
+  border-color: var(--mem-active);
+  color: var(--mem-active);
+  animation: link-pulse 0.9s ease-in-out infinite;
+}
+@keyframes link-pulse {
+  0%,
+  100% {
+    background: var(--die);
+    box-shadow: none;
+  }
+  50% {
+    background: var(--mem);
+    box-shadow: 0 0 14px 0 rgba(79, 124, 255, 0.55);
+  }
 }

@@ -1,33 +1,38 @@
 import type { SimState } from "../types";
 
-// Renders A, B, C (spec_02) with tiling overlays (spec_03). With tiling, C fills
-// in tile-by-tile, so each cell tracks its own accumulation depth: we replay the
-// trace up to the cursor and record, per cell, the highest k reached so far.
+// Renders A (M×K), B (K×N), C (M×N) (spec_02, rectangular per spec_22) with
+// tiling overlays (spec_03). With tiling, C fills in tile-by-tile, so each cell
+// tracks its own accumulation depth: we replay the trace up to the cursor and
+// record, per cell, the highest k reached so far — capped at K, the shared dim.
 
-function tileSpan(index: number, tileSize: number, n: number): [number, number] {
+function tileSpan(index: number, tileSize: number, axis: number): [number, number] {
   const start = index * tileSize;
-  return [start, Math.min(start + tileSize, n)];
+  return [start, Math.min(start + tileSize, axis)];
 }
 
-// Per-cell accumulation depth (0..N) at the current cursor.
+// Per-cell accumulation depth (0..K) at the current cursor, over the M×N output.
 function cellDepths(
   trace: SimState[],
   cursor: number,
-  n: number,
+  mRows: number,
+  nCols: number,
+  kDepth: number,
   tileSize: number,
 ): number[][] {
-  const depth: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
+  const depth: number[][] = Array.from({ length: mRows }, () =>
+    Array(nCols).fill(0),
+  );
   for (let idx = 0; idx <= cursor && idx < trace.length; idx++) {
     const s = trace[idx];
     if (s.tileRow === null || s.tileCol === null) continue;
-    const [r0, r1] = tileSpan(s.tileRow, tileSize, n);
-    const [c0, c1] = tileSpan(s.tileCol, tileSize, n);
+    const [r0, r1] = tileSpan(s.tileRow, tileSize, mRows);
+    const [c0, c1] = tileSpan(s.tileCol, tileSize, nCols);
     if (s.phase === "compute") {
       for (let i = r0; i < r1; i++)
-        for (let j = c0; j < c1; j++) depth[i][j] = s.k;
+        for (let j = c0; j < c1; j++) depth[i][j] = Math.min(s.k, kDepth);
     } else if (s.phase === "writeback") {
       for (let i = r0; i < r1; i++)
-        for (let j = c0; j < c1; j++) depth[i][j] = n;
+        for (let j = c0; j < c1; j++) depth[i][j] = kDepth;
     }
   }
   return depth;
@@ -55,29 +60,37 @@ function Grid({
   title,
   values,
   tileSize,
-  n,
+  tiled,
   cellClass,
   cellTitle,
 }: {
   title: string;
   values: number[][];
   tileSize: number;
-  n: number;
+  tiled: boolean;
   cellClass?: (i: number, j: number) => string;
   cellTitle?: (i: number, j: number) => string;
 }) {
+  const cols = values[0]?.length ?? 0;
+  // Rectangular shapes can get wide (spec_22): shrink cells past 8 columns
+  // so the three panels stay bounded side by side.
+  const compact = cols > 8 || values.length > 8 ? " compact" : "";
   return (
     <div className="matrix">
-      <div className="matrix-label">{title}</div>
-      <div className="matrix-grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+      <div className="matrix-label">
+        {title} · {values.length}×{cols}
+      </div>
+      <div
+        className={`matrix-grid${compact}`}
+        style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+      >
         {values.flatMap((row, i) =>
           row.map((v, j) => {
-            const edge =
-              tileSize < n
-                ? `${i % tileSize === 0 && i > 0 ? " tile-top" : ""}${
-                    j % tileSize === 0 && j > 0 ? " tile-left" : ""
-                  }`
-                : "";
+            const edge = tiled
+              ? `${i % tileSize === 0 && i > 0 ? " tile-top" : ""}${
+                  j % tileSize === 0 && j > 0 ? " tile-left" : ""
+                }`
+              : "";
             return (
               <div
                 key={`${i}-${j}`}
@@ -104,8 +117,8 @@ export function MatrixPanels({
   bLabel = "B",
   cLabel = "C",
 }: {
-  a: number[][];
-  b: number[][];
+  a: number[][]; // M×K
+  b: number[][]; // K×N
   trace: SimState[];
   cursor: number;
   tileSize: number;
@@ -114,12 +127,16 @@ export function MatrixPanels({
   cLabel?: string;
 }) {
   if (!a.length || !b.length) return null;
-  const n = a.length;
-  const t = tileSize || n;
+  const mRows = a.length; // rows of A and C
+  const kDepth = a[0]?.length ?? 0; // shared dim: cols of A, rows of B
+  const nCols = b[0]?.length ?? 0; // cols of B and C
+  const maxDim = Math.max(mRows, kDepth, nCols);
+  const t = tileSize > 0 && tileSize < maxDim ? tileSize : maxDim;
+  const tiled = t < maxDim;
   const state = trace[cursor] ?? null;
   const phase = state?.phase ?? "idle";
 
-  const depth = cellDepths(trace, cursor, n, t);
+  const depth = cellDepths(trace, cursor, mRows, nCols, kDepth, t);
 
   // Active tiles from the current state: which blocks are "in shared memory".
   const inActiveC = (i: number, j: number) =>
@@ -155,7 +172,7 @@ export function MatrixPanels({
         title={aLabel}
         values={a}
         tileSize={t}
-        n={n}
+        tiled={tiled}
         cellClass={(i, j) => (inActiveA(i, j) ? opClass : "")}
       />
       <span className="panels-op">×</span>
@@ -163,7 +180,7 @@ export function MatrixPanels({
         title={bLabel}
         values={b}
         tileSize={t}
-        n={n}
+        tiled={tiled}
         cellClass={(i, j) => (inActiveB(i, j) ? opClass : "")}
       />
       <span className="panels-op">=</span>
@@ -171,10 +188,10 @@ export function MatrixPanels({
         title={cLabel}
         values={a.map((_, i) => b[0].map((_, j) => cValue(i, j)))}
         tileSize={t}
-        n={n}
+        tiled={tiled}
         cellClass={(i, j) => {
           const d = depth[i][j];
-          const base = d >= n ? "c-done" : d > 0 ? "c-partial" : "c-blank";
+          const base = d >= kDepth ? "c-done" : d > 0 ? "c-partial" : "c-blank";
           return inActiveC(i, j) ? `${base} c-active` : base;
         }}
         cellTitle={(i, j) => formula(a, b, i, j, depth[i][j])}
