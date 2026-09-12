@@ -1,19 +1,8 @@
+/* Tokens come from @twinsim/twin-ui/tokens.css — imported in main.tsx
+   before this file. What stays here is this twin's own. */
+
 :root {
-  --bg: #0a0e14;
-  --panel: #11161f;
-  --line: #1f2935;
-  --die: #0d1420;
-  --sm-idle: #1a2433;
-  --sm-edge: #2b3a4f;
   --core-off: #243042;
-  --core-on: #ffd23f; /* signature accent: silicon amber */
-  --core-hot: #ff7a3c;
-  --wire: #3a4a60;
-  --txt: #cdd6e3;
-  --txt-dim: #7a8aa0;
-  --accent: #ffd23f;
-  --mem: #1b2740;
-  --mem-active: #4f7cff;
   --stall: #7a3b52; /* cores waiting on HBM (spec_04) */
   --core-mma: #35d0ba; /* whole-SM MMA flash — tensor-core mode (spec_23) */
 }
@@ -437,29 +426,6 @@ label.check input {
    Dell support visual language: white masthead, light hero band, gray page
    with white cards, Roboto, Dell blue. Whitespace separates sections — no
    divider rules, no eyebrow text, no highlighted text. */
-.app.dell {
-  --dell-blue: #0672cb;
-  --dell-blue-hover: #0059a8;
-  --dell-tint: #ebf5fc;
-  --dell-text: #161616;
-  --dell-muted: #636363;
-  --dell-border: #d2d2d2;
-  --dell-page: #f5f6f7;
-  --dell-error: #ce1126;
-  background: var(--dell-page);
-  color: var(--dell-text);
-  grid-template-rows: auto auto 1fr;
-}
-body.dell-body {
-  background: #f5f6f7;
-}
-.app.dell,
-.app.dell button,
-.app.dell select,
-.app.dell input,
-.app.dell textarea {
-  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
-}
 .app.dell header {
   background: #fff;
   border-bottom: 1px solid var(--dell-border);

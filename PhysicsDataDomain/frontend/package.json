@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@twinsim/twin-ui": "file:../../packages/twin-ui",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

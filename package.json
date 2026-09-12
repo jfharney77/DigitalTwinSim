@@ -1,0 +1,13 @@
+{
+  "name": "digitaltwinsim",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Hardware digital twins: a FastAPI pure-engine backend and a React/Vite frontend per component, over one shared skin.",
+  "workspaces": [
+    "packages/*",
+    "*/frontend"
+  ],
+  "scripts": {
+    "gallery": "npm run gallery --workspace @twinsim/twin-ui"
+  }
+}

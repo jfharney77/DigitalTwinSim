@@ -1,0 +1,55 @@
+/* The gallery's own frame. Everything the components themselves draw comes
+   from tokens.css + skin.css + shell.css, so if a twin looks different from
+   this page, the twin is the one that drifted. */
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+.gal {
+  padding: 24px 32px 64px;
+}
+.gal h2 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dell-muted);
+  margin: 32px 0 8px;
+}
+.gal-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.gal-row > * {
+  flex: 1 1 280px;
+  min-width: 260px;
+}
+.gal-wide {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  padding: 16px;
+}
+.gal-swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.gal-swatch {
+  border: 1px solid var(--dell-border);
+  border-radius: 2px;
+  background: #fff;
+  font-size: 11px;
+  color: var(--dell-muted);
+  padding: 6px 8px;
+  min-width: 132px;
+}
+.gal-chip {
+  display: block;
+  height: 28px;
+  border-radius: 2px;
+  margin-bottom: 6px;
+  border: 1px solid var(--dell-border);
+}

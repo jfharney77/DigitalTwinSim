@@ -1,0 +1,223 @@
+/* The Dell clean-design page chrome.
+ *
+ * Forty of the 42 frontends carried this block byte-for-byte identically —
+ * 236 lines each, ~9,400 lines of the same stylesheet. It lives here now and
+ * they import it. The GPU and Alienware twins keep their own copies for the
+ * moment: both extended the block in place (matrix cells, the info modal, the
+ * NVLink strip), so lifting theirs is a separate, careful edit rather than a
+ * mechanical one. They still take their tokens from tokens.css, which is what
+ * makes "change the Dell blue once" true for all 42.
+ *
+ * Load order is tokens.css, then this file, then the component's own
+ * styles.css — so a component can still override a rule here, which several
+ * legitimately do.
+ */
+
+.app.dell header {
+  background: #fff;
+  border-bottom: 1px solid var(--dell-border);
+  padding: 16px 32px;
+}
+.app.dell header h1 {
+  color: var(--dell-blue);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.app.dell .nav button {
+  background: none;
+  border: none;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dell-muted);
+}
+.app.dell .nav button:hover {
+  color: var(--dell-blue);
+}
+.app.dell .nav button.active {
+  color: var(--dell-blue);
+  font-weight: 700;
+}
+.app.dell header .sub {
+  color: var(--dell-muted);
+  letter-spacing: normal;
+  font-size: 13px;
+}
+.app.dell .an-hero {
+  display: block;
+  grid-column: 1 / -1;
+  background: #fff;
+  padding: 28px 32px 32px;
+}
+.app.dell .an-hero h2 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--dell-text);
+}
+.app.dell .an-hero p {
+  margin: 8px 0 0;
+  max-width: 860px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--dell-muted);
+}
+.app.dell .stage {
+  padding: 24px 8px 24px 32px;
+}
+.app.dell .an-card {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  padding: 32px;
+}
+.app.dell .controls {
+  background: transparent;
+  border-left: none;
+  padding: 24px 32px 24px 24px;
+  gap: 16px;
+}
+.app.dell .an-panel {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  padding: 20px 24px;
+}
+.app.dell .controls h2 {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dell-text);
+  margin: 0 0 10px;
+}
+.app.dell .an-kind {
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dell-muted);
+}
+.app.dell .an-desc {
+  font-size: 14px;
+  color: var(--dell-text);
+}
+.app.dell .stat {
+  border-bottom: none;
+  font-size: 14px;
+  padding: 6px 0;
+  color: var(--dell-muted);
+}
+.app.dell .stat span:last-child {
+  color: var(--dell-text);
+  font-weight: 500;
+}
+.app.dell select {
+  width: 100%;
+  background: #fff;
+  color: var(--dell-text);
+  border: 1px solid var(--dell-border);
+  border-radius: 2px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.app.dell select:hover,
+.app.dell select:focus {
+  border-color: var(--dell-blue);
+  outline: none;
+}
+.app.dell .legend {
+  font-size: 13px;
+  color: var(--dell-muted);
+}
+.app.dell .an-hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--dell-muted);
+}
+.app.dell .an-error,
+.app.dell .mini.an-error {
+  color: var(--dell-error);
+}
+.app.dell .an-photo img {
+  border-color: var(--dell-border);
+  background: #fff;
+}
+.app.dell .an-photo figcaption {
+  font-size: 12px;
+  color: var(--dell-muted);
+}
+.app.dell .an-credit {
+  font-size: 11px;
+  letter-spacing: normal;
+  color: var(--dell-muted);
+}
+.app.dell .an-sources a {
+  font-size: 14px;
+  color: var(--dell-blue);
+}
+.app.dell .an-sources a:hover {
+  color: var(--dell-blue-hover);
+  text-decoration: underline;
+}
+.app.dell .an-tooltip {
+  background: #fff;
+  border: 1px solid var(--dell-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+.app.dell .an-tooltip-label {
+  color: var(--dell-blue);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: normal;
+}
+.app.dell button {
+  background: #fff;
+  color: var(--dell-blue);
+  border: 1px solid var(--dell-blue);
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: normal;
+  padding: 9px 16px;
+}
+.app.dell button:hover {
+  background: var(--dell-tint);
+  border-color: var(--dell-blue);
+  color: var(--dell-blue);
+}
+.app.dell button.primary {
+  background: var(--dell-blue);
+  border-color: var(--dell-blue);
+  color: #fff;
+}
+.app.dell button.primary:hover {
+  background: var(--dell-blue-hover);
+  border-color: var(--dell-blue-hover);
+}
+.app.dell label.field {
+  color: var(--dell-muted);
+  font-size: 13px;
+}
+.app.dell input[type="range"] {
+  accent-color: var(--dell-blue);
+}
+.app.dell .mini {
+  color: var(--dell-muted);
+  font-size: 12px;
+}
+.app.dell .phase {
+  color: var(--dell-blue);
+  font-size: 13px;
+  letter-spacing: normal;
+}
+.app.dell .poweron-desc {
+  font-size: 14px;
+  color: var(--dell-text);
+}
+.app.dell .poweron-desc strong {
+  font-weight: 700;
+}

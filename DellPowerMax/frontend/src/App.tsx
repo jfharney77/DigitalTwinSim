@@ -7,6 +7,7 @@ import { ChassisView } from "./components/ChassisView";
 import { PowerOnControls } from "./components/PowerOnControls";
 import { PowerOnCounters } from "./components/PowerOnCounters";
 import { LevelControl } from "./components/LevelControl";
+import { Timeline, TwinLayout } from "@twinsim/twin-ui";
 import { useLevel } from "./level";
 import type { ChassisAnatomy, PowerOnState, RegionKind } from "./types";
 
@@ -21,6 +22,14 @@ function pageFromHash(): Page {
   if (h.startsWith("#usecases")) return "usecases";
   return "poweron";
 }
+
+// The header tabs, as data — TwinLayout renders them.
+const TABS = [
+  { id: "poweron", label: "Power-on" },
+  { id: "anatomy", label: "Inside the engine" },
+  { id: "components", label: "Components & options" },
+  { id: "usecases", label: "Use cases" },
+] as const satisfies readonly { id: Page; label: string }[];
 
 const PAGE_HASH: Record<Page, string> = {
   poweron: "",
@@ -182,42 +191,18 @@ export function App() {
     : [];
 
   return (
-    <div className="app dell">
-      <header>
-        <h1>PowerMax</h1>
-        <nav className="nav">
-          <button
-            className={page === "poweron" ? "active" : ""}
-            onClick={() => setPage("poweron")}
-          >
-            Power-on
-          </button>
-          <button
-            className={page === "anatomy" ? "active" : ""}
-            onClick={() => setPage("anatomy")}
-          >
-            Inside the engine
-          </button>
-          <button
-            className={page === "components" ? "active" : ""}
-            onClick={() => setPage("components")}
-          >
-            Components &amp; options
-          </button>
-          <button
-            className={page === "usecases" ? "active" : ""}
-            onClick={() => setPage("usecases")}
-          >
-            Use cases
-          </button>
-        </nav>
-        {page === "poweron" && (
-          <span className="sub">
-            {state ? `${state.label} · t+${state.elapsedSeconds}s` : "—"}
-          </span>
-        )}
-        <LevelControl />
-      </header>
+    <TwinLayout
+      title="PowerMax"
+      tabs={TABS}
+      active={page}
+      onTab={setPage}
+      subtitle={
+        page === "poweron" && state
+          ? `${state.label} · t+${state.elapsedSeconds}s`
+          : undefined
+      }
+      aside={<LevelControl />}
+    >
 
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
@@ -253,6 +238,18 @@ export function App() {
                   <strong>{state.label}.</strong> {state.description}
                 </div>
               )}
+              <Timeline
+                steps={trace.map((st) => ({
+                  phase: st.phase,
+                  cycleCost: st.cycleCost,
+                  label: st.label,
+                }))}
+                cursor={cursor}
+                onCursor={(step) => {
+                  setRunning(false);
+                  setCursor(step);
+                }}
+              />
               <div className="mini an-hint">
                 Highlighted blocks are the parts doing work at this step.
                 Click a block to pin what it is; the full tour lives under
@@ -303,6 +300,6 @@ export function App() {
           </aside>
         </>
       )}
-    </div>
+    </TwinLayout>
   );
 }

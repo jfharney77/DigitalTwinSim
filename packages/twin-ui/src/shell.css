@@ -1,0 +1,73 @@
+/* Styles for the shared shell components only.
+ *
+ * The tokens they read live in tokens.css; the per-twin stylesheets still own
+ * `.an-panel`, `.stat`, `.btnrow` and the rest of the page chrome, because
+ * those are already written 42 times identically and moving them is the next
+ * step rather than this one. Nothing here redefines a token.
+ */
+
+.app.dell .tw-header-aside {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app.dell .tw-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app.dell .tw-timeline-track {
+  display: flex;
+  width: 100%;
+  height: 22px;
+  border: 1px solid var(--dell-border);
+  border-radius: var(--twin-radius);
+  overflow: hidden;
+  background: #fff;
+}
+
+.app.dell .tw-band {
+  border: 0;
+  border-right: 1px solid var(--dell-border);
+  background: #fff;
+  color: var(--dell-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0 4px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.app.dell .tw-band:last-child {
+  border-right: 0;
+}
+
+.app.dell .tw-band.active {
+  background: var(--dell-tint);
+  color: var(--dell-blue);
+  font-weight: 500;
+}
+
+.app.dell .tw-timeline-scrub {
+  width: 100%;
+  accent-color: var(--dell-blue);
+}
+
+.app.dell .tw-timeline-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--dell-muted);
+}
+
+.app.dell .stat.tw-hero span:last-child {
+  color: var(--dell-blue);
+  font-weight: 500;
+}

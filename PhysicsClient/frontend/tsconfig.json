@@ -11,6 +11,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": { "@twinsim/twin-ui": ["../../packages/twin-ui/src/index.ts"] },
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
