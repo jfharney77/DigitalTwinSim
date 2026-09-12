@@ -1,223 +1,228 @@
 {
-  "_comment": "Port registry for every built twin. Regenerate/verify: python3 CustomerSetup/tests/test_links.py (test_ports_registry). knownCollisions are historical (run those twins one at a time); adding a NEW collision fails the test.",
-  "twins": {
-    "DellAlienware": {
-      "frontend": 5176,
-      "proxyDefault": 8003,
-      "backend": 8003
-    },
-    "DellCircularDesign": {
-      "frontend": 5197,
-      "proxyDefault": 8024,
-      "backend": 8024
-    },
-    "DellCloudIQ": {
-      "frontend": 5180,
-      "proxyDefault": 8007,
-      "backend": 8007
-    },
-    "DellCyberDetect": {
-      "frontend": 5192,
-      "proxyDefault": 8019,
-      "backend": 8019
-    },
-    "DellExascale": {
-      "frontend": 5184,
-      "proxyDefault": 8011,
-      "backend": 8011
-    },
-    "DellFortZero": {
-      "frontend": 5195,
-      "proxyDefault": 8022,
-      "backend": 8022
-    },
-    "DellIDRAC": {
-      "frontend": 5177,
-      "proxyDefault": 8004,
-      "backend": 8004
-    },
-    "DellIR7000": {
-      "frontend": 5182,
-      "proxyDefault": 8009,
-      "backend": 8009
-    },
-    "DellNativeEdge": {
-      "frontend": 5187,
-      "proxyDefault": 8014,
-      "backend": 8014
-    },
-    "DellPowerEdgeR760": {
-      "frontend": 5174,
-      "proxyDefault": 8001,
-      "backend": 8001
-    },
-    "DellPowerEdgeR760Thermal": {
-      "frontend": 5203,
-      "proxyDefault": 8030,
-      "backend": 8030
-    },
-    "DellPowerEdgeXE9680": {
-      "frontend": 5201,
-      "proxyDefault": 8028,
-      "backend": 8028
-    },
-    "DellPowerEdgeXE9712": {
-      "frontend": 5181,
-      "proxyDefault": 8008,
-      "backend": 8008
-    },
-    "DellPowerFlex": {
-      "frontend": 5189,
-      "proxyDefault": 8016,
-      "backend": 8016
-    },
-    "DellPowerMax": {
-      "frontend": 5178,
-      "proxyDefault": 8005,
-      "backend": 8005
-    },
-    "DellPowerProtect": {
-      "frontend": 5183,
-      "proxyDefault": 8010,
-      "backend": 8010
-    },
-    "DellPowerScale": {
-      "frontend": 5196,
-      "proxyDefault": 8023,
-      "backend": 8023
-    },
-    "DellPowerStore": {
-      "frontend": 5175,
-      "proxyDefault": 8002,
-      "backend": 8002
-    },
-    "DellPowerSwitchE3200": {
-      "frontend": 5178,
-      "proxyDefault": 8005,
-      "backend": 8005
-    },
-    "DellPowerSwitchSN6000": {
-      "frontend": 5185,
-      "proxyDefault": 8012,
-      "backend": 8012
-    },
-    "DellPrivateCloud": {
-      "frontend": 5198,
-      "proxyDefault": 8025,
-      "backend": 8025
-    },
-    "DellProMaxPlus": {
-      "frontend": 5186,
-      "proxyDefault": 8013,
-      "backend": 8013
-    },
-    "DellQuantumX800": {
-      "frontend": 5202,
-      "proxyDefault": 8029,
-      "backend": 8029
-    },
-    "DellVxRail": {
-      "frontend": 5179,
-      "proxyDefault": 8006,
-      "backend": 8006
-    },
-    "GPU": {
-      "frontend": 5173,
-      "proxyDefault": 8000,
-      "backend": 8000
-    },
-    "PhysicsAIFactory": {
-      "frontend": 5219,
-      "proxyDefault": 8046,
-      "backend": 8046
-    },
-    "PhysicsCDU": {
-      "frontend": 5216,
-      "proxyDefault": 8043,
-      "backend": 8043
-    },
-    "PhysicsClient": {
-      "frontend": 5204,
-      "proxyDefault": 8031,
-      "backend": 8031
-    },
-    "PhysicsCompute": {
-      "frontend": 5205,
-      "proxyDefault": 8032,
-      "backend": 8032
-    },
-    "PhysicsData": {
-      "frontend": 5210,
-      "proxyDefault": 8037,
-      "backend": 8037
-    },
-    "PhysicsDataDomain": {
-      "frontend": 5215,
-      "proxyDefault": 8042,
-      "backend": 8042
-    },
-    "PhysicsDisplay": {
-      "frontend": 5218,
-      "proxyDefault": 8045,
-      "backend": 8045
-    },
-    "PhysicsFabric": {
-      "frontend": 5207,
-      "proxyDefault": 8034,
-      "backend": 8034
-    },
-    "PhysicsFleet": {
-      "frontend": 5208,
-      "proxyDefault": 8035,
-      "backend": 8035
-    },
-    "PhysicsLifecycle": {
-      "frontend": 5211,
-      "proxyDefault": 8038,
-      "backend": 8038
-    },
-    "PhysicsME5": {
-      "frontend": 5214,
-      "proxyDefault": 8041,
-      "backend": 8041
-    },
-    "PhysicsMX7000": {
-      "frontend": 5212,
-      "proxyDefault": 8039,
-      "backend": 8039
-    },
-    "PhysicsRackPower": {
-      "frontend": 5217,
-      "proxyDefault": 8044,
-      "backend": 8044
-    },
-    "PhysicsResilience": {
-      "frontend": 5209,
-      "proxyDefault": 8036,
-      "backend": 8036
-    },
-    "PhysicsStorage": {
-      "frontend": 5206,
-      "proxyDefault": 8033,
-      "backend": 8033
-    },
-    "PhysicsXR": {
-      "frontend": 5213,
-      "proxyDefault": 8040,
-      "backend": 8040
-    }
+ "_comment": "Port registry for every built twin. Regenerate/verify: python3 CustomerSetup/tests/test_links.py (test_ports_registry). knownCollisions are historical (run those twins one at a time); adding a NEW collision fails the test.",
+ "twins": {
+  "DellAlienware": {
+   "frontend": 5176,
+   "proxyDefault": 8003,
+   "backend": 8003
   },
-  "knownCollisions": {
-    "frontend:5178": [
-      "DellPowerMax",
-      "DellPowerSwitchE3200"
-    ],
-    "backend:8005": [
-      "DellPowerMax",
-      "DellPowerSwitchE3200"
-    ]
+  "DellCircularDesign": {
+   "frontend": 5197,
+   "proxyDefault": 8024,
+   "backend": 8024
   },
-  "reserved": {
-    "customerSetupPages": 5170
+  "DellCloudIQ": {
+   "frontend": 5180,
+   "proxyDefault": 8007,
+   "backend": 8007
+  },
+  "DellCyberDetect": {
+   "frontend": 5192,
+   "proxyDefault": 8019,
+   "backend": 8019
+  },
+  "DellExascale": {
+   "frontend": 5184,
+   "proxyDefault": 8011,
+   "backend": 8011
+  },
+  "DellFortZero": {
+   "frontend": 5195,
+   "proxyDefault": 8022,
+   "backend": 8022
+  },
+  "DellIDRAC": {
+   "frontend": 5177,
+   "proxyDefault": 8004,
+   "backend": 8004
+  },
+  "DellIR7000": {
+   "frontend": 5182,
+   "proxyDefault": 8009,
+   "backend": 8009
+  },
+  "DellNativeEdge": {
+   "frontend": 5187,
+   "proxyDefault": 8014,
+   "backend": 8014
+  },
+  "DellPowerEdgeR760": {
+   "frontend": 5174,
+   "proxyDefault": 8001,
+   "backend": 8001
+  },
+  "DellPowerEdgeR760Thermal": {
+   "frontend": 5203,
+   "proxyDefault": 8030,
+   "backend": 8030
+  },
+  "DellPowerEdgeXE9680": {
+   "frontend": 5201,
+   "proxyDefault": 8028,
+   "backend": 8028
+  },
+  "DellPowerEdgeXE9712": {
+   "frontend": 5181,
+   "proxyDefault": 8008,
+   "backend": 8008
+  },
+  "DellPowerFlex": {
+   "frontend": 5189,
+   "proxyDefault": 8016,
+   "backend": 8016
+  },
+  "DellPowerMax": {
+   "frontend": 5178,
+   "proxyDefault": 8005,
+   "backend": 8005
+  },
+  "DellPowerProtect": {
+   "frontend": 5183,
+   "proxyDefault": 8010,
+   "backend": 8010
+  },
+  "DellPowerScale": {
+   "frontend": 5196,
+   "proxyDefault": 8023,
+   "backend": 8023
+  },
+  "DellPowerStore": {
+   "frontend": 5175,
+   "proxyDefault": 8002,
+   "backend": 8002
+  },
+  "DellPowerStoreElite": {
+   "frontend": 5220,
+   "proxyDefault": 8047,
+   "backend": 8047
+  },
+  "DellPowerSwitchE3200": {
+   "frontend": 5178,
+   "proxyDefault": 8005,
+   "backend": 8005
+  },
+  "DellPowerSwitchSN6000": {
+   "frontend": 5185,
+   "proxyDefault": 8012,
+   "backend": 8012
+  },
+  "DellPrivateCloud": {
+   "frontend": 5198,
+   "proxyDefault": 8025,
+   "backend": 8025
+  },
+  "DellProMaxPlus": {
+   "frontend": 5186,
+   "proxyDefault": 8013,
+   "backend": 8013
+  },
+  "DellQuantumX800": {
+   "frontend": 5202,
+   "proxyDefault": 8029,
+   "backend": 8029
+  },
+  "DellVxRail": {
+   "frontend": 5179,
+   "proxyDefault": 8006,
+   "backend": 8006
+  },
+  "GPU": {
+   "frontend": 5173,
+   "proxyDefault": 8000,
+   "backend": 8000
+  },
+  "PhysicsAIFactory": {
+   "frontend": 5219,
+   "proxyDefault": 8046,
+   "backend": 8046
+  },
+  "PhysicsCDU": {
+   "frontend": 5216,
+   "proxyDefault": 8043,
+   "backend": 8043
+  },
+  "PhysicsClient": {
+   "frontend": 5204,
+   "proxyDefault": 8031,
+   "backend": 8031
+  },
+  "PhysicsCompute": {
+   "frontend": 5205,
+   "proxyDefault": 8032,
+   "backend": 8032
+  },
+  "PhysicsData": {
+   "frontend": 5210,
+   "proxyDefault": 8037,
+   "backend": 8037
+  },
+  "PhysicsDataDomain": {
+   "frontend": 5215,
+   "proxyDefault": 8042,
+   "backend": 8042
+  },
+  "PhysicsDisplay": {
+   "frontend": 5218,
+   "proxyDefault": 8045,
+   "backend": 8045
+  },
+  "PhysicsFabric": {
+   "frontend": 5207,
+   "proxyDefault": 8034,
+   "backend": 8034
+  },
+  "PhysicsFleet": {
+   "frontend": 5208,
+   "proxyDefault": 8035,
+   "backend": 8035
+  },
+  "PhysicsLifecycle": {
+   "frontend": 5211,
+   "proxyDefault": 8038,
+   "backend": 8038
+  },
+  "PhysicsME5": {
+   "frontend": 5214,
+   "proxyDefault": 8041,
+   "backend": 8041
+  },
+  "PhysicsMX7000": {
+   "frontend": 5212,
+   "proxyDefault": 8039,
+   "backend": 8039
+  },
+  "PhysicsRackPower": {
+   "frontend": 5217,
+   "proxyDefault": 8044,
+   "backend": 8044
+  },
+  "PhysicsResilience": {
+   "frontend": 5209,
+   "proxyDefault": 8036,
+   "backend": 8036
+  },
+  "PhysicsStorage": {
+   "frontend": 5206,
+   "proxyDefault": 8033,
+   "backend": 8033
+  },
+  "PhysicsXR": {
+   "frontend": 5213,
+   "proxyDefault": 8040,
+   "backend": 8040
   }
+ },
+ "knownCollisions": {
+  "frontend:5178": [
+   "DellPowerMax",
+   "DellPowerSwitchE3200"
+  ],
+  "backend:8005": [
+   "DellPowerMax",
+   "DellPowerSwitchE3200"
+  ]
+ },
+ "reserved": {
+  "customerSetupPages": 5170
+ }
 }
