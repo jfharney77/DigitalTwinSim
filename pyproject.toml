@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "twinkit"
+version = "0.1.0"
+description = "The skeleton every DigitalTwinSim component shares: camelCase models, the reading-level mechanism, the FastAPI app factory, and the trace invariants."
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "pydantic>=2.6"]
+
+[tool.setuptools]
+packages = ["twinkit"]

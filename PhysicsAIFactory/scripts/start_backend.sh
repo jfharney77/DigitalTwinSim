@@ -34,5 +34,11 @@ if [ -f ".env.example" ] && [ ! -f ".env" ]; then
   echo "Created backend/.env from .env.example — review it before relying on it."
 fi
 
+# The shared skeleton (twinkit/) lives at the repo root, not on PyPI. The .pth
+# covers a plain `uvicorn app.main:app` from an activated venv; PYTHONPATH
+# covers this process regardless of how healthy that venv turns out to be.
+"$ROOT/../scripts/link_twinkit.sh" "$BACKEND/.venv" >/dev/null
+export PYTHONPATH="$(cd "$ROOT/.." && pwd)${PYTHONPATH:+:$PYTHONPATH}"
+
 # app/main.py exposes `app`
 exec uvicorn app.main:app --reload --host 0.0.0.0 --port 8046

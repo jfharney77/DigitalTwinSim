@@ -32,8 +32,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
+from pydantic import Field
+
+from twinkit.models import CamelModel
 
 RegionKind = Literal[
     "host",      # the host CPU — orchestrates, then gets out of the way
@@ -60,12 +61,6 @@ InferencePhase = Literal[
     "sustained",  # a long generation continues at flat wattage, no throttle
     "offline",    # the network is disconnected and nothing changes
 ]
-
-
-class CamelModel(BaseModel):
-    """Base model: snake_case in Python, camelCase over the wire."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class Photo(CamelModel):

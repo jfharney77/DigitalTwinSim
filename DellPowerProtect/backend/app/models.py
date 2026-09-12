@@ -21,8 +21,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
+from pydantic import Field
+
+from twinkit.models import CamelModel
 
 RegionKind = Literal[
     "workload",   # the protected estate — VMs, databases, file shares
@@ -49,12 +50,6 @@ LifecyclePhase = Literal[
     "recover",    # the vault opens on its own terms; a clean copy restores
     "restored",   # the estate is back, from data the attacker never touched
 ]
-
-
-class CamelModel(BaseModel):
-    """Base model: snake_case in Python, camelCase over the wire."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class Photo(CamelModel):

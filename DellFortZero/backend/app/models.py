@@ -40,8 +40,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
+from pydantic import Field
+
+from twinkit.models import CamelModel
 
 # The seven pillars of the DoD zero-trust reference architecture, plus the
 # policy engine that decides using all of them. The pillars are co-equal by
@@ -71,12 +72,6 @@ AccessPhase = Literal[
     "breach",     # an attacker compromises a host inside the network
     "contained",  # and reaches nothing, because location grants nothing
 ]
-
-
-class CamelModel(BaseModel):
-    """Base model: snake_case in Python, camelCase over the wire."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class Photo(CamelModel):

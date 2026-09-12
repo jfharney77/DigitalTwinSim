@@ -27,8 +27,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
+from pydantic import Field
+
+from twinkit.models import CamelModel
 
 RegionKind = Literal[
     "spine",     # Quantum-X800 spine switches — every leaf reaches every one
@@ -54,12 +55,6 @@ FabricPhase = Literal[
     "burst",       # incast: senders stall on credits — waiting, never losing
     "steady",      # the training loop's traffic pattern, sustained
 ]
-
-
-class CamelModel(BaseModel):
-    """Base model: snake_case in Python, camelCase over the wire."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class Photo(CamelModel):

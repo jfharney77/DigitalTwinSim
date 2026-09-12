@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import Body, FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Body, HTTPException, Query
 from fastapi.responses import StreamingResponse
+
+from twinkit.api import Level, make_app
 
 from .anatomy import ANATOMIES, DieAnatomy
 from .engine import (
@@ -16,7 +17,7 @@ from .engine import (
     resolve_dims,
     simulate,
 )
-from .leveling import DEFAULT_LEVEL, LEVEL_NAMES, leveled, leveled_all
+from .leveling import leveled, leveled_all
 from pathlib import Path
 
 from .live import LiveState, ProbeEvent, SessionSummary, replay, summarize
@@ -31,38 +32,12 @@ from .mlp import MATMULS_PER_STEP, analyze_mlp, simulate_mlp
 from .models import CamelModel, GpuProfile, SimulateRequest, SimulateResponse
 from .profiles import DEFAULT_PROFILE, DEVICE_MATCHES, PROFILES
 
-app = FastAPI(title="GPU Matmul Visualizer", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = make_app(
+    title="GPU Matmul Visualizer",
+    frontend_port=5173,
+    # The GPU twin answers /api/health with its live-session count too.
+    health=False,
 )
-
-
-Level = Query(
-    DEFAULT_LEVEL,
-    ge=1,
-    le=5,
-    description="Reading level: 1 newcomer, 3 standard, 5 specialist.",
-)
-
-
-@app.get("/api/levels")
-def get_levels() -> dict[str, object]:
-    """What the reading-level control offers, so the UI does not
-    hard-code the scale."""
-    return {
-        "default": DEFAULT_LEVEL,
-        "levels": [
-            {"level": level, "name": name}
-            for level, name in LEVEL_NAMES.items()
-        ],
-    }
 
 
 @app.get("/api/health")

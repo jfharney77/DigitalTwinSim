@@ -4,52 +4,19 @@ no state."""
 
 from __future__ import annotations
 
-from fastapi import FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
+from twinkit.api import Level, make_app
 
 from .anatomy import ANATOMY
 from .catalog import CATALOG
 from .engine import simulate
-from .leveling import DEFAULT_LEVEL, LEVEL_NAMES, leveled, leveled_all
+from .leveling import leveled, leveled_all
 from .models import CatalogCategory, DeviceAnatomy, InferenceResponse, UseCase
 from .usecases import USE_CASES
 
-app = FastAPI(title="Dell Pro Max Plus Inside", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5186",
-        "http://127.0.0.1:5186",
-    ],
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = make_app(
+    title="Dell Pro Max Plus Inside",
+    frontend_port=5186,
 )
-
-Level = Query(
-    DEFAULT_LEVEL,
-    ge=1,
-    le=5,
-    description="Reading level: 1 newcomer, 3 standard, 5 specialist.",
-)
-
-
-@app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/api/levels")
-def get_levels() -> dict[str, object]:
-    """What the reading-level control offers, so the UI does not
-    hard-code the scale."""
-    return {
-        "default": DEFAULT_LEVEL,
-        "levels": [
-            {"level": level, "name": name}
-            for level, name in LEVEL_NAMES.items()
-        ],
-    }
 
 
 @app.get("/api/anatomy", response_model=DeviceAnatomy)

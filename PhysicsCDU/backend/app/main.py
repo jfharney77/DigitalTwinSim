@@ -7,13 +7,12 @@ something to read."""
 
 from __future__ import annotations
 
-from fastapi import FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
+from twinkit.api import Level, make_app
 
 from .anatomy import ANATOMY
 from .constants import CONSTANTS
 from .engine import simulate
-from .leveling import DEFAULT_LEVEL, LEVEL_NAMES, leveled, leveled_all
+from .leveling import leveled, leveled_all
 from .models import (
     ConfigPreset,
     Explain,
@@ -26,40 +25,10 @@ from .models import (
 from .presets import CONFIG_PRESETS, EXPLAINS, GUIDED_SCENARIOS, WORKLOAD_PRESETS
 from .validation import validate
 
-app = FastAPI(title="PowerCool CDU Physics Simulator", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5216",
-        "http://127.0.0.1:5216",
-    ],
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = make_app(
+    title="PowerCool CDU Physics Simulator",
+    frontend_port=5216,
 )
-
-Level = Query(
-    DEFAULT_LEVEL,
-    ge=1,
-    le=5,
-    description="Reading level: 1 newcomer, 3 standard, 5 specialist.",
-)
-
-
-@app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/api/levels")
-def get_levels() -> dict[str, object]:
-    return {
-        "default": DEFAULT_LEVEL,
-        "levels": [
-            {"level": level, "name": name}
-            for level, name in LEVEL_NAMES.items()
-        ],
-    }
 
 
 @app.get("/api/anatomy", response_model=LoopMap)

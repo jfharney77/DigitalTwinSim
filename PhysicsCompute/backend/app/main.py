@@ -6,14 +6,15 @@ SimState as the mock iDRAC Redfish payload (spec 01 §5)."""
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException, Query
+
+from twinkit.api import Level, make_app
 
 from .anatomy import MAPS
 from .constants import CONSTANTS, PSU_CURVE_SOURCE, PSU_EFFICIENCY_CURVE
 from .engine import simulate
 from .media import MEDIA
-from .leveling import DEFAULT_LEVEL, LEVEL_NAMES, leveled, leveled_all
+from .leveling import leveled, leveled_all
 from .models import (
     ConfigPreset,
     Explain,
@@ -35,40 +36,10 @@ from .presets import (
 from .redfish import to_redfish_thermal
 from .validation import validate
 
-app = FastAPI(title="AI-Compute Physics Simulator", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5205",
-        "http://127.0.0.1:5205",
-    ],
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = make_app(
+    title="AI-Compute Physics Simulator",
+    frontend_port=5205,
 )
-
-Level = Query(
-    DEFAULT_LEVEL,
-    ge=1,
-    le=5,
-    description="Reading level: 1 newcomer, 3 standard, 5 specialist.",
-)
-
-
-@app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/api/levels")
-def get_levels() -> dict[str, object]:
-    return {
-        "default": DEFAULT_LEVEL,
-        "levels": [
-            {"level": level, "name": name}
-            for level, name in LEVEL_NAMES.items()
-        ],
-    }
 
 
 @app.get("/api/anatomy", response_model=SystemMap)

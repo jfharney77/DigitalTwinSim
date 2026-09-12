@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from pydantic.alias_generators import to_camel
+from pydantic import Field, field_validator, model_validator
+
+from twinkit.models import CamelModel
 
 Phase = Literal["idle", "load", "compute", "writeback", "exchange", "done"]  # spec_27
 CoreState = Literal["idle", "loading", "computing", "wrote", "mma"]  # spec_23
@@ -37,12 +38,6 @@ def dtype_bytes(dtype: str) -> float:
     """Bytes per element as a float (fp4 = 0.5). For byte accounting prefer
     ceil(cells * DTYPE_BITS[dtype] / 8), which stays integral."""
     return DTYPE_BITS[dtype] / 8
-
-
-class CamelModel(BaseModel):
-    """Base model: snake_case in Python, camelCase over the wire."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class SMGrid(CamelModel):

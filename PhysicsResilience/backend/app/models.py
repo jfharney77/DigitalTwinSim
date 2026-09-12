@@ -20,8 +20,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
+from pydantic import Field
+
+from twinkit.models import CamelModel
 
 SCOPE_NOTE = (
     "These simulators teach defensive architecture only: backup "
@@ -30,10 +31,6 @@ SCOPE_NOTE = (
     "corruption rate and a timestamp. No exploit content, no technique "
     "detail, no offensive realism."
 )
-
-
-class CamelModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class Constant(CamelModel):
