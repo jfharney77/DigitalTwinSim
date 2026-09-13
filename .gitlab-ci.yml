@@ -2,6 +2,15 @@ stages:
   - validate
   - deploy
 
+# components.json is generated from disk, and the component tables in CLAUDE.md
+# and README.md are generated from components.json. Either drifting fails here.
+component-index:
+  stage: validate
+  image: python:3.12
+  script:
+    - python3 scripts/gen_components.py --check
+    - python3 scripts/gen_docs.py --check
+
 validate-frontend:
   stage: validate
   image: node:20
