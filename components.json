@@ -56,7 +56,7 @@
       "name": "DellCircularDesign",
       "directory": "DellCircularDesign",
       "family": "lifecycle",
-      "status": "built",
+      "status": "partial",
       "description": "A product's material ledger, which closes rather than ends.",
       "backendPort": 8024,
       "frontendPort": 5197,

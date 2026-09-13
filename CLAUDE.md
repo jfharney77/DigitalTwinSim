@@ -20,7 +20,6 @@ documented in [`docs/LIFECYCLE.md`](docs/LIFECYCLE.md).
 | `DellIR7000` | built | facility | 8009 | 5182 | `/api/thermal` | A liquid-cooling loop commissioned and ramped: heat in equals heat out, exactly. |
 | `PhysicsCDU` | built | facility | 8043 | 5216 | `/api/simulate` | A coolant distribution unit making three numbers equal, and the controller that decides what gives. |
 | `PhysicsRackPower` | built | facility | 8044 | 5217 | `/api/simulate` | Rack PDUs and UPS: phase balance, breaker curves, and the runtime a faded pack really delivers. |
-| `DellCircularDesign` | built | lifecycle | 8024 | 5197 | `/api/lifecycle` | A product's material ledger, which closes rather than ends. |
 | `PhysicsLifecycle` | built | lifecycle | 8038 | 5211 | `/api/simulate` | Telecom and sustainability on a daily tick, with a carbon ledger that closes. |
 | `DellCloudIQ` | built | management | 8007 | 5180 | `/api/pipeline` | AIOps observability: the life of one batch of telemetry becoming an insight. |
 | `DellIDRAC` | built | management | 8004 | 5177 | `/api/bringup` | The BMC's own firmware bring-up, with the host powered off throughout. |
@@ -49,6 +48,7 @@ documented in [`docs/LIFECYCLE.md`](docs/LIFECYCLE.md).
 | `DellPowerStoreElite` | built | storage | 8047 | 5220 | `/api/join` | A next-generation appliance joining a live cluster: modernization with zero downtime. |
 | `PhysicsME5` | built | storage | 8041 | 5214 | `/api/simulate` | Classic RAID with nothing in the way: write penalty and the rebuild window. |
 | `PhysicsStorage` | built | storage | 8033 | 5206 | `/api/simulate` | Capacity and performance physics: the queueing knee and the rebuild inversion. |
+| `DellCircularDesign` | partial | lifecycle | 8024 | 5197 | `/api/lifecycle` | A product's material ledger, which closes rather than ends. |
 | `DellPowerScale` | partial | storage | 8023 | 5196 | `/api/namespace` | Scale-out NAS with one namespace: growing is adding a node, never a migration. |
 | `DellAIDataPlatform` | scaffold | management | — | — | — | Spec only: the AI data platform pipeline. |
 | `DellAutomationStudio` | scaffold | management | — | — | — | Spec only: infrastructure automation. |
