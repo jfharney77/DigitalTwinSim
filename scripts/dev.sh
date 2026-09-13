@@ -76,8 +76,17 @@ echo "  frontend  http://localhost:$FRONTEND_PORT"
 echo
 
 backend_pid=""
+frontend_pid=""
+# npm and uvicorn --reload both fork, so stop the whole tree, children first.
+kill_tree() {
+  local pid="$1" child
+  for child in $(pgrep -P "$pid" 2>/dev/null); do kill_tree "$child"; done
+  kill "$pid" 2>/dev/null || true
+}
 cleanup() {
-  [ -n "$backend_pid" ] && kill "$backend_pid" 2>/dev/null || true
+  trap - EXIT INT TERM
+  [ -n "$frontend_pid" ] && kill_tree "$frontend_pid"
+  [ -n "$backend_pid" ] && kill_tree "$backend_pid"
 }
 trap cleanup EXIT INT TERM
 
@@ -100,4 +109,8 @@ for _ in $(seq 1 120); do
   sleep 1
 done
 
-exec "$DIR/scripts/start_frontend.sh"
+# Not exec: the EXIT trap has to survive so stopping this script (Ctrl-C, or a
+# plain kill) takes the background backend down with the frontend.
+"$DIR/scripts/start_frontend.sh" &
+frontend_pid=$!
+wait "$frontend_pid"
