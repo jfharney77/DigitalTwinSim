@@ -23,6 +23,12 @@ from app.presets import (
     PANIC,
     STANDARD,
 )
+from twinkit.testing import (
+    TraceProfile,
+    assert_deterministic,
+    assert_engine_is_pure,
+    assert_trace_invariants,
+)
 
 # Component values are rounded independently, so identity checks allow
 # worst-case rounding.
@@ -33,11 +39,16 @@ def run(scenario: Scenario):
     return simulate(scenario)
 
 
-def test_determinism():
+# Scenario-driven: no step index or phase order to check, but the tick has to
+# advance and the same scenario has to give the same trace. The conservation
+# identities below are this app's own.
+PROFILE = TraceProfile()
+
+
+def test_trace_invariants():
     s = Scenario(config=STANDARD, workload=FULL_TILT)
-    a, _, _ = run(s)
-    b, _, _ = run(s)
-    assert [x.model_dump() for x in a] == [x.model_dump() for x in b]
+    assert_trace_invariants(run(s)[0], PROFILE)
+    assert_deterministic(lambda: run(s))
 
 
 def test_heat_balance_both_loops_every_tick():
@@ -313,17 +324,6 @@ def test_delivered_energy_accumulates():
 def test_engine_is_pure():
     """The engine must not import FastAPI/IO/random — same rule as every
     twin."""
-    import ast
-
     import app.engine as engine_module
 
-    tree = ast.parse(open(engine_module.__file__, encoding="utf-8").read())
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not imported & {
-        "fastapi", "time", "asyncio", "threading", "os", "io", "random",
-    }
+    assert_engine_is_pure(engine_module)

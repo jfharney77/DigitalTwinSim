@@ -7,12 +7,24 @@ import pytest
 from app.engine import simulate
 from app.models import GpuProfile, Memory, SMGrid, Workload
 from app.profiles import GENERIC_128
+from twinkit.testing import TraceProfile, assert_deterministic, assert_trace_invariants
 
 PHASE_ORDER = ["idle", "load", "compute", "writeback", "done"]
 
 
 def make_workload(n: int) -> Workload:
     return Workload(N=n)
+
+
+# One tile (the default) is the case where the five phases run exactly once in
+# order; with tiling, load/compute/writeback repeat per tile by design.
+PROFILE = TraceProfile(phases=PHASE_ORDER)
+
+
+@pytest.mark.parametrize("n", [2, 4, 8])
+def test_trace_invariants(n):
+    assert_trace_invariants(simulate(GENERIC_128, make_workload(n)), PROFILE)
+    assert_deterministic(lambda: simulate(GENERIC_128, make_workload(n)))
 
 
 def test_mac_totals_for_n4():
@@ -66,12 +78,6 @@ def test_compute_steps_equal_n():
         compute = [s for s in trace if s.phase == "compute"]
         assert len(compute) == n
         assert compute[-1].k == n
-
-
-def test_cycle_is_monotonic():
-    trace = simulate(GENERIC_128, make_workload(5))
-    cycles = [s.cycle for s in trace]
-    assert cycles == list(range(len(trace)))
 
 
 @pytest.mark.parametrize("n,t", [(6, 4), (8, 2), (8, 3), (4, 2)])

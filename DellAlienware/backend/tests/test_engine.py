@@ -11,6 +11,12 @@ from app.anatomy import ANATOMIES
 from app.catalog import PROFILES
 from app.engine import analyze, simulate
 from app.models import Scenario
+from twinkit.testing import (
+    TraceProfile,
+    assert_deterministic,
+    assert_engine_is_pure,
+    assert_trace_invariants,
+)
 
 PHASE_ORDER = [
     "off", "detect", "handshake", "budget", "charge", "boot", "load", "steady",
@@ -46,18 +52,16 @@ SCENARIOS = list(_scenarios())
 
 
 @pytest.mark.parametrize("profile,adapter,scenario", SCENARIOS)
-def test_cycle_is_trace_index(profile, adapter, scenario):
-    trace = simulate(profile, adapter, scenario)
-    assert [s.cycle for s in trace] == list(range(len(trace)))
-
-
-@pytest.mark.parametrize("profile,adapter,scenario", SCENARIOS)
-def test_phase_order_never_regresses_and_completes(profile, adapter, scenario):
-    trace = simulate(profile, adapter, scenario)
-    indices = [PHASE_ORDER.index(s.phase) for s in trace]
-    assert indices == sorted(indices), "phase order regressed"
-    # The machine always reaches steady state — even with an unknown adapter.
-    assert set(s.phase for s in trace) == set(PHASE_ORDER)
+def test_trace_invariants(profile, adapter, scenario):
+    """Cycle is the trace index, the phases run in order and all of them are
+    reached — the machine gets to steady state even with an unknown adapter —
+    only the profile's own regions light, and the same scenario gives the same
+    trace. The shared definitions live in twinkit.testing."""
+    profile_check = TraceProfile(
+        phases=PHASE_ORDER, anatomy=ANATOMIES[profile.anatomy_id]
+    )
+    assert_trace_invariants(simulate(profile, adapter, scenario), profile_check)
+    assert_deterministic(lambda: simulate(profile, adapter, scenario))
 
 
 @pytest.mark.parametrize("profile,adapter,scenario", SCENARIOS)
@@ -103,14 +107,6 @@ def test_hybrid_flag_matches_battery_supplement(profile, adapter, scenario):
     for s in simulate(profile, adapter, scenario):
         if s.hybrid:
             assert s.battery_w > 0, f"{s.stage_id}: hybrid without supplement"
-
-
-@pytest.mark.parametrize("profile,adapter,scenario", SCENARIOS)
-def test_active_regions_exist_in_profile_anatomy(profile, adapter, scenario):
-    region_ids = {r.id for r in ANATOMIES[profile.anatomy_id].regions}
-    for s in simulate(profile, adapter, scenario):
-        for rid in s.active_regions:
-            assert rid in region_ids, f"{s.stage_id}: unknown region {rid!r}"
 
 
 @pytest.mark.parametrize("profile,adapter,scenario", SCENARIOS)
@@ -242,18 +238,9 @@ def test_handshake_stage_is_stalled_with_dwell():
 
 def test_engine_is_pure():
     """The engine must not import FastAPI/IO — same rule as the GPU app."""
-    import ast
-
     import app.engine as engine_module
 
-    tree = ast.parse(open(engine_module.__file__, encoding="utf-8").read())
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not imported & {"fastapi", "time", "asyncio", "threading", "os", "io"}
+    assert_engine_is_pure(engine_module)
 
 
 def test_simulate_is_deterministic():

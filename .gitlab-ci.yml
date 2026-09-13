@@ -11,6 +11,71 @@ component-index:
     - python3 scripts/gen_components.py --check
     - python3 scripts/gen_docs.py --check
 
+# One suite, sharded by component: every job runs `pytest <shard>` from the
+# repo root, so the root pytest.ini/conftest.py (and twinkit) are in play
+# exactly as they are for a bare `pytest`. The shard list is checked against
+# disk by `scripts/gen_root_pytest.py --check`.
+root-pytest-conftests:
+  stage: validate
+  image: python:3.12
+  script:
+    - python3 scripts/gen_root_pytest.py --check
+
+pytest:
+  stage: validate
+  image: python:3.12
+  parallel:
+    matrix:
+      - SHARD:
+          - twinkit
+          - CustomerSetup
+          - DellAlienware
+          - DellCircularDesign
+          - DellCloudIQ
+          - DellCyberDetect
+          - DellExascale
+          - DellFortZero
+          - DellIDRAC
+          - DellIR7000
+          - DellNativeEdge
+          - DellPowerEdgeR760
+          - DellPowerEdgeR760Thermal
+          - DellPowerEdgeXE9680
+          - DellPowerEdgeXE9712
+          - DellPowerFlex
+          - DellPowerMax
+          - DellPowerProtect
+          - DellPowerScale
+          - DellPowerStore
+          - DellPowerStoreElite
+          - DellPowerSwitchE3200
+          - DellPowerSwitchSN6000
+          - DellPrivateCloud
+          - DellProMaxPlus
+          - DellQuantumX800
+          - DellVxRail
+          - GPU
+          - PhysicsAIFactory
+          - PhysicsCDU
+          - PhysicsClient
+          - PhysicsCompute
+          - PhysicsData
+          - PhysicsDataDomain
+          - PhysicsDisplay
+          - PhysicsFabric
+          - PhysicsFleet
+          - PhysicsLifecycle
+          - PhysicsME5
+          - PhysicsMX7000
+          - PhysicsRackPower
+          - PhysicsResilience
+          - PhysicsStorage
+          - PhysicsXR
+  before_script:
+    - pip install -q "fastapi>=0.110" "pydantic>=2.6" "pytest>=8.0" "httpx>=0.27"
+  script:
+    - pytest -q "$SHARD"
+
 validate-frontend:
   stage: validate
   image: node:20

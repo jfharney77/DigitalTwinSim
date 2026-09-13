@@ -13,7 +13,14 @@ from fastapi.testclient import TestClient
 from twinkit.api import make_app
 from twinkit.leveling import LevelingConflict, make_leveling
 from twinkit.models import CamelModel, camel
-from twinkit.testing import TraceProfile, assert_engine_is_pure, assert_trace_invariants
+from twinkit.testing import (
+    TraceProfile,
+    activate_backend_for,
+    assert_deterministic,
+    assert_engine_is_pure,
+    assert_trace_invariants,
+    claim_backend,
+)
 
 
 # --- models -----------------------------------------------------------------
@@ -182,3 +189,77 @@ def test_purity_check_reads_the_source_not_sys_modules():
 
     with pytest.raises(AssertionError, match="fastapi"):
         assert_engine_is_pure(impure_module)
+
+
+def test_a_physics_trace_is_checked_on_its_clock():
+    """The scenario-driven apps carry a tick (``t``) instead of a step index
+    and a phase; the clock still has to advance."""
+
+    class _Tick:
+        def __init__(self, t):
+            self.t = t
+
+    assert_trace_invariants([_Tick(0), _Tick(1), _Tick(2)], TraceProfile())
+    with pytest.raises(AssertionError, match="t did not advance"):
+        assert_trace_invariants([_Tick(0), _Tick(1), _Tick(1)], TraceProfile())
+
+
+def test_cycle_is_accepted_as_the_step_index():
+    class _Cycle:
+        def __init__(self, cycle):
+            self.cycle = cycle
+
+    assert_trace_invariants([_Cycle(0), _Cycle(1)], TraceProfile())
+    with pytest.raises(AssertionError, match="cycles are not sequential"):
+        assert_trace_invariants([_Cycle(0), _Cycle(2)], TraceProfile())
+
+
+def test_determinism_compares_the_whole_trace():
+    assert_deterministic(lambda: [_CamelState(region_id="a", cycle_cost=1)])
+    calls = iter([1, 2])
+    with pytest.raises(AssertionError, match="two different traces"):
+        assert_deterministic(lambda: [_CamelState(region_id="a", cycle_cost=next(calls))])
+
+
+class _CamelState(CamelModel):
+    region_id: str
+    cycle_cost: int
+
+
+# --- one suite at the root --------------------------------------------------
+
+def test_backends_take_turns_holding_app_and_get_their_own_modules_back(tmp_path, monkeypatch):
+    """Two backends that both spell their package ``app``. After the second is
+    collected, a test in the first must see the first's module — the very
+    object its test module imported — not the second's and not a fresh copy."""
+    import importlib
+    import sys
+
+    import twinkit.testing as kit
+
+    monkeypatch.setattr(kit, "_STASH", {})
+    monkeypatch.setattr(kit, "_OWNER", [None])
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    saved = {n: sys.modules.pop(n) for n in list(sys.modules) if n == "app" or n.startswith("app.")}
+    try:
+        backends = []
+        for name in ("one", "two"):
+            backend = tmp_path / name / "backend"
+            (backend / "app").mkdir(parents=True)
+            (backend / "app" / "__init__.py").write_text("")
+            (backend / "app" / "models.py").write_text(f"WHO = {name!r}\n")
+            (backend / "conftest.py").write_text("")
+            backends.append(backend)
+
+        claim_backend(str(backends[0] / "conftest.py"))
+        first = importlib.import_module("app.models")
+        claim_backend(str(backends[1] / "conftest.py"))
+        assert importlib.import_module("app.models").WHO == "two"
+
+        activate_backend_for(backends[0] / "tests" / "test_x.py")
+        again = importlib.import_module("app.models")
+        assert again is first and again.WHO == "one"
+    finally:
+        for n in [n for n in sys.modules if n == "app" or n.startswith("app.")]:
+            del sys.modules[n]
+        sys.modules.update(saved)

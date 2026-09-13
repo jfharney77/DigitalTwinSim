@@ -9,6 +9,12 @@ from app.constants import APPLIANCES, value as C
 from app.engine import local_compression, simulate
 from app.models import Dataset, Scenario, Schedule, SimEvent
 from app.presets import THIRTY_FULLS
+from twinkit.testing import (
+    TraceProfile,
+    assert_deterministic,
+    assert_engine_is_pure,
+    assert_trace_invariants,
+)
 
 # Trace values are rounded independently (3–4 decimals), so ledger checks
 # allow a small tolerance.
@@ -28,11 +34,16 @@ def plain(full=50.0, c=1.0, e=30.0, r=30, d=60, appliance="dd9910") -> Scenario:
     )
 
 
-def test_determinism():
+# Scenario-driven: no step index or phase order to check, but the tick has to
+# advance and the same scenario has to give the same trace. The conservation
+# identities below are this app's own.
+PROFILE = TraceProfile()
+
+
+def test_trace_invariants():
     s = plain()
-    a, _, _ = run(s)
-    b, _, _ = run(s)
-    assert [x.model_dump() for x in a] == [x.model_dump() for x in b]
+    assert_trace_invariants(run(s)[0], PROFILE)
+    assert_deterministic(lambda: run(s))
 
 
 def test_capacity_conservation_every_day():
@@ -257,17 +268,6 @@ def test_trace_shape():
 
 def test_engine_is_pure():
     """The engine must not import FastAPI/IO/randomness — house rule."""
-    import ast
-
     import app.engine as engine_module
 
-    tree = ast.parse(open(engine_module.__file__, encoding="utf-8").read())
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not imported & {
-        "fastapi", "time", "asyncio", "threading", "os", "io", "random",
-    }
+    assert_engine_is_pure(engine_module)

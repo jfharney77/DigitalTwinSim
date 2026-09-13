@@ -6,6 +6,12 @@ from __future__ import annotations
 
 from app.anatomy import ANATOMY
 from app.engine import GENERATION_PHASES, HOST_KINDS, MODEL_GB, simulate
+from twinkit.testing import (
+    TraceProfile,
+    assert_deterministic,
+    assert_engine_is_pure,
+    assert_trace_invariants,
+)
 
 PHASE_ORDER = [
     "off", "compile", "load", "resident",
@@ -15,22 +21,21 @@ PHASE_ORDER = [
 KIND_BY_REGION = {r.id: r.kind for r in ANATOMY.regions}
 
 
-def test_steps_sequential_from_zero():
-    trace = simulate()
-    assert [s.step for s in trace] == list(range(len(trace)))
+PROFILE = TraceProfile(phases=PHASE_ORDER, anatomy=ANATOMY)
 
 
-def test_phase_order_never_regresses_and_all_phases_appear():
-    trace = simulate()
-    indices = [PHASE_ORDER.index(s.phase) for s in trace]
-    assert indices == sorted(indices), "phase order regressed"
-    assert set(s.phase for s in trace) == set(PHASE_ORDER)
+def test_trace_invariants():
+    """Steps from zero, phases in order and all reached, the clock advancing,
+    only real regions lit, every step at least one cycle — and deterministic.
+    The shared definitions live in twinkit.testing."""
+    assert_trace_invariants(simulate(), PROFILE)
+    assert_deterministic(simulate)
 
 
-def test_elapsed_seconds_strictly_increasing():
-    trace = simulate()
-    elapsed = [s.elapsed_seconds for s in trace]
-    assert all(a < b for a, b in zip(elapsed, elapsed[1:]))
+def test_engine_is_pure():
+    import app.engine as engine_module
+
+    assert_engine_is_pure(engine_module)
 
 
 def test_weights_cross_the_link_exactly_once():
@@ -136,17 +141,6 @@ def test_card_is_always_lit_when_generating():
             )
 
 
-def test_active_regions_exist_in_anatomy():
-    region_ids = {r.id for r in ANATOMY.regions}
-    for state in simulate():
-        for rid in state.active_regions:
-            assert rid in region_ids, f"step {state.step}: unknown region {rid!r}"
-
-
-def test_cycle_cost_at_least_one():
-    assert all(s.cycle_cost >= 1 for s in simulate())
-
-
 def test_model_load_is_the_longest_stage():
     """Moving 61 GB across PCIe is the single longest stage — as with the
     R760's memory training and the SN6000's link training, the UI dwells
@@ -158,19 +152,3 @@ def test_model_load_is_the_longest_stage():
     max_cost = max(s.cycle_cost for s in trace)
     assert load[0].cycle_cost == max_cost
     assert sum(1 for s in trace if s.cycle_cost == max_cost) == 1
-
-
-def test_engine_is_pure():
-    """The engine must not import FastAPI/IO — same rule as every twin."""
-    import ast
-
-    import app.engine as engine_module
-
-    tree = ast.parse(open(engine_module.__file__, encoding="utf-8").read())
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not imported & {"fastapi", "time", "asyncio", "threading", "os", "io"}

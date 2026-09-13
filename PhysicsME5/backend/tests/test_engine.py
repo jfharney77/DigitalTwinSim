@@ -10,6 +10,12 @@ from app.constants import value as C
 from app.engine import capacity_ledger, simulate
 from app.models import ArrayConfig, Scenario, SimEvent, Workload
 from app.presets import ALL_FLASH, ENTRY, OLTP, R6_CAPACITY, R10_PERF
+from twinkit.testing import (
+    TraceProfile,
+    assert_deterministic,
+    assert_engine_is_pure,
+    assert_trace_invariants,
+)
 
 # served/backend kIOPS are rounded to 3 decimals independently.
 ROUND_TOL = 0.02
@@ -19,11 +25,16 @@ def run(scenario: Scenario):
     return simulate(scenario)
 
 
-def test_determinism():
+# Scenario-driven: no step index or phase order to check, but the tick has to
+# advance and the same scenario has to give the same trace. The conservation
+# identities below are this app's own.
+PROFILE = TraceProfile()
+
+
+def test_trace_invariants():
     s = Scenario(config=R10_PERF, workload=OLTP, duration_min=200)
-    a, _, _ = run(s)
-    b, _, _ = run(s)
-    assert [x.model_dump() for x in a] == [x.model_dump() for x in b]
+    assert_trace_invariants(run(s)[0], PROFILE)
+    assert_deterministic(lambda: run(s))
 
 
 def test_iops_balance_every_tick():
@@ -261,17 +272,6 @@ def test_timestep_and_trace_length():
 
 def test_engine_is_pure():
     """The engine must not import FastAPI/IO/randomness — house rule."""
-    import ast
-
     import app.engine as engine_module
 
-    tree = ast.parse(open(engine_module.__file__, encoding="utf-8").read())
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not imported & {
-        "fastapi", "time", "asyncio", "threading", "os", "io", "random",
-    }
+    assert_engine_is_pure(engine_module)

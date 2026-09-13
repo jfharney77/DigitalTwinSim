@@ -14,6 +14,12 @@ from app.models import (
     SimEvent,
 )
 from app.presets import FACTORY, FRONTIER_LLM, GUIDED_SCENARIOS, MEGA, PILOT, STARVED
+from twinkit.testing import (
+    TraceProfile,
+    assert_deterministic,
+    assert_engine_is_pure,
+    assert_trace_invariants,
+)
 
 TOL_MW = 1e-3  # rounding tolerance on the 4-decimal MW readouts
 
@@ -27,11 +33,16 @@ def factory_scenario(**updates) -> Scenario:
     return Scenario(config=cfg, job=FRONTIER_LLM, duration_h=480)
 
 
-def test_determinism():
+# Scenario-driven: no step index or phase order to check, but the tick has to
+# advance and the same scenario has to give the same trace. The conservation
+# identities below are this app's own.
+PROFILE = TraceProfile()
+
+
+def test_trace_invariants():
     s = factory_scenario()
-    a, _, _ = run(s)
-    b, _, _ = run(s)
-    assert [x.model_dump() for x in a] == [x.model_dump() for x in b]
+    assert_trace_invariants(run(s)[0], PROFILE)
+    assert_deterministic(lambda: run(s))
 
 
 def test_power_balance_every_tick():
@@ -195,17 +206,6 @@ def test_trace_length_and_monotonic_time():
 def test_engine_is_pure():
     """The engine must not import FastAPI/IO/randomness — same rule as
     every twin."""
-    import ast
-
     import app.engine as engine_module
 
-    tree = ast.parse(open(engine_module.__file__, encoding="utf-8").read())
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not imported & {
-        "fastapi", "time", "asyncio", "threading", "os", "io", "random",
-    }
+    assert_engine_is_pure(engine_module)
