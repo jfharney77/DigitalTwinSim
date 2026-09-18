@@ -11,9 +11,13 @@ stays inside it. Community citations live in `RESEARCH_ASSETS.md`.
 
 Ordered by impact against effort:
 
-1. **Tour mode in DellPowerStore** (L) — the `ACTIVE_TWIN_SPEC.md` pilot; proves
-   the pattern every other twin will copy, using the one twin that already ships
-   local photos.
+1. ~~**Tour mode in DellPowerStore** (L)~~ — **Done (2026-09).** The pilot
+   shipped in DellPowerStore and then rolled out to all 24 narrative twins:
+   shared models and invariants in `twinkit.tour` /
+   `twinkit.testing.assert_tour_invariants`, one `TourPlayer` in
+   `packages/twin-ui`, a `#tour` page per twin, and browser smoke routes for
+   each. The recipe is `DellPowerStore/TOUR_PATTERN.md`; deviations from the
+   spec are listed at the end of `ACTIVE_TWIN_SPEC.md`.
 2. **Port registry** (S) — two collisions already exist; cheapest structural fix
    in the repo.
 3. **Landing hub `index.html`** (S) — 25 twins have no front door; a static page
@@ -36,7 +40,7 @@ Ordered by impact against effort:
 
 ## Repo-wide
 
-1. **Active tour mode** — full spec in `ACTIVE_TWIN_SPEC.md`; the headline
+1. **Active tour mode** (done 2026-09, see top-10 item 1) — full spec in `ACTIVE_TWIN_SPEC.md`; the headline
    improvement. Rollout starts with PowerStore, then the AI Factory quartet as a
    connected mini-series. (L for the pilot, M per twin after.)
 2. **Port registry** — ports are assigned in prose across CLAUDE.md and have

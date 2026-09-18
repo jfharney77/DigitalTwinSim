@@ -223,6 +223,7 @@
   ]
  },
  "reserved": {
-  "customerSetupPages": 5170
+  "customerSetupPages": 5170,
+  "learnPages": 5172
  }
 }

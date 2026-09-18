@@ -58,12 +58,12 @@ documented in [`docs/LIFECYCLE.md`](docs/LIFECYCLE.md).
 | `DellExascale` | built | storage | 8011 | 5184 | `/api/datapath` | A parallel file system where metadata leaves the data path. |
 | `DellPowerFlex` | built | storage | 8016 | 5189 | `/api/cluster` | Software-defined block storage: delete the controller and every node rebuilds. |
 | `DellPowerMax` | built | storage | 8005 | 5178 | `/api/poweron` | Rack-scale scale-out storage: drives hang off an InfiniBand fabric, not a director's bus. |
+| `DellPowerScale` | built | storage | 8023 | 5196 | `/api/namespace` | Scale-out NAS with one namespace: growing is adding a node, never a migration. |
 | `DellPowerStore` | built | storage | 8002 | 5175 | `/api/poweron` | An all-NVMe appliance whose two controller nodes bring up in lockstep. |
 | `DellPowerStoreElite` | built | storage | 8047 | 5220 | `/api/join` | A next-generation appliance joining a live cluster: modernization with zero downtime. |
 | `PhysicsME5` | built | storage | 8041 | 5214 | `/api/simulate` | Classic RAID with nothing in the way: write penalty and the rebuild window. |
 | `PhysicsStorage` | built | storage | 8033 | 5206 | `/api/simulate` | Capacity and performance physics: the queueing knee and the rebuild inversion. |
 | `DellCircularDesign` | partial | lifecycle | 8024 | 5197 | `/api/lifecycle` | A product's material ledger, which closes rather than ends. |
-| `DellPowerScale` | partial | storage | 8023 | 5196 | `/api/namespace` | Scale-out NAS with one namespace: growing is adding a node, never a migration. |
 | `DellAIDataPlatform` | scaffold | management | — | — | — | Spec only: the AI data platform pipeline. |
 | `DellAutomationStudio` | scaffold | management | — | — | — | Spec only: infrastructure automation. |
 | `DellTelecomBlocks` | scaffold | network | — | — | — | Spec only: telecom infrastructure blocks. |
@@ -73,6 +73,14 @@ documented in [`docs/LIFECYCLE.md`](docs/LIFECYCLE.md).
 | `DellObjectScale` | scaffold | storage | — | — | — | Spec only: object storage at scale. |
 
 <!-- END COMPONENT-TABLE -->
+
+## Learn the twins as one course
+
+[`Learn/`](Learn) puts the twins in a teaching order: twelve modules from the
+GPU roofline to an AI-factory capstone, plus electives, each with a question to
+answer before pressing play and a link to the twin step that settles it. Run
+`./Learn/scripts/serve.sh` and open `http://localhost:5172/Learn/`; every link
+and quoted number is pinned by `pytest Learn`. See [`Learn/README.md`](Learn/README.md).
 
 Interactive web app that draws the inner structure of a GPU and animates how a
 matrix multiplication executes across it. Teaching/visualization tool — see

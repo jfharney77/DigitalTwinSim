@@ -1,0 +1,111 @@
+/* Learn pages: accents on top of ../CustomerSetup/shared/setup.css.
+   Dell clean design: no eyebrow text, no step numbering, no divider rules,
+   no highlighted text, no serif fonts. Sections are separated by spacing. */
+
+body.learn { background: #fff; }
+.learn main { max-width: 900px; }
+.learn h1 { margin-top: 4px; }
+.learn h2 { margin-top: 40px; }
+.learn h3 { font-size: 16px; font-weight: 500; margin: 0 0 6px; }
+.learn p { line-height: 1.6; }
+.learn p + p { margin-top: 10px; }
+.learn code { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 13px; }
+
+/* setup.css shows .lvl-* inline or as block <p>; module content also uses
+   <div> and <li> blocks, so make those follow the register too. */
+div.lvl-novice, li.lvl-novice { display: none; }
+body[data-register="novice"] div.lvl-novice { display: block; }
+body[data-register="novice"] div.lvl-standard { display: none; }
+
+.crumb { color: var(--dell-muted); }
+.prereqs, .trim, .how, .start, .cite, .hint, .done-line { color: var(--dell-muted); }
+.prereqs { margin-top: 18px; max-width: 78ch; }
+.objectives { max-width: 78ch; }
+
+/* Predict */
+.predict .question { font-size: 18px; max-width: 70ch; }
+.options { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; max-width: 640px; }
+.option {
+  display: flex; gap: 10px; align-items: flex-start; cursor: pointer;
+  border: 1px solid var(--dell-border); border-radius: 6px; padding: 10px 14px; line-height: 1.45;
+}
+.option:hover { border-color: var(--dell-blue); }
+.option input { margin-top: 3px; accent-color: var(--dell-blue); }
+.option:has(input:checked) { border-color: var(--dell-blue); }
+.option:has(input:disabled) { cursor: default; }
+
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.learn button {
+  font: inherit; font-size: 14px; padding: 7px 16px; cursor: pointer;
+  border: 1px solid var(--dell-border); border-radius: 4px; background: #fff; color: var(--dell-text);
+}
+.learn button:hover { border-color: var(--dell-blue); }
+.learn button.primary { background: var(--dell-blue); border-color: var(--dell-blue); color: #fff; }
+.learn button.primary:hover { background: var(--dell-blue-hover); }
+.learn button:disabled { opacity: 0.55; cursor: default; }
+.learn .marks button.active { border-color: var(--dell-blue); color: var(--dell-blue); }
+.learn button[hidden] { display: none; }
+
+.hint { margin-top: 10px; font-size: 14px; }
+.hint.nudge { color: var(--dell-text); }
+.answer { margin-top: 18px; max-width: 78ch; }
+.verdict { font-weight: 500; }
+.verdict.right { color: var(--dell-ok); }
+.verdict.wrong { color: var(--dell-text); }
+.cite { font-size: 13px; margin-top: 8px; overflow-wrap: anywhere; }
+.cite code { font-size: 12px; }
+
+/* Play */
+.play { display: flex; flex-direction: column; gap: 22px; margin-top: 8px; }
+.entry-links { list-style: none; margin: 0; padding: 0; line-height: 1.5; }
+.entry-links li { margin-top: 8px; }
+.entry-link.locked { color: var(--dell-muted); cursor: not-allowed; }
+.entry-link.locked:hover { text-decoration: none; color: var(--dell-muted); }
+.how { font-size: 14px; margin-top: 2px; max-width: 72ch; }
+.start { font-size: 13px; margin-top: 10px; }
+
+/* Checks */
+.checks { display: flex; flex-direction: column; gap: 18px; }
+.check .question { font-weight: 500; max-width: 72ch; }
+.check details { margin-top: 6px; max-width: 72ch; }
+.check summary { color: var(--dell-blue); cursor: pointer; }
+.check details p { margin-top: 8px; }
+.marks { margin-top: 8px; }
+
+/* Bridge */
+.bridge { max-width: 72ch; }
+.next-nav { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-top: 18px; }
+.next-nav .next { font-weight: 500; }
+.done-line { font-size: 14px; margin-top: 14px; }
+
+/* Course home */
+.tracks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.track {
+  display: flex; flex-direction: column; gap: 4px; padding: 14px 16px;
+  border: 1px solid var(--dell-border); border-radius: 8px; color: var(--dell-text);
+}
+.track:hover { border-color: var(--dell-blue); text-decoration: none; color: var(--dell-text); }
+.track.active { border-color: var(--dell-blue); box-shadow: inset 0 0 0 1px var(--dell-blue); }
+.track-title { font-weight: 500; color: var(--dell-blue); }
+.track-meta { font-size: 13px; color: var(--dell-muted); }
+
+.modules { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 22px; }
+.module > a { font-size: 17px; font-weight: 500; }
+.module .idea { margin-top: 4px; max-width: 72ch; }
+.status { font-size: 12px; margin-left: 10px; color: var(--dell-muted); white-space: nowrap; }
+.status.done { color: var(--dell-ok); }
+.status.started { color: var(--dell-blue-hover); }
+.twins { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.twins span { font-size: 12px; color: var(--dell-muted); border: 1px solid var(--dell-border); border-radius: 4px; padding: 1px 8px; }
+.reset { margin-top: 24px; }
+
+/* Phones: 16px gutters, the level control on its own row, nothing wider
+   than the screen. */
+@media (max-width: 700px) {
+  .learn main { padding: 20px 16px 48px; }
+  .level-control { float: none; flex-wrap: wrap; margin-bottom: 12px; }
+  .level-control button { padding: 4px 8px; }
+  .learn h1 { font-size: 24px; }
+  .predict .question { font-size: 16px; }
+  .chip { margin-left: 4px; }
+}

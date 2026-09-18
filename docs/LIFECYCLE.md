@@ -31,17 +31,16 @@ CI runs both with `--check`, so a status change that skips this step fails the
 
 ## Where things stand
 
-As of this document: 3 `reference`, 37 `built`, 2 `partial`, 7 `scaffold`,
+As of this document: 3 `reference`, 38 `built`, 1 `partial`, 7 `scaffold`,
 0 `archived`. `components.json` is the live count.
 
 The references are `GPU` (the pure-engine and trace pattern),
 `DellPowerEdgeR760` (the chassis twin) and `DellPowerEdgeR760Thermal` (the
 scenario-driven physics simulator).
 
-The two `partial` components:
+The one `partial` component (`DellPowerScale` was promoted to `built` in
+September 2026 once its trace steps were leveled and it gained a README):
 
-- `DellPowerScale`: built after the reading-level pass, so its trace steps
-  read the same at every level.
 - `DellCircularDesign`: built from its spec, but its trace steps are
   unleveled, its spec still says "spec only", and `CLAUDE.md` has no section
   for it.

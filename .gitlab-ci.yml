@@ -29,6 +29,7 @@ pytest:
       - SHARD:
           - twinkit
           - CustomerSetup
+          - Learn
           - DellAlienware
           - DellCircularDesign
           - DellCloudIQ
@@ -99,3 +100,28 @@ deploy-frontend:
     - railway up --service DigitalTwinSim-frontend
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Browser smoke tests: start each component's backend + frontend, load every
+# route in its frontend/smoke.json in Chromium, and fail on page errors,
+# console errors, failed /api calls or an error fallback (see e2e/README.md).
+# allow_failure for now: only GPU and DellPowerEdgeR760 have manifests yet
+# (the rest report "no manifest" and do not fail), and the job has not had a
+# green run on the CI runners — it starts ~40 backends one after another and
+# builds each venv from scratch. Drop allow_failure once it is green and every
+# component has a manifest. The image tag must match @playwright/test in the
+# root package.json, or the bundled browser will not be found.
+e2e-smoke:
+  stage: validate
+  image: mcr.microsoft.com/playwright:v1.63.0-noble
+  allow_failure: true
+  timeout: 90m
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq python3-venv python3-pip curl >/dev/null
+    - npm ci
+  script:
+    - scripts/smoke.sh --all
+  artifacts:
+    when: always
+    paths:
+      - e2e/artifacts/
+    expire_in: 1 week

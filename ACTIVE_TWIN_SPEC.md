@@ -1,6 +1,6 @@
 # Active Digital Twin — Narrated Look-Inside Tour Mode
 
-**Status:** proposed spec (2026-07-24). Applies to every twin in this repo except `GPU/`
+**Status:** built (2026-09). Proposed 2026-07-24; the pilot shipped in DellPowerStore and the tour now runs in all 24 narrative twins. The implementation notes at the end record where the build differs from this spec, and `DellPowerStore/TOUR_PATTERN.md` is the working recipe. Applies to every twin in this repo except `GPU/`
 (explicitly out of scope per the request, though nothing here prevents it from adopting
 the same mode later).
 
@@ -199,3 +199,56 @@ needed). Ship as a "Download this tour" button. Do this once, in one twin
    cross-references make the four tours a connected mini-series.
 4. Then the remaining built twins; spec-only twins adopt the tour section in their
    `initial_spec.md` so they're born with one.
+
+## Implementation notes (2026-09)
+
+Where the build differs from the spec above. Where this spec and
+`DellPowerStore/TOUR_PATTERN.md` disagree, the pattern file wins.
+
+- **A shared package, not a copy-in pattern (§10.2).** The spec kept twins
+  independent. By the time the pilot landed, the repo had `twinkit` and
+  `packages/twin-ui`, so the tour models, the pure camera helpers
+  (`camera_around`, `whole_map`) and the invariant test
+  (`twinkit.testing.assert_tour_invariants`) live in `twinkit/tour.py`, and
+  one `TourPlayer` lives in `packages/twin-ui/src/components/tour/`. A twin
+  writes only its tour as data, its own tests, two props on its map component
+  and the route wiring.
+- **File layout (§3).** `CameraRig.tsx` and `NarrationChannel.ts` became
+  `motion.ts` (camera tween, reduced motion, region look) and `narration.ts`
+  (one utterance per sentence, because Chrome drops long utterances without
+  firing `onend`). There is no `frontend/public/tour/` audio.
+- **Layers are a map, not a field (§4).** `layer_reveal` is on the step as
+  specified, but regions carry no `layer`. Each twin's `layer_map(anatomy)`
+  returns `{region id: layer}`, usually derived from `region.kind`, and the
+  response carries it as `layers` next to `mapWidth`/`mapHeight`.
+- **Photos (§4, §7).** `photo_id` points into a new `Tour.photos` list
+  (`id, url, caption, credit`) rather than into the anatomy. Six tours use a
+  photo (R760, PowerStore, iDRAC, SN6000, PowerFlex, CyberDetect); the rest
+  keep the schematic only.
+- **Narration tiers (§2).** Tiers 0 and 1 shipped: captions always, and
+  browser speech, muted until the viewer turns it on. Tier 2 (`audio_url`) is
+  in the model but no tour uses it. The video export (§9) was not built.
+- **Reading levels.** Not in the spec: every script and every tour intro is
+  wrapped in `L(...)` with levels 1, 3 and 5 authored, and `GET /api/tour`
+  takes `?level=` like every other content endpoint.
+- **Camera travel (§6).** "Overlap or bounded tween distance" is a number:
+  consecutive boxes must overlap or move at most `(W+H)/2`, overridable per
+  twin with `max_travel=`.
+- **Truth test.** Added beyond §6: each twin's tests pin its signature step's
+  `trace_cursor` to the trace step that makes the same claim, compared by
+  trace label.
+- **Storyboards (§8).** Tours have 7 to 9 beats, not 6 to 9. Four built twins
+  had no row and chose their own signature ids: DellPowerEdgeXE9680
+  (`domain-stops-at-eight`), DellPowerStoreElite (`zero-downtime-join`),
+  DellQuantumX800 (`credits-before-bytes`) and DellPrivateCloud
+  (`hypervisor-switch`). DellPowerScale, DellNativeEdge and
+  DellCircularDesign were built from their spec'd rows and kept the ids
+  listed there. GPU stays out of scope; its `app/tour.py` is the older CUDA
+  lesson tour (spec_18).
+- **Entry points (§3).** `#tour` and `#tour/<stepId>` deep links, a
+  `Guided tour` nav button and a `Guided tour` button on the sim page. The
+  player rewrites the hash with `history.replaceState`, so the URL follows
+  the tour without growing the history.
+- **Browser smoke routes.** Every tour twin's `frontend/smoke.json` carries a
+  `#tour` route and a `#tour/<signature-id>` route, run by
+  `scripts/smoke.sh`.
