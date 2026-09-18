@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchBringUp } from "./api";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
+import { fetchAnatomy, fetchBringUp, fetchTour } from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -12,13 +14,14 @@ import type { BringUpState, RegionKind, SubsystemMap } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "bringup" | "anatomy" | "components" | "usecases";
+type Page = "bringup" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "bringup";
 }
 
@@ -27,7 +30,14 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 // Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
 // cursor, or null when the hash matches neither pattern (or names an unknown
@@ -74,9 +84,14 @@ export function App() {
   useEffect(() => {
     // Only overwrite the hash for top-level switches; pages may append their
     // own deep-link segments (e.g. #anatomy/<blockId>).
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
-      window.location.hash = PAGE_HASH[page];
-    }
+    // The landing page has an empty hash, so check it explicitly: every hash
+    // starts with "#", and a bare prefix test would keep #tour/<id> there.
+    const want = PAGE_HASH[page];
+    const h = window.location.hash;
+    const onPage = want
+      ? h.startsWith(`#${want}`)
+      : !/^#(anatomy|components|usecases|tour)/.test(h);
+    if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
 
@@ -88,12 +103,16 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
   // Apply a #step=/#phase= deep link only on the first successful trace load,
   // so a reading-level refetch does not yank the cursor back.
   const hashApplied = useRef(false);
+  const traceRef = useRef<BringUpState[]>([]);
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
@@ -105,6 +124,21 @@ export function App() {
     setRunning(false);
   }, []);
 
+  // Follow hash changes made outside the nav (links, "Go deeper" buttons,
+  // the back button, a pasted #step=/#phase= link).
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [stop]);
+
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
   useEffect(() => {
@@ -112,6 +146,7 @@ export function App() {
       .then(([an, bu]) => {
         setAnatomy(an);
         setTrace(bu.trace);
+        traceRef.current = bu.trace;
         if (!hashApplied.current) {
           hashApplied.current = true;
           const start = initialStepFromHash(bu.trace);
@@ -120,6 +155,16 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (its narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -204,6 +249,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "bringup" && (
           <span className="sub">
@@ -216,6 +267,67 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // BlockView draws the map plus a 2.5-unit outline margin and a
+              // 4-unit row of orientation labels.
+              stageAspect={
+                (tour.mapWidth + 2 * 2.5) / (tour.mapHeight + 2 * 2.5 + 4)
+              }
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the bring-up page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <BlockView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Bring-up trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedSeconds}s · {state.powerWatts} W
+                      (illustrative)
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "bringup" && (
         <>
@@ -231,6 +343,12 @@ export function App() {
               powered on. Play the trace and watch each stage light up the
               block it runs in.
             </p>
+            <button
+              className="primary bringup-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">

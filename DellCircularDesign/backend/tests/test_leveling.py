@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import app.anatomy  # noqa: F401  (import for the side effect of registering)
 import app.catalog  # noqa: F401
+import app.tour  # noqa: F401
 import app.usecases  # noqa: F401
 from app.anatomy import ANATOMY
 from app.engine import simulate
@@ -139,3 +140,25 @@ def test_coverage_is_reported_and_the_ends_are_not_empty():
     assert counts[3] == len(registry())
     assert counts[1] > 0, "no novice-level prose authored"
     assert counts[5] > 0, "no expert-level prose authored"
+
+
+def test_every_trace_step_reads_differently_at_both_ends():
+    # The reading-level control sits on the lifecycle page; if the trace
+    # prose ignored it, the control would do nothing where it is used most.
+    standard = MaterialResponse(trace=simulate()).trace
+    novice = leveled(MaterialResponse(trace=simulate()), 1).trace
+    expert = leveled(MaterialResponse(trace=simulate()), 5).trace
+    for s, n, e in zip(standard, novice, expert):
+        assert n.description != s.description, s.phase
+        assert e.description != s.description, s.phase
+        assert len(n.description) > len(e.description), s.phase
+
+
+def test_every_trace_step_is_authored_at_all_five_levels():
+    # Levels 2 and 4 used to fall back to 1 and 5 on the trace; each step
+    # now carries its own variant at every level.
+    reg = registry()
+    for s in MaterialResponse(trace=simulate()).trace:
+        variants = reg.get(s.description)
+        assert variants is not None, s.phase
+        assert set(variants) == set(LEVELS), (s.phase, sorted(variants))

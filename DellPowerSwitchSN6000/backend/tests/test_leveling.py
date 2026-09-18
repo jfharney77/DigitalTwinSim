@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import app.anatomy  # noqa: F401  (import for the side effect of registering)
 import app.catalog  # noqa: F401
+import app.tour  # noqa: F401  (the tour's narration is leveled prose too)
 import app.usecases  # noqa: F401
 from app.anatomy import ANATOMY
 from app.engine import simulate

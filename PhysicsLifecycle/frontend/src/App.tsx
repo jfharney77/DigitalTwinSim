@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchMedia,
   type ProductMediaWire,
@@ -42,6 +42,27 @@ const DEFAULT_EVENTS: SimEvent[] = [
 
 const SPEEDS = [1, 7, 30];
 
+// Duration follows the product: rollouts run a year, lifecycles eight.
+// Applied when the reader picks a product or preset — never as an effect,
+// which would overwrite a guided scenario's own duration.
+const durationFor = (product: LifecycleConfig["product"]) =>
+  product === "circulardesign" ? 2920 : 365;
+
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios: hundred-sites, heatwave, friday-patch,
+// sealed-vs-serviceable, grid-matters, battery-year). Returns null when the
+// hash names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
+}
+
 export function App() {
   useEffect(() => {
     document.body.classList.add("dell-body");
@@ -53,7 +74,8 @@ export function App() {
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch re-renders the narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const [config, setConfig] = useState<LifecycleConfig>(DEFAULT_CONFIG);
   const [events, setEvents] = useState<SimEvent[]>(DEFAULT_EVENTS);
@@ -66,6 +88,11 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  const setActiveScenario = (g: GuidedScenario | null) => {
+    setActiveScenarioId(g ? g.id : null);
+    writeHash(g ? `#scenario=${g.id}` : "");
+  };
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -83,11 +110,6 @@ export function App() {
       .then(setConfigPresets)
       .catch((e) => setError(String(e)));
   }, []);
-
-  // Duration follows the product: rollouts run a year, lifecycles eight.
-  useEffect(() => {
-    setDurationD(config.product === "circulardesign" ? 2920 : 365);
-  }, [config.product]);
 
   const scenario: Scenario = useMemo(
     () => ({ config, durationD, events }),
@@ -126,13 +148,44 @@ return () => {
     setEvents((evs) => [...evs, { atD: state?.tD ?? 0, ...e }]);
   };
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setEvents(g.scenario.events);
     setDurationD(g.scenario.durationD);
     setCursor(0);
     setRunning(true);
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const id = scenarioIdFromHash();
+    const g = scenarios.find((x) => x.id === id);
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = scenarioIdFromHash();
+      const g = scenarios.find((x) => x.id === id);
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
+
+  const pickProduct = (c: LifecycleConfig) => {
+    if (c.product !== config.product) {
+      setDurationD(durationFor(c.product));
+      setEvents(c.product === "telecomblocks" ? DEFAULT_EVENTS : []);
+      setActiveScenario(null);
+      setCursor(0);
+    }
+    setConfig(c);
   };
 
   const coldStart = () => {
@@ -194,6 +247,9 @@ return () => {
           carbon figure is a labeled estimate; Dell's PCF reports are the
           calibration homework.
         </p>
+        {/* The anatomy overview is authored at every reading level; it is
+            what the reading-level control changes on this page. */}
+        {anatomy?.overview && <p className="hero-overview">{anatomy.overview}</p>}
       </div>
 
       <div className="thermal-grid">
@@ -202,16 +258,18 @@ return () => {
             media={media}
             selected={config.product}
             onSelect={(p) =>
-              setConfig({ ...config, product: p as LifecycleConfig["product"] })
+              pickProduct({ ...config, product: p as LifecycleConfig["product"] })
             }
           />
           <BuildPanel
             config={config}
             presets={configPresets}
             validations={result?.validations ?? []}
-            onChange={(c) => setConfig(c)}
+            onChange={pickProduct}
             onPreset={(p) => {
               setConfig(p.config);
+              setDurationD(durationFor(p.config.product));
+              setCursor(0);
               setActiveScenario(null);
               setEvents(p.config.product === "telecomblocks" ? DEFAULT_EVENTS : []);
             }}

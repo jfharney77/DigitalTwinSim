@@ -137,3 +137,19 @@ def test_explain_entries_cover_the_required_readouts():
     for e in EXPLAINS:
         assert e.equation.strip() and e.explanation.strip(), e.id
         assert len(e.inputs) >= 3, f"{e.id}: causal chain too short"
+
+
+def test_guided_scenario_ids_are_deep_linkable():
+    """The frontend opens /#scenario=<id>; its hash parser accepts
+    [a-z0-9_-]+ and the course links by these exact ids."""
+    import re
+
+    from app.presets import GUIDED_SCENARIOS
+
+    ids = [g.id for g in GUIDED_SCENARIOS]
+    assert len(ids) == len(set(ids))
+    assert all(re.fullmatch(r"[a-z0-9_-]+", i) for i in ids)
+    assert ids == [
+        "hundred-sites", "heatwave", "friday-patch",
+        "sealed-vs-serviceable", "grid-matters", "battery-year",
+    ]

@@ -67,7 +67,7 @@ export function LoopView({
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 10}`}
+      viewBox={`0 0 ${W} ${H + 12}`}
       aria-label={`${anatomy.name} loop map`}
       onClick={() => onSelect?.(null)}
     >
@@ -188,7 +188,8 @@ export function LoopView({
         <text x={MARGIN + 60} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
           80 °C
         </text>
-        <text x={W - MARGIN} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
+        {/* Own line: on one row it ran into the "80 °C" end label. */}
+        <text x={W - MARGIN} y={H + 10.2} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
           FACILITY (left) ↔ RACK (right) · click a pump to fail it
         </text>
       </g>

@@ -357,13 +357,14 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         if powered_on and (cpu_throttling or gpu_throttling or skin_clamp < 1.0):
             throttle_seconds += 1
 
+        inferring = wl.inference or (bool(npu_max) and wl.npu_pct > 0)
         fps = (
             C("fps_ref") * ((gpu_w / tgp) ** C("fps_exponent"))
-            if (powered_on and tgp and wl.gpu_pct > 0) else 0.0
+            if (powered_on and tgp and wl.gpu_pct > 0 and not inferring) else 0.0
         )
         active = None
         tokps = tokpj = 0.0
-        if powered_on:
+        if powered_on and inferring:
             if npu_max and wl.npu_pct > 0:
                 active, rate, p = "npu", C("tokps_npu"), npu_w
                 full = npu_max

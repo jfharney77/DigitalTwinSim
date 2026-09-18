@@ -92,7 +92,7 @@ ANATOMY = ServerAnatomy(
             "The eight chips sit together on one large board and are wired to "
             "each other so tightly that software can treat them as one large "
             "processor. But that tight wiring ends at the edge of the box: to "
-            "work with the GPUs in the *next* box, each chip has its own "
+            "work with the GPUs in the next box, each chip has its own "
             "network cable — eight cables per server, one per chip. That is "
             "the whole trick of building giant AI computers out of this "
             "machine: the box is ordinary enough to install by the thousand, "

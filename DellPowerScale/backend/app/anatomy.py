@@ -125,7 +125,7 @@ ANATOMY = ClusterAnatomy(
             "window. OneFS declines to partition. Files are striped "
             "across every node with erasure coding, clients reach the "
             "same data over NFS, SMB, S3, and HDFS through any node, and "
-            "growth is a node joining the cluster — the single volume "
+            "growth is a node joining the cluster — the single namespace "
             "becomes larger and AutoBalance redistributes data onto the "
             "new hardware while clients keep reading. The map makes the "
             "refusal visible: the namespace is the continuous bar "
@@ -273,7 +273,7 @@ ANATOMY = ClusterAnatomy(
         Stat(label="Scale", value="3 to 252 nodes in one cluster"),
         Stat(label="Protocols", value="NFS, SMB, S3, HDFS — all via any node"),
         Stat(label="Protection", value="Per-file erasure coding across nodes"),
-        Stat(label="Expansion", value="Add a node; the volume becomes larger"),
+        Stat(label="Expansion", value="Add a node; the namespace becomes larger"),
         Stat(label="Migrations required to grow", value="Zero"),
         Stat(label="Operating system", value="OneFS on every node"),
     ],

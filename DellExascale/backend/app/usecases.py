@@ -203,7 +203,7 @@ USE_CASES: list[UseCase] = [
                 "ObjectScale object — in one rack with one control plane. "
                 "The databases keep their block volumes, the shared "
                 "namespace keeps working, and the corpus becomes readable "
-                "at parallel speed *where it already sits*. That deleted "
+                "at parallel speed where it already sits. That deleted "
                 "copy step is usually the single biggest schedule win, "
                 "because it was measured in days and repeated for every "
                 "experiment."

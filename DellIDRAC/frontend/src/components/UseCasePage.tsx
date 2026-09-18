@@ -103,7 +103,6 @@ export function UseCasePage() {
             <table>
               <thead>
                 <tr>
-                  <th>Qty</th>
                   <th>Capability</th>
                   <th>Category</th>
                   <th>Why</th>
@@ -112,7 +111,6 @@ export function UseCasePage() {
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i}>
-                    <td className="uc-qty">{r.item.qty}×</td>
                     <td className="uc-part">{r.option}</td>
                     <td className="uc-cat">{r.category}</td>
                     <td className="uc-why">{r.item.rationale}</td>

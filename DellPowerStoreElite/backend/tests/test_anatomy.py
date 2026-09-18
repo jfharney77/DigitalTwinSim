@@ -122,3 +122,17 @@ def test_camel_case_wire_format():
     data = ANATOMY.model_dump(by_alias=True)
     assert "formFactor" in data
     assert "regions" in data and "description" in data["regions"][0]
+
+
+def test_every_label_fits_its_block():
+    """Mirror ChassisView.tsx's label-fitting rule: a label too long for its
+    block is silently dropped, leaving an unlabelled box on the map (the
+    Elite CPUs once rendered blank this way). Every region must fit either
+    horizontally or rotated."""
+    for r in ANATOMY.regions:
+        n = len(r.label) or 1
+        h_size = min(1.9, r.h * 0.45, (r.w - 1.6) / (n * 0.62))
+        v_size = min(1.9, r.w * 0.42, (r.h - 1.6) / (n * 0.62))
+        fits_h = r.h > 3.4 and h_size >= 1.05
+        fits_v = r.w >= 3 and v_size >= 1.05
+        assert r.label and (fits_h or fits_v), f"{r.id}: label {r.label!r} does not fit"

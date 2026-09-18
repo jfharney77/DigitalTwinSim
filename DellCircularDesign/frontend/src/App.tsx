@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchLifecycle } from "./api";
+import { fetchAnatomy, fetchLifecycle, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -7,27 +7,36 @@ import { LoopView } from "./components/LoopView";
 import { LifecycleControls } from "./components/LifecycleControls";
 import {
   LifecycleCounters,
+  PHASE_LABEL,
   fmtElapsed,
 } from "./components/LifecycleCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { LifecycleMap, MaterialState, RegionKind } from "./types";
+
+// LoopView draws the 100 x 70 map inside a 2.5-unit margin with two caption
+// lines below it: 105 x 81.4. The tour stage keeps that shape.
+const LOOP_ASPECT = 105 / 81.4;
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "lifecycle" | "anatomy" | "components" | "usecases";
+type Page = "lifecycle" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "lifecycle";
 }
 
 // Deep-link into the trace: #step=N (clamped) or #phase=<name> (first
 // matching state). Returns null when the hash names neither.
 function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
   const h = window.location.hash;
   const step = h.match(/#step=(\d+)$/);
   if (step) return Math.min(Number(step[1]), states.length - 1);
@@ -44,17 +53,50 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
+    // Compare the page the hash names, not a prefix: every hash starts with
+    // "#", so a prefix test let #usecases/... survive a switch back to the
+    // lifecycle page, and a reload then reopened the wrong page.
+    if (pageFromHash() !== page) {
       window.location.hash = PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
   }, [page]);
+
+  // Follow in-page hash edits too (a pasted #phase= link, back/forward):
+  // switch page, and re-seek the cursor when the hash names a step.
+  const [hashSeek, setHashSeek] = useState(0);
+  // A #tour/<id> edited in place (pasted link, back/forward) remounts the
+  // player on that beat; otherwise the URL would name one beat while the
+  // stage showed another. The player's own step changes use replaceState,
+  // which fires no hashchange, so this never loops.
+  const [tourKey, setTourKey] = useState(0);
+  const tourStart = useRef<string | null>(tourStepFromHash());
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      setHashSeek((n) => n + 1);
+      const id = tourStepFromHash();
+      if (id && id !== tourStart.current) {
+        tourStart.current = id;
+        setTourKey((k) => k + 1);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const [anatomy, setAnatomy] = useState<LifecycleMap | null>(null);
   const [trace, setTrace] = useState<MaterialState[]>([]);
@@ -63,6 +105,8 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -96,6 +140,26 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  useEffect(() => {
+    if (hashSeek === 0 || trace.length === 0) return;
+    const start = initialStepFromHash(trace);
+    if (start !== null) {
+      stop();
+      setCursor(start);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hashSeek]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled server-side).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -179,10 +243,20 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "lifecycle" && (
           <span className="sub">
-            {state ? `${state.label} · t+${fmtElapsed(state.elapsedMonths)}` : "—"}
+            {/* The short phase name: the full step title is on the card
+                below, and here it wrapped the whole header. */}
+            {state
+              ? `${PHASE_LABEL[state.phase]} · t+${fmtElapsed(state.elapsedMonths)}`
+              : "—"}
           </span>
         )}
         <LevelControl />
@@ -191,6 +265,63 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              key={tourKey}
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              stageAspect={LOOP_ASPECT}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the lifecycle page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <LoopView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Material trace: <strong>{state.label}</strong> · t+
+                      {fmtElapsed(state.elapsedMonths)} (illustrative)
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "lifecycle" && (
         <>
@@ -214,6 +345,12 @@ export function App() {
               repair steps in the middle, because a year more of service
               defers an entire manufacturing cycle.
             </p>
+            <button
+              className="primary lifecycle-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">

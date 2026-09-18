@@ -210,10 +210,20 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         alive_psus = alive_psu_count()
         if powered_on and alive_psus == 0:
             powered_on = False
-            shutdown_reason = "no PSUs alive — AC feed lost"
+            # Name the cause honestly: only a single-feed pool dropped by a
+            # feed loss is a failure grid redundancy would have ridden out.
+            if not feed_up["A"] and not feed_up["B"]:
+                shutdown_reason = "no PSUs alive — both AC feeds lost"
+                why = "Both AC feeds are down; no redundancy policy survives losing every feed."
+            elif cfg.redundancy != "grid" and not all(feed_up.values()):
+                shutdown_reason = "no PSUs alive — AC feed lost"
+                why = "Grid redundancy would have survived this."
+            else:
+                shutdown_reason = "no PSUs alive — every PSU failed"
+                why = "Every PSU in the pool has failed."
             log.append(LogEntry(
                 t=t, severity="critical",
-                message="No PSUs alive — chassis dark. Grid redundancy would have survived this.",
+                message=f"No PSUs alive — chassis dark. {why}",
             ))
 
         alive_fans = fan_count - len(dead_fans)

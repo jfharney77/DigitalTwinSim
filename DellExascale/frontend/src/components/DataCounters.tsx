@@ -51,7 +51,13 @@ export function DataCounters({
       </div>
       <div className="stat">
         <span>metadata in path</span>
-        <span>{state ? (mdsInPath ? "yes" : "no — bypassed") : "—"}</span>
+        <span>{state
+            ? mdsInPath
+              ? "yes"
+              : state.layoutHeld
+                ? "no — bypassed"
+                : "no"
+            : "—"}</span>
       </div>
       <div className="stat">
         <span>elapsed (typical)</span>

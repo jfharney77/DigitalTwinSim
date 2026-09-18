@@ -574,3 +574,63 @@ select:hover {
 .app.dell .ctr-check-ok {
   color: var(--dell-text);
 }
+
+/* ---- Narrow screens -----------------------------------------------------
+   A bare 1fr track sizes to its min-content, so the header row and the
+   wide tables pushed the page past a phone's width. minmax(0, 1fr) lets the
+   column shrink; the header wraps instead of scrolling sideways. */
+@media (max-width: 880px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  header {
+    flex-wrap: wrap;
+  }
+  .app.dell header,
+  .app.dell .an-hero {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .app.dell .stage,
+  .app.dell .controls {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .app.dell .an-card {
+    padding: 20px 16px;
+  }
+  header .sub {
+    margin-left: 0;
+  }
+  .uc-build {
+    overflow-x: auto;
+  }
+}
+
+/* --- Guided tour: layer peel on the lifecycle loop --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
+}
+.lifecycle-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}

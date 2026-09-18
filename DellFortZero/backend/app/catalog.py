@@ -82,7 +82,7 @@ CATALOG: list[CatalogCategory] = [
                     "on-premises private cloud in April 2025, tested "
                     "against sophisticated attack. The value of an "
                     "external grading is that it is an assessment of the "
-                    "*architecture* rather than of a feature list — which "
+                    "architecture rather than of a feature list — which "
                     "matters in a model where a single gap makes the other "
                     "controls irrelevant."
                 ),

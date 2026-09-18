@@ -144,7 +144,7 @@ ANATOMY = ClusterAnatomy(
     height=64,
     overview=L(
         novice=(
-            "Most of this repo's other systems are a single machine. This one "
+            "Most of the other digital twins here model a single machine. This one "
             "is a group of four identical servers that behave as one. Each "
             "server brings its own processors and its own drives, and software "
             "pools all those separate drives into a single shared pool that any "

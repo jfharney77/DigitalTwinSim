@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchAnatomy } from "../api";
 import { PlatformView } from "./PlatformView";
+import { useLevel } from "../level";
 import type { PlatformMap, Photo, RegionKind } from "../types";
 
 const TOOLTIP_W = 280; // px; keep in sync with .an-tooltip width
@@ -50,6 +51,7 @@ export function ArchitecturePage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   const onHover = useCallback((id: string | null, x: number, y: number) => {
     setHover(id ? { id, x, y } : null);
@@ -59,7 +61,7 @@ export function ArchitecturePage() {
     fetchAnatomy()
       .then(setAnatomy)
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   useEffect(() => {
     window.location.hash = regionId ? `architecture/${regionId}` : "architecture";

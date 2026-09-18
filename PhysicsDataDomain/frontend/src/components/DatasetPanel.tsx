@@ -10,9 +10,17 @@ import type {
 // properties — the entire input to the machine — and the validation
 // findings, which read like a miniature capacity-planning review.
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  stack = false,
+  children,
+}: {
+  label: string;
+  stack?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <label className="field cfg-row">
+    <label className={stack ? "field cfg-row cfg-row-stack" : "field cfg-row"}>
       <span className="cfg-label">{label}</span>
       {children}
     </label>
@@ -60,7 +68,7 @@ export function DatasetPanel({
         ))}
       </div>
 
-      <Row label="Appliance">
+      <Row label="Appliance" stack>
         <select
           value={applianceId}
           onChange={(e) => onAppliance(e.target.value as Appliance["id"])}

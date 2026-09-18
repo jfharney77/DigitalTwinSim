@@ -46,7 +46,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
 
     sites = cfg.sites
     nodes_per = cfg.nodes_per_site
-    nodes_down = 0                     # faulted, awaiting remediation
+    repairs_due: list[int] = []        # one entry per faulted node: the day it returns
     node_day_acc = 0.0
     faults = 0
     truck_rolls = 0
@@ -74,6 +74,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     for step in range(steps + 1):
         t = int(step * DT_D)
         hours_today = 0.0
+        new_faults = 0
+        # Repaired nodes rejoin at the start of their due day.
+        repairs_due = [d for d in repairs_due if d > t]
 
         # --- Events -------------------------------------------------------
         while ei < len(events) and events[ei].at_d <= t:
@@ -98,7 +101,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 ))
             elif ev.action == "node-fault":
                 faults += 1
-                nodes_down += 1
+                new_faults += 1
                 log.append(LogEntry(t_d=t, severity="warning",
                                     message="Node fault (injected)"))
             elif ev.action == "cluster-update":
@@ -148,37 +151,52 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         while node_day_acc >= C("fault_node_days"):
             node_day_acc -= C("fault_node_days")
             faults += 1
-            nodes_down += 1
+            new_faults += 1
             log.append(LogEntry(t_d=t, severity="warning",
                                 message="Node fault (wear schedule)"))
+
+        # A faulted node stays out until repaired. A single-node edge site
+        # is back when the truck leaves (the truck-roll day); everything
+        # else waits the repair window for parts and a replacement.
+        repair_d = 1 if (edge and not cfg.two_node_ha) else int(C("repair_days"))
+        repairs_due += [t + repair_d] * new_faults
+        nodes_down = min(len(repairs_due), nodes_total)
 
         # --- HA math: does the fleet absorb what's down? -------------------
         nodes_healthy = nodes_total - nodes_down
         capacity = nodes_healthy * wl.vm_size_capacity
         tolerated = cfg.ftt if p == "vxrail" else 1
-        if nodes_down > 0:
+        # Downtime is paid once, on the day a fault lands.
+        if new_faults > 0:
             per_site_down = nodes_down  # worst case: same cluster
             if edge and not cfg.two_node_ha:
                 outage_min += C("edge_truck_outage_minutes") / max(sites, 1) \
-                    * nodes_down
-                truck_rolls += nodes_down
+                    * new_faults
+                truck_rolls += new_faults
             elif nodes_per - per_site_down >= 1 and capacity >= demand_now \
                     and per_site_down <= tolerated:
-                outage_min += C("ha_failover_minutes") * nodes_down
+                outage_min += C("ha_failover_minutes") * new_faults
             else:
                 outage_min += C("no_headroom_outage_minutes")
-        exposure = (
-            p == "vxrail" and nodes_down >= tolerated and nodes_down > 0
-        ) or (nodes_per - nodes_down < 1 + tolerated and nodes_down > 0)
+        # Exposure: served but unprotected. vSAN re-protects a lost node's
+        # data onto a spare host the day it fails, if one exists: FTT=n
+        # places 2n+1 components on distinct hosts, so re-protection needs
+        # 2n+1 hosts still standing. Without that rebuild target the
+        # window stays open until the repair lands (the 3-node trap).
+        if p == "vxrail":
+            rebuild_target = nodes_per - nodes_down >= 2 * tolerated + 1
+            exposure = nodes_down > 0 and (new_faults > 0 or not rebuild_target)
+        else:
+            exposure = nodes_down > 0 and nodes_per - nodes_down < 1 + tolerated
 
-        # Remediation consumes hours; remote sites may need a truck.
-        if nodes_down > 0:
+        # Remediation consumes hours (once per fault); remote sites may
+        # need a truck.
+        if new_faults > 0:
             per_fault = C("remediate_auto_h") if automated else C("remediate_manual_h")
             if edge and not automated:
                 per_fault += C("truck_roll_h")
-                truck_rolls += nodes_down
-            backlog_h += per_fault * nodes_down
-            nodes_down = 0  # remediation queued; hardware recovers
+                truck_rolls += new_faults
+            backlog_h += per_fault * new_faults
 
         # --- Monthly update wave ------------------------------------------
         if t > 0 and t % int(C("update_days")) == 0:

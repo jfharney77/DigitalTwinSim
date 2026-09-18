@@ -174,3 +174,14 @@ def test_explain_entries_cover_the_required_readouts():
     for e in EXPLAINS:
         assert e.equation.strip() and e.explanation.strip(), e.id
         assert len(e.inputs) >= 3, f"{e.id}: causal chain too short"
+
+
+def test_fort_zero_is_not_judged_on_backup_dials_it_never_uses():
+    # The access graph hides the vault/backup/sensitivity controls, so
+    # leftover values from another product must not raise their rules.
+    leftover = ZT.model_copy(update={
+        "vault": False, "backup_every_h": 168, "detection": True,
+        "sensitivity": 10, "estate_tb": 1000, "restore_gbps": 0.5,
+    })
+    found = _findings(leftover)
+    assert not {"three-two-one", "rto", "rpo", "sensitivity"} & found.keys()

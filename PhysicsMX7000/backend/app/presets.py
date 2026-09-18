@@ -162,7 +162,7 @@ GUIDED_SCENARIOS = [
                     "move along the curve), and the chassis rides through. "
                     "Now re-run the N+1 scenario next to this one: same "
                     "chassis, same event, opposite outcome. Redundancy is "
-                    "a policy about *which* failure you are covered for."
+                    "a policy about which failure you are covered for."
                 ),
                 expert=(
                     "Grid 3+3; feed A lost at t=300. Pool halves, load "
@@ -277,7 +277,7 @@ GUIDED_SCENARIOS = [
                     "electrical circuit is smaller than the hardware's "
                     "appetite. Here eight sleds all run flat out into a "
                     "budget that cannot hold them, and the management "
-                    "module responds by slowing *every* compute sled "
+                    "module responds by slowing every compute sled "
                     "together until the total fits. Watch the 'capped' "
                     "flag and the power line flatten below the ceiling: "
                     "shared budget, shared haircut."
@@ -355,7 +355,7 @@ EXPLAINS = [
                 "lands on the chassis, not on the sled that caused it."
             ),
             standard=(
-                "The controller is proportional on the *maximum* sled "
+                "The controller is proportional on the maximum sled "
                 "temperature — the defining line of shared cooling. One "
                 "sled at 100% sets the error term, the wall ramps, and "
                 "cubic fan power is billed chassis-wide. The noisy-"

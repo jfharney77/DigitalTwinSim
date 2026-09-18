@@ -115,10 +115,10 @@ export function StripCharts({
         current={cur ? cur.batteryPct.toFixed(0) : "—"}
       />
       <div className="mini">
-        Last {Math.min(WINDOW_S, win.length)} sim-seconds. The burst-then-
-        fade shape lives in the first two charts; the dashed line on the
-        skin chart is the 46 °C contact cap — the controller silicon
-        cannot argue with.
+        Last {Math.min(WINDOW_S, win.length)} sim-seconds. The
+        burst-then-fade shape lives in the first two charts; the dashed
+        line on the skin chart is the 46 °C contact cap, the one limit
+        the silicon controller cannot argue with.
       </div>
     </div>
   );

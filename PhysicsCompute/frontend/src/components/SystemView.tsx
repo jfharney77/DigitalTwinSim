@@ -96,11 +96,6 @@ export function SystemView({
         const temp = state?.regionTemps[r.id] ?? T_MIN;
         const isSel = r.id === selected;
         const fill = tempColor(temp);
-        const len = r.label.length || 1;
-        const hSize = Math.min(1.9, r.h * 0.42, (r.w - 1.4) / (len * 0.62));
-        const vSize = Math.min(1.9, r.w * 0.42, (r.h - 1.4) / (len * 0.62));
-        const showLabel = !!r.label && r.h > 3.2 && hSize >= 1.0;
-        const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.0;
         return (
           <g
             key={r.id}
@@ -116,44 +111,6 @@ export function SystemView({
               stroke={isSel ? "var(--accent)" : "#0d1420"}
               strokeWidth={isSel ? 0.6 : 0.3}
             />
-            {showLabel && !showVLabel && (
-              <text
-                x={rx(r) + r.w / 2}
-                y={ry(r) + (r.h < 6 ? r.h / 2 + hSize * 0.35 : 2.4)}
-                textAnchor="middle"
-                fill="#0d1420"
-                fontSize={Math.max(hSize, 1.0)}
-                fontWeight={600}
-                letterSpacing={0.1}
-              >
-                {r.label}
-              </text>
-            )}
-            {showVLabel && (
-              <text
-                x={rx(r) + r.w / 2}
-                y={ry(r) + r.h / 2}
-                textAnchor="middle"
-                fill="#0d1420"
-                fontSize={vSize}
-                fontWeight={600}
-                transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
-              >
-                {r.label}
-              </text>
-            )}
-            {r.w >= 12 && r.h >= 7 && state && (
-              <text
-                x={rx(r) + r.w / 2}
-                y={ry(r) + r.h - 1.6}
-                textAnchor="middle"
-                fill="#0d1420"
-                fontSize={1.7}
-                fontWeight={700}
-              >
-                {temp.toFixed(0)}°
-              </text>
-            )}
           </g>
         );
       })}
@@ -231,6 +188,65 @@ export function SystemView({
           })}
         </g>
       )}
+      {/* Labels last, above the bezel facsimile, so faceplates and LEDs
+          never strike through the text. */}
+      <g pointerEvents="none">
+      {anatomy.regions.map((r) => {
+        const temp = state?.regionTemps[r.id] ?? T_MIN;
+        const len = r.label.length || 1;
+        const hSize = Math.min(1.9, r.h * 0.42, (r.w - 1.4) / (len * 0.62));
+        const vSize = Math.min(1.9, r.w * 0.42, (r.h - 1.4) / (len * 0.62));
+        const showLabel = !!r.label && r.h > 3.2 && hSize >= 1.0;
+        const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.0;
+        // A halo in the region's own color knocks out bezel lines behind the text.
+        const halo = { stroke: tempColor(temp), strokeWidth: 0.6, paintOrder: "stroke" as const };
+        return (
+          <g key={r.id}>
+            {showLabel && !showVLabel && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + (r.h < 6 ? r.h / 2 + hSize * 0.35 : 2.4)}
+                textAnchor="middle"
+                fill="#0d1420"
+                {...halo}
+                fontSize={Math.max(hSize, 1.0)}
+                fontWeight={600}
+                letterSpacing={0.1}
+              >
+                {r.label}
+              </text>
+            )}
+            {showVLabel && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h / 2}
+                textAnchor="middle"
+                fill="#0d1420"
+                {...halo}
+                fontSize={vSize}
+                fontWeight={600}
+                transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
+              >
+                {r.label}
+              </text>
+            )}
+            {r.w >= 12 && r.h >= 7 && state && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 1.6}
+                textAnchor="middle"
+                fill="#0d1420"
+                {...halo}
+                fontSize={1.7}
+                fontWeight={700}
+              >
+                {temp.toFixed(0)}°
+              </text>
+            )}
+          </g>
+        );
+      })}
+      </g>
       <g>
         {Array.from({ length: 30 }, (_, i) => (
           <rect
@@ -259,7 +275,7 @@ export function SystemView({
         <text x={MARGIN + 62} y={H + 6.6} fill="#5a6b82" fontSize={1.7}>
           {T_MAX} °C
         </text>
-        <text x={W - MARGIN} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
+        <text x={W - MARGIN} y={isRack ? H + 9.4 : H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
           {isRack ? "front elevation (bezels are illustration) · click a zone" : "top-down, FRONT left · click a zone"}
         </text>
       </g>

@@ -19,8 +19,11 @@ function Path({
   const d = points
     .map(([x, y], i) => {
       const px = ((x - x0) / xSpan) * w;
-      const py = h - ((y - yMin) / (yMax - yMin)) * h;
-      return `${i === 0 ? "M" : "L"}${px.toFixed(1)},${Math.max(0, Math.min(h, py)).toFixed(1)}`;
+      // 2-unit inset so a series pinned at its min or max (version
+      // currency sitting at 100%, drift at 0) stays visible, not hidden
+      // under the chart edge.
+      const py = h - 2 - ((y - yMin) / (yMax - yMin)) * (h - 4);
+      return `${i === 0 ? "M" : "L"}${px.toFixed(1)},${Math.max(1, Math.min(h - 1, py)).toFixed(1)}`;
     })
     .join(" ");
   return (

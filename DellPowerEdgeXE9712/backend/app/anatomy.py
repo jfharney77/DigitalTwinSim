@@ -60,7 +60,7 @@ _NIC_DESC = (
     "The tray's scale-out networking: NVIDIA ConnectX NICs and BlueField "
     "DPUs (data processing units — NICs with their own Arm cores that "
     "offload networking, storage, and security from the host). NVLink joins "
-    "the 72 GPUs *inside* the rack; these ports join the rack to *other* "
+    "the 72 GPUs inside the rack; these ports join the rack to other "
     "racks and to storage over InfiniBand or Spectrum-X Ethernet at 400–800 "
     "Gb/s. Training at AI-factory scale uses both fabrics at once."
 )
@@ -143,14 +143,14 @@ ANATOMY = RackAnatomy(
             "fabric → fused → ready. Asserted: liquid precedes silicon (coolant "
             "before trayboot); power monotonic with its largest jump at "
             "gpuinit; NVLink training holds max dwell; trays boot in lockstep "
-            "on `-t1..-t4`; and the fuse is atomic — `gpusInDomain` is 0 before "
-            "`fused` and exactly 72 after, never partial."
+            "on -t1..-t4; and the fuse is atomic — gpusInDomain is 0 before "
+            "fused and exactly 72 after, never partial."
         ),
         expert=(
             "GB200 NVL72 rack: 36 Grace / 72 Blackwell across 18 trays, 9 "
             "NVSwitch trays, busbar, in-rack CDU. Coolant-before-silicon "
             "asserted. Largest power step at gpuinit; NVLink training holds max "
-            "dwell. Fuse is atomic: `gpusInDomain` ∈ {0, 72}, never partial."
+            "dwell. Fuse is atomic: gpusInDomain ∈ {0, 72}, never partial."
         ),
     ),
     regions=[

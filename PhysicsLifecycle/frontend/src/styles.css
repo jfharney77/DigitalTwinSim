@@ -624,3 +624,25 @@ select:hover {
 /* V6 gauges */
 .gauge-row { display: flex; gap: 6px; margin-bottom: 8px; }
 .gauge { flex: 1; min-width: 0; }
+
+/* label.field is a column in the shared skin; the config rows are label-left
+   rows, and the label's 128px flex-basis would otherwise become a height. */
+.app.dell label.field.cfg-row { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 4px 0; }
+/* The hero text wraps under the thumbnail rather than shrinking to one word
+   a line in the 300px column. */
+.gallery-hero { flex-wrap: wrap; }
+.gallery-hero-text { flex: 1 1 160px; }
+/* The gauges draw white ink (needle, readout); on the light panel the value
+   was invisible, so they get the diagrams' dark ground. */
+.gauge { background: #0d1420; border-radius: 4px; padding: 2px 0; }
+
+/* Phone width: the header's title, nav, readout and level control wrap
+   instead of pushing the page into horizontal scroll. */
+@media (max-width: 600px) {
+  .app.dell header { flex-wrap: wrap; padding: 12px 16px; gap: 8px 16px; }
+  .app.dell header .sub { margin-left: 0; }
+}
+.hero-overview { margin-top: 8px; }
+/* The 300px column cannot spare 128px for a label: the selects were
+   truncating their own options ("Circular De…"). */
+.cfg-label { flex-basis: 84px; }

@@ -547,3 +547,85 @@ select:hover {
   letter-spacing: normal;
   min-width: 62px;
 }
+
+/* Phone widths: let the header wrap (tabs, status line and the reading-level
+   control cannot share one 390px row) and tighten the page gutters to 16px so
+   nothing pushes the page into horizontal scroll. */
+@media (max-width: 600px) {
+  .app.dell header {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 16px;
+  }
+  .app.dell header .sub {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+  .app.dell .tw-header-aside {
+    margin-left: 0;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 28px;
+    overflow-wrap: anywhere;
+  }
+  .app.dell .stage {
+    padding: 16px;
+  }
+  .app.dell .controls {
+    padding: 16px;
+  }
+  /* The four-column build sheet cannot fit: stack each row as a card-like
+     block (qty + part, then category, then the rationale). */
+  .uc-build thead {
+    display: none;
+  }
+  .uc-build tr {
+    display: block;
+    border-top: 1px solid var(--line);
+    padding: 8px 0;
+  }
+  .app.dell .uc-build td {
+    display: inline;
+    border: none;
+    padding: 0 6px 0 0;
+  }
+  .uc-build td.uc-cat,
+  .uc-build td.uc-why {
+    display: block;
+    padding-top: 4px;
+  }
+  .uc-cat {
+    white-space: normal;
+  }
+}
+
+/* --- Guided tour: layer peel on the floorplan --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
+}
+.poweron-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}

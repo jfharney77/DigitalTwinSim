@@ -85,9 +85,9 @@ export function BuildPanel({
 
       <h2 style={{ marginTop: 12 }}>Bays</h2>
       {config.sleds.map((sled, i) => (
-        <div key={i} className="field cfg-row" style={{ alignItems: "center" }}>
+        <div key={i} className="field cfg-row cfg-bay">
           <span className="cfg-label">Bay {i + 1}</span>
-          <span style={{ display: "flex", gap: 4, flex: 1, flexWrap: "wrap" }}>
+          <span className="cfg-bay-controls">
             <select
               value={sled.kind}
               onChange={(e) =>
@@ -133,7 +133,7 @@ export function BuildPanel({
               >
                 <option value="">no owner</option>
                 {computeSlots.map((s) => (
-                  <option key={s} value={s}>owned by sled {s}</option>
+                  <option key={s} value={s}>owner: sled {s}</option>
                 ))}
               </select>
             )}

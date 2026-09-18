@@ -566,7 +566,7 @@ select:hover {
 .rule-warning { color: #9a6a00; margin-top: 4px; }
 .rule-error { color: #ce1126; margin-top: 4px; font-weight: 600; }
 .playback-row { align-items: center; margin-top: 8px; flex-wrap: wrap; }
-.playback-row button.active { outline: 2px solid var(--accent, #0672cb); }
+.playback-row button.active { outline: 2px solid var(--dell-blue, #0672cb); }
 .region-card { margin-top: 8px; line-height: 1.5; }
 .event-log { max-height: 180px; overflow-y: auto; }
 .log-info { color: var(--dell-muted, #636363); }
@@ -576,18 +576,18 @@ select:hover {
 .margin-bar { height: 6px; background: #e8eaed; border-radius: 3px; margin: 2px 0 8px; }
 .margin-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
 .fan-overhead { color: #9a6a00; font-weight: 600; }
-.explain-card { border-left: 3px solid var(--accent, #0672cb); padding: 6px 8px; margin: 4px 0 8px; background: rgba(6, 114, 203, 0.06); line-height: 1.45; }
+.explain-card { border-left: 3px solid var(--dell-blue, #0672cb); padding: 6px 8px; margin: 4px 0 8px; background: rgba(6, 114, 203, 0.06); line-height: 1.45; }
 .explain-eq { font-family: monospace; font-weight: 600; }
-.explain-live { font-family: monospace; color: var(--accent, #0672cb); margin: 2px 0 4px; }
+.explain-live { font-family: monospace; color: var(--dell-blue, #0672cb); margin: 2px 0 4px; }
 .explain-chain { margin-top: 4px; font-style: italic; opacity: 0.8; }
 .strip-chart { margin-bottom: 8px; }
 .strip-title { display: flex; justify-content: space-between; }
 .scenario-list { display: flex; flex-direction: column; gap: 4px; }
 .scenario-list button { text-align: left; font-size: 12px; }
-.scenario-list button.active { outline: 2px solid var(--accent, #0672cb); }
+.scenario-list button.active { outline: 2px solid var(--dell-blue, #0672cb); }
 .scenario-narration { margin-top: 8px; line-height: 1.5; }
 .scenario-narration p { margin: 0 0 6px; }
-.scenario-question { font-weight: 600; color: var(--accent, #0672cb); }
+.scenario-question { font-weight: 600; color: var(--dell-blue, #0672cb); }
 .flow-slow line { stroke-dashoffset: 0; animation: flowdash 3s linear infinite; }
 .flow-mid line { animation: flowdash 1.5s linear infinite; }
 .flow-fast line { animation: flowdash 0.6s linear infinite; }
@@ -629,10 +629,17 @@ select:hover {
   gap: 2px;
   flex-shrink: 0;
 }
-.phase-cycle button {
+.app.dell .phase-cycle button {
   padding: 1px 6px;
   font-size: 11px;
   line-height: 1.4;
+}
+/* Only the feed a load is on carries its phase colour; the other two
+   stay muted so phase A's blue is not confused with an idle button. */
+.app.dell .phase-cycle button:not(.active) {
+  color: var(--dell-muted, #636363);
+  border-color: #c8cdd2;
+  font-weight: 400;
 }
 
 .phase-meter {
@@ -677,4 +684,23 @@ select:hover {
   font-weight: 500;
   font-family: ui-monospace, monospace;
   margin: 2px 0;
+}
+
+/* Phone widths: let the header wrap instead of squeezing the title and
+   the live status line into one-word columns. */
+@media (max-width: 600px) {
+  .thermal-app header {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 8px;
+  }
+  .thermal-app header h1 {
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+  }
+  .thermal-app header .sub {
+    order: 5;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }

@@ -111,7 +111,36 @@ export function AnatomyPage({
     }
   }, [dieId, regionId, compare]);
 
-  const die = dies.find((d) => d.id === dieId) ?? null;
+  // Follow the hash after mount too: browser back/forward, a pasted link or a
+  // tour button that lands on another die must change what is drawn, not
+  // just the address bar. An unknown die id puts the hash back on the view.
+  useEffect(() => {
+    const onHash = () => {
+      if (!window.location.hash.startsWith("#anatomy")) return;
+      const h = parseAnatomyHash(window.location.hash);
+      const known = (id: string) =>
+        dies.length === 0 || dies.some((d) => d.id === id);
+      if (h.kind === "compare") {
+        if (known(h.a) && known(h.b)) {
+          setCompare({ a: h.a, b: h.b });
+          setDieId(h.a);
+          return;
+        }
+      } else if (!h.dieId || known(h.dieId)) {
+        setCompare(null);
+        if (h.dieId) setDieId(h.dieId);
+        setRegionId(h.regionId);
+        return;
+      }
+      window.location.hash = compare
+        ? buildAnatomyHash({ kind: "compare", ...compare })
+        : buildAnatomyHash({ kind: "single", dieId, regionId });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [dies, dieId, regionId, compare]);
+
+  const die =dies.find((d) => d.id === dieId) ?? null;
   const region = die?.regions.find((r) => r.id === regionId) ?? null;
   // spec_30: compare view state + this die's mapped simulator profile.
   const compareA = compare ? dies.find((d) => d.id === compare.a) ?? null : null;
@@ -252,6 +281,7 @@ export function AnatomyPage({
         {die && (
           <div className="mini" style={{ marginBottom: 6 }}>
             <input
+              className="region-search"
               placeholder="find a region (e.g. NVLink, cache, tensor)…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

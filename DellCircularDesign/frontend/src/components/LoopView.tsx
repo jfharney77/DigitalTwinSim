@@ -20,6 +20,7 @@ import type { LifecycleMap, LifecycleRegion, RegionKind } from "../types";
 //   virtuous paths is marketing. The leak is drawn, and measured.
 
 const MARGIN = 2.5; // outline padding, in the anatomy's own units
+const CAPTION = 6.4; // room below the outline for the two caption lines
 
 const KIND_STYLE: Record<RegionKind, { fill: string; stroke: string; text: string }> = {
   materials: { fill: "#16281a", stroke: "#3a6647", text: "#6ab585" },
@@ -103,6 +104,8 @@ export function LoopView({
   selected,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: LifecycleMap;
   active?: Set<string>;
@@ -110,6 +113,11 @@ export function LoopView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates (the margin is
+  // added here), and a per-region look for the layer peel. Without them the
+  // view draws exactly as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
@@ -155,9 +163,21 @@ export function LoopView({
       }),
   );
 
+  // The full view is W x (H + 6.4): the outline plus two caption lines. A
+  // camera box gets the same fixed margin and caption room, so the whole-map
+  // box reproduces the default viewBox exactly (a tween never jumps), and a
+  // zoom that reaches the bottom of the map shows both caption lines whole
+  // instead of slicing the second one in half. The stage letterboxes any
+  // difference in shape.
+  const viewBox = camera
+    ? `${camera.x} ${camera.y} ${camera.w + 2 * MARGIN} ${
+        camera.h + 2 * MARGIN + CAPTION
+      }`
+    : `0 0 ${W} ${H + CAPTION}`;
+
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} lifecycle loop`}
       onClick={() => onSelect?.(null)}
     >
@@ -204,7 +224,16 @@ export function LoopView({
             stroke={e.lit ? "var(--accent)" : EDGE_STROKE[e.family]}
             strokeWidth={e.lit ? 0.5 : 0.32}
             strokeDasharray={e.family === "loss" ? "1.1 0.9" : undefined}
-            opacity={e.family === "loss" ? 0.85 : e.lit ? 0.95 : 0.6}
+            opacity={
+              (e.family === "loss" ? 0.85 : e.lit ? 0.95 : 0.6) *
+              // In the tour, an edge fades with the fainter of its two ends,
+              // so a peeled-away layer does not leave its arrows behind.
+              Math.min(
+                regionLook?.(e.from.id).opacity ?? 1,
+                regionLook?.(e.to.id).opacity ?? 1,
+              )
+            }
+            style={regionLook ? { transition: "opacity 0.6s ease" } : undefined}
             markerEnd={e.lit ? undefined : EDGE_MARKER[e.family]}
           />
         ))}
@@ -215,6 +244,7 @@ export function LoopView({
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
         const isLoss = r.kind === "loss";
+        const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
         const len = r.label.length || 1;
@@ -233,6 +263,14 @@ export function LoopView({
           <g
             key={r.id}
             className={isActive ? "an-region region-active" : "an-region"}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);
@@ -284,9 +322,11 @@ export function LoopView({
       <text x={MARGIN} y={H + 2.6} fill="#5a6b82" fontSize={1.7} letterSpacing={0.3}>
         A LOOP, NOT A LINE — two returns, at two radii
       </text>
+      {/* Second line, right-aligned: the two captions together are wider
+          than the map, so on one line they overprinted each other. */}
       <text
         x={W - MARGIN}
-        y={H + 2.6}
+        y={H + 5.2}
         textAnchor="end"
         fill="#c96a5f"
         fontSize={1.7}

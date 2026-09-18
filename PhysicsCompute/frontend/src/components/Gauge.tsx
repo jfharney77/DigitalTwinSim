@@ -59,7 +59,7 @@ export function Gauge({
 
   return (
     <div className="gauge" title={`${label}: ${value}${unit}`}>
-      <svg viewBox="0 0 120 78" style={{ width: "100%", display: "block" }}>
+      <svg viewBox="0 0 120 88" style={{ width: "100%", display: "block" }}>
         {segs.map((s, i) => (
           <path
             key={i}

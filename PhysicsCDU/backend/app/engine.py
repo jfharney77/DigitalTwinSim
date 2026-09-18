@@ -89,7 +89,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     cap = 1.0
     floor0 = max(min_supply, env.dew_point_c + dew_margin)
     supply = max(env.facility_supply_c, floor0)
-    chip = AMBIENT_C
+    # Silicon starts idling on the coolant, not at room air: a cold plate
+    # cannot hold a chip below the liquid flowing through it.
+    chip = supply
     was_capping = False
     floor_was_active = False
 
@@ -156,6 +158,13 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                                     f"(+{C('group_kw'):g} kW of load)",
                         ))
                         break
+                else:
+                    # A click that changes nothing still says why.
+                    log.append(LogEntry(
+                        t=t, severity="info",
+                        message=f"No free slot — all {MAX_BANKS} tray banks "
+                                "are already installed",
+                    ))
             elif ev.action == "remove-tray-group":
                 for i in reversed(range(MAX_BANKS)):
                     if present[i]:

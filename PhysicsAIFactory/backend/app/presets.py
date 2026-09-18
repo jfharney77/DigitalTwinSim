@@ -165,7 +165,7 @@ GUIDED_SCENARIOS = [
                 novice=(
                     "This run saves its work only every eight hours. Watch "
                     "the token counter when a GPU fails — it doesn't just "
-                    "pause, it rolls *backwards* to the last save point, "
+                    "pause, it rolls backwards to the last save point, "
                     "because everything since then must be redone. Now "
                     "imagine the opposite mistake: saving every five "
                     "minutes, so often that the saving itself slows every "

@@ -67,9 +67,9 @@ AAA = Workload(cpu_pct=70, gpu_pct=100)
 STREAM = Workload(cpu_pct=90, gpu_pct=95)
 STRESS = Workload(cpu_pct=100, gpu_pct=100)
 RENDER = Workload(cpu_pct=100, gpu_pct=30)
-LLM_CPU = Workload(cpu_pct=100)
-LLM_GPU = Workload(gpu_pct=90)
-LLM_NPU = Workload(npu_pct=100, cpu_pct=10)
+LLM_CPU = Workload(cpu_pct=100, inference=True)
+LLM_GPU = Workload(gpu_pct=90, inference=True)
+LLM_NPU = Workload(npu_pct=100, cpu_pct=10, inference=True)
 
 WORKLOAD_PRESETS = [
     WorkloadPreset(id="idle", name="Idle", workload=IDLE),

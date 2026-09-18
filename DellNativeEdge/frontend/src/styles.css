@@ -547,3 +547,101 @@ select:hover {
   letter-spacing: normal;
   min-width: 62px;
 }
+
+/* ---- Phone widths ------------------------------------------------------
+   The header is a no-wrap flex row and the grid tracks size to their
+   content by default, so at 390 px the level control pushed the page into
+   horizontal scroll. Let the header wrap, let grid children shrink, and
+   drop the stacked-panel rule (the skin carries no divider lines). */
+@media (max-width: 880px) {
+  .app > * {
+    min-width: 0;
+  }
+  .app.dell header {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+  .app.dell header .sub {
+    margin-left: 0;
+    flex-basis: 100%;
+    order: 3;
+  }
+  .app.dell .controls {
+    border-top: none;
+    padding: 16px;
+  }
+  .app.dell .stage {
+    padding: 16px;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 30px;
+  }
+  .app.dell .an-card {
+    padding: 16px;
+  }
+}
+/* The capabilities table's third column ran off the card at phone width;
+   stack each row instead: capability, area, then why. */
+@media (max-width: 560px) {
+  .uc-build thead {
+    display: none;
+  }
+  .uc-build table,
+  .uc-build tbody,
+  .uc-build tr,
+  .uc-build td {
+    display: block;
+    width: 100%;
+  }
+  .uc-build tr {
+    padding: 10px 0;
+  }
+  .app.dell .uc-build td {
+    border-top: none;
+    padding: 2px 0;
+  }
+  .uc-cat {
+    white-space: normal;
+  }
+}
+
+/* --- Guided tour: layer peel on the platform map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.onboard-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
+}
+
+/* Keep the map, the caption and the transport on one laptop screen: at full
+   width the 105:67 stage alone was taller than a 900 px window, so the
+   caption sat below the fold. Cap the width rather than the height so the
+   stage keeps its 105:67 shape: a height cap alone letterboxed the SVG
+   sideways and slivers of off-camera blocks crept in at the edges. */
+.app.dell .tour-stage svg {
+  width: min(100%, calc(58vh * 105 / 67));
+  margin: 0 auto;
+}

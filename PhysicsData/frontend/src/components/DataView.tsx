@@ -75,8 +75,17 @@ export function DataView({
         const isSel = r.id === selected;
         const over = load > 100;
         const fill = loadColor(load);
-        const len = r.label.length || 1;
-        const hSize = Math.min(1.9, r.h * 0.42, (r.w - 1.4) / (len * 0.62));
+        // Size the label from the text actually drawn: a saturated block
+        // appends " — SATURATED", and sizing from the bare label let that
+        // suffix run past the block edge. When the long form cannot fit,
+        // the bare label stays and the saturation note moves to the
+        // block's bottom line.
+        const fit = (t: string) =>
+          Math.min(1.9, r.h * 0.42, (r.w - 1.4) / ((t.length || 1) * 0.62));
+        const longLabel = `${r.label} — SATURATED`;
+        const inlineSat = over && fit(longLabel) >= 0.95;
+        const labelText = inlineSat ? longLabel : r.label;
+        const hSize = fit(labelText);
         const showLabel = !!r.label && r.h > 3.0 && hSize >= 0.95;
         return (
           <g
@@ -104,7 +113,19 @@ export function DataView({
                 fontWeight={600}
                 letterSpacing={0.1}
               >
-                {over ? `${r.label} — SATURATED` : r.label}
+                {labelText}
+              </text>
+            )}
+            {over && !inlineSat && r.h >= 7 && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 1.6}
+                textAnchor="middle"
+                fill="#0d1420"
+                fontSize={Math.min(1.5, (r.w - 1.4) / (9 * 0.62))}
+                fontWeight={700}
+              >
+                SATURATED
               </text>
             )}
             {r.w >= 20 && r.h >= 7 && state && (

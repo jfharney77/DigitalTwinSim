@@ -16,10 +16,14 @@ export function DetectCounters({
   state,
   stepIndex,
   stepCount,
+  snapshotLabels = [],
 }: {
   state: DetectState | null;
   stepIndex: number;
   stepCount: number;
+  // Timeline labels, oldest first, so the named copy reads the same here
+  // as on the map ("snapshot 3" is the block drawn as T-4).
+  snapshotLabels?: string[];
 }) {
   const hidden =
     state !== null &&
@@ -66,7 +70,11 @@ export function DetectCounters({
         <span>last clean copy</span>
         <span>
           {state && state.lastCleanSnapshot > 0
-            ? `snapshot ${state.lastCleanSnapshot}`
+            ? `snapshot ${state.lastCleanSnapshot}${
+                snapshotLabels[state.lastCleanSnapshot - 1]
+                  ? ` (${snapshotLabels[state.lastCleanSnapshot - 1]})`
+                  : ""
+              }`
             : "unknown"}
         </span>
       </div>

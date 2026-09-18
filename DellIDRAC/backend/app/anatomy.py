@@ -222,7 +222,7 @@ ANATOMY = SubsystemMap(
         Block(
             id="pwr",
             kind="power",
-            label="Standby power domain",
+            label="Standby power",
             x=52, y=40, w=12, h=8,
             description=(
                 "iDRAC's power island. When AC is applied the PSUs bring up a "

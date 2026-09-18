@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchAnatomy } from "../api";
 import { useLevel } from "../level";
 import { TimelineView } from "./TimelineView";
+import { emph } from "./Emph";
 import type { Photo, RegionKind, DetectAnatomy } from "../types";
 
 const TOOLTIP_W = 280; // px; keep in sync with .an-tooltip width
@@ -131,7 +132,7 @@ export function AnatomyPage() {
             <div className="mini an-kind">{KIND_LABEL[region.kind]}</div>
           )}
           <p className="an-desc">
-            {region ? region.description : anatomy?.overview}
+            {emph((region ? region.description : anatomy?.overview) ?? "")}
           </p>
           {region?.photo && <PhotoCard photo={region.photo} />}
           {!region && anatomy?.photo && <PhotoCard photo={anatomy.photo} />}

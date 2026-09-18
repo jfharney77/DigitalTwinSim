@@ -199,17 +199,19 @@ select:hover {
   font-size: 13px;
   line-height: 1.6;
 }
-/* Regions carrying power/activity in the current trace step. */
+/* Regions carrying power/activity in the current trace step. The pulse is on
+   the outline only: fading the whole rect let the lit spokes behind the
+   policy engine show through and strike out its label. */
 .region-active rect {
   animation: region-pulse 1.4s ease-in-out infinite;
 }
 @keyframes region-pulse {
   0%,
   100% {
-    opacity: 1;
+    stroke-opacity: 1;
   }
   50% {
-    opacity: 0.72;
+    stroke-opacity: 0.55;
   }
 }
 
@@ -546,4 +548,60 @@ select:hover {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+
+/* Phone widths: a grid track sized `1fr` still grows to its content's
+   min-content width, so the header (nav + step label + reading level) and the
+   build-sheet table pushed the page sideways. Let the track shrink, wrap the
+   header, and scroll the table inside its own card instead of the page. */
+@media (max-width: 880px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app.dell header {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    row-gap: 8px;
+  }
+  .app.dell .nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 30px;
+  }
+  .uc-build {
+    overflow-x: auto;
+  }
+}
+
+/* --- Guided tour: camera and centre reveal on the pillar map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.poweron-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
 }

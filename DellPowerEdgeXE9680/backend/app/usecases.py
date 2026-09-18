@@ -22,7 +22,7 @@ USE_CASES: list[UseCase] = [
                 "GPUs running within 122 days of the first rack arriving, "
                 "then 200,000 — built not from exotic rack-scale machines "
                 "but from 8-GPU HGX servers, 64 GPUs to a liquid-cooled "
-                "rack, roughly 1,500 racks. The choice of box *is* the "
+                "rack, roughly 1,500 racks. The choice of box is the "
                 "schedule. A factory-integrated NVL72 rack is a single "
                 "delivery with a single commissioning path; a fleet of "
                 "identical servers is thousands of independent rack jobs "

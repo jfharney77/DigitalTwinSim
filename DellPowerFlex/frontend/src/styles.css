@@ -88,7 +88,6 @@ svg {
 @media (max-width: 880px) {
   .controls {
     border-left: none;
-    border-top: 1px solid var(--line);
   }
 }
 .controls h2 {
@@ -546,4 +545,89 @@ select:hover {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+
+/* ---- Phone widths ------------------------------------------------------
+   The desktop header is one row (title, nav, phase, reading level); on a
+   phone it wraps, and the page gutters drop to 16px so nothing pushes the
+   page wider than the viewport. */
+@media (max-width: 880px) {
+  .app.dell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app.dell header {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 8px 16px;
+  }
+  .app.dell header .sub {
+    margin-left: 0;
+    flex-basis: 100%;
+    order: 3;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 28px;
+  }
+  .app.dell .stage {
+    padding: 16px;
+    min-width: 0;
+  }
+  .app.dell .controls {
+    padding: 0 16px 24px;
+  }
+  .app.dell .an-card {
+    padding: 16px;
+  }
+  /* Four columns do not fit a phone: each build-sheet row becomes a small
+     block — quantity and part on one line, category and reason beneath. */
+  .app.dell .uc-build thead {
+    display: none;
+  }
+  .app.dell .uc-build tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 8px;
+    padding: 10px 0;
+  }
+  .app.dell .uc-build td {
+    border-top: none;
+    padding: 0;
+  }
+  .app.dell .uc-build .uc-cat,
+  .app.dell .uc-build .uc-why {
+    grid-column: 2;
+    white-space: normal;
+  }
+}
+
+/* --- Guided tour: layer peel on the pool map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.pool-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
 }

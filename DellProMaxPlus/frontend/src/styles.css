@@ -547,3 +547,52 @@ select:hover {
   letter-spacing: normal;
   min-width: 62px;
 }
+
+/* Phone widths: let the header wrap instead of pushing the page sideways,
+   and let the build sheet's category column wrap so the rationale column
+   stays inside its card. */
+@media (max-width: 600px) {
+  .app.dell header {
+    flex-wrap: wrap;
+    padding: 16px;
+    row-gap: 8px;
+  }
+  .app.dell header .sub {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+  .app.dell .uc-cat {
+    white-space: normal;
+  }
+  .uc-build {
+    overflow-x: auto;
+  }
+}
+
+/* --- Guided tour: layer peel on the inference map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.inference-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
+}

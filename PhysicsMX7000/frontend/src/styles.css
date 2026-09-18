@@ -558,9 +558,17 @@ select:hover {
 }
 @media (max-width: 1100px) { .thermal-grid { grid-template-columns: 1fr; } }
 .thermal-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.cfg-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-.cfg-label { flex: 0 0 128px; font-size: 12px; color: var(--dell-muted, #636363); }
+/* label.field is a column; the build rows are label-beside-control. */
+label.field.cfg-row, .cfg-row { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 4px 0; }
+.cfg-label { flex: 0 0 104px; font-size: 12px; color: var(--dell-muted, #636363); }
 .cfg-row select, .cfg-row input[type="range"] { flex: 1; min-width: 0; }
+.cfg-bay .cfg-label { flex-basis: 44px; }
+.cfg-bay-controls { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; min-width: 0; }
+.app.dell .cfg-row select { font-size: 12px; }
+.app.dell .cfg-bay-controls select { flex: 1 1 86px; min-width: 0; font-size: 12px; padding: 6px 2px 6px 6px; }
+@media (max-width: 600px) {
+  .app.dell header { flex-wrap: wrap; row-gap: 8px; }
+}
 .cfg-presets button { font-size: 12px; }
 .rule-ok { color: #217346; margin-top: 4px; }
 .rule-warning { color: #9a6a00; margin-top: 4px; }

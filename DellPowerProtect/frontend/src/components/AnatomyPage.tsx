@@ -65,6 +65,17 @@ export function AnatomyPage() {
     window.location.hash = regionId ? `anatomy/${regionId}` : "anatomy";
   }, [regionId]);
 
+  // A hash change while this page is open (a pasted #anatomy/<id> link)
+  // re-selects the region instead of being overwritten by the effect above.
+  useEffect(() => {
+    const onHash = () => {
+      const h = window.location.hash;
+      if (h.startsWith("#anatomy")) setRegionId(h.split("/")[1] ?? null);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
   const region = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const hovered = anatomy?.regions.find((r) => r.id === hover?.id) ?? null;
 

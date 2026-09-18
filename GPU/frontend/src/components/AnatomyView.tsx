@@ -99,6 +99,16 @@ export function AnatomyView({
           <g
             key={r.id}
             className="an-region"
+            role="button"
+            tabIndex={0}
+            aria-label={r.label || r.id}
+            aria-pressed={isSel}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(isSel ? null : r.id);
+              }
+            }}
             onClick={(e) => {
               e.stopPropagation();
               onSelect(isSel ? null : r.id);

@@ -65,6 +65,9 @@ export function LiveDieView({
     const x = M + 8 + c * (TILE_W + GAP);
     const y = TOP + r * (TILE_H + GAP);
     const heat = a ? a.blocksRun / maxBlocks : 0;
+    // Past about half heat the gold fill is lighter than the pale labels, so
+    // the labels flip to dark ink to stay readable.
+    const lit = !!a && a.blocksRun > 0 && 0.15 + 0.85 * heat > 0.5;
     tiles.push(
       <g key={i}>
         <rect
@@ -91,7 +94,7 @@ export function LiveDieView({
         <text
           x={x + 7}
           y={y + 15}
-          fill="#8a9bb5"
+          fill={lit ? "#3a2e00" : "#8a9bb5"}
           fontSize={compact ? 8 : 10}
           letterSpacing="1"
         >
@@ -100,7 +103,7 @@ export function LiveDieView({
         <text
           x={x + 7}
           y={y + TILE_H - 8}
-          fill="#c8d6ee"
+          fill={lit ? "#1a1400" : "#c8d6ee"}
           fontSize={compact ? 10 : 12}
         >
           {a ? `${a.estimated ? "~" : ""}${a.blocksRun}` : 0} blk
@@ -124,7 +127,7 @@ export function LiveDieView({
       <text
         x={M + 8}
         y={30}
-        fill={state?.placement === "modeled" ? "#c77700" : "#3a4a60"}
+        fill={state?.placement === "modeled" ? "#c77700" : "#6b7d96"}
         letterSpacing="4"
         fontSize={11}
       >
@@ -140,7 +143,7 @@ export function LiveDieView({
               : "REAL BLOCK PLACEMENT (%smid)"}
       </text>
       {tiles}
-      <text x={M + 8} y={H - 12} fill="#3a4a60" fontSize={10}>
+      <text x={M + 8} y={H - 12} fill="#6b7d96" fontSize={10}>
         {count} SM · fill = share of this kernel's blocks · ring = blocks
         resident{acts.some((a) => a.estimated) ? " · ~ = estimated from a declared sample" : ""}
       </text>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchThermal } from "./api";
+import { fetchAnatomy, fetchThermal, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -7,18 +7,21 @@ import { RackView } from "./components/RackView";
 import { ThermalControls } from "./components/ThermalControls";
 import { ThermalCounters } from "./components/ThermalCounters";
 import { LevelControl } from "./components/LevelControl";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import { useLevel } from "./level";
 import type { RackAnatomy, RegionKind, ThermalState } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "thermal" | "anatomy" | "components" | "usecases";
+type Page = "thermal" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "thermal";
 }
 
@@ -27,11 +30,20 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read at load and on
+// every later hashchange.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 // #step=N / #phase=<name> deep-links start playback at a chosen step; both
 // fall through pageFromHash() and land on the default page.
 function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
   const h = window.location.hash;
   const step = h.match(/^#step=(\d+)$/);
   if (step) return Math.min(Number(step[1]), states.length - 1);
@@ -47,7 +59,14 @@ export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
+    // The thermal page owns the bare hash and #step=/#phase= deep links;
+    // leaving another page for it must clear that page's hash (including
+    // #anatomy/<region>), or a reload would land back on the other page.
+    const onOtherPage =
+      page === "thermal"
+        ? pageFromHash() !== "thermal"
+        : !window.location.hash.startsWith(`#${PAGE_HASH[page]}`);
+    if (onOtherPage) {
       window.location.hash = PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
@@ -60,6 +79,10 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
+  const [tourKey, setTourKey] = useState(0);
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -93,6 +116,39 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // Follow later hash changes too (back/forward, a pasted deep link, a
+  // link from another page) — not just the hash present on first load.
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      // A #tour/<id> link followed while the tour is already open (back,
+      // forward, a pasted link) must move the player too, not just the URL.
+      // The player reads its start step once, so remount it on that step.
+      const beat = tourStepFromHash();
+      if (beat && beat !== tourStart.current) {
+        tourStart.current = beat;
+        setTourKey((k) => k + 1);
+      }
+      const s = initialStepFromHash(trace);
+      if (s !== null) {
+        stop();
+        setCursor(s);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [trace, stop]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -176,6 +232,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "thermal" && (
           <span className="sub">
@@ -188,6 +250,67 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              key={tourKey}
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // RackView draws the map plus a margin and a label strip.
+              stageAspect={(tour.mapWidth + 5) / (tour.mapHeight + 9)}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the thermal page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <RackView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Thermal trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedSeconds}s · IT load{" "}
+                      {state.itLoadWatts / 1000} kW = liquid{" "}
+                      {state.liquidWatts / 1000} kW + air{" "}
+                      {state.airWatts / 1000} kW (illustrative)
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "thermal" && (
         <>
@@ -203,6 +326,12 @@ export function App() {
               show: heat in equals heat out, on every step, exactly. Play
               the trace and watch the books balance.
             </p>
+            <button
+              className="primary thermal-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -225,8 +354,8 @@ export function App() {
                 Watch the loop prove itself empty — fill, pump, verify —
                 before any heat exists, and watch the heat-balance panel
                 once load arrives: liquid plus air always equals the IT
-                load. Click a block to pin what it is; the full tour lives
-                under Inside the loop.
+                load. Click a block to pin what it is; every block is
+                described under Inside the loop.
               </div>
             </div>
           </div>

@@ -37,7 +37,9 @@ STACK_ILLO = Photo(
     credit="Schematic illustration by this project — not a Dell product image",
 )
 
-HV_W = 22.0
+# Four slots with 3-unit gaps filling the same 2..98 span as every other
+# row, so no slot overhangs the control plane that is drawn over them all.
+HV_W = 21.75
 HV_H = 11.0
 HV_Y = 25.0
 
@@ -53,7 +55,7 @@ _HYPERVISORS = [
         "abstract concern concrete for a lot of people at once.",
     ),
     (
-        "hv-redhat", "Red Hat", 27.0,
+        "hv-redhat", "Red Hat", 26.75,
         "OpenShift Virtualization, running virtual machines beside "
         "containers on the same platform. The appeal is for organizations "
         "whose direction of travel is containers anyway: rather than "
@@ -64,7 +66,7 @@ _HYPERVISORS = [
         "younger here.",
     ),
     (
-        "hv-nutanix", "Nutanix", 52.0,
+        "hv-nutanix", "Nutanix", 51.5,
         "Added to Dell Private Cloud in February 2026, and the most direct "
         "like-for-like alternative for an estate that wants to move "
         "without relearning how virtualization works. Worth noting the "
@@ -74,7 +76,7 @@ _HYPERVISORS = [
         "which way the architecture argument has gone.",
     ),
     (
-        "hv-microsoft", "Microsoft", 77.0,
+        "hv-microsoft", "Microsoft", 76.25,
         "Hyper-V and Azure Stack HCI, most compelling where the estate is "
         "already deeply committed to Microsoft licensing and identity — at "
         "which point the marginal cost of the hypervisor is genuinely "

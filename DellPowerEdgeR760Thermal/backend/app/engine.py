@@ -255,7 +255,15 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
 
             # Component steady-states, approached with first-order lag.
             cpu_air = (front_out + lane_a_out) / 2.0
-            t_cpu_ss = cpu_air + (cpu_w / max(cfg.sockets, 1)) * r_cpu
+            # Heatsink convection weakens as airflow falls (R ∝ flow^-n):
+            # this is what makes the controller buy temperature with fan
+            # watts, and so what closes the fan-power feedback loop.
+            # The rated resistance is the best case, reached at the
+            # reference airflow; it only degrades below it.
+            r_cpu_eff = r_cpu * max(1.0, (
+                C("heatsink_ref_cfm") / max(cfm, 1.0)
+            ) ** C("heatsink_flow_exponent"))
+            t_cpu_ss = cpu_air + (cpu_w / max(cfg.sockets, 1)) * r_cpu_eff
             gpu_air = (front_out + lane_b_out) / 2.0
             n_gpu = cfg.gpus_double_wide + cfg.accels_single_wide
             t_gpu_ss = gpu_air + (gpu_w / max(n_gpu, 1)) * C("gpu_r_th") if n_gpu else gpu_air

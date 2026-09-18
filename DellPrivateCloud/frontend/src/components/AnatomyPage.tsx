@@ -43,7 +43,9 @@ export function AnatomyPage() {
   const [anatomy, setAnatomy] = useState<CloudAnatomy | null>(null);
   // Honor a /#anatomy/<regionId> deep link for the initial selection.
   const [regionId, setRegionId] = useState<string | null>(
-    () => window.location.hash.split("/")[1] ?? null,
+    // Only when the hash is this page's own — arriving from another page's
+    // deep link (e.g. #usecases/<id>) must not borrow that page's id.
+    () => window.location.hash.match(/^#anatomy\/([^/]+)$/)?.[1] ?? null,
   );
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(
     null,

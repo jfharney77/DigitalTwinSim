@@ -19,7 +19,7 @@ negotiation with whoever owns the data.
 
 OneFS — the operating system every PowerScale node runs — declines to
 partition. One file system spans every node in the cluster. Adding a node
-makes the single volume larger and the cluster redistributes data onto the
+makes the single namespace larger and the cluster redistributes data onto the
 new hardware while clients keep reading. Two counters in ``NamespaceState``
 exist to carry that argument: ``namespaces`` is 1 on every step at every
 cluster size, and ``migrations_required`` is 0 forever — the administrative
@@ -57,7 +57,7 @@ NamespacePhase = Literal[
     "stripe",     # the single file system is laid out across every node
     "serve",      # NFS, SMB, S3, and HDFS all up, on every node
     "fill",       # data pours in; the one namespace fills
-    "addnode",    # two nodes join; the volume simply becomes larger
+    "addnode",    # two nodes join; the namespace simply becomes larger
     "rebalance",  # data redistributes onto the new hardware, live
     "served",     # steady state at six nodes — same single namespace
 ]

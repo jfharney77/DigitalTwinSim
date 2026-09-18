@@ -23,8 +23,12 @@ VXRAIL_3NODE = FleetConfig(product="vxrail", sites=1, nodes_per_site=3,
                            ops_mode="automated", ftt=1)
 PRIVATE_2STACK = FleetConfig(product="privatecloud", sites=1, nodes_per_site=12,
                              ops_mode="automated", stacks=2, catalog=True)
+# Sized to serve its own spike: base 150 × (1 + 50% buffer) = 225 VMs =
+# the ×1.5 peak, on 16 nodes × 15 VMs (APEX_WL) = 240 installed. At a
+# 30% buffer and 10 VMs/node the "as-a-service wins" scenario opened on
+# a capacity outage every spike.
 APEX_SPIKY = FleetConfig(product="apex", sites=1, nodes_per_site=16,
-                         committed_vms=150, buffer_pct=30,
+                         committed_vms=150, buffer_pct=50,
                          demand_curve="spiky")
 EDGE_500 = FleetConfig(product="nativeedge", sites=500, nodes_per_site=1,
                        ops_mode="automated", two_node_ha=False,
@@ -57,7 +61,7 @@ CONFIG_PRESETS = [
 # --- Workload presets ------------------------------------------------------
 
 STEADY_WL = Workload(vms_per_site=20, growth_pct_month=3, vm_size_capacity=10)
-APEX_WL = Workload(vms_per_site=150, growth_pct_month=0, vm_size_capacity=10)
+APEX_WL = Workload(vms_per_site=150, growth_pct_month=0, vm_size_capacity=15)
 DENSE_WL = Workload(vms_per_site=60, growth_pct_month=5, vm_size_capacity=10)
 EDGE_WL = Workload(vms_per_site=5, growth_pct_month=1, vm_size_capacity=8)
 

@@ -104,31 +104,36 @@ GUIDED_SCENARIOS = [
                     "starts at 38 degrees — already hotter than any data "
                     "center — and in the afternoon the air reaches 48. "
                     "Watch the fans climb toward their maximum as the day "
-                    "heats up, and watch what happens when they get "
-                    "there: the processor starts slowing itself down to "
-                    "survive, because there is no colder air to be had. "
-                    "The machine is rated for 55 degrees, and this run "
-                    "shows you what living near that edge actually looks "
-                    "like."
+                    "heats up. They get there a few seconds after the "
+                    "afternoon arrives, and from then on they have "
+                    "nothing left to give. The processor stays below the "
+                    "temperature where it would start slowing itself "
+                    "down, but only just. The machine is rated for 55 "
+                    "degrees, and this run shows you what living near "
+                    "that edge actually looks like: loud, hungry fans and "
+                    "very little room to spare."
                 ),
                 standard=(
                     "The cell-site build under RAN load, starting at "
                     "38 °C; at t=240 s the afternoon arrives and ambient "
                     "steps to 48 °C — inside the −5…55 °C rating, far "
                     "outside anything a data hall permits. Watch the "
-                    "controller spend its entire authority: fans toward "
-                    "100%, then throttle steps when rpm runs out. The "
-                    "rating is real, but the top of the envelope is paid "
-                    "for in fan watts and shaved clocks."
+                    "controller spend its entire authority: fans pinned at "
+                    "100% within seconds of the step, the CPU holding about "
+                    "11 °C under its throttle point with no rpm left to "
+                    "buy more. The rating is real, but the top of the "
+                    "envelope is paid for in fan watts and lost headroom — "
+                    "the next thing that goes wrong (a fouled filter, a "
+                    "dead fan) lands straight on the clocks."
                 ),
                 expert=(
-                    "RAN load, 38→48 °C at t=240. Fans pin, then clamp "
-                    "steps. In-envelope ≠ free: the top decade costs rpm³ "
-                    "and clocks."
+                    "RAN load, 38→48 °C at t=240. Fans pin; CPU ~11 °C "
+                    "under clamp, zero rpm reserve. In-envelope ≠ free: "
+                    "the top decade costs rpm³ and all the margin."
                 ),
             ),
         ],
-        question="How many watts of fan power did the afternoon cost, and when did the first throttle step land?",
+        question="How many watts of fan power did the afternoon cost, and how much CPU headroom is left once the fans are pinned?",
         scenario=Scenario(
             config=CELL_SITE, workload=RAN,
             environment=Environment(inlet_c=38, dust="moderate"),
@@ -345,7 +350,7 @@ GUIDED_SCENARIOS = [
                 ),
             ),
         ],
-        question="How much earlier does this site throttle than the identical build at sea level?",
+        question="Set altitude to 0 m and re-run — how much harder were the fans working here to hold the same CPU temperature?",
         scenario=Scenario(
             config=CELL_SITE, workload=RAN,
             environment=Environment(inlet_c=35, altitude_m=2500, dust="moderate"),

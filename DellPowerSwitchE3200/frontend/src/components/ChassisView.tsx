@@ -36,6 +36,8 @@ export function ChassisView({
   selected,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: ChassisAnatomy;
   active?: Set<string>;
@@ -43,6 +45,10 @@ export function ChassisView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Guided tour: a camera box in map coordinates, and per-region opacity /
+  // offset for the layer peel. Without them the view draws as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
@@ -50,9 +56,17 @@ export function ChassisView({
   const rx = (r: ChassisRegion) => r.x + MARGIN;
   const ry = (r: ChassisRegion) => r.y + MARGIN;
 
+  // The whole-map camera reproduces the default viewBox exactly, so the
+  // tour's first frame does not jump.
+  const viewBox = camera
+    ? `${camera.x} ${camera.y} ${camera.w + 2 * MARGIN} ${
+        camera.h + (2 * MARGIN + 4) * (camera.h / anatomy.height)
+      }`
+    : `0 0 ${W} ${H + 4}`;
+
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} chassis floorplan`}
       onClick={() => onSelect?.(null)}
     >
@@ -84,10 +98,19 @@ export function ChassisView({
           : isActive
             ? "var(--accent)"
             : style.stroke;
+        const look = regionLook?.(r.id);
         return (
           <g
             key={r.id}
             className={isActive ? "an-region region-active" : "an-region"}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);

@@ -1,9 +1,11 @@
 # DellCircularDesign — product-lifecycle digital twin (spec)
 
-Status: **spec only.** Chosen in loop iteration 4 as one of the top three
-untwinned Dell products; Project Fort Zero was built first. Build this one
-by following the pattern in `DellIR7000/` (conservation invariant) and
-`DellPowerProtect/` (left-to-right lifecycle map).
+Status: **built** (backend, frontend, trace prose at all five reading
+levels, and a narrated `#tour`). Chosen in loop iteration 4 as one of the
+top three untwinned Dell products; Project Fort Zero was built first. It
+was built following the pattern in `DellIR7000/` (conservation invariant)
+and `DellPowerProtect/` (lifecycle map), and the spec below is kept as the
+design record.
 
 ## Subject
 

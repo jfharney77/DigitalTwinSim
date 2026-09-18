@@ -94,7 +94,7 @@ ANATOMY = FactoryMap(
             x=46, y=14, w=16, h=30,
             description=(
                 "The scale-out network — Spectrum-X Ethernet or Quantum "
-                "InfiniBand — drawn deliberately *between* compute and "
+                "InfiniBand — drawn deliberately between compute and "
                 "data, because every byte of training data and every "
                 "collective crosses it. Oversubscribe it and every "
                 "training step pays; the SN6000 and Quantum-X800 twins "

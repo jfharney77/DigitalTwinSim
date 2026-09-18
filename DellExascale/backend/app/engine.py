@@ -157,7 +157,7 @@ def simulate() -> list[DataState]:
             label="The client asks where the stripes live",
             description=L(
                 novice=(
-                    "The pivotal exchange. The client asks for a *layout* — a map "
+                    "The pivotal exchange. The client asks for a layout — a map "
                     "saying which servers hold which pieces of which files — and "
                     "the metadata server answers once and hands it over. This is "
                     "the only moment the metadata server touches this job's read "
@@ -166,7 +166,7 @@ def simulate() -> list[DataState]:
                     "why that one server does not become the bottleneck."
                 ),
                 plain=(
-                    "The pivotal exchange. The client requests a *layout* for the "
+                    "The pivotal exchange. The client requests a layout for the "
                     "files it wants — under Flex Files, a map saying which data "
                     "servers hold which stripes of which file. The metadata server "
                     "answers once and hands over a delegation. This is the only "
@@ -176,7 +176,7 @@ def simulate() -> list[DataState]:
                     "ceiling."
                 ),
                 standard=(
-                    "The pivotal exchange. The client requests a *layout* for "
+                    "The pivotal exchange. The client requests a layout for "
                     "the files it wants — under Flex Files, the layout is a map "
                     "saying which data servers hold which stripes of which "
                     "file. The metadata server answers once and hands over a "
@@ -237,8 +237,8 @@ def simulate() -> list[DataState]:
                     "block goes dark while all four data servers light at once. "
                     "That single visual is the difference between a parallel "
                     "file system and everything else in this repo — throughput "
-                    "is now the *sum* of the servers streaming, not the "
-                    "*maximum* of one controller."
+                    "is now the sum of the servers streaming, not the "
+                    "maximum of one controller."
                 ),
                 technical=(
                     "With the layout held, the client opens connections to every "

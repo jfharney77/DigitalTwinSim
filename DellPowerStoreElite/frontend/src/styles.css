@@ -24,8 +24,11 @@ body {
 }
 @media (max-width: 880px) {
   .app {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     height: auto;
+  }
+  header {
+    flex-wrap: wrap;
   }
 }
 header {
@@ -546,4 +549,56 @@ select:hover {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+
+/* Phone width: the four-column build sheet cannot fit, so each row
+   stacks — quantity and part on one line, category and rationale below. */
+@media (max-width: 600px) {
+  .uc-build thead {
+    display: none;
+  }
+  .app.dell .uc-build tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 10px;
+    border-top: 1px solid var(--dell-border);
+    padding: 8px 0;
+  }
+  .app.dell .uc-build td {
+    border: none;
+    padding: 0;
+  }
+  .uc-build .uc-cat,
+  .uc-build .uc-why {
+    grid-column: 2;
+    white-space: normal;
+  }
+}
+
+/* --- Guided tour: layer peel on the floorplan --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.join-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
 }

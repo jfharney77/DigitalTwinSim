@@ -11,6 +11,12 @@ def validate(scenario: Scenario) -> list[Validation]:
     p = cfg.product
     out: list[Validation] = []
 
+    # Fort Zero runs the access graph only: no backups, vault, restore, or
+    # detection dials are in play (the UI hides them), so their rules
+    # would judge settings the run never uses.
+    if p == "fortzero":
+        return out + _access_rules(cfg)
+
     # Rule 1 — the 3-2-1 shape (spec 05's checklist as a rule engine).
     if not cfg.vault:
         out.append(Validation(
@@ -88,8 +94,13 @@ def validate(scenario: Scenario) -> list[Validation]:
             source="spec 05 — the alert-fatigue scenario",
         ))
 
+    return out
+
+
+def _access_rules(cfg) -> list[Validation]:
+    out: list[Validation] = []
     # Rule 6 — zero trust without review decays.
-    if p == "fortzero" and cfg.architecture == "zerotrust" \
+    if cfg.product == "fortzero" and cfg.architecture == "zerotrust" \
             and cfg.review_cadence_days == 0:
         out.append(Validation(
             rule_id="review", level="warning",

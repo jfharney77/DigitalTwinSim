@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchMedia,
   type ProductMediaWire,
@@ -43,7 +43,7 @@ const DEFAULT_CONFIG: DeviceConfig = {
   npu: false, ramGb: 32, nvmeCount: 1, batteryWh: 90, batteryHealthPct: 100,
   chargerW: 240, psuCapacityW: 1000,
 };
-const DEFAULT_WORKLOAD: Workload = { cpuPct: 70, gpuPct: 100, npuPct: 0 };
+const DEFAULT_WORKLOAD: Workload = { cpuPct: 70, gpuPct: 100, npuPct: 0, inference: false };
 const DEFAULT_ENV: Environment = {
   ambientC: 22, onLap: false, perfMode: "balanced", pluggedIn: true,
   startChargePct: 100,
@@ -55,6 +55,20 @@ type Page = "sim" | "brands";
 
 function pageFromHash(): Page {
   return window.location.hash === "#brands" ? "brands" : "sim";
+}
+
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios, e.g. benchmark-lie, on-lap, meeting-room). Returns
+// null when the hash names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
 }
 
 export function App() {
@@ -79,7 +93,8 @@ return () => window.removeEventListener("hashchange", onHash);
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch swaps in the re-levelled narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const [config, setConfig] = useState<DeviceConfig>(DEFAULT_CONFIG);
   const [workload, setWorkload] = useState<Workload>(DEFAULT_WORKLOAD);
@@ -95,6 +110,11 @@ return () => window.removeEventListener("hashchange", onHash);
   const [xray, setXray] = useState<"schematic" | "hybrid" | "photo">("schematic");
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  const setActiveScenario = (g: GuidedScenario | null) => {
+    setActiveScenarioId(g ? g.id : null);
+    if (page === "sim") writeHash(g ? `#scenario=${g.id}` : "");
+  };
 
   // Prose-bearing content refetches on level or product change.
   useEffect(() => {
@@ -171,8 +191,18 @@ return () => window.removeEventListener("hashchange", onHash);
     setEvents((evs) => [...evs, { atS: state?.t ?? 0, ...e }]);
   };
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  // A hand edit replaces whatever a guided scenario had scheduled for the
+  // same control; otherwise the timed event silently overrules the dial.
+  const dropEvents = (...actions: SimEvent["action"][]) =>
+    setEvents((evs) => evs.filter((e) => !actions.includes(e.action)));
+  const setWorkloadByHand = (w: Workload) => {
+    setWorkload(w);
+    dropEvents("set-workload");
+  };
+
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setWorkload(g.scenario.workload);
     setEnvironment(g.scenario.environment);
@@ -180,7 +210,27 @@ return () => window.removeEventListener("hashchange", onHash);
     setDurationS(g.scenario.durationS);
     setCursor(0);
     setRunning(true);
-  };
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const id = scenarioIdFromHash();
+    const g = scenarios.find((x) => x.id === id);
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = scenarioIdFromHash();
+      const g = scenarios.find((x) => x.id === id);
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
 
   const coldStart = () => {
     setEvents([]);
@@ -190,7 +240,10 @@ return () => window.removeEventListener("hashchange", onHash);
   };
 
   const productMedia = media[config.product];
-  const underlay = productMedia?.underlay ?? null;
+  // The underlay is the laptop service photo; it must not sit under the
+  // tower's side-view map.
+  const underlay =
+    config.formFactor === "laptop" ? productMedia?.underlay ?? null : null;
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.t <= (state?.t ?? 0));
 
@@ -232,7 +285,7 @@ return () => window.removeEventListener("hashchange", onHash);
           )}
         </nav>
         <span className="sub">
-          {state
+          {page !== "sim" ? "" : state
             ? `t+${state.t}s · ${state.poweredOn ? state.plState : "OFF"} · ${state.systemPowerW.toFixed(0)} W · ${state.batteryPct.toFixed(0)}%`
             : "—"}
         </span>
@@ -262,8 +315,8 @@ return () => window.removeEventListener("hashchange", onHash);
           on desks and laps: an Alienware laptop or tower and the Pro Max
           Plus workstation with its discrete NPU. Three mechanics servers
           never meet — PL2 burst windows that fade to PL1, one shared
-          thermal budget that CPU and GPU fight over, and a skin-
-          temperature cap with the final say — plus a battery whose
+          thermal budget that CPU and GPU fight over, and a
+          skin-temperature cap with the final say — plus a battery whose
           runtime is honest division. Every constant is sourced or marked
           as an estimate.
         </p>
@@ -287,9 +340,13 @@ return () => window.removeEventListener("hashchange", onHash);
             config={config}
             presets={configPresets}
             validations={result?.validations ?? []}
-            onChange={(c) => setConfig(c)}
+            onChange={(c) => {
+              if (c.chargerW !== config.chargerW) dropEvents("set-charger");
+              setConfig(c);
+            }}
             onPreset={(p) => {
               setConfig(p.config);
+              setEvents([]);
               setActiveScenario(null);
               setComparePresetId(p.comparePresetId ?? "");
             }}
@@ -423,7 +480,7 @@ return () => window.removeEventListener("hashchange", onHash);
             <h2>Workload</h2>
             <div className="btnrow">
               {workloadPresets.map((w) => (
-                <button key={w.id} onClick={() => setWorkload(w.workload)}>
+                <button key={w.id} onClick={() => setWorkloadByHand(w.workload)}>
                   {w.name}
                 </button>
               ))}
@@ -440,7 +497,7 @@ return () => window.removeEventListener("hashchange", onHash);
                 <input
                   type="range" min={0} max={100} value={workload[key]}
                   onChange={(e) =>
-                    setWorkload({ ...workload, [key]: +e.target.value })
+                    setWorkloadByHand({ ...workload, [key]: +e.target.value })
                   }
                 />
               </label>
@@ -452,9 +509,10 @@ return () => window.removeEventListener("hashchange", onHash);
               Ambient {environment.ambientC} °C
               <input
                 type="range" min={10} max={45} value={environment.ambientC}
-                onChange={(e) =>
-                  setEnvironment({ ...environment, ambientC: +e.target.value })
-                }
+                onChange={(e) => {
+                  setEnvironment({ ...environment, ambientC: +e.target.value });
+                  dropEvents("set-ambient");
+                }}
               />
             </label>
             <label className="field">
@@ -464,6 +522,7 @@ return () => window.removeEventListener("hashchange", onHash);
                 onChange={(e) => {
                   const mode = e.target.value as PerfMode;
                   setEnvironment({ ...environment, perfMode: mode });
+                  dropEvents("set-mode");
                 }}
               >
                 <option value="quiet">Quiet</option>
@@ -488,7 +547,12 @@ return () => window.removeEventListener("hashchange", onHash);
               </div>
             )}
           </div>
-          <Instruments state={state} explains={explains} explainOn={explainOn} />
+          <Instruments
+            state={state}
+            explains={explains}
+            explainOn={explainOn}
+            hasBattery={config.formFactor === "laptop"}
+          />
           {ghost && result && (
             <ComparePanel
               aName="current build"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchMedia,
   type ProductMediaWire,
@@ -46,6 +46,21 @@ const DEFAULT_EVENTS: SimEvent[] = [
 
 const SPEEDS = [1, 12, 48];
 
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios: backups-arent-enough, rto-surprise, slow-burn,
+// two-am, alert-fatigue, stolen-laptop). Returns null when the hash
+// names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
+}
+
 export function App() {
   useEffect(() => {
     document.body.classList.add("dell-body");
@@ -58,7 +73,8 @@ export function App() {
   const [explains, setExplains] = useState<Explain[]>([]);
   const [scope, setScope] = useState("");
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch swaps in the re-leveled narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const [config, setConfig] = useState<ResilienceConfig>(DEFAULT_CONFIG);
   const [events, setEvents] = useState<SimEvent[]>(DEFAULT_EVENTS);
@@ -71,6 +87,11 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  const setActiveScenario = (g: GuidedScenario | null) => {
+    setActiveScenarioId(g ? g.id : null);
+    writeHash(g ? `#scenario=${g.id}` : "");
+  };
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -129,14 +150,35 @@ return () => {
     setEvents((evs) => [...evs, { atH: state?.tH ?? 0, ...e }]);
   };
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setEvents(g.scenario.events);
     setDurationH(g.scenario.durationH);
     setCursor(0);
     setRunning(true);
-  };
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const id = scenarioIdFromHash();
+    const g = scenarios.find((x) => x.id === id);
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = scenarioIdFromHash();
+      const g = scenarios.find((x) => x.id === id);
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
 
   const clearScript = () => {
     setEvents([]);

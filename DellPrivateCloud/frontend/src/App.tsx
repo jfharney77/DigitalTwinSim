@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchCloud } from "./api";
+import { fetchAnatomy, fetchCloud, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -9,22 +9,26 @@ import { CloudCounters } from "./components/CloudCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
 import type { CloudAnatomy, CloudState, RegionKind } from "./types";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "estate" | "anatomy" | "components" | "usecases";
+type Page = "estate" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "estate";
 }
 
 // Deep-link into the trace: #step=N (clamped) or #phase=<name> (first
 // matching state). Returns null when the hash names neither.
 function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
   const h = window.location.hash;
   const step = h.match(/#step=(\d+)$/);
   if (step) return Math.min(Number(step[1]), states.length - 1);
@@ -41,15 +45,29 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
-      window.location.hash = PAGE_HASH[page];
-    }
+    // Only overwrite the hash for top-level switches; pages may append their
+    // own deep-link segments (#anatomy/<regionId>, #usecases/<id>), and the
+    // estate keeps #step=/#phase= links. Leaving a sub-page for the estate
+    // must clear its hash, or a reload would land back on the sub-page.
+    const want = PAGE_HASH[page];
+    const h = window.location.hash;
+    const onPage = want
+      ? h.startsWith(`#${want}`)
+      : !/^#(anatomy|components|usecases|tour)/.test(h);
+    if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
 
@@ -61,6 +79,9 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
 
   const timer = useRef<number | null>(null);
   // Apply a #step=/#phase= deep link only on the first successful load — a
@@ -97,8 +118,21 @@ export function App() {
       .catch((e) => setError(String(e)));
   }, [level]);
 
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
+
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
+
+  const traceRef = useRef(trace);
+  traceRef.current = trace;
 
   const run = useCallback(() => {
     if (timer.current !== null || trace.length === 0) return;
@@ -134,6 +168,22 @@ export function App() {
   const reset = useCallback(() => {
     stop();
     setCursor(0);
+  }, [stop]);
+
+  // Follow the hash after load: in-page links (the use-case page's "Go
+  // deeper" buttons), the back button, and a #step=/#phase= link typed into
+  // an open tab all change the hash without remounting the app.
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, [stop]);
 
   // Retune the interval live when speed changes mid-run.
@@ -179,6 +229,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "estate" && (
           <span className="sub">
@@ -191,6 +247,75 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // StackView draws the map plus a margin and a row of labels.
+              stageAspect={
+                (tour.mapWidth + 5) / (tour.mapHeight + 5 + 4)
+              }
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the estate page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <StackView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <>
+                      <p className="tour-trace">
+                        Cloud trace: <strong>{state.label}</strong> · t+
+                        {state.elapsedMinutes}m (illustrative)
+                      </p>
+                      {/* The figures the narration asks the reader to watch. */}
+                      <p className="tour-trace">
+                        Compute {state.computeUnits} · storage{" "}
+                        {state.storageTb} TB · hypervisors{" "}
+                        {state.hypervisorsActive} · workloads {state.workloads}
+                        {" "}· control planes {state.controlPlanes} · workload
+                        downtime {state.workloadDowntimeSeconds}s
+                      </p>
+                    </>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "estate" && (
         <>
@@ -209,6 +334,12 @@ export function App() {
               hypervisor appears without a workload noticing or an operator
               gaining a second console.
             </p>
+            <button
+              className="primary poweron-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -236,7 +367,7 @@ export function App() {
                 At <em>migration</em>, a second slot lights while the
                 workload count, the downtime counter, and the control-plane
                 count all hold still. Click a block to pin what it is; the
-                full tour lives under Inside the stack.
+                full map lives under Inside the stack.
               </div>
             </div>
           </div>

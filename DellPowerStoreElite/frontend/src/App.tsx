@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchJoin } from "./api";
+import { fetchAnatomy, fetchJoin, fetchTour } from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -9,16 +9,19 @@ import { JoinCounters } from "./components/JoinCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
 import type { ChassisAnatomy, JoinState, RegionKind } from "./types";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "join" | "anatomy" | "components" | "usecases";
+type Page = "join" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "join";
 }
 
@@ -27,7 +30,18 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// The ChassisView frame is (100 + 2*2.5) x (70 + 2*2.5 + 4): the outline plus
+// the orientation labels, so the tour stage keeps that ratio.
+const STAGE_ASPECT = 105 / 79;
 
 // Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
 // cursor, or null when the hash matches neither pattern (or names an unknown
@@ -78,19 +92,27 @@ export function App() {
   useEffect(() => {
     // Only overwrite the hash for top-level switches; pages may append their
     // own deep-link segments (e.g. #anatomy/<regionId>).
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
-      window.location.hash = PAGE_HASH[page];
-    }
+    const want = PAGE_HASH[page];
+    const h = window.location.hash;
+    const onPage = want
+      ? h.startsWith(`#${want}`)
+      : !/^#(anatomy|components|usecases|tour)/.test(h);
+    if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
 
   const [anatomy, setAnatomy] = useState<ChassisAnatomy | null>(null);
   const [trace, setTrace] = useState<JoinState[]>([]);
+  const traceRef = useRef<JoinState[]>([]);
+  traceRef.current = trace;
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -124,6 +146,16 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled server-side).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -163,6 +195,21 @@ export function App() {
   const reset = useCallback(() => {
     stop();
     setCursor(0);
+  }, [stop]);
+
+  // Follow hash changes made outside the nav (the use-case page's "Go
+  // deeper" buttons, the browser's back button, a pasted #phase= link).
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, [stop]);
 
   // Retune the interval live when speed changes mid-run.
@@ -208,6 +255,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "join" && (
           <span className="sub">{state ? state.label : "—"}</span>
@@ -218,6 +271,63 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              stageAspect={STAGE_ASPECT}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the join page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <ChassisView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Join trace: <strong>{state.label}</strong> · downtime{" "}
+                      {state.downtimeSeconds} s · {state.iopsThousands}K IOPS
+                      (illustrative)
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "join" && (
         <>
@@ -233,6 +343,12 @@ export function App() {
               skip. Play the trace and watch the downtime counter — it
               never leaves zero.
             </p>
+            <button
+              className="primary join-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -254,8 +370,9 @@ export function App() {
                 Highlighted blocks are the parts doing work at this step.
                 The top band is the prior-generation array, the bottom band
                 is the Elite, and the thin strip between them is the RDMA
-                cluster interconnect. Click a block to pin what it is; the
-                full tour lives under Inside the cluster.
+                cluster interconnect. Click a block to pin what it is; every
+                part is described under Inside the cluster, and the Guided
+                tour narrates the join beat by beat.
               </div>
             </div>
           </div>

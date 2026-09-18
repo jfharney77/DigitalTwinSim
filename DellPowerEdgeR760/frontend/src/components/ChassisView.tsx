@@ -36,6 +36,8 @@ export function ChassisView({
   selected,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: ChassisAnatomy;
   active?: Set<string>;
@@ -43,16 +45,29 @@ export function ChassisView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates (the margin is
+  // added here), and a per-region layer look — ghost opacity plus an explode
+  // offset. Both optional; without them the floorplan draws as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
   // Region coords are chassis-relative; shift them inside the outline.
   const rx = (r: ChassisRegion) => r.x + MARGIN;
   const ry = (r: ChassisRegion) => r.y + MARGIN;
+  // The full view is W x (H + 4): the outline plus the orientation labels.
+  // A camera box maps to the same framing scaled down, so the whole-map box
+  // reproduces the default viewBox exactly and a tween never jumps.
+  const viewBox = camera
+    ? `${camera.x} ${camera.y} ${camera.w + 2 * MARGIN} ${
+        camera.h + (2 * MARGIN + 4) * (camera.h / anatomy.height)
+      }`
+    : `0 0 ${W} ${H + 4}`;
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} chassis floorplan`}
       onClick={() => onSelect?.(null)}
     >
@@ -70,6 +85,7 @@ export function ChassisView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks (fans, backplane),
         // else tooltip only. 0.62 ≈ glyph advance per unit font.
@@ -78,6 +94,28 @@ export function ChassisView({
         const vSize = Math.min(1.9, r.w * 0.42, (r.h - 1.6) / (len * 0.62));
         const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.05;
         const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.05;
+        // Last resort before tooltip-only: two lines, split at the space
+        // nearest the middle ("Power distribution" in the narrow PSU column).
+        const mid = r.label.length / 2;
+        const cut = r.label
+          .split("")
+          .reduce(
+            (best, ch, i) =>
+              ch === " " && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))
+                ? i
+                : best,
+            -1,
+          );
+        const lines =
+          cut > 0 ? [r.label.slice(0, cut), r.label.slice(cut + 1)] : [];
+        const wSize = lines.length
+          ? Math.min(
+              1.9,
+              r.h * 0.3,
+              (r.w - 1.6) / (Math.max(...lines.map((l) => l.length)) * 0.62),
+            )
+          : 0;
+        const showWrapped = !showLabel && !showVLabel && wSize >= 0.9;
         const fontSize = hSize;
         const stroke = isSel
           ? "var(--accent)"
@@ -88,6 +126,14 @@ export function ChassisView({
           <g
             key={r.id}
             className={isActive ? "an-region region-active" : "an-region"}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);
@@ -105,6 +151,23 @@ export function ChassisView({
               stroke={stroke}
               strokeWidth={isSel || isActive ? 0.5 : 0.25}
             />
+            {/* Native tooltip where the page has no hover card of its own. */}
+            {!onHover && <title>{r.label}</title>}
+            {showWrapped && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h / 2 - wSize * 0.25}
+                textAnchor="middle"
+                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fontSize={wSize}
+                letterSpacing={0.12}
+              >
+                <tspan x={rx(r) + r.w / 2}>{lines[0]}</tspan>
+                <tspan x={rx(r) + r.w / 2} dy={wSize * 1.15}>
+                  {lines[1]}
+                </tspan>
+              </text>
+            )}
             {showVLabel && (
               <text
                 x={rx(r) + r.w / 2}

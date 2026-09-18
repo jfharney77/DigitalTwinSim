@@ -45,6 +45,21 @@ const DEFAULT_ENV: Environment = {
 
 const SPEEDS = [1, 10, 60];
 
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios: phoenix-rooftop, fargo-february,
+// filter-nobody-changed, brownout, hdd-mistake, mountain-site). Returns
+// null when the hash names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
+}
+
 export function App() {
   useEffect(() => {
     document.body.classList.add("dell-body");
@@ -56,7 +71,8 @@ export function App() {
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch swaps in the re-levelled narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const [config, setConfig] = useState<ServerConfig>(DEFAULT_CONFIG);
   const [workload, setWorkload] = useState<Workload>(DEFAULT_WORKLOAD);
@@ -71,6 +87,11 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  const setActiveScenario = (g: GuidedScenario | null) => {
+    setActiveScenarioId(g ? g.id : null);
+    writeHash(g ? `#scenario=${g.id}` : "");
+  };
 
   // Prose-bearing content refetches on level change.
   useEffect(() => {
@@ -168,8 +189,9 @@ export function App() {
     ]);
   }, [state]);
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setWorkload(g.scenario.workload);
     setEnvironment(g.scenario.environment);
@@ -177,7 +199,27 @@ export function App() {
     setDurationS(g.scenario.durationS);
     setCursor(0);
     setRunning(true);
-  };
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const id = scenarioIdFromHash();
+    const g = scenarios.find((x) => x.id === id);
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = scenarioIdFromHash();
+      const g = scenarios.find((x) => x.id === id);
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
 
   const coldStart = () => {
     setEvents([]);
@@ -203,7 +245,7 @@ export function App() {
         </nav>
         <span className="sub">
           {state
-            ? `t+${state.t}s · ${state.poweredOn ? "running" : "OFF"} · ${state.acPowerW.toFixed(0)} W wall · ${environment.inletC} °C outside`
+            ? `t+${state.t}s · ${state.poweredOn ? "running" : "OFF"} · ${state.acPowerW.toFixed(0)} W wall · ${state.inletEffectiveC.toFixed(0)} °C outside`
             : "—"}
         </span>
         <LevelControl />

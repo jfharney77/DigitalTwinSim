@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchAnatomy,
   fetchExplain,
@@ -57,6 +57,20 @@ const TWIN_LINKS: { name: string; port: number; note: string }[] = [
   { name: "GPU", port: 5173, note: "one die — the roofline this factory inherits" },
 ];
 
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios: stand-up, starved-cluster, checkpoint-goldilocks,
+// warm-day). Returns null when the hash names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
+}
+
 export function App() {
   useEffect(() => {
     document.body.classList.add("dell-body");
@@ -68,7 +82,8 @@ export function App() {
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch swaps in the re-levelled narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const [config, setConfig] = useState<FactoryConfig>(DEFAULT_CONFIG);
   const [job, setJob] = useState<TrainingJob>(DEFAULT_JOB);
@@ -82,6 +97,11 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  const setActiveScenario = (g: GuidedScenario | null) => {
+    setActiveScenarioId(g ? g.id : null);
+    writeHash(g ? `#scenario=${g.id}` : "");
+  };
 
   // Prose-bearing content refetches on level change.
   useEffect(() => {
@@ -142,15 +162,36 @@ export function App() {
     setEvents((evs) => [...evs, { atH: state?.tH ?? 0, action, value }]);
   };
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setJob(g.scenario.job);
     setEvents(g.scenario.events);
     setDurationH(g.scenario.durationH);
     setCursor(0);
     setRunning(true);
-  };
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const id = scenarioIdFromHash();
+    const g = scenarios.find((x) => x.id === id);
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = scenarioIdFromHash();
+      const g = scenarios.find((x) => x.id === id);
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
 
   const reset = () => {
     setEvents([]);
@@ -252,6 +293,7 @@ export function App() {
                 anatomy={anatomy}
                 state={state}
                 racks={config.compute.racks}
+                gpusPerRack={config.compute.gpusPerRack}
                 selected={regionId}
                 onSelect={setRegionId}
               />

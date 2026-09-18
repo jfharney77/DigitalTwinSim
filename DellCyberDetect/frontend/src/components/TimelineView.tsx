@@ -47,6 +47,8 @@ export function TimelineView({
   namedClean = -1,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: DetectAnatomy;
   active?: Set<string>;
@@ -61,6 +63,11 @@ export function TimelineView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates (the margin is
+  // added here), and a per-region layer look — ghost opacity plus an explode
+  // offset. Both optional; without them the map draws as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
@@ -75,11 +82,19 @@ export function TimelineView({
   const firstCorruptIdx = snaps.length - corruptedCount;
   const isCorrupt = (i: number) => corruptedCount > 0 && i >= firstCorruptIdx;
   const named = snaps[namedClean - 1] ?? null;
-  const axisY = snaps.length > 0 ? ry(snaps[0]) + snaps[0].h + 1.6 : 0;
+  const axisY = snaps.length > 0 ? ry(snaps[0]) + snaps[0].h + 0.7 : 0;
+  // The full view is W x (H + 4): the outline plus the orientation labels.
+  // A camera box maps to the same framing scaled down, so the whole-map box
+  // reproduces the default viewBox exactly and a tween never jumps.
+  const viewBox = camera
+    ? `${camera.x} ${camera.y} ${camera.w + 2 * MARGIN} ${
+        camera.h + (2 * MARGIN + 4) * (camera.h / anatomy.height)
+      }`
+    : `0 0 ${W} ${H + 4}`;
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} detection map`}
       onClick={() => onSelect?.(null)}
     >
@@ -87,7 +102,7 @@ export function TimelineView({
         x={0.5}
         y={0.5}
         width={W - 1}
-        height={H - 1}
+        height={H + 3}
         rx={1.5}
         fill="#0d1420"
         stroke="#1f2935"
@@ -107,7 +122,7 @@ export function TimelineView({
           />
           <text
             x={rx(snaps[0])}
-            y={axisY + 2.2}
+            y={axisY + 2.0}
             fill="#5a6b82"
             fontSize={1.5}
             letterSpacing={0.2}
@@ -116,7 +131,7 @@ export function TimelineView({
           </text>
           <text
             x={rx(snaps[snaps.length - 1]) + snaps[snaps.length - 1].w}
-            y={axisY + 2.2}
+            y={axisY + 2.0}
             textAnchor="end"
             fill="#5a6b82"
             fontSize={1.5}
@@ -156,6 +171,7 @@ export function TimelineView({
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
         const snapIdx = snaps.indexOf(r);
+        const look = regionLook?.(r.id);
         const corrupt = revealed && snapIdx >= 0 && isCorrupt(snapIdx);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
@@ -184,6 +200,14 @@ export function TimelineView({
           <g
             key={r.id}
             className={isActive ? "an-region region-active" : "an-region"}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);
@@ -241,18 +265,18 @@ export function TimelineView({
         );
       })}
       {/* Orientation: what the diagram is actually navigating. */}
-      <text x={MARGIN} y={H + 2.6} fill="#5a6b82" fontSize={1.7} letterSpacing={0.3}>
-        EVIDENCE ↓ — read the bytes
+      <text x={MARGIN} y={H + 2.4} fill="#5a6b82" fontSize={1.5} letterSpacing={0.1}>
+        EVIDENCE — middle row, reads the bytes
       </text>
       <text
         x={W - MARGIN}
-        y={H + 2.6}
+        y={H + 2.4}
         textAnchor="end"
         fill="#5a6b82"
-        fontSize={1.7}
-        letterSpacing={0.3}
+        fontSize={1.5}
+        letterSpacing={0.1}
       >
-        CONCLUSION ↓ — name a copy
+        CONCLUSION — bottom row, names a copy
       </text>
     </svg>
   );

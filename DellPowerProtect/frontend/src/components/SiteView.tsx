@@ -34,6 +34,8 @@ export function SiteView({
   selected,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: SiteAnatomy;
   active?: Set<string>;
@@ -41,15 +43,28 @@ export function SiteView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates (the margin is
+  // added here), and a per-region layer look — ghost opacity plus an offset.
+  // Without them the map draws exactly as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
   const rx = (r: SiteRegion) => r.x + MARGIN;
   const ry = (r: SiteRegion) => r.y + MARGIN;
 
+  // A camera box maps to the same framing scaled down, so the whole-map box
+  // reproduces the default viewBox exactly and a tween never jumps.
+  const viewBox = camera
+    ? `${camera.x} ${camera.y} ${camera.w + 2 * MARGIN} ${
+        camera.h + (2 * MARGIN + 4) * (camera.h / anatomy.height)
+      }`
+    : `0 0 ${W} ${H + 4}`;
+
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} site map`}
       onClick={() => onSelect?.(null)}
     >
@@ -67,6 +82,7 @@ export function SiteView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
         const len = r.label.length || 1;
@@ -84,6 +100,14 @@ export function SiteView({
           <g
             key={r.id}
             className={isActive ? "an-region region-active" : "an-region"}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);

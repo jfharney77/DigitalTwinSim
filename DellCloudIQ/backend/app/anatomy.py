@@ -27,8 +27,8 @@ ANATOMY = PlatformMap(
     height=58,
     overview=L(
         novice=(
-            "Everything else in this repo is a physical object. This one is "
-            "software running as a service, so instead of a floorplan you get a "
+            "Most Dell products are physical objects. CloudIQ is software "
+            "running as a service, so instead of a floorplan you get a "
             "diagram of a journey — the journey a piece of measurement data "
             "takes from a machine in a customer's building to a useful piece of "
             "advice. Equipment constantly reports on itself: temperatures, "
@@ -42,7 +42,7 @@ ANATOMY = PlatformMap(
         ),
         plain=(
             "CloudIQ — now Dell AIOps — is cloud-native observability software "
-            "rather than hardware, so both of this repo's usual metaphors are "
+            "rather than hardware, so both of the usual hardware views (floorplan and power-on) are "
             "adapted. The map is a platform architecture diagram laid out left "
             "to right, and the trace is the lifecycle of a batch of telemetry "
             "becoming an actionable insight: collected from monitored systems, "
@@ -76,14 +76,14 @@ ANATOMY = PlatformMap(
             "cybersecurity → insights and assistant → notify. Phase order is "
             "collect → transmit → ingest → analyze → detect → surface → assist "
             "→ notify, with the ML analyze stage holding max dwell. "
-            "`healthScore` starts at 100, dips at or after detect, and recovers "
+            "Health Score starts at 100, dips at or after detect, and recovers "
             "above the low-water mark without returning to 100; first transmit "
             "precedes first surface, asserting one-way flow. No power model at "
             "all."
         ),
         expert=(
             "AIOps pipeline: sources → SCG → ingest → ML analytics → insight → "
-            "notify. ML analyze holds max dwell. `healthScore` 100 → dip "
+            "notify. ML analyze holds max dwell. Health Score 100 → dip "
             "at/after detect → partial recovery; one-way flow asserted via "
             "transmit-before-surface. Capability catalog, not a bill of "
             "materials."

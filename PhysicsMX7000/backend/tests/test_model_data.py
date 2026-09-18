@@ -191,3 +191,22 @@ def test_explain_entries_cover_the_required_readouts():
     for e in EXPLAINS:
         assert e.equation.strip() and e.explanation.strip(), e.id
         assert len(e.inputs) >= 3, f"{e.id}: causal chain too short"
+
+
+def test_served_prose_carries_no_markdown_emphasis():
+    # The UI renders prose as plain text, so *word* would show its asterisks.
+    import re
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        from fastapi.testclient import TestClient
+
+        from app.main import app
+
+    client = TestClient(app)
+    emphasis = re.compile(r"\*[A-Za-z][^*\n]*\*")
+    for level in range(1, 6):
+        for path in ("/api/anatomy", "/api/scenarios", "/api/explain"):
+            body = client.get(path, params={"level": level}).text
+            assert not emphasis.search(body), (path, level, emphasis.search(body).group(0))

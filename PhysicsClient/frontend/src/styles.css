@@ -558,8 +558,8 @@ select:hover {
 }
 @media (max-width: 1100px) { .thermal-grid { grid-template-columns: 1fr; } }
 .thermal-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.cfg-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-.cfg-label { flex: 0 0 128px; font-size: 12px; color: var(--dell-muted, #636363); }
+label.field.cfg-row { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 4px 0; }
+.cfg-label { flex: 0 0 96px; font-size: 12px; color: var(--dell-muted, #636363); }
 .cfg-row select, .cfg-row input[type="range"] { flex: 1; min-width: 0; }
 .cfg-presets button { font-size: 12px; }
 .rule-ok { color: #217346; margin-top: 4px; }
@@ -576,9 +576,9 @@ select:hover {
 .margin-bar { height: 6px; background: #e8eaed; border-radius: 3px; margin: 2px 0 8px; }
 .margin-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
 .fan-overhead { color: #9a6a00; font-weight: 600; }
-.explain-card { border-left: 3px solid var(--accent, #0672cb); padding: 6px 8px; margin: 4px 0 8px; background: rgba(6, 114, 203, 0.06); line-height: 1.45; }
+.explain-card { border-left: 3px solid var(--dell-blue, #0672cb); padding: 6px 8px; margin: 4px 0 8px; background: rgba(6, 114, 203, 0.06); line-height: 1.45; }
 .explain-eq { font-family: monospace; font-weight: 600; }
-.explain-live { font-family: monospace; color: var(--accent, #0672cb); margin: 2px 0 4px; }
+.explain-live { font-family: monospace; color: var(--dell-blue, #0672cb); margin: 2px 0 4px; }
 .explain-chain { margin-top: 4px; font-style: italic; opacity: 0.8; }
 .strip-chart { margin-bottom: 8px; }
 .strip-title { display: flex; justify-content: space-between; }
@@ -613,7 +613,7 @@ select:hover {
 
 /* V6 gauges */
 .gauge-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.gauge { flex: 1; min-width: 0; }
+.gauge { flex: 1; min-width: 0; background: #0d1420; border-radius: 6px; padding: 2px 0; }
 
 /* V3 flow particles */
 @keyframes flow-dash { to { stroke-dashoffset: -24; } }
@@ -622,3 +622,13 @@ select:hover {
 
 /* V8 compare */
 .compare-rel { color: #8b6cc9; font-style: normal; }
+
+/* Phone widths: the header's title, nav, status line and reading-level
+   control cannot share one row at 390 px — let them wrap instead of
+   pushing the page sideways. */
+@media (max-width: 880px) {
+  .app.dell header { flex-wrap: wrap; padding: 12px 16px; gap: 8px 16px; }
+  .app.dell header .sub { margin-left: 0; }
+  .app.dell .an-hero { padding: 20px 16px 24px; }
+  .app.dell .an-hero h2 { font-size: 28px; }
+}

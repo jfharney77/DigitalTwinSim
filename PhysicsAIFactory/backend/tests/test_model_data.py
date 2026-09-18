@@ -176,3 +176,21 @@ def test_explain_entries_cover_the_headline_instruments():
     for e in EXPLAINS:
         assert e.equation.strip() and e.explanation.strip(), e.id
         assert len(e.inputs) >= 3, f"{e.id}: causal chain too short"
+
+
+def test_served_prose_carries_no_markdown_emphasis():
+    """The UI renders prose as plain text, so *word* would show its asterisks."""
+    import json
+    import re
+
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    emphasis = re.compile(r"(?<![\w*])\*[A-Za-z][^*\n]*\*(?![\w*])")
+    for level in (1, 3, 5):
+        for path in ("/api/anatomy", "/api/scenarios", "/api/explain"):
+            body = json.dumps(client.get(path, params={"level": level}).json(),
+                              ensure_ascii=False)
+            assert not emphasis.findall(body), (path, level, emphasis.findall(body))

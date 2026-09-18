@@ -46,7 +46,9 @@ export function UseCasePage() {
   }, [level]);
 
   useEffect(() => {
-    if (caseId) window.location.hash = `usecases/${caseId}`;
+    // replaceState, not a hash assignment: picking a case (or the default
+    // one) refines the current entry, so Back leaves the tab in one press.
+    if (caseId) window.history.replaceState(null, "", `#usecases/${caseId}`);
   }, [caseId]);
 
   const uc = useCases.find((u) => u.id === caseId) ?? null;

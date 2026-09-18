@@ -59,7 +59,7 @@ export function Gauge({
 
   return (
     <div className="gauge" title={`${label}: ${value}${unit}`}>
-      <svg viewBox="0 0 120 78" style={{ width: "100%", display: "block" }}>
+      <svg viewBox="0 0 120 88" style={{ width: "100%", display: "block" }}>
         {segs.map((s, i) => (
           <path
             key={i}
@@ -82,7 +82,8 @@ export function Gauge({
         <line x1={CX} y1={CY} x2={nx} y2={ny} stroke="#ffffff" strokeWidth={2.2} />
         <circle cx={CX} cy={CY} r={3} fill="#ffffff" />
         <text x={CX} y={CY + 14} textAnchor="middle" fill="#e8edf4"
-          fontSize={13} fontWeight={700}>
+          fontSize={13} fontWeight={700}
+          stroke="#0d1420" strokeWidth={3} paintOrder="stroke">
           {format ? format(value) : `${Math.round(value)}${unit}`}
         </text>
         <text x={CX} y={CY + 19 + 6} textAnchor="middle" fill="#8a95a5" fontSize={7.5}>

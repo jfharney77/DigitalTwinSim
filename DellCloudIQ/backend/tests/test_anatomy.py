@@ -80,3 +80,14 @@ def test_camel_case_wire_format():
     data = ANATOMY.model_dump(by_alias=True)
     assert "formFactor" in data
     assert "regions" in data and "description" in data["regions"][0]
+
+
+def test_overview_never_talks_about_the_repo():
+    """Reader-facing prose describes the product, not this codebase."""
+    import re
+
+    from app.leveling import leveled
+
+    for level in (1, 2, 3, 4, 5):
+        overview = leveled(ANATOMY, level).overview.lower()
+        assert not re.search(r"\brepo\b", overview), f"level {level} overview mentions the repo"

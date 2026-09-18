@@ -552,21 +552,30 @@ select:hover {
 .thermal-app { display: block; }
 .thermal-grid {
   display: grid;
-  grid-template-columns: 300px minmax(420px, 1fr) 340px;
+  grid-template-columns: 340px minmax(420px, 1fr) 340px;
   gap: 14px;
   align-items: start;
 }
-@media (max-width: 1100px) { .thermal-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1180px) { .thermal-grid { grid-template-columns: 1fr; } }
 .thermal-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.cfg-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-.cfg-label { flex: 0 0 128px; font-size: 12px; color: var(--dell-muted, #636363); }
+/* Phone width: the header's title, status and level control wrap rather
+   than pushing the page sideways. */
+@media (max-width: 600px) {
+  .app.dell header { flex-wrap: wrap; row-gap: 8px; padding: 12px 16px; }
+  .app.dell .an-hero { padding: 20px 16px 24px; }
+  .app.dell .an-hero h2 { font-size: 28px; }
+  .app.dell header .sub { margin-left: 0; }
+}
+/* label.field stacks as a column; the build rows are label-beside-control. */
+label.field.cfg-row { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 4px 0; }
+.cfg-label { flex: 0 0 104px; font-size: 12px; color: var(--dell-muted, #636363); }
 .cfg-row select, .cfg-row input[type="range"] { flex: 1; min-width: 0; }
 .cfg-presets button { font-size: 12px; }
 .rule-ok { color: #217346; margin-top: 4px; }
 .rule-warning { color: #9a6a00; margin-top: 4px; }
 .rule-error { color: #ce1126; margin-top: 4px; font-weight: 600; }
 .playback-row { align-items: center; margin-top: 8px; flex-wrap: wrap; }
-.playback-row button.active { outline: 2px solid var(--accent, #0672cb); }
+.playback-row button.active { outline: 2px solid var(--dell-blue, #0672cb); }
 .region-card { margin-top: 8px; line-height: 1.5; }
 .event-log { max-height: 180px; overflow-y: auto; }
 .log-info { color: var(--dell-muted, #636363); }
@@ -576,18 +585,18 @@ select:hover {
 .margin-bar { height: 6px; background: #e8eaed; border-radius: 3px; margin: 2px 0 8px; }
 .margin-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
 .fan-overhead { color: #9a6a00; font-weight: 600; }
-.explain-card { border-left: 3px solid var(--accent, #0672cb); padding: 6px 8px; margin: 4px 0 8px; background: rgba(6, 114, 203, 0.06); line-height: 1.45; }
+.explain-card { border-left: 3px solid var(--dell-blue, #0672cb); padding: 6px 8px; margin: 4px 0 8px; background: rgba(6, 114, 203, 0.06); line-height: 1.45; }
 .explain-eq { font-family: monospace; font-weight: 600; }
-.explain-live { font-family: monospace; color: var(--accent, #0672cb); margin: 2px 0 4px; }
+.explain-live { font-family: monospace; color: var(--dell-blue, #0672cb); margin: 2px 0 4px; }
 .explain-chain { margin-top: 4px; font-style: italic; opacity: 0.8; }
 .strip-chart { margin-bottom: 8px; }
 .strip-title { display: flex; justify-content: space-between; }
 .scenario-list { display: flex; flex-direction: column; gap: 4px; }
 .scenario-list button { text-align: left; font-size: 12px; }
-.scenario-list button.active { outline: 2px solid var(--accent, #0672cb); }
+.scenario-list button.active { outline: 2px solid var(--dell-blue, #0672cb); }
 .scenario-narration { margin-top: 8px; line-height: 1.5; }
 .scenario-narration p { margin: 0 0 6px; }
-.scenario-question { font-weight: 600; color: var(--accent, #0672cb); }
+.scenario-question { font-weight: 600; color: var(--dell-blue, #0672cb); }
 .flow-slow line { stroke-dashoffset: 0; animation: flowdash 3s linear infinite; }
 .flow-mid line { animation: flowdash 1.5s linear infinite; }
 .flow-fast line { animation: flowdash 0.6s linear infinite; }

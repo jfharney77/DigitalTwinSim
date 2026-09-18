@@ -19,6 +19,26 @@ function loadColor(load: number): string {
   return "#c8501e";
 }
 
+// Monospace glyphs advance ~0.6 em. Wrap a label onto word lines that fit
+// the box, shrinking the font only if one word alone is wider than the box.
+function fitLabel(label: string, boxW: number): { lines: string[]; size: number } {
+  const room = boxW - 1.2;
+  const words = label.split(/\s+/);
+  const longest = Math.max(...words.map((w) => w.length));
+  const size = Math.min(2.1, room / (longest * 0.6));
+  const perLine = Math.max(1, Math.floor(room / (size * 0.6)));
+  const lines: string[] = [];
+  for (const w of words) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && last.length + 1 + w.length <= perLine) {
+      lines[lines.length - 1] = `${last} ${w}`;
+    } else {
+      lines.push(w);
+    }
+  }
+  return { lines, size };
+}
+
 export function PipelineView({
   anatomy,
   state,
@@ -109,11 +129,20 @@ export function PipelineView({
               stroke={isSel ? "#e8ecf1" : "#31405269"}
               strokeWidth={isSel ? 0.5 : 0.3}
               className="an-region" />
-            <text x={r.x + r.w / 2} y={r.y + 3.2} fontSize={2.1}
-              textAnchor="middle" fill="#dce4ee"
-              fontFamily="ui-monospace, monospace">
-              {r.label}
-            </text>
+            {(() => {
+              const { lines, size } = fitLabel(r.label, r.w);
+              return (
+                <text x={r.x + r.w / 2} y={r.y + 3.2} fontSize={size}
+                  textAnchor="middle" fill="#dce4ee"
+                  fontFamily="ui-monospace, monospace">
+                  {lines.map((ln, i) => (
+                    <tspan key={i} x={r.x + r.w / 2} dy={i === 0 ? 0 : size * 1.2}>
+                      {ln}
+                    </tspan>
+                  ))}
+                </text>
+              );
+            })()}
             <text x={r.x + r.w / 2} y={r.y + r.h - 1.6} fontSize={1.9}
               textAnchor="middle" fill="#8fa1b6"
               fontFamily="ui-monospace, monospace">

@@ -77,3 +77,15 @@ def test_camel_case_wire_format():
     data = ANATOMY.model_dump(by_alias=True)
     assert "formFactor" in data
     assert "regions" in data and "description" in data["regions"][0]
+
+
+def test_every_block_label_fits_its_block():
+    # Mirrors BlockView.tsx's fitting rule: a label that cannot be drawn at
+    # font size >= 1.0 (horizontally or rotated) is silently dropped, leaving
+    # an unlabeled box on the diagram.
+    for r in ANATOMY.regions:
+        n = len(r.label) or 1
+        h_size = min(1.9, r.h * 0.45, (r.w - 1.6) / (n * 0.62))
+        v_size = min(1.9, r.w * 0.42, (r.h - 1.6) / (n * 0.62))
+        drawn = (r.h > 3.4 and h_size >= 1.0) or (r.w >= 3 and v_size >= 1.0)
+        assert drawn, f"{r.id}: label {r.label!r} too long to draw"

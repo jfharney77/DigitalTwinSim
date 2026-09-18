@@ -4,9 +4,9 @@ import { useLevel } from "../level";
 import { StackView } from "./StackView";
 import type { CatalogCategory, CloudAnatomy } from "../types";
 
-// The build-to-order menu: every category is either a drawn part of the
-// data path (appliances, gap, analytics) or something the architecture
-// depends on (cloud tiers, services). Hovering a category lights up where
+// The build-to-order menu: every category is either a drawn layer of the
+// stack (pools, hypervisor slots, control plane) or something that spans
+// it (architecture, operations). Hovering a category lights up where
 // it lives on the mini map.
 
 export function CatalogPage() {

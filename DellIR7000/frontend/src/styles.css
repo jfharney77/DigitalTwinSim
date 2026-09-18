@@ -24,8 +24,32 @@ body {
 }
 @media (max-width: 880px) {
   .app {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     height: auto;
+  }
+  header {
+    flex-wrap: wrap;
+  }
+  header .sub {
+    margin-left: 0;
+  }
+  .app.dell header {
+    padding: 12px 16px;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 28px;
+  }
+  .app.dell .stage {
+    padding: 16px;
+  }
+  .app.dell .an-card {
+    padding: 16px;
+  }
+  .app.dell .controls {
+    padding: 16px;
   }
 }
 header {
@@ -546,4 +570,53 @@ select:hover {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+@media (max-width: 880px) {
+  /* The build sheet's four columns do not fit a phone; scroll the table
+     inside its card instead of clipping the "why" column. */
+  .uc-build {
+    overflow-x: auto;
+  }
+  .uc-build table {
+    min-width: 520px;
+  }
+}
+
+/* --- Guided tour: layer peel on the loop map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.thermal-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
+}
+/* The loop map is nearly square (100 x 84), so at full column width the
+   stage alone would be taller than a laptop screen and push the caption and
+   the transport out of view. On wide screens cap the stage's width so its
+   height leaves room for both; phones keep the full width. */
+@media (min-width: 981px) {
+  .app.dell .tour-page .tour-stage {
+    width: 100%;
+    max-width: calc(max(320px, 100vh - 440px) * 105 / 93 + 24px);
+    margin-inline: auto;
+  }
 }

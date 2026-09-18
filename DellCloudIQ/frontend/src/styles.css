@@ -19,12 +19,12 @@ body {
 }
 .app {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   height: 100vh;
 }
 @media (max-width: 880px) {
   .app {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     height: auto;
   }
 }
@@ -49,6 +49,16 @@ header .sub {
   color: var(--txt-dim);
   font-size: 11px;
   letter-spacing: 0.1em;
+}
+@media (max-width: 880px) {
+  header {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  header .sub {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
 }
 .nav {
   display: flex;
@@ -546,4 +556,37 @@ select:hover {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+@media (max-width: 880px) {
+  .uc-cat {
+    white-space: normal;
+  }
+}
+
+/* --- Guided tour: layer peel on the architecture diagram --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.pipeline-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
 }

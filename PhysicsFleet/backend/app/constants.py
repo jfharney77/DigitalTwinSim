@@ -14,6 +14,12 @@ CONSTANTS: dict[str, Constant] = {
         estimated=True,
         blurb="A hardware fault arrives every N node-days, rotating around the fleet.",
     ),
+    "repair_days": Constant(
+        value=3, unit="days",
+        source="estimate — parts dispatch + node replacement for a datacenter or HA-site node",
+        estimated=True,
+        blurb="How long a faulted node stays out before it rejoins the cluster.",
+    ),
     "drift_per_node_day": Constant(
         value=0.05, unit="drift points/node/day",
         source="estimate — unmanaged config entropy", estimated=True,

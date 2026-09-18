@@ -57,3 +57,18 @@ def test_use_cases_have_narrative_and_rationale():
         assert len(uc.narrative) >= 2, f"{uc.id}: needs >=2 narrative paragraphs"
         assert uc.config, f"{uc.id}: empty config"
         assert all(item.rationale for item in uc.config)
+
+
+def test_served_prose_has_no_unrendered_markdown():
+    """The UI renders these strings as plain text, so `*word*` emphasis
+    would show up as literal asterisks (it did, on the use-case page)."""
+    import json
+    import re
+
+    from app.engine import simulate
+
+    emphasis = re.compile(r"(?<![\w*])\*[A-Za-z][^*\n]*\*(?![\w*])")
+    payloads = [ANATOMY, *CATALOG, *USE_CASES, *simulate()]
+    for payload in payloads:
+        text = json.dumps(payload.model_dump(by_alias=True))
+        assert not emphasis.search(text), emphasis.search(text).group(0)

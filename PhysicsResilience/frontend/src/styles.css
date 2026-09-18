@@ -624,3 +624,34 @@ select:hover {
 /* V6 gauges */
 .gauge-row { display: flex; gap: 6px; margin-bottom: 8px; }
 .gauge { flex: 1; min-width: 0; }
+
+/* QA fixes: the dark-theme `label.field` column rule outranked .cfg-row, the
+   global `svg { width: 100% }` stretched gallery thumbnails over their text,
+   and the gauges draw white ink that needs the diagram's dark ground. */
+label.field.cfg-row { flex-direction: row; }
+.product-gallery svg { width: auto; flex: 0 0 auto; }
+.gauge { background: #0d1420; border-radius: 4px; padding: 2px 0; }
+/* Narrow screens: let the header wrap instead of pushing the reading-level
+   control past the right edge. */
+@media (max-width: 700px) {
+  .app.dell header { flex-wrap: wrap; row-gap: 8px; }
+  .app.dell header h1 { flex-basis: 100%; }
+  .app.dell header .sub { margin-left: 0; }
+}
+/* The `var(--accent, #0672cb)` fallbacks never fired: --accent is the
+   diagram palette's yellow, which is unreadable as page-chrome ink on white.
+   Page chrome takes Dell blue. */
+.app.dell .scenario-question,
+.app.dell .explain-live { color: var(--dell-blue); }
+.app.dell .scenario-list button.active,
+.app.dell .playback-row button.active { outline-color: var(--dell-blue); }
+.app.dell .explain-card { border-left-color: var(--dell-blue); }
+/* The build column is 300px; a 128px label left the selects too narrow to
+   show their option text. */
+.cfg-label { flex-basis: 96px; }
+/* A disabled select (Detection under Cyber Detect) should read as fixed. */
+.cfg-row select:disabled { opacity: 0.6; cursor: not-allowed; }
+/* The 150px hero thumbnail left the product text a ~100px column in the
+   300px build column; let the text drop below it instead. */
+.gallery-hero { flex-wrap: wrap; }
+.gallery-hero-text { min-width: 160px; }

@@ -41,6 +41,8 @@ export function ChassisView({
   selected,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: ChassisAnatomy;
   active?: Set<string>;
@@ -48,16 +50,35 @@ export function ChassisView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates (the margin is
+  // added here), and a per-region layer look — ghost opacity plus an explode
+  // offset. Both optional; without them the floorplan draws as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
   // Region coords are chassis-relative; shift them inside the outline.
   const rx = (r: ChassisRegion) => r.x + MARGIN;
   const ry = (r: ChassisRegion) => r.y + MARGIN;
+  // The full view is W x (H + 4): the outline plus the orientation labels.
+  // A camera box maps to the same framing scaled down, so the whole-map box
+  // reproduces the default viewBox exactly and a tween never jumps.
+  // The margin scales with the zoom on both axes (kx, ky), and the box is
+  // shifted so the margin sits on both sides of the camera rather than all
+  // of it on the right: a zoomed camera stays centred on what it frames, and
+  // any camera at the map's aspect keeps the stage's 105 x 61 ratio.
+  const kx = camera ? camera.w / anatomy.width : 1;
+  const ky = camera ? camera.h / anatomy.height : 1;
+  const viewBox = camera
+    ? `${camera.x + MARGIN * (1 - kx)} ${camera.y + MARGIN * (1 - ky)} ${
+        camera.w + 2 * MARGIN * kx
+      } ${camera.h + (2 * MARGIN + 4) * ky}`
+    : `0 0 ${W} ${H + 4}`;
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} floorplan`}
       onClick={() => onSelect?.(null)}
     >
@@ -75,6 +96,7 @@ export function ChassisView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks (drive bay, fan packs),
         // else tooltip only. 0.62 ≈ glyph advance per unit font.
@@ -93,6 +115,14 @@ export function ChassisView({
           <g
             key={r.id}
             className={isActive ? "an-region region-active" : "an-region"}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);

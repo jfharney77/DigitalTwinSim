@@ -163,3 +163,26 @@ def test_corrupt_recording_is_422_not_404(client: TestClient, tmp_path) -> None:
 
 def test_missing_recording_is_still_404(client: TestClient) -> None:
     assert client.get("/api/live/sessions/never-existed/trace").status_code == 404
+
+
+def test_sse_stream_sends_a_byte_before_any_event():
+    """An idle stream must still open at once: proxies (the Vite dev proxy)
+    hold the response headers until the first body byte, so without an
+    opening comment the Live tab read "Reconnecting…" for 15 s."""
+    import asyncio
+
+    from app import live_store
+    from app.main import _sse_events
+
+    sub = live_store.HUB.subscribe()
+    gen = _sse_events(sub)
+
+    async def first_then_close():
+        first = await asyncio.wait_for(gen.__anext__(), timeout=1.0)
+        await gen.aclose()
+        return first
+
+    first = asyncio.run(first_then_close())
+    assert first.startswith(":")  # an SSE comment, ignored by EventSource
+    assert first.endswith("\n\n")
+    assert sub not in live_store.HUB._subscribers  # closing the stream unsubscribes

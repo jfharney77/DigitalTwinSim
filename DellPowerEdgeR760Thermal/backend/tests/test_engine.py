@@ -274,3 +274,55 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+# --- The guided scenarios do what their narration says --------------------
+# The narration is prose the reader checks against the instruments, so each
+# claim it makes about the trace is pinned here.
+
+def _guided(gid: str):
+    from app.presets import GUIDED_SCENARIOS
+
+    g = next(g for g in GUIDED_SCENARIOS if g.id == gid)
+    return run(g.scenario)
+
+
+def test_guided_fan_feedback_raises_wall_power_at_constant_work():
+    trace, _, _ = _guided("fan-feedback")
+    before, after = trace[179], trace[-1]
+    assert after.cpu_power_w == before.cpu_power_w, "the work never changes"
+    assert after.fan_power_w > before.fan_power_w * 2, "fans pay for the hot air"
+    assert after.ac_power_w > before.ac_power_w + 2, "and the wall meter shows it"
+
+
+def test_heatsink_needs_airflow_so_fans_do_real_work_under_load():
+    """Without an airflow-dependent heatsink the controller never has a
+    reason to spin up, and every fan lesson reads ~1 W."""
+    trace, _, _ = run(Scenario(config=BALANCED, workload=HPC, duration_s=600))
+    s = trace[-1]
+    assert s.fan_rpm_pct > C("fan_floor_pct") + 20
+    assert s.fan_power_w > 5
+    assert s.delta_t_c < 25, "front-to-back ΔT stays server-realistic under load"
+
+
+def test_guided_350w_problem_pins_fans_and_throttles_only_when_warm():
+    trace, _, summary = _guided("350w-problem")
+    assert trace[-1].fan_rpm_pct >= 99, "fans saturate at 35 °C"
+    assert summary.throttle_seconds > 0, "the clamp engages at 35 °C"
+    assert trace[-1].cpu_temp_c < C("cpu_throttle_c"), "then settles under the line"
+    cool, _, cool_summary = run(Scenario(config=MAX_CPU, workload=HPC, duration_s=900))
+    assert cool_summary.throttle_seconds == 0, "22 °C: full speed throughout"
+    assert cool[-1].fan_rpm_pct < 95, "with the fans short of maximum"
+
+
+def test_guided_scenarios_at_room_temperature_never_throttle():
+    for gid in ("idle-to-full", "fan-feedback", "kill-a-fan", "psu-sweet-spot", "altitude"):
+        _, _, summary = _guided(gid)
+        assert summary.throttle_seconds == 0, gid
+        assert not summary.shutdown, gid
+
+
+def test_guided_kill_a_fan_costs_fan_watts():
+    trace, _, _ = _guided("kill-a-fan")
+    assert trace[-1].fan_power_w > trace[179].fan_power_w
+    assert trace[-1].cpu_temp_c < C("cpu_throttle_c")

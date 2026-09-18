@@ -49,6 +49,16 @@ export function UseCasePage() {
     if (caseId) window.location.hash = `usecases/${caseId}`;
   }, [caseId]);
 
+  // A pasted #usecases/<id> link while this page is open selects that case.
+  useEffect(() => {
+    const onHash = () => {
+      const id = window.location.hash.match(/^#usecases\/(.+)$/)?.[1];
+      if (id) setCaseId(id);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
   const uc = useCases.find((u) => u.id === caseId) ?? null;
 
   const rows = useMemo(

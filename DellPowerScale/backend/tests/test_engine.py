@@ -200,3 +200,22 @@ def test_no_usage_before_the_namespace_is_served():
             assert s.phase in SERVING_PHASES, (
                 f"step {s.step}: data present before clients could write it"
             )
+
+
+def test_growth_is_never_described_as_a_volume_growing():
+    # The twin's thesis is "there are no volumes"; a step label or spec stat
+    # saying the volume grows would contradict the hero copy on the same page.
+    texts = [s.label for s in simulate()] + [st.value for st in ANATOMY.stats]
+    for text in texts:
+        assert "volume becomes larger" not in text, text
+        assert "volume simply becomes larger" not in text, text
+
+
+def test_every_trace_step_is_authored_at_every_level():
+    # The reading-level control must change the step prose on the main page,
+    # not only the anatomy overview.
+    from app.leveling import LEVELS, resolve
+
+    for s in simulate():
+        texts = {lv: resolve(s.description, lv) for lv in LEVELS}
+        assert len(set(texts.values())) == len(LEVELS), s.phase

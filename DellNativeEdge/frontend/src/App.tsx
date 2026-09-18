@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchOnboard } from "./api";
+import { fetchAnatomy, fetchOnboard, fetchTour } from "./api";
 import { ArchitecturePage } from "./components/ArchitecturePage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -8,17 +8,20 @@ import { OnboardControls } from "./components/OnboardControls";
 import { OnboardCounters } from "./components/OnboardCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { PlatformMap, OnboardState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "onboard" | "architecture" | "capabilities" | "usecases";
+type Page = "onboard" | "architecture" | "capabilities" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#architecture")) return "architecture";
   if (h.startsWith("#capabilities")) return "capabilities";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "onboard";
 }
 
@@ -27,7 +30,14 @@ const PAGE_HASH: Record<Page, string> = {
   architecture: "architecture",
   capabilities: "capabilities",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 // Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
 // cursor, or null when the hash matches neither pattern (or names an unknown
@@ -72,7 +82,11 @@ export function App() {
   // Deep-linkable pages: /#architecture, /#capabilities, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
+    // Compare pages, not hash prefixes: every hash starts with "#", so a
+    // prefix test for the onboarding page ("") never rewrote a stale
+    // #architecture and a reload reopened the wrong tab. Sub-page suffixes
+    // (#architecture/<id>, #usecases/<id>, #step=N) still survive.
+    if (pageFromHash() !== page) {
       window.location.hash = PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
@@ -86,6 +100,13 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
+  // Bumped when a #tour/<stepId> arrives after load (typed into the address
+  // bar, or back/forward), so the player remounts on that step; the player
+  // reads its starting step only once.
+  const [tourKey, setTourKey] = useState(0);
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
@@ -94,6 +115,8 @@ export function App() {
   const hashApplied = useRef(false);
   const speedRef = useRef(speed);
   speedRef.current = speed;
+  const traceRef = useRef<OnboardState[]>([]);
+  traceRef.current = trace;
 
   const stop = useCallback(() => {
     if (timer.current !== null) {
@@ -118,6 +141,42 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // Follow hash changes after load: in-page links (the use-case page's
+  // "Go deeper" buttons), back/forward, and a #step=/#phase= typed into the
+  // address bar all have to move the app, not just the URL.
+  useEffect(() => {
+    const onHash = () => {
+      const next = pageFromHash();
+      setPage(next);
+      if (next === "tour") {
+        const id = tourStepFromHash();
+        if (id && id !== tourStart.current) {
+          tourStart.current = id;
+          setTourKey((k) => k + 1);
+        }
+      }
+      if (next === "onboard") {
+        const start = initialStepFromHash(traceRef.current);
+        if (start !== null) {
+          stop();
+          setCursor(start);
+        }
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [stop]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -201,6 +260,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "onboard" && (
           <span className="sub">
@@ -213,6 +278,66 @@ export function App() {
       {page === "architecture" && <ArchitecturePage />}
       {page === "capabilities" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              key={tourKey}
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // PlatformView draws the map plus a margin and a label row:
+              // (100 + 2*2.5) x (58 + 2*2.5 + 4).
+              stageAspect={105 / 67}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the onboarding page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <PlatformView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Onboarding trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedSeconds}s (illustrative) · operator actions{" "}
+                      {state.operatorActions}
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "onboard" && (
         <>
@@ -231,6 +356,12 @@ export function App() {
               Play the trace and watch the operator-actions counter reach
               one, and stop.
             </p>
+            <button
+              className="primary onboard-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -254,7 +385,8 @@ export function App() {
                 machine Dell built is the slow part, on purpose — and watch
                 endpoints-online snap from zero to four when the
                 Orchestrator claims the site as a set. Click a block to pin
-                what it is; the full tour lives under Architecture.
+                what it is; the Architecture page describes every block, and
+                the guided tour narrates the whole sequence.
               </div>
             </div>
           </div>

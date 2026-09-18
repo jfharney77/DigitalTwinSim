@@ -268,3 +268,19 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+def test_a_game_reads_out_as_fps_and_an_llm_as_tokens():
+    """Dials alone cannot tell a ray-traced game from GPU inference, so the
+    workload says which it is: a game never reports tokens, an LLM never
+    reports frames (browser QA found 45 tok/s on the AAA preset)."""
+    game, _, _ = run(Scenario(config=PROMAX_NPU, workload=AAA, duration_s=120))
+    assert all(s.active_engine is None and s.tokens_per_s == 0 for s in game)
+    assert game[-1].fps_proxy > 0
+    llm, _, _ = run(Scenario(config=PROMAX_NPU, workload=LLM_GPU, duration_s=120))
+    assert all(s.fps_proxy == 0 for s in llm)
+    assert llm[-1].active_engine == "gpu" and llm[-1].tokens_per_s > 0
+    # NPU demand means inference even without the flag.
+    npu, _, _ = run(Scenario(config=PROMAX_NPU,
+                             workload=Workload(npu_pct=100), duration_s=120))
+    assert npu[-1].active_engine == "npu"

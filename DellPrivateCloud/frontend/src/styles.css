@@ -24,8 +24,20 @@ body {
 }
 @media (max-width: 880px) {
   .app {
-    grid-template-columns: 1fr;
+    /* minmax(0, …) so a wide child cannot stretch the column past the
+       viewport and cause horizontal page scroll on phones. */
+    grid-template-columns: minmax(0, 1fr);
     height: auto;
+  }
+  .app.dell header {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 10px;
+  }
+  .app.dell header .sub {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
   }
 }
 header {
@@ -546,4 +558,48 @@ select:hover {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+
+/* Phones: let the build sheet's category column wrap so the "Why" column
+   keeps its width, and scroll the table inside its card rather than
+   clipping it if a long word still does not fit. */
+@media (max-width: 600px) {
+  .uc-build {
+    overflow-x: auto;
+  }
+  .uc-cat {
+    white-space: normal;
+  }
+  .uc-build th,
+  .uc-build td {
+    padding-right: 8px;
+  }
+}
+
+/* --- Guided tour: layer peel on the stack map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.poweron-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
 }

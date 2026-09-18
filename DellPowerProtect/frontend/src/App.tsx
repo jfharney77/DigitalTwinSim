@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchLifecycle } from "./api";
+import { fetchAnatomy, fetchLifecycle, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -8,17 +8,20 @@ import { LifecycleControls } from "./components/LifecycleControls";
 import { LifecycleCounters } from "./components/LifecycleCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { LifecycleState, RegionKind, SiteAnatomy } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "lifecycle" | "anatomy" | "components" | "usecases";
+type Page = "lifecycle" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "lifecycle";
 }
 
@@ -27,7 +30,14 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 // #step=N / #phase=<name> deep-links start playback at a chosen step; both
 // fall through pageFromHash() and land on the default page.
@@ -47,9 +57,14 @@ export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
-      window.location.hash = PAGE_HASH[page];
-    }
+    // Only overwrite the hash for top-level switches; pages may append their
+    // own deep-link segments (#anatomy/<id>, #tour/<stepId>, #phase=...).
+    const want = PAGE_HASH[page];
+    const h = window.location.hash;
+    const onPage = want
+      ? h.startsWith(`#${want}`)
+      : !/^#(anatomy|components|usecases|tour)/.test(h);
+    if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
 
@@ -60,6 +75,9 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -93,6 +111,31 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // Follow in-app hash links (the use-case page's "Go deeper" buttons, a
+  // pasted #phase=/#step= link) — without this the page never changes.
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const s = trace.length > 0 ? initialStepFromHash(trace) : null;
+      if (s !== null) {
+        stop();
+        setCursor(s);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [trace, stop]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -176,6 +219,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "lifecycle" && (
           <span className="sub">
@@ -188,6 +237,70 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // SiteView draws the map plus a margin and an orientation line.
+              stageAspect={
+                (tour.mapWidth + 5) / (tour.mapHeight + 9)
+              }
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the lifecycle page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <SiteView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Lifecycle trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedHours}h (illustrative)
+                    </p>
+                  )}
+                  {state && (
+                    <p className="tour-trace">
+                      Logical {state.logicalTb} TB · stored {state.storedTb} TB
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "lifecycle" && (
         <>
@@ -204,6 +317,12 @@ export function App() {
               the trace and watch the gap open only when the vault opens
               it.
             </p>
+            <button
+              className="primary lifecycle-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -226,8 +345,8 @@ export function App() {
                 Watch the air gap: it lights only during replication and
                 recovery — both opened from the vault side — and at the
                 attack step the entire right half of the map stays dark.
-                Click a block to pin what it is; the full tour lives under
-                Inside the vault.
+                Click a block to pin what it is. Inside the vault describes
+                every block, and Guided tour narrates the whole story.
               </div>
             </div>
           </div>

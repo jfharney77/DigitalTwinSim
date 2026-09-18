@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchMedia,
   type ProductMediaWire,
@@ -44,6 +44,28 @@ const DEFAULT_WORKLOAD: Workload = {
 
 const SPEEDS = [1, 10, 60];
 
+// The config preset each product starts from when picked.
+const PRODUCT_PRESET: Record<FabricConfig["product"], string> = {
+  e3200: "campus",
+  sn6000: "sn6000-adaptive",
+  x800: "x800",
+};
+
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios: wire-a-floor, uplink-down, hash-collision,
+// lossless-vs-drop, ib-vs-ethernet, sharp, gray-failure). Returns null
+// when the hash names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
+}
+
 export function App() {
   useEffect(() => {
     document.body.classList.add("dell-body");
@@ -56,7 +78,9 @@ export function App() {
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch swaps in the re-levelled narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
 
   const [config, setConfig] = useState<FabricConfig>(DEFAULT_CONFIG);
   const [workload, setWorkload] = useState<Workload>(DEFAULT_WORKLOAD);
@@ -128,19 +152,68 @@ return () => {
     setEvents((evs) => [...evs, { atS: state?.t ?? 0, ...e }]);
   };
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setWorkload(g.scenario.workload);
     setEvents(g.scenario.events);
     setDurationS(g.scenario.durationS);
     setCursor(0);
     setRunning(true);
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const id = scenarioIdFromHash();
+    const g = scenarios.find((x) => x.id === id);
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = scenarioIdFromHash();
+      const g = scenarios.find((x) => x.id === id);
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
+
+  const clearScenario = () => {
+    setActiveScenarioId(null);
+    if (scenarioIdFromHash()) writeHash("");
+  };
+
+  // Switching product loads that product's baseline build: carrying the old
+  // one across leaves datacenter features on a campus switch (a validation
+  // error), 800 G uplinks the campus menu cannot show, and a demand the
+  // traffic slider cannot reach.
+  // Campus demand is tens of Gb/s and fabric demand tens of Tb/s; crossing
+  // between them swaps in the other side's default traffic.
+  const matchWorkload = (p: FabricConfig["product"]) => {
+    if ((p === "e3200") === (config.product === "e3200")) return;
+    const w = workloadPresets.find(
+      (x) => x.id === (p === "e3200" ? "campus-day" : "allreduce"),
+    );
+    if (w) setWorkload(w.workload);
+  };
+
+  const switchProduct = (p: FabricConfig["product"]) => {
+    if (p === config.product) return;
+    const preset = configPresets.find((c) => c.id === PRODUCT_PRESET[p]);
+    setConfig(preset ? preset.config : { ...config, product: p });
+    matchWorkload(p);
+    setEvents([]);
+    clearScenario();
   };
 
   const coldStart = () => {
     setEvents([]);
-    setActiveScenario(null);
+    clearScenario();
     setCursor(0);
     setRunning(true);
   };
@@ -199,18 +272,21 @@ return () => {
           <ProductGallery
             media={media}
             selected={config.product}
-            onSelect={(p) =>
-              setConfig({ ...config, product: p as FabricConfig["product"] })
-            }
+            onSelect={(p) => switchProduct(p as FabricConfig["product"])}
           />
           <BuildPanel
             config={config}
             presets={configPresets}
             validations={result?.validations ?? []}
-            onChange={(c) => setConfig(c)}
+            onChange={(c) =>
+              c.product !== config.product ? switchProduct(c.product) : setConfig(c)
+            }
             onPreset={(p) => {
               setConfig(p.config);
-              setActiveScenario(null);
+              matchWorkload(p.config.product);
+              // A preset is a fresh build: the last scenario's faults go too.
+              setEvents([]);
+              clearScenario();
             }}
           />
           <div className="an-panel">
@@ -307,7 +383,9 @@ return () => {
           <div className="an-panel">
             <h2>Traffic</h2>
             <div className="btnrow">
-              {workloadPresets.map((w) => (
+              {workloadPresets
+                .filter((w) => (w.id === "campus-day") === !dc)
+                .map((w) => (
                 <button key={w.id} onClick={() => setWorkload(w.workload)}>
                   {w.name}
                 </button>
@@ -356,7 +434,7 @@ return () => {
                     Kill a spine
                   </button>
                   <button onClick={() => nowEvent({ action: "gray-failure" })}>
-                    Gray failure
+                    Start a gray failure
                   </button>
                 </>
               )}

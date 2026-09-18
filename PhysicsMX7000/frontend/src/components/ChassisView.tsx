@@ -175,9 +175,9 @@ export function ChassisView({
         {Array.from({ length: 30 }, (_, i) => (
           <rect
             key={i}
-            x={MARGIN + i * 2}
+            x={MARGIN + i * 1.2}
             y={H + 1.2}
-            width={2}
+            width={1.2}
             height={2.2}
             fill={tempColor(T_MIN + ((i + 0.5) / 30) * (T_MAX - T_MIN))}
           />
@@ -185,7 +185,7 @@ export function ChassisView({
         <text x={MARGIN} y={H + 6.6} fill="#5a6b82" fontSize={1.7}>
           20 °C
         </text>
-        <text x={MARGIN + 60} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
+        <text x={MARGIN + 36} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
           110 °C
         </text>
         <text x={W - MARGIN} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>

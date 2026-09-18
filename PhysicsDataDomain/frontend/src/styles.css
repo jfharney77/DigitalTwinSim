@@ -555,10 +555,24 @@ select:hover {
   grid-template-columns: 300px minmax(420px, 1fr) 340px;
   gap: 14px;
   align-items: start;
+  padding: 0 16px 24px;
 }
 @media (max-width: 1100px) { .thermal-grid { grid-template-columns: 1fr; } }
+/* Phone width: the header's four items wrap instead of squeezing the
+   status line into a one-word column; the hero shrinks to fit. */
+@media (max-width: 600px) {
+  .app.dell header { flex-wrap: wrap; padding: 12px 16px; row-gap: 8px; }
+  .app.dell header .sub { margin-left: 0; flex-basis: 100%; order: 3; }
+  .app.dell .an-hero { padding: 20px 16px 24px; }
+  .app.dell .an-hero h2 { font-size: 26px; }
+  .playback-row input[type="range"] { flex-basis: 100% !important; }
+}
 .thermal-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.cfg-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+/* label.field is a column in the shared skin; the config rows are label-left
+   rows, and the label's flex-basis would otherwise become a 128px height. */
+.app.dell label.field.cfg-row { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 4px 0; }
+.app.dell label.field.cfg-row.cfg-row-stack { flex-direction: column; align-items: stretch; gap: 4px; }
+.cfg-row-stack .cfg-label { flex: none; }
 .cfg-label { flex: 0 0 128px; font-size: 12px; color: var(--dell-muted, #636363); }
 .cfg-row select, .cfg-row input[type="range"] { flex: 1; min-width: 0; }
 .cfg-presets button { font-size: 12px; }

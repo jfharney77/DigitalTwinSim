@@ -116,9 +116,9 @@ export function StripCharts({
         />
       )}
       <div className="mini">
-        Scrub the timeline: the area under the corruption curve before
-        containment is the blast radius, and the RPO strip shows the
-        moment retained copies quietly became worthless.
+        {product !== "fortzero"
+          ? "Scrub the timeline: the area under the corruption curve before containment is the blast radius, and the RPO strip shows the moment retained copies quietly became worthless."
+          : "Scrub the timeline: the solid line is what one hostile identity can reach, and the dashed line is the unused grants that quietly widen it until an access review clears them."}
       </div>
     </div>
   );

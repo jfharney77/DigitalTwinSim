@@ -240,6 +240,25 @@ def test_pump_hydraulics_are_sublinear_and_power_is_cubic():
     assert after.pump_power_kw > before.pump_power_kw
 
 
+def test_silicon_is_never_colder_than_its_coolant():
+    """A loaded cold plate sits above the liquid feeding it — including
+    at t=0, where the chip used to start at room air (24 °C) beneath a
+    32 °C supply while 200 kW was already flowing."""
+    for sc in (
+        Scenario(config=STANDARD, workload=FULL_TILT),
+        Scenario(config=HALF_RACK, workload=IDLE),
+        Scenario(config=FULL_RACK, workload=FULL_TILT, duration_s=600,
+                 events=[SimEvent(at_s=120, action="set-facility-supply",
+                                  value=23)]),
+    ):
+        trace, _, _ = run(sc)
+        for s in trace:
+            if s.groups_online and s.heat_removed_kw > 0:
+                assert s.chip_temp_c >= s.sec_supply_c - 0.01, (
+                    f"t={s.t}: silicon {s.chip_temp_c} below coolant "
+                    f"supply {s.sec_supply_c}")
+
+
 def test_warm_water_chain_reacts_in_order_with_lag():
     """Facility step at t=120: supply follows with the loop's time
     constant, silicon follows the supply, caps follow the silicon."""
@@ -304,6 +323,15 @@ def test_add_and_remove_tray_groups():
     assert trace[-1].groups_present == 2
     # Heat follows the population.
     assert trace[150].it_load_kw > trace[50].it_load_kw > trace[-1].it_load_kw
+
+
+def test_adding_a_bank_to_a_full_rack_is_logged_not_silent():
+    trace, log, _ = run(
+        Scenario(config=FULL_RACK, workload=FULL_TILT, duration_s=60,
+                 events=[SimEvent(at_s=10, action="add-tray-group")])
+    )
+    assert trace[-1].groups_present == 6
+    assert any(e.t == 10 and "No free slot" in e.message for e in log)
 
 
 def test_timestep_and_trace_length():

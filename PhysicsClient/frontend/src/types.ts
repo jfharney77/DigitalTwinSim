@@ -32,6 +32,7 @@ export interface Workload {
   cpuPct: number;
   gpuPct: number;
   npuPct: number;
+  inference?: boolean;   // a local LLM (tokens) rather than a game (FPS)
 }
 
 export interface Environment {

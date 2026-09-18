@@ -136,7 +136,7 @@ USE_CASES: list[UseCase] = [
                 "service becomes impossible."
             ),
             (
-                "Why the XE9712 fits: the fused domain *is* the feature. "
+                "Why the XE9712 fits: the fused domain is the feature. "
                 "With 72 Blackwell Ultra GPUs pooling roughly 20 TB of "
                 "HBM3e behind a single NVLink fabric, the entire model plus "
                 "its key-value caches lives inside one rack — this is the "
@@ -232,7 +232,7 @@ USE_CASES: list[UseCase] = [
             ),
             (
                 "Why the XE9712 fits: sovereignty needs a vendor who can "
-                "deliver the *whole* factory — compute, fabric, storage, "
+                "deliver the whole factory — compute, fabric, storage, "
                 "power, liquid cooling, and the operating model — inside "
                 "the border, which is precisely what the Dell AI Factory "
                 "program packages. GB200 NVL72 racks provide the capacity; "

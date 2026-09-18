@@ -51,6 +51,18 @@ def fabric_efficiency(fabric_type: str, oversubscription: float) -> float:
     return max(0.5, eff)
 
 
+def rollback_phrase(rolled_b: float) -> str:
+    """How much a failure rewound, in words that agree with the trace.
+
+    With a checkpoint interval at or under the 1 h tick, the last checkpoint
+    was written this hour and the counter does not move at this resolution;
+    saying "rolled back 0.00 B tokens" would read as a bug.
+    """
+    if rolled_b < 0.005:
+        return "rolled back to this hour's checkpoint (loss below the 1 h tick)"
+    return f"rolled back {rolled_b:.2f} B tokens"
+
+
 def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summary]:
     cfg = scenario.config
     job = scenario.job
@@ -134,8 +146,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 tokens_total = tokens_at_ckpt
                 log.append(LogEntry(
                     t_h=t, severity="critical",
-                    message=(f"{lost} GPUs failed — rolled back {rolled:.2f} B "
-                             f"tokens to the last checkpoint; repair ~{REPAIR_H} h"),
+                    message=(f"{lost} GPUs failed — {rollback_phrase(rolled)}; "
+                             f"repair ~{REPAIR_H} h"),
                 ))
 
         # Repairs coming back.
@@ -181,8 +193,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 next_failure_h += mtbf_cluster_h
                 log.append(LogEntry(
                     t_h=t, severity="warning",
-                    message=(f"GPU failure (MTBF arithmetic) — rolled back "
-                             f"{rolled:.2f} B tokens, {cfg.resilience.restart_min} min restart"),
+                    message=(f"GPU failure (MTBF arithmetic) — {rollback_phrase(rolled)}, "
+                             f"{cfg.resilience.restart_min} min restart"),
                 ))
 
             demand_gbps = online * job.data_gbps_per_gpu

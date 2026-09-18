@@ -45,6 +45,18 @@ CONSTANTS: dict[str, Constant] = {
         source="estimate — standard heatsink", estimated=True,
         blurb="CPU junction-to-air thermal resistance, standard heatsink.",
     ),
+    "heatsink_ref_cfm": Constant(
+        value=120, unit="CFM",
+        source="estimate — chassis airflow at which the cpu_r_th values hold",
+        estimated=True,
+        blurb="Reference total airflow for the CPU heatsink resistances.",
+    ),
+    "heatsink_flow_exponent": Constant(
+        value=0.65, unit="—",
+        source="estimate — forced-convection fin resistance ∝ velocity^-n, n≈0.5–0.8",
+        estimated=True,
+        blurb="How strongly heatsink resistance rises as airflow falls.",
+    ),
     "cpu_tau": Constant(
         value=20, unit="s",
         source="estimate — spec §5.2", estimated=True,
@@ -161,7 +173,7 @@ CONSTANTS: dict[str, Constant] = {
         blurb="Fan floor when any double-wide GPU is present.",
     ),
     "fan_kp": Constant(
-        value=0.8, unit="%rpm per K per tick", source="estimate", estimated=True,
+        value=3.0, unit="%rpm per K per tick", source="estimate", estimated=True,
         blurb="Proportional gain of the fan controller.",
     ),
     "lane_a_share": Constant(

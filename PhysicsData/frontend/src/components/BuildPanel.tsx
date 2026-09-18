@@ -1,8 +1,18 @@
 import type { ConfigPreset, DataConfig, Validation } from "../types";
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  stack,
+  children,
+}: {
+  label: string;
+  stack?: boolean;
+  children: React.ReactNode;
+}) {
+  // stack: label above a full-width control, for the long product names
+  // that a 128px label column left clipped.
   return (
-    <label className="field cfg-row">
+    <label className={`field cfg-row${stack ? " cfg-row-stack" : ""}`}>
       <span className="cfg-label">{label}</span>
       {children}
     </label>
@@ -37,7 +47,7 @@ export function BuildPanel({
         ))}
       </div>
 
-      <Row label="Product">
+      <Row label="Product" stack>
         <select
           value={p}
           onChange={(e) => set({ product: e.target.value as DataConfig["product"] })}

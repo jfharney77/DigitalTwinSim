@@ -206,8 +206,10 @@ GUIDED_SCENARIOS = [
                     "configuration in a warm room — 35 degrees, still "
                     "within what data-center standards allow — and full "
                     "load. Watch the throttle margin shrink: the fans max "
-                    "out, and the processors end up slowing themselves "
-                    "down to survive. The same machine in a 22-degree "
+                    "out, the processors slow themselves down to survive "
+                    "the first minute, and even once they settle the fans "
+                    "stay flat out with almost nothing left in reserve. "
+                    "The same machine in a 22-degree "
                     "room never breaks a sweat. That is why the spec "
                     "sheets restrict ambient ranges for top-TDP builds."
                 ),
@@ -215,16 +217,19 @@ GUIDED_SCENARIOS = [
                     "The Max CPU preset (2× 350 W, Gold fans) at 100% "
                     "load in a 35 °C room — inside ASHRAE A2's allowable "
                     "band, and yet: fans saturate at 100%, CPU temperature "
-                    "walks up to the throttle line, and performance is "
-                    "clipped to hold 98 °C. At 22 °C the identical build "
-                    "holds full speed with margin. Maximum-TDP "
+                    "walks up to the 98 °C throttle line, and performance "
+                    "is clipped through the boost window. It then settles "
+                    "a few degrees under the line with the fans pinned — "
+                    "no airflow left to spend. At 22 °C the identical "
+                    "build holds full speed with the fans well short of "
+                    "maximum. Maximum-TDP "
                     "configurations constrain the supported ambient "
                     "range — the validation panel's warning, demonstrated."
                 ),
                 expert=(
                     "2×350 W @ 100%, 35 °C inlet: fans pin, T→98, clamp "
-                    "engages. Same build at 22 °C: margin. QED ambient "
-                    "restriction."
+                    "engages through boost, settles ~94 °C at 100% rpm. "
+                    "Same build at 22 °C: margin. QED ambient restriction."
                 ),
             ),
         ],

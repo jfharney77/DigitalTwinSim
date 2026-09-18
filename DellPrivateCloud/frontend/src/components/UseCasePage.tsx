@@ -27,7 +27,9 @@ export function UseCasePage() {
   const [anatomy, setAnatomy] = useState<CloudAnatomy | null>(null);
   // Honor a /#usecases/<id> deep link for the initial selection.
   const [caseId, setCaseId] = useState<string | null>(
-    () => window.location.hash.split("/")[1] ?? null,
+    // Only when the hash is this page's own — arriving from another page's
+    // deep link (e.g. #anatomy/<id>) must not borrow that page's id.
+    () => window.location.hash.match(/^#usecases\/([^/]+)$/)?.[1] ?? null,
   );
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();

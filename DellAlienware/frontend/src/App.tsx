@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchCatalog, fetchDefaultProfile, simulate } from "./api";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
+import { fetchAnatomy, fetchCatalog, fetchDefaultProfile, fetchTour, simulate } from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
+import { AnatomyView } from "./components/AnatomyView";
 import { UseCasePage } from "./components/UseCasePage";
 import { PowerPathView } from "./components/PowerPathView";
 import { PowerControls } from "./components/PowerControls";
 import { PowerCounters } from "./components/PowerCounters";
 import { Legend } from "./components/Legend";
 import { LevelControl } from "./components/LevelControl";
+import { useLevel } from "./level";
 import type {
+  Anatomy,
   LaptopProfile,
   PowerPhase,
   PowerState,
+  Scenario,
   Summary,
   ThermalMode,
   WorkloadKind,
@@ -18,12 +24,13 @@ import type {
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "sim" | "anatomy" | "usecases";
+type Page = "sim" | "anatomy" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "sim";
 }
 
@@ -31,7 +38,41 @@ const PAGE_HASH: Record<Page, string> = {
   sim: "",
   anatomy: "anatomy",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// The guided tour narrates one fixed scenario, and its trace cursors index
+// that scenario's trace. Must match TOUR_SCENARIO in backend/app/tour.py
+// (tests/test_tour.py checks this block).
+const TOUR_SCENARIO: Scenario = {
+  profileId: "m18-r2",
+  adapterId: "barrel-280",
+  startBatteryPct: 30,
+  thermalMode: "fullSpeed",
+  workload: "gaming",
+};
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
+// cursor, or null when the hash matches neither pattern (or names an unknown
+// phase) — in which case playback starts at 0 as before.
+function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
+  const h = window.location.hash;
+  const step = h.match(/#step=(\d+)$/);
+  if (step) return Math.min(Number(step[1]), states.length - 1);
+  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
+  if (phase) {
+    const i = states.findIndex((s) => s.phase === phase[1]);
+    return i >= 0 ? i : null;
+  }
+  return null;
+}
 
 const PHASE_LABEL: Record<PowerPhase, string> = {
   off: "unplugged",
@@ -47,10 +88,15 @@ const PHASE_LABEL: Record<PowerPhase, string> = {
 export function App() {
   // Deep-linkable pages: /#anatomy/<id>, /#usecases/<id>.
   const [page, setPage] = useState<Page>(pageFromHash);
+  const pageRef = useRef(page);
+  pageRef.current = page;
   useEffect(() => {
     // Only overwrite the hash for top-level switches; pages may append their
     // own deep-link segments (e.g. #anatomy/<anatomyId>).
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
+    // Compare pages rather than prefixes: every hash starts with "#", so a
+    // prefix test would leave #anatomy/<id> in the URL after switching back
+    // to the power path.
+    if (pageFromHash() !== page) {
       window.location.hash = PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
@@ -78,7 +124,24 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [error, setError] = useState<string | null>(null);
 
+  // --- Guided tour ---
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourAnatomy, setTourAnatomy] = useState<Anatomy | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const [regionId, setRegionId] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
+  // The trace step the tour last pinned; a trace that arrives while the tour
+  // is open lands on it instead of starting over.
+  const tourCursor = useRef<number | null>(null);
+
+  const level = useLevel();
   const timer = useRef<number | null>(null);
+  // Apply a #step=/#phase= deep link only on the first successful trace load.
+  const hashApplied = useRef(false);
+  // The scenario the loaded trace belongs to. A refetch for a new reading
+  // level keeps the cursor (numbers and step count are identical across
+  // levels); a new scenario starts playback over.
+  const loadedScenario = useRef("");
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -113,8 +176,18 @@ export function App() {
         setTrace(resp.trace);
         setSummary(resp.summary);
         setError(null);
-        stop();
-        setCursor(0);
+        const key = [profileId, adapterId, startBatteryPct, thermalMode, workload].join("|");
+        const sameScenario = loadedScenario.current === key;
+        loadedScenario.current = key;
+        const pinned = pageRef.current === "tour" ? tourCursor.current : null;
+        if (!hashApplied.current) {
+          hashApplied.current = true;
+          stop();
+          setCursor(pinned ?? initialStepFromHash(resp.trace) ?? 0);
+        } else if (!sameScenario) {
+          stop();
+          setCursor(pinned ?? 0);
+        }
       })
       .catch((e) => {
         if (!cancelled) setError(String(e));
@@ -122,9 +195,37 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [profileId, adapterId, startBatteryPct, thermalMode, workload, stop]);
+  }, [profileId, adapterId, startBatteryPct, thermalMode, workload, level, stop]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then((t) => {
+        setTour(t);
+        setTourError(null);
+        return fetchAnatomy(TOUR_SCENARIO.profileId);
+      })
+      .then(setTourAnatomy)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
+
+  // Opening the tour switches the scenario controls to the one it narrates,
+  // once the catalog has loaded (so the default profile cannot override it).
+  useEffect(() => {
+    if (page !== "tour" || profiles.length === 0) return;
+    setProfileId(TOUR_SCENARIO.profileId);
+    setAdapterId(TOUR_SCENARIO.adapterId);
+    setStartBatteryPct(TOUR_SCENARIO.startBatteryPct);
+    setThermalMode(TOUR_SCENARIO.thermalMode);
+    setWorkload(TOUR_SCENARIO.workload);
+  }, [page, profiles]);
 
   const state = trace[cursor] ?? null;
+  const selectedRegion =
+    tourAnatomy?.regions.find((r) => r.id === regionId) ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
 
   const run = useCallback(() => {
@@ -209,6 +310,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "sim" && state && (
           <span className="badge">{PHASE_LABEL[state.phase]}</span>
@@ -226,6 +333,67 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "usecases" && <UseCasePage />}
 
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && tourAnatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // AnatomyView draws a 2.5-unit outline margin and a 4-unit
+              // orientation strip: 105 x 71 for the 100 x 62 map.
+              stageAspect={105 / 71}
+              regions={tourAnatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the power-path page plays.
+                stop();
+                tourCursor.current = i;
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <AnatomyView
+                  anatomy={tourAnatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Power-path trace: <strong>{state.label}</strong> · adapter{" "}
+                      {state.acW} W, battery {state.batteryW > 0 ? `supplying ${state.batteryW} W` : `at ${state.batteryPct}%`}
+                      {" "}(illustrative)
+                    </p>
+                  )}
+                  {state && <PowerPathView state={state} />}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
+
       {page === "sim" && (
         <>
           <div className="an-hero">
@@ -238,6 +406,12 @@ export function App() {
               heavy enough load the battery quietly pitches in even while
               plugged in. Play the trace and watch the flows.
             </p>
+            <button
+              className="primary sim-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">

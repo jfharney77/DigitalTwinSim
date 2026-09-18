@@ -969,3 +969,58 @@ select:hover {
   letter-spacing: normal;
   min-width: 62px;
 }
+
+/* Phone widths: let the masthead wrap instead of widening the page. */
+@media (max-width: 880px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app.dell header {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding: 12px 16px;
+  }
+  /* Whitespace separates the controls from the stage, not a rule; and the
+     side gutters are even at phone width. */
+  .app.dell .controls {
+    border-top: none;
+    padding: 8px 16px 24px;
+  }
+  .app.dell .stage {
+    padding: 16px;
+  }
+  .app.dell .an-card {
+    padding: 16px;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+}
+
+/* --- Guided tour: layer peel on the interior floorplan --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.sim-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
+}

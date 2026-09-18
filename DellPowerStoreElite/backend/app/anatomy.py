@@ -286,7 +286,7 @@ ANATOMY = ChassisAnatomy(
             x=18.5, y=42, w=8, h=8, description=_ELITE_DIMM_DESC,
         ),
         ChassisRegion(
-            id="elite-cpu-a", kind="cpu", label="Xeon Scalable A",
+            id="elite-cpu-a", kind="cpu", label="Xeon · Elite A",
             x=28, y=33, w=11, h=10, description=_ELITE_CPU_DESC,
         ),
         ChassisRegion(
@@ -318,7 +318,7 @@ ANATOMY = ChassisAnatomy(
             x=18.5, y=61, w=8, h=8, description=_ELITE_DIMM_DESC,
         ),
         ChassisRegion(
-            id="elite-cpu-b", kind="cpu", label="Xeon Scalable B",
+            id="elite-cpu-b", kind="cpu", label="Xeon · Elite B",
             x=28, y=52, w=11, h=10, description=_ELITE_CPU_DESC,
         ),
         ChassisRegion(

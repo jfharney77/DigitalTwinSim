@@ -28,15 +28,17 @@ export const KIND_LABEL: Record<RegionKind, string> = {
   management: "management & telemetry",
 };
 
-// Swatches for the legend; keep in sync with KIND_STYLE in PlatformView.
+// Swatches for the legend: the label color each kind wears on the diagram
+// (KIND_STYLE[kind].text in PlatformView). The dark diagram fills were used
+// here before and all read as black on the light side panel.
 export const KIND_SWATCH: Record<RegionKind, string> = {
-  client: "#2b2412",
-  fabric: "#16281a",
-  metadata: "#2b1a1a",
-  dataserver: "#12233a",
-  media: "#241f33",
-  protocol: "#1c1f3f",
-  management: "#12282e",
+  client: "#c9a94f",
+  fabric: "#6ab585",
+  metadata: "#c97a6a",
+  dataserver: "#4f7cff",
+  media: "#8a7ab5",
+  protocol: "#8f7fff",
+  management: "#4fa0c9",
 };
 
 export function AnatomyPage() {

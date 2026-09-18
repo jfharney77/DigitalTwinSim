@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchPipeline } from "./api";
+import { fetchAnatomy, fetchPipeline, fetchTour } from "./api";
 import { ArchitecturePage } from "./components/ArchitecturePage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -8,17 +8,20 @@ import { PipelineControls } from "./components/PipelineControls";
 import { PipelineCounters } from "./components/PipelineCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { PlatformMap, PipelineState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "pipeline" | "architecture" | "capabilities" | "usecases";
+type Page = "pipeline" | "architecture" | "capabilities" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#architecture")) return "architecture";
   if (h.startsWith("#capabilities")) return "capabilities";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "pipeline";
 }
 
@@ -27,7 +30,14 @@ const PAGE_HASH: Record<Page, string> = {
   architecture: "architecture",
   capabilities: "capabilities",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 // Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
 // cursor, or null when the hash matches neither pattern (or names an unknown
@@ -69,12 +79,17 @@ const KIND_LABEL: Record<RegionKind, string> = {
 };
 
 export function App() {
-  // Deep-linkable pages: /#architecture, /#capabilities, /#usecases.
+  // Deep-linkable pages: /#architecture, /#capabilities, /#usecases, /#tour.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
-      window.location.hash = PAGE_HASH[page];
-    }
+    // The pipeline page's hash is empty (or a #step=/#phase= deep link), so
+    // "on the page" means "not on any other page" rather than a prefix match.
+    const want = PAGE_HASH[page];
+    const h = window.location.hash;
+    const onPage = want
+      ? h.startsWith(`#${want}`)
+      : !/^#(architecture|capabilities|usecases|tour)/.test(h);
+    if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
 
@@ -85,6 +100,9 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -118,6 +136,31 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes so the narration follows the reader.
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
+
+  // Follow later hash changes too (back/forward, a pasted deep link, a
+  // link from another page) — not just the hash present on first load.
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const s = initialStepFromHash(trace);
+      if (s !== null) {
+        stop();
+        setCursor(s);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [trace, stop]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -201,6 +244,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "pipeline" && (
           <span className="sub">
@@ -213,6 +262,65 @@ export function App() {
       {page === "architecture" && <ArchitecturePage />}
       {page === "capabilities" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // PlatformView draws a 2.5-unit margin and 4 units of labels:
+              // (100 + 5) / (58 + 5 + 4).
+              stageAspect={105 / 67}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the pipeline page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <PlatformView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Pipeline trace: <strong>{state.label}</strong> · Health
+                      Score {state.healthScore} · t+{state.elapsedSeconds}s
+                      (illustrative)
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "pipeline" && (
         <>
@@ -228,6 +336,12 @@ export function App() {
               notification fires. Play the trace and watch each stage light up
               the part of the platform it runs in.
             </p>
+            <button
+              className="primary pipeline-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -247,8 +361,8 @@ export function App() {
               )}
               <div className="mini an-hint">
                 Highlighted blocks are the parts doing work at this step.
-                Click a block to pin what it is; the full tour lives under
-                Architecture.
+                Click a block to pin what it is; the full descriptions live
+                under Architecture, and Guided tour narrates the whole trip.
               </div>
             </div>
           </div>

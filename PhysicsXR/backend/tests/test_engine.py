@@ -321,3 +321,32 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+def test_guided_narration_matches_what_the_trace_does():
+    """The guided scenarios promise specific outcomes; hold them to it.
+    Phoenix pins the fans but never throttles (the filter scenario is the
+    one that throttles), and the mountain site holds the sea-level CPU
+    temperature by running its fans harder — neither throttles, so neither
+    scenario's prose may ask when the throttle landed."""
+    from app.presets import GUIDED_SCENARIOS
+
+    g = {s.id: s for s in GUIDED_SCENARIOS}
+
+    p_trace, _, p_sum = run(g["phoenix-rooftop"].scenario)
+    assert max(s.fan_rpm_pct for s in p_trace) >= 99
+    assert p_sum.throttle_seconds == 0
+    assert "throttle step land" not in g["phoenix-rooftop"].question
+
+    _, _, f_sum = run(g["filter-nobody-changed"].scenario)
+    assert f_sum.throttle_seconds > 0
+
+    mtn = g["mountain-site"].scenario
+    sea = mtn.model_copy(
+        update={"environment": mtn.environment.model_copy(update={"altitude_m": 0})}
+    )
+    m_trace, _, m_sum = run(mtn)
+    s_trace, _, s_sum = run(sea)
+    assert m_sum.throttle_seconds == 0 and s_sum.throttle_seconds == 0
+    assert m_trace[-1].fan_rpm_pct > s_trace[-1].fan_rpm_pct
+    assert "throttle" not in g["mountain-site"].question

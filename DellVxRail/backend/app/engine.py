@@ -96,7 +96,7 @@ def simulate() -> list[FirstRunState]:
                 novice=(
                     "Each server's power supplies come up, and a small always-on "
                     "management controller wakes on standby power — the same "
-                    "component the rack-server twin in this repo covers in detail. "
+                    "component the rack-server twin (PowerEdge R760) covers in detail. "
                     "Every server does this at the same time and completely "
                     "independently; at this moment none of them knows the others "
                     "exist. Redundancy in this kind of system starts from the "

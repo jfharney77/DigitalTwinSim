@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchMedia,
   type ProductMediaWire,
@@ -40,7 +40,23 @@ const DEFAULT_WORKLOAD: Workload = {
   vmsPerSite: 20, growthPctMonth: 3, vmSizeCapacity: 10,
 };
 
+// Playback speeds in sim-days per second of wall clock.
 const SPEEDS = [1, 5, 15];
+
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios: rolling-upgrade, three-node-trap,
+// catalog-vs-artisanal, spiky-demand, roll-out-500, disconnected,
+// failed-in-test). Returns null when the hash names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
+}
 
 export function App() {
   useEffect(() => {
@@ -54,7 +70,8 @@ export function App() {
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch swaps in the re-levelled narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const [config, setConfig] = useState<FleetConfig>(DEFAULT_CONFIG);
   const [workload, setWorkload] = useState<Workload>(DEFAULT_WORKLOAD);
@@ -68,6 +85,12 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  const setActiveScenario = (g: GuidedScenario | null) => {
+    setActiveScenarioId(g ? g.id : null);
+    writeHash(g ? `#scenario=${g.id}` : "");
+  };
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -117,24 +140,48 @@ return () => {
   useEffect(() => {
     if (!running || trace.length === 0) return;
     const id = window.setInterval(() => {
-      setCursor((c) => Math.min(c + Math.max(1, Math.round(speed / 2)), trace.length - 1));
-    }, 500);
+      setCursor((c) => Math.min(c + 1, trace.length - 1));
+    }, Math.max(40, 1000 / speed));
     return () => clearInterval(id);
   }, [running, speed, trace.length]);
+
+  // Playback stops at the end of the trace; Run from there replays it.
+  useEffect(() => {
+    if (running && trace.length > 0 && cursor >= trace.length - 1) setRunning(false);
+  }, [running, cursor, trace.length]);
 
   const nowEvent = (e: Omit<SimEvent, "atD">) => {
     setEvents((evs) => [...evs, { atD: state?.tD ?? 0, ...e }]);
   };
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setWorkload(g.scenario.workload);
     setEvents(g.scenario.events);
     setDurationD(g.scenario.durationD);
     setCursor(0);
     setRunning(true);
-  };
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const g = scenarios.find((x) => x.id === scenarioIdFromHash());
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const g = scenarios.find((x) => x.id === scenarioIdFromHash());
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
 
   const coldStart = () => {
     setEvents([]);
@@ -195,15 +242,19 @@ return () => {
           <ProductGallery
             media={media}
             selected={config.product}
-            onSelect={(p) =>
-              setConfig({ ...config, product: p as FleetConfig["product"] })
-            }
+            onSelect={(p) => {
+              setConfig({ ...config, product: p as FleetConfig["product"] });
+              setActiveScenario(null);
+            }}
           />
           <BuildPanel
             config={config}
             presets={configPresets}
             validations={result?.validations ?? []}
-            onChange={(c) => setConfig(c)}
+            onChange={(c) => {
+              if (c.product !== config.product) setActiveScenario(null);
+              setConfig(c);
+            }}
             onPreset={(p) => {
               setConfig(p.config);
               setActiveScenario(null);
@@ -245,13 +296,20 @@ return () => {
               />
             )}
             <div className="btnrow playback-row">
-              <button className="primary" onClick={() => setRunning(!running)}>
+              <button
+                className="primary"
+                onClick={() => {
+                  if (!running && cursor >= trace.length - 1) setCursor(0);
+                  setRunning(!running);
+                }}
+              >
                 {running ? "Pause" : "Run"}
               </button>
               {SPEEDS.map((s) => (
                 <button
                   key={s}
                   className={speed === s ? "active" : ""}
+                  title={`${s} sim-day${s === 1 ? "" : "s"} per second`}
                   onClick={() => setSpeed(s)}
                 >
                   ×{s}d

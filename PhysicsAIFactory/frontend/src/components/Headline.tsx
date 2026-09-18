@@ -87,7 +87,13 @@ export function Headline({
       <Tile
         label="GPU idle — waiting for data"
         value={s ? `${s.gpuIdleDataPct.toFixed(0)}%` : "—"}
-        sub={s ? `${s.storageSupplyGbps.toFixed(0)} of ${s.storageDemandGbps.toFixed(0)} GB/s served` : undefined}
+        sub={
+          !s
+            ? undefined
+            : s.storageDemandGbps > 0
+              ? `${Math.min(s.storageSupplyGbps, s.storageDemandGbps).toFixed(0)} of ${s.storageDemandGbps.toFixed(0)} GB/s served`
+              : `no data demand until training · ${s.storageSupplyGbps.toFixed(0)} GB/s available`
+        }
         tone={s && s.gpuIdleDataPct > 10 ? "warn" : "hero"}
         explain={ex("idle-data")}
         live={s ? substituted("idle-data", s) : undefined}

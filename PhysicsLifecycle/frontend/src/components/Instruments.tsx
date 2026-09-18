@@ -8,7 +8,7 @@ function substituted(id: string, s: SimState): string {
     case "five-nines":
       return `${s.availabilityPct.toFixed(3)}% · coverage ${s.coveragePct.toFixed(0)}%`;
     case "carbon-ledger":
-      return `${s.totalCarbonKg.toFixed(0)} kg ÷ ${s.usefulYears.toFixed(1)} y = ${s.carbonPerUsefulYear.toFixed(0)} kg/y`;
+      return `${s.totalCarbonKg.toFixed(0)} kg ÷ ${s.usefulYears.toFixed(2)} y = ${s.carbonPerUsefulYear.toFixed(0)} kg/y`;
     case "embodied-vs-use":
       return `${s.embodiedKgCum.toFixed(0)} embodied vs ${s.useKgCum.toFixed(0)} use kg`;
     default:

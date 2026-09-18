@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchAnatomy } from "../api";
+import { useLevel } from "../level";
 import { PlatformView } from "./PlatformView";
 import type { PlatformMap, Photo, RegionKind } from "../types";
 
@@ -50,6 +51,7 @@ export function ArchitecturePage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const level = useLevel();
 
   const onHover = useCallback((id: string | null, x: number, y: number) => {
     setHover(id ? { id, x, y } : null);
@@ -59,10 +61,16 @@ export function ArchitecturePage() {
     fetchAnatomy()
       .then(setAnatomy)
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [level]);
 
   useEffect(() => {
-    window.location.hash = regionId ? `architecture/${regionId}` : "architecture";
+    // replaceState: a block selection refines this entry rather than
+    // stacking history, so Back leaves the tab in one press.
+    window.history.replaceState(
+      null,
+      "",
+      regionId ? `#architecture/${regionId}` : "#architecture",
+    );
   }, [regionId]);
 
   const region = anatomy?.regions.find((r) => r.id === regionId) ?? null;

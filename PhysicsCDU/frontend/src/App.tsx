@@ -41,6 +41,21 @@ const DEFAULT_ENV: Environment = { facilitySupplyC: 17, dewPointC: 12 };
 
 const SPEEDS = [1, 10, 60];
 
+// Deep link to a guided scenario: /#scenario=<id> (ids from
+// GET /api/scenarios: size-the-cdu, warm-water-day, warm-water-panic,
+// one-pump-down, no-spare, humid-morning). Returns null when the hash
+// names no scenario.
+function scenarioIdFromHash(): string | null {
+  const m = window.location.hash.match(/#scenario=([a-z0-9_-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// Keep the address bar pointing at what is loaded without firing hashchange.
+function writeHash(hash: string) {
+  const url = window.location.pathname + window.location.search + hash;
+  window.history.replaceState(null, "", url);
+}
+
 export function App() {
   useEffect(() => {
     document.body.classList.add("dell-body");
@@ -52,7 +67,8 @@ export function App() {
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<GuidedScenario | null>(null);
+  // Held by id so a reading-level refetch swaps in the re-levelled narration.
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const [config, setConfig] = useState<CduConfig>(DEFAULT_CONFIG);
   const [workload, setWorkload] = useState<Workload>(DEFAULT_WORKLOAD);
@@ -67,6 +83,11 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  const setActiveScenario = (g: GuidedScenario | null) => {
+    setActiveScenarioId(g ? g.id : null);
+    writeHash(g ? `#scenario=${g.id}` : "");
+  };
 
   // Prose-bearing content refetches on level change.
   useEffect(() => {
@@ -151,8 +172,9 @@ export function App() {
     [state, deadPumps],
   );
 
-  const applyGuided = (g: GuidedScenario) => {
-    setActiveScenario(g);
+  const applyGuided = useCallback((g: GuidedScenario) => {
+    setActiveScenarioId(g.id);
+    writeHash(`#scenario=${g.id}`);
     setConfig(g.scenario.config);
     setWorkload(g.scenario.workload);
     setEnvironment(g.scenario.environment);
@@ -160,7 +182,27 @@ export function App() {
     setDurationS(g.scenario.durationS);
     setCursor(0);
     setRunning(true);
-  };
+  }, []);
+
+  // Apply a #scenario= deep link once the scenario list first arrives, and
+  // follow the hash afterwards (a link typed into an open tab, back button).
+  const hashApplied = useRef(false);
+  useEffect(() => {
+    if (hashApplied.current || scenarios.length === 0) return;
+    hashApplied.current = true;
+    const id = scenarioIdFromHash();
+    const g = scenarios.find((x) => x.id === id);
+    if (g) applyGuided(g);
+  }, [scenarios, applyGuided]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = scenarioIdFromHash();
+      const g = scenarios.find((x) => x.id === id);
+      if (g) applyGuided(g);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [scenarios, applyGuided]);
 
   const coldStart = () => {
     setEvents([]);
@@ -194,18 +236,20 @@ export function App() {
 
       <div className="an-hero">
         <h2>Facility water → heat exchanger → coolant → silicon → policy</h2>
+        {/* The anatomy overview is authored at every reading level; the
+            static text is only the fallback until it arrives. */}
         <p>
-          A coolant distribution unit is a wall between two loops, and this
-          is the chain that runs through it: facility supply plus the heat
-          exchanger's approach makes the coolant supply, the coolant warms
-          crossing the rack, and the silicon rides on top. When the water
-          runs warm or a pump dies, something must give — and the
-          Integrated Rack Controller decides whether the rack sheds load
-          together or every tray panics alone. Both loops carry the same
-          heat on every tick; the physics is simplified on purpose and
-          every constant is sourced or labeled an estimate. Companions:
-          the DellIR7000 twin (this loop's commissioning story) and the
-          DellPowerEdgeXE9712 twin (the trays making the heat).
+          {anatomy?.overview ??
+            "A coolant distribution unit is a wall between two loops: " +
+              "facility water on one side, the rack's coolant on the other, " +
+              "and the Integrated Rack Controller deciding what gives when " +
+              "the loop cannot keep up."}
+        </p>
+        <p>
+          Companions: the DellIR7000 twin (this loop's commissioning story)
+          and the DellPowerEdgeXE9712 twin (the trays making the heat). The
+          physics is simplified on purpose; every constant is sourced or
+          labeled an estimate.
         </p>
       </div>
 
@@ -262,7 +306,14 @@ export function App() {
               />
             )}
             <div className="btnrow playback-row">
-              <button className="primary" onClick={() => setRunning(!running)}>
+              <button
+                className="primary"
+                onClick={() => {
+                  // Run from the last tick replays rather than doing nothing.
+                  if (!running && cursor >= trace.length - 1) setCursor(0);
+                  setRunning(!running);
+                }}
+              >
                 {running ? "Pause" : "Run"}
               </button>
               {SPEEDS.map((s) => (

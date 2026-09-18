@@ -27,6 +27,18 @@ body {
     grid-template-columns: 1fr;
     height: auto;
   }
+  /* Phone width: let the header wrap instead of pushing the page sideways. */
+  .app.dell header {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 8px 16px;
+  }
+  .app.dell header .sub {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }
 header {
   grid-column: 1 / -1;
@@ -546,4 +558,55 @@ select:hover {
   font-weight: 500;
   letter-spacing: normal;
   min-width: 62px;
+}
+
+/* Phone width: the four-column build sheet clips its "Why" column, so
+   each row stacks — quantity and part on one line, then category, then why. */
+@media (max-width: 600px) {
+  .uc-build thead {
+    display: none;
+  }
+  .uc-build tr {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid var(--dell-border);
+  }
+  .app.dell .uc-build td {
+    border-top: none;
+    padding: 0;
+  }
+  .uc-build td.uc-cat,
+  .uc-build td.uc-why {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Guided tour: layer peel on the site map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.lifecycle-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
 }

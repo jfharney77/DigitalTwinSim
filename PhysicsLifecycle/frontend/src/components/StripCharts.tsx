@@ -89,7 +89,7 @@ export function StripCharts({
           <Chart
             title="coverage" unit="%"
             series={[{ points: coverage, color: "#7fbf5a" }]}
-            yMin={0} yMax={100}
+            yMin={0} yMax={104}
             current={cur ? cur.coveragePct.toFixed(1) : "—"}
           />
           <Chart

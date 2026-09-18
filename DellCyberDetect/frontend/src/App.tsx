@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchDetect } from "./api";
+import { fetchAnatomy, fetchDetect, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -7,18 +7,22 @@ import { TimelineView } from "./components/TimelineView";
 import { DetectControls } from "./components/DetectControls";
 import { DetectCounters } from "./components/DetectCounters";
 import { LevelControl } from "./components/LevelControl";
+import { emph } from "./components/Emph";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { DetectAnatomy, DetectState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "incident" | "anatomy" | "components" | "usecases";
+type Page = "incident" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "incident";
 }
 
@@ -27,11 +31,23 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// The map draws a margin and orientation labels around the 100 x 58 map, so
+// the stage box is (100 + 5) x (58 + 5 + 4).
+const TOUR_STAGE_ASPECT = 105 / 67;
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 // #step=N / #phase=<name> deep-links start playback at a chosen step; both
 // fall through pageFromHash() and land on the default page.
 function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
   const h = window.location.hash;
   const step = h.match(/^#step=(\d+)$/);
   if (step) return Math.min(Number(step[1]), states.length - 1);
@@ -47,7 +63,11 @@ export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
+    // Compare pages, not prefixes: the incident page's hash is empty and
+    // every hash starts with "#", so a prefix check never cleared a leftover
+    // #anatomy. Pages may append their own segments (#anatomy/<id>,
+    // #usecases/<id>, #step=N, #phase=<name>).
+    if (pageFromHash() !== page) {
       window.location.hash = PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
@@ -60,6 +80,9 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -69,6 +92,8 @@ export function App() {
   const hashApplied = useRef(false);
   const speedRef = useRef(speed);
   speedRef.current = speed;
+  const traceRef = useRef<DetectState[]>([]);
+  traceRef.current = trace;
 
   const stop = useCallback(() => {
     if (timer.current !== null) {
@@ -93,6 +118,16 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -133,6 +168,22 @@ export function App() {
     setCursor(0);
   }, [stop]);
 
+  // Follow the hash after load: the use-case page's "Go deeper" buttons,
+  // the back button, and a #step=/#phase= link typed into an open tab all
+  // change the hash without remounting the app.
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [stop]);
+
   // Retune the interval live when speed changes mid-run.
   useEffect(() => {
     if (timer.current === null) return;
@@ -143,6 +194,10 @@ export function App() {
 
   const selectedRegion =
     anatomy?.regions.find((r) => r.id === regionId) ?? null;
+  const snapshotLabels = (anatomy?.regions ?? [])
+    .filter((r) => r.kind === "snapshot")
+    .sort((a, b) => a.x - b.x)
+    .map((r) => r.label);
   const kinds = anatomy
     ? ([...new Set(anatomy.regions.map((r) => r.kind))] as RegionKind[])
     : [];
@@ -176,6 +231,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "incident" && (
           <span className="sub">
@@ -188,6 +249,68 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              stageAspect={TOUR_STAGE_ASPECT}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the incident page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                // Corruption is still drawn only once content analysis has
+                // run: the tour pins the cursor, and `revealed` follows it.
+                <TimelineView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  corruptedCount={state?.snapshotsCorrupted ?? 0}
+                  revealed={(state?.contentConfidencePercent ?? 0) > 0}
+                  namedClean={state?.lastCleanSnapshot ?? -1}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Incident trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedHours}h (illustrative) · metadata alerts{" "}
+                      {state.metadataAlerts}
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "incident" && (
         <>
@@ -206,6 +329,12 @@ export function App() {
               what the analysis produces: not an alert, but a{" "}
               <em>date</em>.
             </p>
+            <button
+              className="primary poweron-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -223,7 +352,7 @@ export function App() {
               )}
               {state && (
                 <div className="poweron-desc">
-                  <strong>{state.label}.</strong> {state.description}
+                  <strong>{state.label}.</strong> {emph(state.description)}
                 </div>
               )}
               <div className="mini an-hint">
@@ -256,6 +385,7 @@ export function App() {
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
+              snapshotLabels={snapshotLabels}
             />
             {selectedRegion && (
               <section className="an-panel">

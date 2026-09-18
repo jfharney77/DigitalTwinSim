@@ -24,6 +24,9 @@ const STATE_BADGE: Record<string, string> = {
   queued: "…",
 };
 
+// A narrow region (a cache module) shrinks its state label to fit.
+const stLabel = (st: string) => (st === "failed" ? "✕ failed" : st);
+
 export function ArrayView({
   anatomy,
   state,
@@ -46,7 +49,7 @@ export function ArrayView({
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 8}`}
+      viewBox={`0 0 ${W} ${H + 11}`}
       aria-label={`${anatomy.name} state map`}
       onClick={() => onSelect?.(null)}
     >
@@ -125,9 +128,10 @@ export function ArrayView({
               <text
                 x={rx(r) + r.w / 2} y={ry(r) + r.h - 2}
                 textAnchor="middle" fill="#0d1420"
-                fontSize={1.7} fontWeight={700}
+                fontSize={Math.min(1.7, (r.w - 1) / (stLabel(st).length * 0.62))}
+                fontWeight={700}
               >
-                {st === "failed" ? "✕ failed" : st}
+                {stLabel(st)}
               </text>
             )}
           </g>
@@ -152,7 +156,7 @@ export function ArrayView({
             <text x={MARGIN + i * 19 + 3.2} y={H + 3.4}>{label}</text>
           </g>
         ))}
-        <text x={W - MARGIN} y={H + 3.4} textAnchor="end">
+        <text x={MARGIN} y={H + 7.6}>
           click a drive to fail / replace it · click a controller to fail it
         </text>
       </g>

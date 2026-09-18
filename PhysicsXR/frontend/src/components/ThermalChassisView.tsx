@@ -201,7 +201,7 @@ export function ThermalChassisView({
         <text x={MARGIN + 60} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
           110 °C
         </text>
-        <text x={W - MARGIN} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
+        <text x={W - MARGIN} y={H + 9.2} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
           FRONT (filter) → REAR · click a fan to kill it · click the filter to change it
         </text>
       </g>

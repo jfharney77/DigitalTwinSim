@@ -547,3 +547,86 @@ select:hover {
   letter-spacing: normal;
   min-width: 62px;
 }
+
+/* Phone widths: the header's title, nav, step label and reading-level
+   control do not fit on one line, and without wrapping they pushed the
+   whole page into horizontal scroll at 390px. */
+@media (max-width: 880px) {
+  .app.dell header {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 8px;
+    padding: 12px 16px;
+  }
+  .app.dell header .sub {
+    margin-left: 0;
+    flex-basis: 100%;
+    order: 3;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 28px;
+  }
+  .app.dell .stage,
+  .app.dell .controls {
+    padding: 16px;
+  }
+}
+
+/* Phone widths: the four-column build sheet clipped its Why column. Each
+   row becomes a small block — quantity beside the part, category and
+   rationale beneath it. */
+@media (max-width: 880px) {
+  .app.dell .an-card {
+    padding: 16px;
+  }
+  .app.dell .uc-build thead {
+    display: none;
+  }
+  .app.dell .uc-build tr {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .app.dell .uc-build td {
+    border-top: none;
+    padding: 2px 0;
+  }
+  .app.dell .uc-build .uc-cat,
+  .app.dell .uc-build .uc-why {
+    grid-column: 2;
+    white-space: normal;
+  }
+}
+
+/* --- Guided tour: layer peel on the data-path map --- */
+.tour-stage .an-region {
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+.tour-reduced .an-region {
+  transition: opacity 0.3s linear;
+}
+.tour-page {
+  grid-column: 1 / -1;
+  overflow: auto;
+}
+.poweron-tour-link {
+  margin-top: 14px;
+}
+.tour-trace {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+  margin: 0;
+}
+.tour-trace strong {
+  font-weight: 500;
+  color: var(--dell-text, #161616);
+}
+.app.dell .tour-page {
+  grid-row: 2 / -1;
+}

@@ -343,7 +343,7 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
       </div>
       <div className="stage">
         <div className="an-card">
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="live-toolbar">
             <span
               className={`badge ${conn === "live" ? "badge-compute" : "badge-memory"}`}
               role="status"
@@ -497,7 +497,10 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
                   show all {kernels.length} (rendering latest {CHIP_CAP})
                 </button>
               )}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+              <div
+                className="live-chips"
+                style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}
+              >
                 {(showAllChips ? kernels : kernels.slice(-CHIP_CAP)).map((s) => {
                   const key = frameKey(s);
                   const isPinned = replayTrace
@@ -527,7 +530,7 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
       <aside className="controls">
         <div className="an-card">
           <h3>Session</h3>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div className="live-row">
             <input
               placeholder="session name"
               value={sessionName}
@@ -583,7 +586,7 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
                 <span>
                   {s.name} · {s.eventCount} events{s.active ? " · recording" : ""}
                 </span>
-                <span style={{ display: "flex", gap: 4 }}>
+                <span className="live-row" style={{ gap: 4 }}>
                   {s.eventCount > 0 && (
                     <>
                       <button title="session summary" onClick={() => showSummary(s.id)}>

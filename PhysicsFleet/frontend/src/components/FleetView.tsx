@@ -34,6 +34,25 @@ export function loadColor(pct: number): string {
   return STOPS[STOPS.length - 1][1];
 }
 
+// Status blocks carry lit/health (100 = on or healthy), not load: the
+// engine reports the control plane, pipeline, catalog and WAN as on/off
+// (the manual control plane as dim), sites as the share deployed, and
+// nodes as the share healthy. Painting those on the load ramp showed a
+// healthy estate as "saturated" red, so they get their own scale: dark
+// when off, green when lit; nodes go amber → red as they fail.
+const STATUS_KINDS = new Set(["controlplane", "pipeline", "catalog", "wan", "site", "node"]);
+const DIM = "#2b3a4f";
+const LIT = "#7fbf5a";
+
+function statusColor(kind: string, pct: number): string {
+  const f = Math.max(0, Math.min(1, pct / 100));
+  if (kind === "node") {
+    if (f >= 0.999) return LIT;
+    return f >= 0.75 ? lerpColor("#c8281e", "#e8c33d", (f - 0.75) / 0.25) : "#c8281e";
+  }
+  return lerpColor(DIM, LIT, f);
+}
+
 export function FleetView({
   anatomy,
   state,
@@ -52,7 +71,7 @@ export function FleetView({
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 10}`}
+      viewBox={`0 0 ${W} ${H + 11}`}
       aria-label={`${anatomy.name} load map`}
       onClick={() => onSelect?.(null)}
     >
@@ -63,8 +82,10 @@ export function FleetView({
       {anatomy.regions.map((r) => {
         const load = state?.regionLoad[r.id] ?? 0;
         const isSel = r.id === selected;
-        const over = load > 100;
-        const fill = loadColor(load);
+        const over = !STATUS_KINDS.has(r.kind) && load > 100;
+        const status = STATUS_KINDS.has(r.kind);
+        const fill = status ? statusColor(r.kind, load) : loadColor(load);
+        const ink = status && r.kind !== "node" && load < 50 ? "#cdd6e3" : "#0d1420";
         const len = r.label.length || 1;
         const hSize = Math.min(1.9, r.h * 0.42, (r.w - 1.4) / (len * 0.62));
         const showLabel = !!r.label && r.h > 3.0 && hSize >= 0.95;
@@ -89,7 +110,7 @@ export function FleetView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + (r.h < 6 ? r.h / 2 + hSize * 0.35 : 2.4)}
                 textAnchor="middle"
-                fill="#0d1420"
+                fill={ink}
                 fontSize={Math.max(hSize, 0.95)}
                 fontWeight={600}
                 letterSpacing={0.1}
@@ -102,11 +123,11 @@ export function FleetView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h - 1.6}
                 textAnchor="middle"
-                fill="#0d1420"
+                fill={ink}
                 fontSize={1.7}
                 fontWeight={700}
               >
-                {load.toFixed(0)}%
+                {status ? `${load.toFixed(0)}% ${r.kind === "node" ? "healthy" : r.kind === "site" ? "deployed" : "lit"}` : `${load.toFixed(0)}%`}
               </text>
             )}
           </g>
@@ -129,8 +150,8 @@ export function FleetView({
         <text x={MARGIN + 62} y={H + 6.6} fill="#5a6b82" fontSize={1.7}>
           saturated
         </text>
-        <text x={W - MARGIN} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
-          colored by load / fill · click a block
+        <text x={W - MARGIN} y={H + 9.4} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
+          load blocks on the ramp · status blocks: green lit / healthy, dark off · click a block
         </text>
       </g>
     </svg>

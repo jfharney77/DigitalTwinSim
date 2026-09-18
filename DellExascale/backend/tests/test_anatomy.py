@@ -38,6 +38,22 @@ def test_regions_do_not_overlap():
             assert disjoint, f"{a.id} overlaps {b.id}"
 
 
+def test_regions_do_not_touch():
+    """Blocks keep at least one unit of clear space between them. Edge-to-edge
+    blocks read as one merged shape once their strokes are drawn (the fourth
+    data server once sat flush on the management band)."""
+    rs = ANATOMY.regions
+    for i, a in enumerate(rs):
+        for b in rs[i + 1:]:
+            apart = (
+                a.x + a.w + 1 <= b.x
+                or b.x + b.w + 1 <= a.x
+                or a.y + a.h + 1 <= b.y
+                or b.y + b.h + 1 <= a.y
+            )
+            assert apart, f"{a.id} touches {b.id}"
+
+
 def test_every_region_described():
     for r in ANATOMY.regions:
         assert r.description.strip(), r.id

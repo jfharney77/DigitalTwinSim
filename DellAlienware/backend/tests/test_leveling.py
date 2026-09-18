@@ -8,6 +8,7 @@ so it asserts over ``ANATOMIES`` rather than a single ``ANATOMY``.
 
 from __future__ import annotations
 
+import app.tour  # noqa: F401  (registers the tour narration's variants)
 from app.anatomy import ANATOMIES
 from app.leveling import (
     DEFAULT_LEVEL,

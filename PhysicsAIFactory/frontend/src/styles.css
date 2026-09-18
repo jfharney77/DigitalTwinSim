@@ -632,3 +632,40 @@ select:hover {
 .headline-tile.warn .headline-value { color: #e07b28; }
 
 .headline-sub { color: #8fa2ba; }
+
+/* --- Fixes from the browser QA pass ---------------------------------------- */
+
+/* label.field stacks as a column; the build rows are label-beside-control
+   (without this the 128px flex-basis became a 128px-tall label). */
+label.field.cfg-row { flex-direction: row; align-items: center; }
+
+/* The panels sit inside the same gutter as the header and hero. */
+.thermal-app > .headline-grid,
+.thermal-app > .thermal-grid { padding: 0 32px 16px; }
+
+/* --accent is the dark diagram's yellow; on white chrome use Dell blue. */
+.app.dell .scenario-question { color: var(--dell-blue); }
+.app.dell .scenario-list button.active,
+.app.dell .playback-row button.active { outline-color: var(--dell-blue); }
+
+/* Phone width: the header wraps instead of pushing the reading-level
+   control off-screen, the factory diagram comes first, and the headline
+   tiles take two columns. */
+@media (max-width: 1100px) {
+  .thermal-center { order: -1; }
+}
+@media (max-width: 600px) {
+  .app.dell.thermal-app header { flex-wrap: wrap; row-gap: 8px; padding: 12px 16px; }
+  .thermal-app header .sub { margin-left: 0; flex-basis: 100%; }
+  .app.dell.thermal-app .an-hero { padding: 20px 16px; }
+  .app.dell.thermal-app .an-hero h2 { font-size: 28px; }
+  .thermal-app > .headline-grid,
+  .thermal-app > .thermal-grid { padding: 0 16px 16px; }
+  .headline-grid { grid-template-columns: repeat(2, 1fr); }
+  .app.dell .an-card { padding: 16px; }
+}
+
+/* A select beside a 128px label truncates its option text in a 300px
+   column; select rows stack the label above the control instead. */
+label.field.cfg-row:has(select) { flex-direction: column; align-items: stretch; gap: 4px; }
+label.field.cfg-row:has(select) .cfg-label { flex: none; }

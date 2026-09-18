@@ -1,3 +1,4 @@
+import type { TourResponse } from "@twinsim/twin-ui";
 import { getLevel } from "./level";
 import type {
   Anatomy,
@@ -52,5 +53,13 @@ export async function simulate(scenario: Scenario): Promise<SimulateResponse> {
     body: JSON.stringify({ scenario }),
   });
   if (!r.ok) throw new Error(`simulate ${r.status}`);
+  return r.json();
+}
+
+// The narrated guided tour (GET /api/tour): leveled narration plus the layer
+// map and bounds the player frames its camera in.
+export async function fetchTour(): Promise<TourResponse> {
+  const r = await fetch(`${BASE}/tour${lv()}`);
+  if (!r.ok) throw new Error(`tour ${r.status}`);
   return r.json();
 }

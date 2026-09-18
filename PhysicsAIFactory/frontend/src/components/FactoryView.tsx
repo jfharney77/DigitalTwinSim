@@ -62,12 +62,14 @@ export function FactoryView({
   anatomy,
   state,
   racks,
+  gpusPerRack = 72,
   selected,
   onSelect,
 }: {
   anatomy: FactoryMap;
   state: SimState | null;
   racks: number;
+  gpusPerRack?: number;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
 }) {
@@ -102,7 +104,7 @@ export function FactoryView({
     : 4;
 
   const installedFrac = state
-    ? state.gpusInstalled / Math.max(1, racks * 72)
+    ? state.gpusInstalled / Math.max(1, racks * gpusPerRack)
     : 0;
 
   return (

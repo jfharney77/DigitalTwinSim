@@ -189,7 +189,7 @@ def simulate() -> list[DetectState]:
                     "time, and they make it anyway, because the alternative is "
                     "setting something off on the first afternoon. Two saved copies "
                     "now contain damaged data, and from the outside they are "
-                    "indistinguishable from the four before them."
+                    "indistinguishable from the three before them."
                 ),
                 plain=(
                     "The encryption campaign starts, and it is designed around the "
@@ -212,7 +212,7 @@ def simulate() -> list[DetectState]:
                     "make it anyway, because the alternative is tripping "
                     "something on the first afternoon. Two snapshots now "
                     "contain corrupted data, and they are indistinguishable "
-                    "from the four before them by every property visible from "
+                    "from the three before them by every property visible from "
                     "outside."
                 ),
                 technical=(

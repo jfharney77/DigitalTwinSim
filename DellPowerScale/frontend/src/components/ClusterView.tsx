@@ -40,6 +40,8 @@ export function ClusterView({
   rebalancing,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: ClusterAnatomy;
   active?: Set<string>;
@@ -50,12 +52,37 @@ export function ClusterView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates, and a per-region
+  // look (ghosting + peel offset). Without them the map draws as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
   const rx = (r: ClusterRegion) => r.x + MARGIN;
   const ry = (r: ClusterRegion) => r.y + MARGIN;
   const mid = (r: ClusterRegion) => rx(r) + r.w / 2;
+  // The full frame is W x (H + 6.5): the map, its outline margin, and two
+  // caption lines below. A camera box's size scales into that frame (so
+  // every zoom keeps the frame's aspect), but its centre is placed where the
+  // map actually draws it (map coords + MARGIN), then the box is clamped to
+  // the frame. Scaling the position too would drift the view by up to ~9
+  // units toward the bottom of the map and frame the wrong regions. The
+  // whole-map box still clamps to exactly the default viewBox (no jump on
+  // the first tween).
+  const FULL_H = H + 6.5;
+  const sx = W / anatomy.width;
+  const sy = FULL_H / anatomy.height;
+  const clamp = (v: number, lo: number, hi: number) =>
+    Math.min(Math.max(v, lo), Math.max(lo, hi));
+  let viewBox = `0 0 ${W} ${FULL_H}`;
+  if (camera) {
+    const vw = Math.min(camera.w * sx, W);
+    const vh = Math.min(camera.h * sy, FULL_H);
+    const vx = clamp(camera.x + camera.w / 2 + MARGIN - vw / 2, 0, W - vw);
+    const vy = clamp(camera.y + camera.h / 2 + MARGIN - vh / 2, 0, FULL_H - vh);
+    viewBox = `${vx} ${vy} ${vw} ${vh}`;
+  }
 
   const nodes = anatomy.regions.filter((r) => r.kind === "node");
   // Only nodes lit by the trace take part in the rebalance links: before the
@@ -68,7 +95,7 @@ export function ClusterView({
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} cluster map`}
       onClick={() => onSelect?.(null)}
     >
@@ -93,28 +120,12 @@ export function ClusterView({
         strokeWidth={0.6}
       />
 
-      {/* Rebalance links: node to node across the back-end interconnect. */}
-      {rebalancing && (
-        <g stroke="var(--accent)" strokeWidth={0.35} fill="none" opacity={0.75}>
-          {live.map((a, i) =>
-            live.slice(i + 1).map((b) => (
-              <line
-                key={`rb-${a.id}-${b.id}`}
-                x1={mid(a)}
-                y1={ry(a) + a.h}
-                x2={mid(b)}
-                y2={ry(b) + b.h}
-              />
-            )),
-          )}
-        </g>
-      )}
-
       {anatomy.regions.map((r) => {
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
         const isNamespace = r.kind === "namespace";
+        const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
         const len = r.label.length || 1;
@@ -140,6 +151,14 @@ export function ClusterView({
             }}
             onMouseMove={(e) => onHover?.(r.id, e.clientX, e.clientY)}
             onMouseLeave={() => onHover?.(null, 0, 0)}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
           >
             <rect
               x={rx(r)}
@@ -181,14 +200,39 @@ export function ClusterView({
           </g>
         );
       })}
-      {/* Orientation: what refuses to be partitioned. */}
+      {/* Rebalance links: node to node, drawn over the node row as arcs.
+          All nodes share one baseline, so straight lines would collapse into
+          a single stroke hidden behind the blocks. */}
+      {rebalancing && (
+        <g
+          stroke="var(--accent)"
+          strokeWidth={0.35}
+          fill="none"
+          opacity={0.75}
+          pointerEvents="none"
+        >
+          {live.map((a, i) =>
+            live.slice(i + 1).map((b) => {
+              const y = ry(a) + a.h - 0.8;
+              const lift = Math.min(a.h * 0.8, (mid(b) - mid(a)) * 0.3);
+              return (
+                <path
+                  key={`rb-${a.id}-${b.id}`}
+                  d={`M ${mid(a)} ${y} Q ${(mid(a) + mid(b)) / 2} ${y - lift} ${mid(b)} ${y}`}
+                />
+              );
+            }),
+          )}
+        </g>
+      )}
+      {/* Orientation: what refuses to be partitioned. Two lines — side by
+          side the captions overran each other. */}
       <text x={MARGIN} y={H + 2.6} fill="#5a6b82" fontSize={1.7} letterSpacing={0.3}>
         PROTOCOLS ↑ — every node answers every protocol
       </text>
       <text
-        x={W - MARGIN}
-        y={H + 2.6}
-        textAnchor="end"
+        x={MARGIN}
+        y={H + 5.2}
         fill={namespaceActive ? "#5fc4d4" : "#5a6b82"}
         fontSize={1.7}
         letterSpacing={0.3}

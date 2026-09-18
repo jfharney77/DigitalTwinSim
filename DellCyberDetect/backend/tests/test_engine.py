@@ -175,3 +175,26 @@ def test_content_inspection_is_the_longest_stage():
     max_cost = max(s.cycle_cost for s in trace)
     assert insp[0].cycle_cost == max_cost
     assert sum(1 for s in trace if s.cycle_cost == max_cost) == 1
+
+
+def test_prose_counts_the_clean_copies_correctly():
+    """Where a step's prose says how many snapshots came "before" the
+    corrupted ones, the number must be the clean count the step actually
+    carries (taken minus corrupted), at every reading level."""
+    import re
+
+    from app.leveling import registry
+
+    words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6}
+    for s in simulate():
+        texts = [s.description, *registry().get(s.description, {}).values()]
+        for text in texts:
+            for m in re.finditer(r"\b(\w+) before them\b", text):
+                n = words.get(m.group(1).lower())
+                if n is None:
+                    continue
+                assert n == s.snapshots_taken - s.snapshots_corrupted, (
+                    f"step {s.step} ({s.phase}) says '{m.group(0)}' but "
+                    f"{s.snapshots_taken - s.snapshots_corrupted} clean "
+                    "snapshots precede the corrupted ones"
+                )

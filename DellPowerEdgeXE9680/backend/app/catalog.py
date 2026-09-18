@@ -401,7 +401,7 @@ CATALOG: list[CatalogCategory] = [
                     "one coolant loop to the CDU, and one pair of leaf "
                     "switches — 64 GPUs and 64 400 GbE ports per rack, "
                     "times roughly 1,500 racks in the first build. Note "
-                    "what the rack is *not*: the NVLink domains inside it "
+                    "what the rack is not: the NVLink domains inside it "
                     "stay eight GPUs each. The rack is a plumbing and "
                     "cabling unit, and the cluster exists in the fabric — "
                     "the exact opposite of the XE9712, where the rack "

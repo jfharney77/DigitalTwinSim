@@ -2,9 +2,8 @@
 
 ## What's missing
 
-- The trace steps in `backend/app/engine.py` are not wrapped in `L(...)`, so they read the same at every reading level (the anatomy overview is leveled).
-- `initial_spec.md` still opens with "Status: spec only", and the root `CLAUDE.md` has no DellCircularDesign section, although the backend and frontend are built.
-- There was no README until this one, and no `CustomerSetup/` page uses the twin yet.
+- The root `CLAUDE.md` has no DellCircularDesign section yet.
+- No `CustomerSetup/` page uses the twin yet.
 
 Status in `components.json`: **partial**. See [`docs/LIFECYCLE.md`](../docs/LIFECYCLE.md).
 
@@ -25,7 +24,10 @@ scripts/dev.sh DellCircularDesign             # from the repo root
 ./DellCircularDesign/scripts/start_all.sh     # backend :8024, frontend :5197
 ```
 
-The trace endpoint is `GET /api/lifecycle`.
+The trace endpoint is `GET /api/lifecycle`. Trace prose is authored at all
+five reading levels. A narrated guided tour lives at `#tour` (`GET /api/tour`,
+`backend/app/tour.py`); its signature beat, `#tour/disassembly`, pins the
+recover step, where the mass ledger opens.
 
 ## Test and build
 

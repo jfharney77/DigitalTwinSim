@@ -40,6 +40,8 @@ export function ChassisView({
   selected,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: ChassisAnatomy;
   active?: Set<string>;
@@ -47,16 +49,29 @@ export function ChassisView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates (the margin is
+  // added here), and a per-region layer look — ghost opacity plus an explode
+  // offset. Both optional; without them the floorplan draws as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
   // Region coords are chassis-relative; shift them inside the outline.
   const rx = (r: ChassisRegion) => r.x + MARGIN;
   const ry = (r: ChassisRegion) => r.y + MARGIN;
+  // The full view is W x (H + 4): the outline plus the orientation labels.
+  // A camera box maps to the same framing scaled down, so the whole-map box
+  // reproduces the default viewBox exactly and a tween never jumps.
+  const viewBox = camera
+    ? `${camera.x} ${camera.y} ${camera.w + 2 * MARGIN} ${
+        camera.h + (2 * MARGIN + 4) * (camera.h / anatomy.height)
+      }`
+    : `0 0 ${W} ${H + 4}`;
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} chassis floorplan`}
       onClick={() => onSelect?.(null)}
     >
@@ -74,6 +89,7 @@ export function ChassisView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks (drive slots, fan packs),
         // else tooltip only. 0.62 ≈ glyph advance per unit font.
@@ -82,6 +98,23 @@ export function ChassisView({
         const vSize = Math.min(1.9, r.w * 0.42, (r.h - 1.6) / (len * 0.62));
         const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.05;
         const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.05;
+        // Short, squat blocks (the NVRAM slots under the drive bay) fit
+        // neither way on one line — split the label at its middle space.
+        const words = r.label.split(" ");
+        const cut = Math.ceil(words.length / 2);
+        const lines =
+          words.length > 1
+            ? [words.slice(0, cut).join(" "), words.slice(cut).join(" ")]
+            : [];
+        const tSize = lines.length
+          ? Math.min(
+              1.9,
+              r.h * 0.22,
+              (r.w - 1.6) /
+                (Math.max(lines[0].length, lines[1].length) * 0.62),
+            )
+          : 0;
+        const showTwoLine = !showLabel && !showVLabel && tSize >= 1.05;
         const fontSize = hSize;
         const stroke = isSel
           ? "var(--accent)"
@@ -98,6 +131,14 @@ export function ChassisView({
             }}
             onMouseMove={(e) => onHover?.(r.id, e.clientX, e.clientY)}
             onMouseLeave={() => onHover?.(null, 0, 0)}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
           >
             <rect
               x={rx(r)}
@@ -120,6 +161,21 @@ export function ChassisView({
                 transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
               >
                 {r.label}
+              </text>
+            )}
+            {showTwoLine && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h / 2 - tSize * 0.25}
+                textAnchor="middle"
+                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fontSize={tSize}
+                letterSpacing={0.12}
+              >
+                <tspan x={rx(r) + r.w / 2}>{lines[0]}</tspan>
+                <tspan x={rx(r) + r.w / 2} dy={tSize * 1.2}>
+                  {lines[1]}
+                </tspan>
               </text>
             )}
             {showLabel && (

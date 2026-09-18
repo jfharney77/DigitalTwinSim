@@ -134,6 +134,36 @@ def test_nplus1_does_not_survive_a_feed_loss():
     assert any("Grid redundancy would have survived" in e.message for e in log)
 
 
+def test_losing_both_feeds_does_not_blame_the_policy():
+    # Grid survives one feed, not two — the shutdown log must not claim
+    # grid redundancy "would have survived" a loss that defeats every policy.
+    _, log, summary = run(
+        Scenario(
+            config=EIGHT_COMPUTE, workload=STEADY, duration_s=600,
+            events=[
+                SimEvent(at_s=200, action="lose-feed", index=0),
+                SimEvent(at_s=300, action="lose-feed", index=1),
+            ],
+        )
+    )
+    assert summary.shutdown
+    assert "both" in summary.shutdown_reason
+    dark = [e.message for e in log if "chassis dark" in e.message]
+    assert dark and not any("would have survived" in m for m in dark)
+
+
+def test_killing_every_psu_is_not_a_feed_loss():
+    _, log, summary = run(
+        Scenario(
+            config=EIGHT_COMPUTE, workload=STEADY, duration_s=600,
+            events=[SimEvent(at_s=100 + i, action="kill-psu") for i in range(6)],
+        )
+    )
+    assert summary.shutdown
+    assert "every PSU failed" in summary.shutdown_reason
+    assert not any("would have survived" in e.message for e in log)
+
+
 def test_single_psu_failure_is_survivable_under_nplus1():
     trace, _, summary = run(
         Scenario(

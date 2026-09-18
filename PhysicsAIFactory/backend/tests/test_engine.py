@@ -209,3 +209,26 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+def test_rollback_log_agrees_with_the_token_counter():
+    """A failure's log line must not claim a rollback the trace does not show
+    ("rolled back 0.00 B tokens"), and must quote the real loss when it does."""
+    trace, log, _ = run(factory_scenario())  # 60-min interval: sub-tick loss
+    fails = [e for e in log if "GPU failure" in e.message]
+    assert fails
+    assert not any("0.00 B" in e.message for e in fails)
+    assert all("this hour's checkpoint" in e.message for e in fails)
+
+    cfg = FACTORY.model_copy(update={
+        "resilience": ResilienceBlock(checkpoint_interval_min=480),
+    })
+    t2, log2, _ = run(Scenario(config=cfg, job=FRONTIER_LLM, duration_h=480))
+    by_t = {s.t_h: s for s in t2}
+    quoted = [e for e in log2 if "GPU failure" in e.message and " B tokens" in e.message]
+    assert quoted
+    for e in quoted:
+        before, at = by_t[e.t_h - 1], by_t[e.t_h]
+        # The rewind happens at the tick's start; this tick's production
+        # is then added back on top.
+        assert at.tokens_total_b < before.tokens_total_b + at.tokens_per_s * 3600 / 1e9

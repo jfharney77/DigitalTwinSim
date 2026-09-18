@@ -8,6 +8,7 @@ from __future__ import annotations
 from fastapi import HTTPException
 
 from twinkit.api import Level, make_app
+from twinkit.tour import TourResponse
 
 from .anatomy import ANATOMIES
 from .catalog import DEFAULT_PROFILE, PROFILES
@@ -20,6 +21,7 @@ from .models import (
     SimulateResponse,
     UseCase,
 )
+from .tour import TOUR_RESPONSE
 from .usecases import USE_CASES
 
 app = make_app(
@@ -54,6 +56,12 @@ def get_anatomy(anatomy_id: str, level: int = Level) -> Anatomy:
 @app.get("/api/usecases", response_model=list[UseCase])
 def get_usecases(level: int = Level) -> list[UseCase]:
     return leveled_all(USE_CASES, level)
+
+
+@app.get("/api/tour", response_model=TourResponse)
+def get_tour(level: int = Level) -> TourResponse:
+    """The narrated guided tour (m18 R2 interior, one fixed scenario)."""
+    return leveled(TOUR_RESPONSE, level)
 
 
 @app.post("/api/simulate", response_model=SimulateResponse)

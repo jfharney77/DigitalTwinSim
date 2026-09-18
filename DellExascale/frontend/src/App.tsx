@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchDataPath } from "./api";
+import { fetchAnatomy, fetchDataPath, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -7,24 +7,38 @@ import { PlatformView } from "./components/PlatformView";
 import { DataControls } from "./components/DataControls";
 import { DataCounters } from "./components/DataCounters";
 import { LevelControl } from "./components/LevelControl";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import { useLevel } from "./level";
 import type { DataState, PlatformAnatomy, RegionKind } from "./types";
 
+// PlatformView draws the 100 x 72 map inside a 2.5-unit outline margin plus
+// 4 units of orientation labels: 105 x 81.
+const TOUR_STAGE_ASPECT = 105 / 81;
+
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "datapath" | "anatomy" | "components" | "usecases";
+type Page = "datapath" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "datapath";
+}
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
 }
 
 // Deep-link into the trace: #step=N (clamped) or #phase=<name> (first
 // matching state). Returns null when the hash names neither.
 function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
   const h = window.location.hash;
   const step = h.match(/#step=(\d+)$/);
   if (step) return Math.min(Number(step[1]), states.length - 1);
@@ -41,17 +55,28 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
 
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
+    // Rewrite the hash only when it names a different page, so a
+    // #step=/#phase= deep link on the data path survives. (Comparing with
+    // startsWith against the data path's empty hash matched everything, so
+    // switching back to Data path never left #components in the URL.)
+    if (pageFromHash() !== page) {
       window.location.hash = PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
   }, [page]);
+  // Back/forward and hand-edited hashes switch pages too.
+  useEffect(() => {
+    const onHash = () => setPage(pageFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const [anatomy, setAnatomy] = useState<PlatformAnatomy | null>(null);
   const [trace, setTrace] = useState<DataState[]>([]);
@@ -60,6 +85,9 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -93,6 +121,29 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
+
+  // A #step=/#phase= typed into an already-open page moves the cursor too.
+  useEffect(() => {
+    const onHash = () => {
+      const start = initialStepFromHash(trace);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [trace, stop]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -176,6 +227,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "datapath" && (
           <span className="sub">
@@ -188,6 +245,62 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              stageAspect={TOUR_STAGE_ASPECT}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the data-path page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <PlatformView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Data-path trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedSeconds}s (illustrative)
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "datapath" && (
         <>
@@ -205,6 +318,12 @@ export function App() {
               watch the metadata block go dark the moment real data starts
               moving.
             </p>
+            <button
+              className="primary poweron-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">
@@ -228,8 +347,9 @@ export function App() {
                 layout is granted — and is dark through every phase that
                 moves bulk data. Meanwhile all four data servers light
                 together, because a striped read fans out to every one of
-                them at once. Click a block to pin what it is; the full tour
-                lives under Inside the rack.
+                them at once. Click a block to pin what it is; every block is
+                described under Inside the rack, and the narrated walk-through
+                is the Guided tour.
               </div>
             </div>
           </div>

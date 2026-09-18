@@ -275,3 +275,41 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+# --- Guided scenarios must show what their narration says ------------------
+
+def _guided(gid: str):
+    from app.presets import GUIDED_SCENARIOS
+    return next(g for g in GUIDED_SCENARIOS if g.id == gid).scenario
+
+
+def test_guided_rebuild_finishes_inside_its_run_and_load_stretches_it():
+    # The question asks how many hours the rebuild takes and what doubling
+    # the load does — both must be answerable inside the run.
+    s = _guided("rebuild-20tb")
+    _, log, summary = run(s)
+    assert any("rebuild complete" in e.message.lower() for e in log)
+    doubled = s.model_copy(deep=True)
+    doubled.workload.offered_kiops *= 2
+    _, log2, summary2 = run(doubled)
+    assert any("rebuild complete" in e.message.lower() for e in log2)
+    assert summary2.rebuild_hours_total > summary.rebuild_hours_total
+
+
+def test_guided_controller_failover_is_unsaturated_and_latency_rises():
+    trace, _, _ = run(_guided("controller-failover"))
+    before = next(st for st in trace if st.t == 119)
+    after = next(st for st in trace if st.t == 121)
+    assert not before.saturated
+    assert after.controllers_alive == 1
+    assert after.latency_ms > before.latency_ms
+    assert after.served_kiops == before.served_kiops, "disk-bound: IOPS holds"
+
+
+def test_guided_flash_ceiling_moves_from_drives_to_controller():
+    trace, _, _ = run(_guided("flash-ceiling"))
+    both = next(st for st in trace if st.t == 299)
+    one = next(st for st in trace if st.t == 301)
+    assert both.saturated and both.served_kiops > C("ctrl_cap_kiops")
+    assert abs(one.served_kiops - C("ctrl_cap_kiops")) < 1.0

@@ -127,7 +127,7 @@ ANATOMY = ZeroTrustMap(
             "engine weighs; it is not a way in. This map is therefore drawn "
             "with no enclosing shape at all: seven co-equal pillars around a "
             "decision point. Note what happens in the trace when an attacker "
-            "compromises a host *inside* the network — nothing does, which is "
+            "compromises a host inside the network — nothing does, which is "
             "the entire architecture in one step."
         ),
         technical=(
@@ -191,7 +191,7 @@ ANATOMY = ZeroTrustMap(
             70, 2,
             "Where the request came from — and the pillar most likely to "
             "be misread. In a perimeter architecture, network position "
-            "*is* the authorization: get onto the internal segment and you "
+            "is the authorization: get onto the internal segment and you "
             "are in. Here it is evidence and nothing more, weighed "
             "alongside everything else. A request from the office network "
             "is not granted; it is merely slightly less surprising. What "

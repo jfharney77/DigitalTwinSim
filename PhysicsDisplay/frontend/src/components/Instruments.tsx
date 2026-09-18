@@ -24,6 +24,9 @@ export function Instruments({ state, summary, explains, explainOn }: {
   explainOn: boolean;
 }) {
   const c = summary?.carbon ?? null;
+  // Round once and derive the other share, so the two labels always sum
+  // to 100 like the ledger they describe (76% + 25% read as a broken ledger).
+  const embodiedLabel = c ? Math.round(c.embodiedPct) : 0;
   return (
     <div className="an-panel">
       <h2>Instruments</h2>
@@ -50,10 +53,10 @@ export function Instruments({ state, summary, explains, explainOn }: {
           <h2 style={{ marginTop: "1rem" }}>Lifetime carbon</h2>
           <div className="carbon-bar" title="embodied vs use-phase">
             <div className="carbon-embodied" style={{ width: `${c.embodiedPct}%` }}>
-              {c.embodiedPct.toFixed(0)}%
+              {embodiedLabel}%
             </div>
             <div className="carbon-use" style={{ width: `${c.usePct}%` }}>
-              {c.usePct.toFixed(0)}%
+              {100 - embodiedLabel}%
             </div>
           </div>
           <div className="mini carbon-legend">

@@ -44,6 +44,8 @@ export function ClusterView({
   rebuilding,
   onSelect,
   onHover,
+  camera,
+  regionLook,
 }: {
   anatomy: ClusterAnatomy;
   active?: Set<string>;
@@ -53,6 +55,11 @@ export function ClusterView({
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
+  // Tour mode: a camera box in the anatomy's own coordinates (the margin is
+  // added here) and a per-region look for the layer peel. Both optional;
+  // without them the map draws exactly as before.
+  camera?: { x: number; y: number; w: number; h: number };
+  regionLook?: (id: string) => { opacity: number; dx: number; dy: number };
 }) {
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
@@ -65,9 +72,17 @@ export function ClusterView({
   // Only nodes still in play take part in the meshes.
   const live = active ? nodes.filter((n) => active.has(n.id)) : nodes;
 
+  // A camera box maps to the same framing scaled down, so the whole-map box
+  // reproduces the default viewBox exactly and a tween never jumps.
+  const viewBox = camera
+    ? `${camera.x} ${camera.y} ${camera.w + 2 * MARGIN} ${
+        camera.h + (2 * MARGIN + 4) * (camera.h / anatomy.height)
+      }`
+    : `0 0 ${W} ${H + 4}`;
+
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 4}`}
+      viewBox={viewBox}
       aria-label={`${anatomy.name} pool map`}
       onClick={() => onSelect?.(null)}
     >
@@ -97,23 +112,6 @@ export function ClusterView({
         </g>
       )}
 
-      {/* The recovery mesh: every surviving node to every other. */}
-      {rebuilding && (
-        <g stroke="var(--accent)" strokeWidth={0.35} fill="none" opacity={0.75}>
-          {live.map((a, i) =>
-            live.slice(i + 1).map((b) => (
-              <line
-                key={`r-${a.id}-${b.id}`}
-                x1={mid(a)}
-                y1={ry(a) + a.h}
-                x2={mid(b)}
-                y2={ry(b) + b.h}
-              />
-            )),
-          )}
-        </g>
-      )}
-
       {anatomy.regions.map((r) => {
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
@@ -124,17 +122,38 @@ export function ClusterView({
         const hSize = Math.min(1.9, r.h * 0.45, (r.w - 1.6) / (len * 0.62));
         const vSize = Math.min(1.9, r.w * 0.42, (r.h - 1.6) / (len * 0.62));
         const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.05;
-        const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.05;
+        // Too long for one row: split at the middle space onto two rows.
+        const words = r.label.split(" ");
+        const cut = Math.ceil(words.length / 2);
+        const lines = [words.slice(0, cut).join(" "), words.slice(cut).join(" ")];
+        const tSize = Math.min(
+          1.9,
+          r.h * 0.22,
+          (r.w - 1.6) / (Math.max(lines[0].length, lines[1].length, 1) * 0.62),
+        );
+        const showTwoLine =
+          !showLabel && words.length > 1 && r.h > 5 && tSize >= 1.05;
+        const showVLabel =
+          !showLabel && !showTwoLine && !!r.label && r.w >= 3 && vSize >= 1.05;
         const fontSize = hSize;
         const stroke = isSel
           ? "var(--accent)"
           : isActive
             ? "var(--accent)"
             : style.stroke;
+        const look = regionLook?.(r.id);
         return (
           <g
             key={r.id}
             className={isActive ? "an-region region-active" : "an-region"}
+            style={
+              look
+                ? {
+                    opacity: look.opacity,
+                    transform: `translate(${look.dx}px, ${look.dy}px)`,
+                  }
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);
@@ -165,6 +184,21 @@ export function ClusterView({
                 {r.label}
               </text>
             )}
+            {showTwoLine && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h / 2 - tSize * 0.25}
+                textAnchor="middle"
+                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fontSize={tSize}
+                letterSpacing={0.12}
+              >
+                <tspan x={rx(r) + r.w / 2}>{lines[0]}</tspan>
+                <tspan x={rx(r) + r.w / 2} dy={tSize * 1.2}>
+                  {lines[1]}
+                </tspan>
+              </text>
+            )}
             {showLabel && (
               <text
                 x={rx(r) + r.w / 2}
@@ -180,6 +214,32 @@ export function ClusterView({
           </g>
         );
       })}
+      {/* The recovery mesh: every surviving node to every other. Drawn over
+          the node blocks as arcs through their lower halves — node centres
+          share one row, so straight lines would collapse onto a single
+          hidden edge. */}
+      {rebuilding && (
+        <g
+          stroke="var(--accent)"
+          strokeWidth={0.35}
+          fill="none"
+          opacity={0.75}
+          pointerEvents="none"
+        >
+          {live.map((a, i) =>
+            live.slice(i + 1).map((b) => {
+              const y = ry(a) + a.h * 0.5;
+              const sag = Math.min(a.h * 0.42, 1.5 + Math.abs(mid(b) - mid(a)) * 0.12);
+              return (
+                <path
+                  key={`r-${a.id}-${b.id}`}
+                  d={`M ${mid(a)} ${y} Q ${(mid(a) + mid(b)) / 2} ${y + 2 * sag} ${mid(b)} ${y}`}
+                />
+              );
+            }),
+          )}
+        </g>
+      )}
       {/* Orientation: what is missing between these two bands. */}
       <text x={MARGIN} y={H + 2.6} fill="#5a6b82" fontSize={1.7} letterSpacing={0.3}>
         CLIENTS ↑ — each holds the map

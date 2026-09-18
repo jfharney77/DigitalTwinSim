@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchNamespace } from "./api";
+import { fetchAnatomy, fetchNamespace, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -8,23 +8,27 @@ import { NamespaceControls } from "./components/NamespaceControls";
 import { NamespaceCounters } from "./components/NamespaceCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { ClusterAnatomy, NamespaceState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "namespace" | "anatomy" | "components" | "usecases";
+type Page = "namespace" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "namespace";
 }
 
 // Deep-link into the trace: #step=N (clamped) or #phase=<name> (first
 // matching state). Returns null when the hash names neither.
 function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
   const h = window.location.hash;
   const step = h.match(/#step=(\d+)$/);
   if (step) return Math.min(Number(step[1]), states.length - 1);
@@ -41,15 +45,28 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
-      window.location.hash = PAGE_HASH[page];
-    }
+    // Only overwrite the hash for top-level switches; pages append their own
+    // deep-link segments (#anatomy/<region>, #tour/<step>, #step=N). The
+    // namespace page's hash is empty, so check it explicitly.
+    const want = PAGE_HASH[page];
+    const h = window.location.hash;
+    const onPage = want
+      ? h.startsWith(`#${want}`)
+      : !/^#(anatomy|components|usecases|tour)/.test(h);
+    if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
 
@@ -60,8 +77,13 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
   const level = useLevel();
 
+  const traceRef = useRef<NamespaceState[]>([]);
+  traceRef.current = trace;
   const timer = useRef<number | null>(null);
   // Apply a #step=/#phase= deep link only on the first successful load — a
   // reading-level refetch must not yank the cursor back.
@@ -93,6 +115,16 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled server-side).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -131,6 +163,22 @@ export function App() {
   const reset = useCallback(() => {
     stop();
     setCursor(0);
+  }, [stop]);
+
+  // Follow the hash after load: in-page links (the use-case page's "Go
+  // deeper" buttons), the back button, and a #step=/#phase= link typed into
+  // an open tab all change the hash without remounting the app.
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, [stop]);
 
   // Retune the interval live when speed changes mid-run.
@@ -176,6 +224,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "namespace" && (
           <span className="sub">
@@ -188,6 +242,67 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              // ClusterView draws the map plus a margin and two caption
+              // lines: (100 + 5) x (60 + 5 + 6.5).
+              stageAspect={(tour.mapWidth + 5) / (tour.mapHeight + 11.5)}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the namespace page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <ClusterView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  rebalancing={state?.rebalancing ?? false}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Namespace trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedSeconds}s (illustrative) · namespaces{" "}
+                      {state.namespaces} · migrations required{" "}
+                      {state.migrationsRequired}
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "namespace" && (
         <>
@@ -210,6 +325,12 @@ export function App() {
               this namespace; this twin explains the namespace beneath
               it.
             </p>
+            <button
+              className="primary namespace-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">

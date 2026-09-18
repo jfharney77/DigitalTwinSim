@@ -186,28 +186,34 @@ def get_tour_recording(
     return TraceResponse(session_id=lesson_id, trace=trace)
 
 
+async def _sse_events(sub):
+    """The live SSE body for one subscriber.
+
+    The first chunk goes out immediately: until a proxy (the Vite dev proxy,
+    for one) sees a byte of body it holds back the response headers, so an
+    idle stream would otherwise read as "Reconnecting…" until the first
+    15 s keepalive."""
+    try:
+        yield ": connected\n\n"
+        while True:
+            try:
+                payload = await asyncio.wait_for(sub.queue.get(), timeout=15.0)
+            except asyncio.TimeoutError:
+                yield ": keepalive\n\n"  # hold the connection open when idle
+                continue
+            dropped = sub.take_dropped()
+            if dropped:
+                # This consumer lagged and frames were skipped — say so.
+                yield f"event: dropped\ndata: {dropped}\n\n"
+            yield f"data: {payload}\n\n"
+    finally:
+        HUB.unsubscribe(sub)
+
+
 @app.get("/api/live/stream")
 async def live_stream() -> StreamingResponse:
-    sub = HUB.subscribe()
-
-    async def gen():
-        try:
-            while True:
-                try:
-                    payload = await asyncio.wait_for(sub.queue.get(), timeout=15.0)
-                except asyncio.TimeoutError:
-                    yield ": keepalive\n\n"  # hold the connection open when idle
-                    continue
-                dropped = sub.take_dropped()
-                if dropped:
-                    # This consumer lagged and frames were skipped — say so.
-                    yield f"event: dropped\ndata: {dropped}\n\n"
-                yield f"data: {payload}\n\n"
-        finally:
-            HUB.unsubscribe(sub)
-
     return StreamingResponse(
-        gen(),
+        _sse_events(HUB.subscribe()),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

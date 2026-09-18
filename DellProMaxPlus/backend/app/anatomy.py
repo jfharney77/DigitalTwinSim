@@ -202,7 +202,7 @@ ANATOMY = DeviceAnatomy(
                 "bottleneck: every batch has to be shipped across, results "
                 "shipped back, and the interconnect sets the ceiling. That "
                 "is true when data moves continuously. It is not true here, "
-                "because what crosses is the *model*, not the *work*. The "
+                "because what crosses is the model, not the work. The "
                 "weights make the trip once during load and then stay put; "
                 "afterwards the only traffic is a prompt going right and "
                 "generated tokens coming left, which is a few kilobytes "

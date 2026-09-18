@@ -156,8 +156,8 @@ GUIDED_SCENARIOS = [
         question="How many hours does this rebuild take, and what happens to that number when you double the offered load?",
         scenario=Scenario(
             config=R6_CAPACITY,
-            workload=Workload(offered_kiops=0.4, read_pct=60, block_kb=64),
-            duration_min=10080, tick_minutes=60,
+            workload=Workload(offered_kiops=0.1, read_pct=60, block_kb=64),
+            duration_min=20160, tick_minutes=60,
             events=[SimEvent(at_min=60, action="fail-drive", index=3)],
         ),
     ),
@@ -181,7 +181,9 @@ GUIDED_SCENARIOS = [
                     "A member fails at t+60 and a second at t+1500, deep "
                     "inside the first rebuild window. RAID 6 tolerates "
                     "two concurrent losses: service continues, reads pay "
-                    "the reconstruct tax, the rebuilds queue. Flip to "
+                    "the reconstruct tax, and with the one spare already "
+                    "rebuilding, the second member waits for a fresh "
+                    "drive. Flip to "
                     "RAID 5 and the second failure exceeds tolerance — "
                     "the array goes offline with data loss, which is "
                     "precisely what the risk gauge was pricing during "
@@ -217,30 +219,34 @@ GUIDED_SCENARIOS = [
                     "that is the headline — but look closer: the "
                     "survivor now answers for everything, and the write "
                     "cache can no longer keep a safety copy on its dead "
-                    "partner, so every write must wait for the actual "
-                    "drives. Latency rises. Redundancy works, and it is "
-                    "never free."
+                    "partner. Latency ticks up. The spinning drives were "
+                    "already the slow part, so the lost controller's "
+                    "capacity barely shows here; try the all-flash "
+                    "scenario to see it bite. Redundancy works, and it "
+                    "is never free."
                 ),
                 standard=(
-                    "Controller A drops at t+120 under an OLTP load. "
+                    "A controller drops at t+120 under an OLTP load. "
                     "Service survives — the active-active pair is why — "
                     "but the survivor owns all volumes (front-end "
-                    "ceiling halves) and, with no partner to mirror "
-                    "into, write cache falls to write-through: the RAID "
-                    "write penalty stops hiding behind the cache and "
-                    "walks straight into host latency."
+                    "ceiling halves, latency pays a flat failover cost) "
+                    "and, with no partner to mirror into, write cache "
+                    "falls to write-through. On spindles the drives "
+                    "bind long before either ceiling, so served IOPS "
+                    "holds; the halved ceiling is the all-flash "
+                    "scenario's lesson."
                 ),
                 expert=(
-                    "Ctrl A out at t+120. Service holds; FE cap halves; "
-                    "cache → write-through; latency shows the penalty "
-                    "raw."
+                    "Ctrl out at t+120. Service holds; FE cap halves "
+                    "(disk-bound here, so IOPS holds); cache → "
+                    "write-through; flat failover latency."
                 ),
             ),
         ],
-        question="What did latency do at the failover — and which part of the rise is the cache mode, not the ceiling?",
+        question="What did latency and served IOPS do at the failover — and why did the halved front-end ceiling not cost any IOPS here?",
         scenario=Scenario(
             config=R10_PERF,
-            workload=Workload(offered_kiops=5.0, read_pct=70, block_kb=8),
+            workload=Workload(offered_kiops=2.5, read_pct=70, block_kb=8),
             duration_min=480, tick_minutes=1,
             events=[SimEvent(at_min=120, action="fail-controller")],
         ),
@@ -253,35 +259,39 @@ GUIDED_SCENARIOS = [
                 novice=(
                     "Fill the shelf with SSDs and the drives stop being "
                     "the slow part — twenty-four of them could serve "
-                    "hundreds of thousands of operations per second. So "
-                    "why does the array level off? Because now the "
-                    "controllers are the bottleneck: the two computers "
-                    "at the back can only push so much traffic no "
-                    "matter how fast the drives behind them are. Every "
-                    "storage system has a next bottleneck waiting; "
-                    "flash just moves the queue."
+                    "hundreds of thousands of operations per second, "
+                    "nearly as much as the two controller computers at "
+                    "the back can pass along. At minute 300 one "
+                    "controller dies, and the survivor can carry only "
+                    "half that traffic — now the array levels off "
+                    "against the controller, no matter how fast the "
+                    "drives behind it are. Every storage system has a "
+                    "next bottleneck waiting; flash just moves the "
+                    "queue."
                 ),
                 standard=(
-                    "24 SSDs at a 70/30 mix with the offered load "
-                    "climbing mid-run. The disk budget is enormous — "
-                    "spindle arithmetic no longer binds — and the array "
-                    "saturates anyway, flat against the per-controller "
-                    "front-end ceiling. Kill a controller at t+300 and "
-                    "the ceiling halves on the spot. On spindles you "
-                    "never see this line; on flash it is the first "
-                    "thing you hit."
+                    "24 SSDs under an all-read burst, the offered load "
+                    "doubling at t+150. The disk budget is enormous — "
+                    "the drives top out near 460k IOPS, most of the "
+                    "array's 640k front end — so both limits sit close "
+                    "together. Kill a controller at t+300 and the "
+                    "front-end ceiling halves to 320k, now below the "
+                    "drives: the array flattens against the controller, "
+                    "not the disks. On spindles you never see this "
+                    "line; on flash it is the next thing you hit."
                 ),
                 expert=(
-                    "24× SSD, offered ramps past FE cap: disk_scale=1, "
-                    "fe_scale binds. Ctrl loss at t+300 halves the "
-                    "ceiling. Flash relocates the bottleneck."
+                    "24× SSD, 100% read, offered 250k→500k: disk budget "
+                    "binds at ~460k. Ctrl loss at t+300: fe_cap 320k < "
+                    "disk budget, fe_scale binds. Flash relocates the "
+                    "bottleneck."
                 ),
             ),
         ],
-        question="What served-IOPS ceiling do you hit with both controllers, and where does it move when one fails?",
+        question="What limits served IOPS with both controllers, and what limits it once one fails?",
         scenario=Scenario(
             config=ALL_FLASH,
-            workload=Workload(offered_kiops=250.0, read_pct=70, block_kb=8),
+            workload=Workload(offered_kiops=250.0, read_pct=100, block_kb=8),
             duration_min=600, tick_minutes=1,
             events=[
                 SimEvent(at_min=150, action="set-offered", value=500),

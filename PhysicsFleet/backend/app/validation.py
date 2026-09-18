@@ -51,7 +51,7 @@ def validate(scenario: Scenario) -> list[Validation]:
             rule_id="capacity", level="warning",
             message=(
                 f"Demand {demand} VMs fits installed capacity but not "
-                f"N+1 ({n1_capacity}): the first fault becomes an "
+                f"N+1 (capacity with one node per site out: {n1_capacity} VMs): the first fault becomes an "
                 "outage, not a failover."
             ),
             source="spec 04 — N+1 headroom math",

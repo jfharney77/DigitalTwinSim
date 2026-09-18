@@ -92,6 +92,8 @@ export function BuildPanel({
           <Row label="Detection">
             <select
               value={config.detection || p === "cyberdetect" ? "on" : "off"}
+              disabled={p === "cyberdetect"}
+              title={p === "cyberdetect" ? "Cyber Detect is the detection layer, so it is always on" : undefined}
               onChange={(e) => set({ detection: e.target.value === "on" })}
             >
               <option value="on">Content analysis on</option>

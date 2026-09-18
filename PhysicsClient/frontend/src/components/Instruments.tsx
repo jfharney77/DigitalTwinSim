@@ -44,10 +44,12 @@ export function Instruments({
   state,
   explains,
   explainOn,
+  hasBattery = true,
 }: {
   state: SimState | null;
   explains: Explain[];
   explainOn: boolean;
+  hasBattery?: boolean;   // the desktop tower has no pack to gauge
 }) {
   const s = state;
   const ex = (id: string) => explains.find((e) => e.id === id);
@@ -76,9 +78,11 @@ export function Instruments({
           <Gauge label="CPU temp" unit="°C" value={s.cpuTempC} min={15} max={110}
             bands={[{ to: 85, color: "#2596be" }, { to: 100, color: "#e8c33d" }, { to: 110, color: "#c8281e" }]}
             ticks={[100]} format={(v) => `${v.toFixed(0)}°`} />
-          <Gauge label="battery" unit="%" value={s.batteryPct} min={0} max={100}
+          {hasBattery && (
+            <Gauge label="battery" unit="%" value={s.batteryPct} min={0} max={100}
             bands={[{ to: 15, color: "#c8281e" }, { to: 40, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
             ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
+          )}
         </div>
       )}
       {s && !s.poweredOn && (
@@ -100,7 +104,7 @@ export function Instruments({
       <div className="stat">
         <span>battery · charge</span>
         <span>
-          {s
+          {s && hasBattery
             ? `${s.batteryPct.toFixed(0)}%${s.chargeW > 0 ? " ⚡" : ""}${s.batteryDischargeW > 0 ? " ▼" : ""}`
             : "—"}
         </span>
@@ -120,7 +124,7 @@ export function Instruments({
       </div>
       <Info id="skin-cap" />
       <div className="stat"><span>fans · noise</span><span>{s ? `${s.fanRpmPct.toFixed(0)}% · ${s.noiseDba.toFixed(0)} dB(A)` : "—"}</span></div>
-      <div className="stat"><span>FPS proxy</span><span>{s ? s.fpsProxy.toFixed(0) : "—"}</span></div>
+      <div className="stat"><span>FPS proxy</span><span>{s && !s.activeEngine ? s.fpsProxy.toFixed(0) : "—"}</span></div>
       <div className="stat">
         <span>inference</span>
         <span>

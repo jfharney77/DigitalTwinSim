@@ -1,6 +1,6 @@
 import type { MaterialPhase, MaterialState } from "../types";
 
-const PHASE_LABEL: Record<MaterialPhase, string> = {
+export const PHASE_LABEL: Record<MaterialPhase, string> = {
   materials: "material inputs gathered",
   manufacture: "manufacture",
   ship: "shipping (recycled packaging)",
@@ -36,6 +36,9 @@ export function fmtElapsed(months: number): string {
   return `${y} yr (${months} mo)`;
 }
 
+// Thousands separators, so the ledger reads "6,200 kg" like the step prose.
+const kg = (n: number) => `${n.toLocaleString("en-US")} kg`;
+
 export function LifecycleCounters({
   state,
   stepIndex,
@@ -62,7 +65,7 @@ export function LifecycleCounters({
       </div>
       <div className="stat">
         <span>cohort mass</span>
-        <span>{state ? `${state.massKg} kg` : "0 kg"}</span>
+        <span>{state ? kg(state.massKg) : "0 kg"}</span>
       </div>
       {/* The hero number: the loop never starts from zero, and it ends
           higher than it began. */}
@@ -82,22 +85,24 @@ export function LifecycleCounters({
       </div>
       <div className="stat">
         <span>reused</span>
-        <span>{state ? `${state.reusedKg} kg` : "—"}</span>
+        <span>{state ? kg(state.reusedKg) : "—"}</span>
       </div>
       <div className="stat">
         <span>reclaimed</span>
-        <span>{state ? `${state.reclaimedKg} kg` : "—"}</span>
+        <span>{state ? kg(state.reclaimedKg) : "—"}</span>
       </div>
       {/* Lost mass is the honest measure of how circular the design is.
           Neither hidden nor celebrated — just stated, in its own color. */}
       <div className="stat">
         <span>lost</span>
-        <span className="ctr-loss">{state ? `${state.lostKg} kg` : "—"}</span>
+        <span className="ctr-loss">{state ? kg(state.lostKg) : "—"}</span>
       </div>
       {recovered && state && (
         <div className={balanced ? "ctr-check ctr-check-ok" : "ctr-check"}>
-          {state.reusedKg} + {state.reclaimedKg} + {state.lostKg} = {split} kg
-          {balanced ? " — mass is conserved" : ` ≠ ${state.massKg} kg`}
+          {state.reusedKg.toLocaleString("en-US")} +{" "}
+          {state.reclaimedKg.toLocaleString("en-US")} +{" "}
+          {state.lostKg.toLocaleString("en-US")} = {kg(split)}
+          {balanced ? " — mass is conserved" : ` ≠ ${kg(state.massKg)}`}
         </div>
       )}
       <div className="stat">

@@ -40,7 +40,7 @@ _DATA_DESC = (
     "A data server — one of the many nodes that actually hold and serve "
     "the file's stripes. Under pNFS Flex Files, the client talks to these "
     "directly and simultaneously once it holds a layout, so aggregate "
-    "throughput is the *sum* of the servers rather than the ceiling of any "
+    "throughput is the sum of the servers rather than the ceiling of any "
     "controller. This is the architectural difference from the block twins "
     "in this repo: PowerStore and PowerMax route every byte through a "
     "director or node pair; here, adding servers adds bandwidth, which is "
@@ -61,11 +61,11 @@ def _data_server(idx: int, y0: float) -> list[PlatformRegion]:
     return [
         PlatformRegion(
             id=f"data-{d}", kind="dataserver", label=f"Data server {idx}",
-            x=44, y=y0, w=22, h=11, description=_DATA_DESC,
+            x=44, y=y0, w=22, h=10, description=_DATA_DESC,
         ),
         PlatformRegion(
             id=f"media-{d}", kind="media", label="NVMe",
-            x=68, y=y0, w=12, h=11, description=_MEDIA_DESC,
+            x=68, y=y0, w=12, h=10, description=_MEDIA_DESC,
         ),
     ]
 
@@ -201,9 +201,9 @@ ANATOMY = PlatformAnatomy(
             ),
         ),
         *_data_server(1, 14),
-        *_data_server(2, 26),
-        *_data_server(3, 38),
-        *_data_server(4, 50),
+        *_data_server(2, 25),
+        *_data_server(3, 36),
+        *_data_server(4, 47),
         PlatformRegion(
             id="protocol-file", kind="protocol", label="File — PowerScale / Lightning",
             x=1, y=51, w=30, h=8,
@@ -225,7 +225,7 @@ ANATOMY = PlatformAnatomy(
                 "corpus and the archive tail, scaling to multiple "
                 "petabytes, with S3-over-RDMA paths so object data can feed "
                 "preprocessing and training directly. Most AI corpora "
-                "*arrive* as objects; keeping the object tier in the same "
+                "arrive as objects; keeping the object tier in the same "
                 "rack as the file tier means the first step of every "
                 "pipeline stops being a petabyte-scale copy."
             ),

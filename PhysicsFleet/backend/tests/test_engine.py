@@ -237,3 +237,52 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+def test_the_three_node_window_lasts_until_the_repair_and_four_nodes_close_it():
+    """The guided 3-node trap's claim, pinned: a faulted node stays out for
+    the repair window (nodes_healthy shows it), the 3-node cluster has no
+    rebuild target so exposure holds for that whole window, and a 4-node
+    cluster re-protects onto its spare host the day the fault lands."""
+    from app.constants import value as C
+
+    repair = int(C("repair_days"))
+    fault = [SimEvent(at_d=20, action="node-fault")]
+    three = run(Scenario(config=VXRAIL_3NODE, workload=EDGE_WL,
+                         duration_d=60, events=fault))[0]
+    four = run(Scenario(
+        config=VXRAIL_3NODE.model_copy(update={"nodes_per_site": 4}),
+        workload=EDGE_WL, duration_d=60, events=fault))[0]
+
+    window = [s for s in three if 20 <= s.t_d < 20 + repair]
+    assert window and all(s.exposure for s in window)
+    assert all(s.nodes_healthy == 2 for s in window)
+    after = [s for s in three if s.t_d >= 20 + repair]
+    assert all(s.nodes_healthy == 3 and not s.exposure for s in after)
+
+    assert [s.t_d for s in four if s.exposure] == [20]
+    assert all(s.nodes_healthy == 3 for s in four if 20 <= s.t_d < 20 + repair)
+
+
+def test_a_fault_is_charged_once_not_every_day_it_is_down():
+    base = Scenario(config=VXRAIL_8, workload=STEADY_WL, duration_d=40)
+    faulted = base.model_copy(update={"events": [SimEvent(at_d=10, action="node-fault")]})
+    t0, _, _ = run(base)
+    t1, _, _ = run(faulted)
+    from app.constants import value as C
+
+    extra_min = t1[-1].outage_minutes_cum - t0[-1].outage_minutes_cum
+    assert extra_min == C("ha_failover_minutes")
+
+
+def test_the_spiky_demand_scenario_serves_its_own_spike():
+    """The guided 'as-a-service wins' scenario must not open on an outage:
+    its buffer and installed capacity cover the ×1.5 peak, so the only
+    story on screen is the cost crossover."""
+    from app.presets import APEX_WL, GUIDED_SCENARIOS
+
+    g = next(g for g in GUIDED_SCENARIOS if g.id == "spiky-demand")
+    trace, log, _ = run(g.scenario)
+    assert all(s.vms_running == s.vms_demand for s in trace)
+    assert not any("capacity outage" in e.message.lower() for e in log)
+    assert g.scenario.workload == APEX_WL

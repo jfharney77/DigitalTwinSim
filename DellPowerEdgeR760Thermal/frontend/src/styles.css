@@ -558,8 +558,9 @@ select:hover {
 }
 @media (max-width: 1100px) { .thermal-grid { grid-template-columns: 1fr; } }
 .thermal-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.cfg-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-.cfg-label { flex: 0 0 128px; font-size: 12px; color: var(--dell-muted, #636363); }
+/* label.field stacks as a column; the build rows are label-beside-control. */
+label.field.cfg-row { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 4px 0; }
+.cfg-label { flex: 0 0 104px; font-size: 12px; color: var(--dell-muted, #636363); }
 .cfg-row select, .cfg-row input[type="range"] { flex: 1; min-width: 0; }
 .cfg-presets button { font-size: 12px; }
 .rule-ok { color: #217346; margin-top: 4px; }
@@ -592,3 +593,13 @@ select:hover {
 .flow-mid line { animation: flowdash 1.5s linear infinite; }
 .flow-fast line { animation: flowdash 0.6s linear infinite; }
 @keyframes flowdash { to { stroke-dashoffset: -9; } }
+
+/* Phone width: the header wraps instead of pushing the reading-level
+   control off-screen, and the chassis map (the diagram) comes first. */
+@media (max-width: 1100px) {
+  .thermal-center { order: -1; }
+}
+@media (max-width: 600px) {
+  .thermal-app header { flex-wrap: wrap; row-gap: 8px; }
+  .thermal-app header .sub { margin-left: 0; flex-basis: 100%; }
+}

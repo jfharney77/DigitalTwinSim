@@ -70,6 +70,10 @@ class Workload(CamelModel):
     cpu_pct: int = Field(0, ge=0, le=100)
     gpu_pct: int = Field(0, ge=0, le=100)
     npu_pct: int = Field(0, ge=0, le=100)
+    # What the load *is*: a game/render (reads out as FPS) or a local LLM
+    # (reads out as tokens). Dials alone cannot tell a ray-traced game
+    # from GPU inference; NPU demand always means inference.
+    inference: bool = False
 
 
 class Environment(CamelModel):

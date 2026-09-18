@@ -50,7 +50,7 @@ def simulate() -> list[PowerOnState]:
                     "cabling run and tested before it shipped. It is wheeled into "
                     "place and connected to the building's power and water. Nothing "
                     "is switched on. This is not a computer you slide into a rack; "
-                    "the rack *is* the computer, because at this density there are "
+                    "the rack is the computer, because at this density there are "
                     "thousands of cables and getting one wrong on site is not a "
                     "risk anyone wants to take."
                 ),
@@ -59,7 +59,7 @@ def simulate() -> list[PowerOnState]:
                     "9 NVLink switch trays, power shelves, and pre-run copper "
                     "cabling — rolled into place and connected to facility power "
                     "and water. Nothing is on. Unlike a server you slide into a "
-                    "rack, this *is* the rack: Dell builds, cables, and tests it as "
+                    "rack, this is the rack: Dell builds, cables, and tests it as "
                     "a unit before shipping, because at these densities on-site "
                     "cabling is a risk rather than a task."
                 ),
@@ -68,7 +68,7 @@ def simulate() -> list[PowerOnState]:
                     "18 compute trays, 9 NVLink switch trays, power shelves, and "
                     "a rack full of pre-run copper cabling — rolled into place and "
                     "connected to facility power and facility water. Nothing is "
-                    "on. Unlike a server you slide into a rack, this *is* the "
+                    "on. Unlike a server you slide into a rack, this is the "
                     "rack: Dell builds, cables, and tests it as a unit before it "
                     "ships, because at these densities cabling by hand on site "
                     "would take days."
@@ -436,8 +436,8 @@ def simulate() -> list[PowerOnState]:
                     "every chip, every link, every memory stack exercised while the "
                     "cooling holds steady. Then the rack joins the job scheduler "
                     "and starts accepting work. At full load it draws around 120 "
-                    "kilowatts, more than a thousand times what the laptop twin in "
-                    "this repo uses, with the outside network joining this rack to "
+                    "kilowatts, more than three hundred times what the laptop twin "
+                    "in this repo can draw from its charger, with the outside network joining this rack to "
                     "others."
                 ),
                 plain=(
@@ -445,8 +445,8 @@ def simulate() -> list[PowerOnState]:
                     "GPU, every NVLink path, every HBM stack exercised while the "
                     "CDU holds the loop at temperature. Then the rack joins the "
                     "cluster scheduler and accepts jobs. At full load it draws on "
-                    "the order of 120 kW — more than a thousand times the laptop "
-                    "twin's budget — with the scale-out network joining this rack "
+                    "the order of 120 kW — more than three hundred times the laptop "
+                    "twin's 360 W adapter — with the scale-out network joining this rack "
                     "to its neighbours."
                 ),
                 standard=(
@@ -454,8 +454,8 @@ def simulate() -> list[PowerOnState]:
                     "every GPU, every NVLink path, every HBM stack exercised "
                     "while the CDU holds the loop at temperature. Then the rack "
                     "joins the cluster scheduler and accepts jobs. At full load "
-                    "it draws on the order of 120 kW — more than a thousand "
-                    "times the laptop twin's power budget — with the scale-out "
+                    "it draws on the order of 120 kW — more than three hundred "
+                    "times the laptop twin's largest power adapter — with the scale-out "
                     "network (InfiniBand or Spectrum-X Ethernet) joining this "
                     "rack to its neighbors, because a real AI factory is many "
                     "NVL72 racks trained together. One rack, one giant GPU, "

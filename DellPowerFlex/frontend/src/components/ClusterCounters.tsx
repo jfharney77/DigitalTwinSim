@@ -21,7 +21,10 @@ export function ClusterCounters({
   stepIndex: number;
   stepCount: number;
 }) {
-  const degraded = state !== null && state.protectedPercent < 100;
+  // Before the pool exists there is nothing to protect, so 0% there is not
+  // "degraded" — only a partially protected pool is.
+  const pooled = state !== null && state.protectedPercent > 0;
+  const degraded = pooled && state.protectedPercent < 100;
   const rebuilding = state !== null && state.rebuildParticipants > 0;
   return (
     <div className="an-panel">
@@ -56,8 +59,10 @@ export function ClusterCounters({
         <span>data protected</span>
         <span>
           {state
-            ? `${state.protectedPercent}%${degraded ? " — degraded" : ""}`
-            : "0%"}
+            ? pooled
+              ? `${state.protectedPercent}%${degraded ? " — degraded" : ""}`
+              : "— no pool yet"
+            : "—"}
         </span>
       </div>
       <div className="stat">

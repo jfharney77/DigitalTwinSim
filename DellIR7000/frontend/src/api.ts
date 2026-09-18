@@ -5,6 +5,7 @@ import type {
   ThermalResponse,
   UseCase,
 } from "./types";
+import type { TourResponse } from "@twinsim/twin-ui";
 
 const BASE = "/api";
 
@@ -36,5 +37,11 @@ export async function fetchCatalog(): Promise<CatalogCategory[]> {
 export async function fetchUseCases(): Promise<UseCase[]> {
   const r = await fetch(url("/usecases"));
   if (!r.ok) throw new Error(`usecases ${r.status}`);
+  return r.json();
+}
+
+export async function fetchTour(): Promise<TourResponse> {
+  const r = await fetch(url("/tour"));
+  if (!r.ok) throw new Error(`tour ${r.status}`);
   return r.json();
 }

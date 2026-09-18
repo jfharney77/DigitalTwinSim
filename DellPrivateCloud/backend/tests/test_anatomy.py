@@ -104,6 +104,18 @@ def test_the_control_plane_spans_everything():
         assert r.w <= control.w, f"{r.id} is wider than the control plane"
 
 
+def test_nothing_overhangs_the_control_plane():
+    """Every layer sits within the plane's horizontal extent — a block that
+    pokes out past its edge would read as something the plane does not
+    manage. (The hypervisor row once ended at x=99 against the plane's 98.)"""
+    control = _by_kind()["controlplane"][0]
+    for r in ANATOMY.regions:
+        assert r.x >= control.x - 1e-9, f"{r.id} starts left of the control plane"
+        assert r.x + r.w <= control.x + control.w + 1e-9, (
+            f"{r.id} overhangs the control plane's right edge"
+        )
+
+
 def test_kinds_are_expected_set():
     kinds = {r.kind for r in ANATOMY.regions}
     assert kinds <= EXPECTED_KINDS

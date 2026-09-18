@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchPowerOn } from "./api";
+import { fetchAnatomy, fetchPowerOn, fetchTour } from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -8,17 +8,20 @@ import { PowerOnControls } from "./components/PowerOnControls";
 import { PowerOnCounters } from "./components/PowerOnCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { ChassisAnatomy, PowerOnState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "poweron" | "anatomy" | "components" | "usecases";
+type Page = "poweron" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "poweron";
 }
 
@@ -27,7 +30,14 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
 
 // Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
 // cursor, or null when the hash matches neither pattern (or names an unknown
@@ -73,8 +83,11 @@ export function App() {
   const [page, setPage] = useState<Page>(pageFromHash);
   useEffect(() => {
     // Only overwrite the hash for top-level switches; pages may append their
-    // own deep-link segments (e.g. #anatomy/<regionId>).
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
+    // own deep-link segments (e.g. #anatomy/<regionId>, #step=N). Comparing
+    // pages rather than prefixes matters for the power-on page, whose hash is
+    // empty: every hash starts with "#", so a prefix check never cleared a
+    // leftover #anatomy and a reload landed back on the wrong page.
+    if (pageFromHash() !== page) {
       window.location.hash = PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
@@ -87,6 +100,12 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
+  const tourStart = useRef<string | null>(tourStepFromHash());
+  // Bumped when a #tour/<id> link arrives in an open tab: the player reads
+  // its starting step once, at mount, so a new key remounts it there.
+  const [tourKey, setTourKey] = useState(0);
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -96,6 +115,8 @@ export function App() {
   const hashApplied = useRef(false);
   const speedRef = useRef(speed);
   speedRef.current = speed;
+  const traceRef = useRef<PowerOnState[]>([]);
+  traceRef.current = trace;
 
   const stop = useCallback(() => {
     if (timer.current !== null) {
@@ -120,6 +141,16 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -159,6 +190,27 @@ export function App() {
   const reset = useCallback(() => {
     stop();
     setCursor(0);
+  }, [stop]);
+
+  // Follow the hash after load: in-page links (the use-case page's "Go
+  // deeper" buttons), the back button, and a #step=/#phase= link typed into
+  // an open tab all change the hash without remounting the app.
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const tourStep = tourStepFromHash();
+      if (tourStep !== null && tourStep !== tourStart.current) {
+        tourStart.current = tourStep;
+        setTourKey((k) => k + 1);
+      }
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, [stop]);
 
   // Retune the interval live when speed changes mid-run.
@@ -204,6 +256,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "poweron" && (
           <span className="sub">
@@ -217,6 +275,63 @@ export function App() {
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
 
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              key={tourKey}
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              stageAspect={2}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the power-on page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <ChassisView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Power-on trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedSeconds}s (illustrative)
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
+
       {page === "poweron" && (
         <>
           <div className="an-hero">
@@ -229,6 +344,12 @@ export function App() {
               the trace and watch each stage light up the hardware it runs
               on.
             </p>
+            <button
+              className="primary poweron-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">

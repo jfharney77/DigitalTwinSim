@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchFabric } from "./api";
+import { fetchAnatomy, fetchFabric, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -8,17 +8,20 @@ import { FabricControls } from "./components/FabricControls";
 import { FabricCounters } from "./components/FabricCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
+import { TourPlayer } from "@twinsim/twin-ui";
+import type { TourResponse } from "@twinsim/twin-ui";
 import type { FabricAnatomy, FabricState, RegionKind } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
-type Page = "fabric" | "anatomy" | "components" | "usecases";
+type Page = "fabric" | "anatomy" | "components" | "usecases" | "tour";
 
 function pageFromHash(): Page {
   const h = window.location.hash;
   if (h.startsWith("#anatomy")) return "anatomy";
   if (h.startsWith("#components")) return "components";
   if (h.startsWith("#usecases")) return "usecases";
+  if (h.startsWith("#tour")) return "tour";
   return "fabric";
 }
 
@@ -27,11 +30,23 @@ const PAGE_HASH: Record<Page, string> = {
   anatomy: "anatomy",
   components: "components",
   usecases: "usecases",
+  tour: "tour",
 };
+
+// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+function tourStepFromHash(): string | null {
+  const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
+  return m ? m[1] : null;
+}
+
+// The fabric map is 100 x 62 plus a 2.5-unit margin each side and 4 units of
+// orientation labels below, so the diagram box is 105 x 71.
+const STAGE_ASPECT = 105 / 71;
 
 // #step=N / #phase=<name> deep-links start playback at a chosen step; both
 // fall through pageFromHash() and land on the default page.
 function initialStepFromHash(states: { phase: string }[]): number | null {
+  if (states.length === 0) return null;
   const h = window.location.hash;
   const step = h.match(/^#step=(\d+)$/);
   if (step) return Math.min(Number(step[1]), states.length - 1);
@@ -46,12 +61,36 @@ function initialStepFromHash(states: { phase: string }[]): number | null {
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
+  const tourStart = useRef<string | null>(tourStepFromHash());
   useEffect(() => {
-    if (!window.location.hash.startsWith(`#${PAGE_HASH[page]}`)) {
-      window.location.hash = PAGE_HASH[page];
-    }
+    // Only overwrite the hash for top-level switches; pages may append their
+    // own deep-link segments (#anatomy/<regionId>, #tour/<stepId>).
+    const want = PAGE_HASH[page];
+    const h = window.location.hash;
+    const onPage = want
+      ? h.startsWith(`#${want}`)
+      : !/^#(anatomy|components|usecases|tour)/.test(h);
+    if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
+  // Back/forward, hand-edited hashes and in-page links (the use-case "Go
+  // deeper" buttons) switch pages too.
+  // A #tour/<stepId> link followed inside an open page remounts the player on
+  // that step (the player reads its start step once, when it mounts). The
+  // player's own step changes use replaceState, which fires no hashchange.
+  const [tourKey, setTourKey] = useState(0);
+  useEffect(() => {
+    const onHash = () => {
+      setPage(pageFromHash());
+      const id = tourStepFromHash();
+      if (id && id !== tourStart.current) {
+        tourStart.current = id;
+        setTourKey((k) => k + 1);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const [anatomy, setAnatomy] = useState<FabricAnatomy | null>(null);
   const [trace, setTrace] = useState<FabricState[]>([]);
@@ -60,6 +99,8 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tour, setTour] = useState<TourResponse | null>(null);
+  const [tourError, setTourError] = useState<string | null>(null);
   const level = useLevel();
 
   const timer = useRef<number | null>(null);
@@ -93,6 +134,29 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level]);
+
+  // A #step=/#phase= typed into an already-open page moves the cursor too.
+  useEffect(() => {
+    const onHash = () => {
+      const start = initialStepFromHash(trace);
+      if (start !== null) {
+        stop();
+        setCursor(start);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [trace, stop]);
+
+  // The tour is fetched the first time its page opens, and again when the
+  // reading level changes (the narration is leveled prose).
+  const tourWanted = page === "tour" || tour !== null;
+  useEffect(() => {
+    if (!tourWanted) return;
+    fetchTour()
+      .then(setTour)
+      .catch((e) => setTourError(String(e)));
+  }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
@@ -176,6 +240,12 @@ export function App() {
           >
             Use cases
           </button>
+          <button
+            className={page === "tour" ? "active" : ""}
+            onClick={() => setPage("tour")}
+          >
+            Guided tour
+          </button>
         </nav>
         {page === "fabric" && (
           <span className="sub">
@@ -188,6 +258,64 @@ export function App() {
       {page === "anatomy" && <AnatomyPage />}
       {page === "components" && <CatalogPage />}
       {page === "usecases" && <UseCasePage />}
+
+      {page === "tour" && (
+        <div className="tour-page">
+          {(tourError || error) && (
+            <div className="mini an-error">{tourError ?? error}</div>
+          )}
+          {tour && anatomy && (
+            <TourPlayer
+              key={tourKey}
+              tour={tour.tour}
+              layers={tour.layers}
+              bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
+              stageAspect={STAGE_ASPECT}
+              regions={anatomy.regions}
+              initialStepId={tourStart.current}
+              onStepChange={(id) => {
+                tourStart.current = id;
+                window.history.replaceState(null, "", `#tour/${id}`);
+              }}
+              onTraceCursor={(i) => {
+                // The tour drives the same cursor the fabric page plays.
+                stop();
+                setCursor(i);
+              }}
+              renderStage={(stage) => (
+                <FabricView
+                  anatomy={anatomy}
+                  active={stage.lit}
+                  selected={regionId}
+                  onSelect={(id) => {
+                    setRegionId(id);
+                    if (id) stage.onRegionClick(id);
+                  }}
+                  camera={stage.viewBox}
+                  regionLook={stage.regionLook}
+                />
+              )}
+              aside={
+                <>
+                  {state && (
+                    <p className="tour-trace">
+                      Fabric trace: <strong>{state.label}</strong> · t+
+                      {state.elapsedSeconds}s (illustrative) ·{" "}
+                      {state.droppedPackets} dropped packets
+                    </p>
+                  )}
+                  {selectedRegion && (
+                    <div>
+                      <h2>{selectedRegion.label}</h2>
+                      <p className="tour-trace">{selectedRegion.description}</p>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {page === "fabric" && (
         <>
@@ -206,6 +334,12 @@ export function App() {
               dropped-packet counter stay at zero while the busiest link
               hits 98%.
             </p>
+            <button
+              className="primary fabric-tour-link"
+              onClick={() => setPage("tour")}
+            >
+              Guided tour
+            </button>
           </div>
           <div className="stage">
             <div className="an-card">

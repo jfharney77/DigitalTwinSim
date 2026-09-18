@@ -38,18 +38,24 @@ export function RackView({
   const tripped = new Set(state?.trippedPhases ?? []);
   const rackDark = state ? !state.rackPowered : false;
 
+  // A strip lit in its phase colour needs dark ink; amber in particular
+  // swallows the light label colour used on the dark slots.
+  const stripLit = (strip: Phase | null, live: number) =>
+    strip !== null && !tripped.has(strip) && live > 0;
+  const FOOTER = 3; // room under the map for the annotation line
+
   const phaseOf = (id: string): Phase | null =>
     id === "pdu-a" ? "A" : id === "pdu-b" ? "B" : id === "pdu-c" ? "C" : null;
 
   return (
     <svg
       className="rack-svg"
-      viewBox={`0 0 ${anatomy.width} ${anatomy.height}`}
+      viewBox={`0 0 ${anatomy.width} ${anatomy.height + FOOTER}`}
       role="img"
       aria-label="Rack power-layer elevation"
     >
       <rect
-        x={0} y={0} width={anatomy.width} height={anatomy.height}
+        x={0} y={0} width={anatomy.width} height={anatomy.height + FOOTER}
         rx={1.5} fill="#0d1420" stroke="#1f2935" strokeWidth={0.4}
       />
       {anatomy.regions.map((r) => {
@@ -94,34 +100,61 @@ export function RackView({
               stroke={isSel ? "#ffffff" : stroke}
               strokeWidth={isSel ? 0.5 : 0.3}
             />
-            <text
-              x={r.x + 1.4}
-              y={r.y + r.h / 2 + 1.1}
-              fontSize={2.6}
-              fill="#d7dee8"
-              fontFamily="ui-monospace, monospace"
-            >
-              {isLoad && idx >= 0
-                ? `${labels[idx] ?? r.label} · ${(watts[idx] ?? 0).toFixed(0)} W · ${phases[idx] ?? "?"}`
-                : r.label}
-            </text>
-            {!isLoad && (
-              <text
-                x={r.x + r.w - 1.4}
-                y={r.y + r.h - 1.6}
-                fontSize={2.4}
-                textAnchor="end"
-                fill="#9fb0c3"
-                fontFamily="ui-monospace, monospace"
-              >
-                {strip && tripped.has(strip) ? "TRIPPED" : `${live.toFixed(0)} W`}
-              </text>
+            {strip ? (
+              <>
+                <text
+                  x={r.x + r.w / 2}
+                  y={r.y + r.h / 2 + 0.8}
+                  fontSize={2.0}
+                  textAnchor="middle"
+                  fill={stripLit(strip, live) ? "#0d1420" : "#d7dee8"}
+                  fontFamily="ui-monospace, monospace"
+                >
+                  {r.label}
+                </text>
+                <text
+                  x={r.x + r.w / 2}
+                  y={r.y + r.h - 1.6}
+                  fontSize={2.0}
+                  textAnchor="middle"
+                  fill={stripLit(strip, live) ? "#0d1420" : "#9fb0c3"}
+                  fontFamily="ui-monospace, monospace"
+                >
+                  {tripped.has(strip) ? "TRIPPED" : `${live.toFixed(0)} W`}
+                </text>
+              </>
+            ) : (
+              <>
+                <text
+                  x={r.x + 1.4}
+                  y={r.y + r.h / 2 + 1.1}
+                  fontSize={2.6}
+                  fill="#d7dee8"
+                  fontFamily="ui-monospace, monospace"
+                >
+                  {isLoad && idx >= 0
+                    ? `${labels[idx] ?? r.label} · ${(watts[idx] ?? 0).toFixed(0)} W · ${phases[idx] ?? "?"}`
+                    : r.label}
+                </text>
+                {!isLoad && (
+                  <text
+                    x={r.x + r.w - 1.4}
+                    y={r.y + r.h - 1.6}
+                    fontSize={2.4}
+                    textAnchor="end"
+                    fill="#9fb0c3"
+                    fontFamily="ui-monospace, monospace"
+                  >
+                    {`${live.toFixed(0)} W`}
+                  </text>
+                )}
+              </>
             )}
           </g>
         );
       })}
       {/* Feed direction annotations */}
-      <text x={2} y={anatomy.height - 0.8} fontSize={2.2} fill="#5d6f83"
+      <text x={2} y={anatomy.height + FOOTER - 1} fontSize={2.2} fill="#5d6f83"
         fontFamily="ui-monospace, monospace">
         UPS FEEDS THE PHASES · CLICK A SLOT TO CYCLE ITS PHASE
       </text>
