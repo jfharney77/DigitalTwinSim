@@ -1,0 +1,68 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "simulator",
+      "svg": true,
+      "visible": [".thermal-grid", ".scenario-list button", ".cfg-presets button", "label.cfg-row select", ".gauge-row", ".gallery-card", ".playback-row"],
+      "text": ["Guided scenarios", "Instruments", "Strip charts", "Configuration rules", "admin-hours / month", "version currency", "Fault a node", "healthy"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#scenario=rolling-upgrade",
+      "name": "scenario-rolling-upgrade",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question"],
+      "text": ["Rolling upgrade under load", "version gauge"],
+      "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(> h2:text-is('Instruments'))", "times": 1 }
+    },
+    {
+      "hash": "#scenario=three-node-trap",
+      "name": "scenario-three-node-trap",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration", ".rule-warning"],
+      "text": ["The 3-node trap", "3-node cluster at FTT=1"],
+      "play": { "click": "button:text-is('Reset')", "watch": ".an-panel:has(> h2:text-is('Guided scenarios'))", "times": 1 }
+    },
+    {
+      "hash": "#scenario=catalog-vs-artisanal",
+      "name": "scenario-catalog-vs-artisanal",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["Catalog vs artisanal", "Stacks", "Catalog"],
+      "play": { "click": "button:text-is('×15d')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=spiky-demand",
+      "name": "scenario-spiky-demand",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["Spiky demand", "monthly bill", "Demand spike ×2", "as-a-service (solid)"],
+      "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(> h2:text-is('Instruments'))", "times": 1 }
+    },
+    {
+      "hash": "#scenario=roll-out-500",
+      "name": "scenario-roll-out-500",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["Roll out to 500 stores", "Deploy 50 sites", "Site HA"],
+      "play": { "click": "button:text-is('×15d')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=disconnected",
+      "name": "scenario-disconnected",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["The disconnected factory", "WAN down 7 days"],
+      "play": { "click": "button:text-is('×15d')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=failed-in-test",
+      "name": "scenario-failed-in-test",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["Failed in test, saved in prod", "Push a bad change", "Test gate"],
+      "play": { "click": "button:text-is('Reset')", "watch": ".an-panel:has(> h2:text-is('Guided scenarios'))", "times": 1 }
+    }
+  ]
+}

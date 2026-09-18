@@ -1,0 +1,141 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "root",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge svg",
+        ".timeline svg",
+        ".scenario-list button"
+      ],
+      "text": [
+        "Build-out",
+        "Instruments",
+        "Guided scenarios",
+        "sites up",
+        "Operate"
+      ],
+      "play": {
+        "click": ".gallery-card >> nth=1",
+        "watch": ".thermal-col .an-panel h2 >> nth=0",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=hundred-sites",
+      "name": "scenario-hundred-sites",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Roll out 100 sites",
+        "Operate"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=heatwave",
+      "name": "scenario-heatwave",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Heatwave",
+        "Operate"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=friday-patch",
+      "name": "scenario-friday-patch",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "The Friday-night patch",
+        "Operate"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=sealed-vs-serviceable",
+      "name": "scenario-sealed-vs-serviceable",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Sealed vs serviceable, 8 years",
+        "Design decisions"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=grid-matters",
+      "name": "scenario-grid-matters",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Grid matters",
+        "Design decisions"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=battery-year",
+      "name": "scenario-battery-year",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "The battery year",
+        "Design decisions"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    }
+  ]
+}

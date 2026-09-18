@@ -1,0 +1,246 @@
+/* Tour player chrome, in the Dell clean-design skin: flat white panels,
+   Roboto, Dell blue, 2-4px radii. No eyebrow text, no step numbering, no
+   divider rules, no highlighted text. The stage (the twin's own diagram)
+   stays dark — it is the diagram. Every colour falls back so the player also
+   renders outside `.app.dell`. */
+
+.tour {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  padding: 24px 32px;
+  align-items: start;
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+  color: var(--dell-text, #161616);
+}
+@media (max-width: 980px) {
+  .tour {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+}
+
+.tour-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tour-stage {
+  position: relative;
+  background: var(--die, #0d1420);
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 12px;
+}
+.tour-stage svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--tour-aspect, 2);
+}
+
+.tour-caption {
+  margin: 0;
+  background: #fff;
+  border: 1px solid var(--dell-border, #d2d2d2);
+  border-radius: 4px;
+  padding: 16px 20px;
+  font-size: 16px;
+  line-height: 1.55;
+  min-height: 5.5em;
+}
+.tour-caption strong {
+  font-weight: 500;
+}
+.tour-caption.tour-caption-over {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  min-height: 0;
+  background: rgba(10, 14, 20, 0.86);
+  border-color: transparent;
+  color: #e9eef5;
+  font-size: 15px;
+}
+
+.tour-photo {
+  position: absolute;
+  inset: 12px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 14, 20, 0.9);
+  border-radius: 4px;
+  animation: tour-fade 0.4s ease-out;
+}
+.tour-reduced .tour-photo {
+  animation: none;
+}
+.tour-photo img {
+  max-width: 92%;
+  max-height: 78%;
+  object-fit: contain;
+  border-radius: 2px;
+}
+.tour-photo figcaption {
+  color: #cdd6e3;
+  font-size: 13px;
+  text-align: center;
+  max-width: 92%;
+}
+.tour-credit {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9aa8bb;
+}
+@keyframes tour-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tour-takeover {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--dell-blue, #0672cb);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.tour-takeover span {
+  margin-right: auto;
+}
+
+.tour-transport {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--dell-border, #d2d2d2);
+  border-radius: 4px;
+  padding: 14px 18px;
+}
+.tour-buttons,
+.tour-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.tour-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dell-muted, #636363);
+}
+.tour-options select {
+  width: auto;
+  padding: 6px 8px;
+}
+
+.tour-scrub {
+  position: relative;
+  padding-bottom: 8px;
+}
+.tour-scrub input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--dell-blue, #0672cb);
+}
+.tour-ticks {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 6px;
+  pointer-events: none;
+}
+.tour-tick {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 6px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--dell-border, #d2d2d2);
+}
+.tour-tick-past {
+  background: var(--dell-blue, #0672cb);
+}
+
+.tour-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--dell-border, #d2d2d2);
+  border-radius: 4px;
+  padding: 20px 22px;
+}
+.tour-side h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dell-text, #161616);
+}
+.tour-intro,
+.tour-keys {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dell-muted, #636363);
+}
+.tour-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tour .tour-steps button.tour-step {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 7px 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--dell-text, #161616);
+}
+.tour .tour-steps button.tour-step:hover {
+  background: transparent;
+  border-color: var(--dell-border, #d2d2d2);
+  color: var(--dell-blue, #0672cb);
+}
+.tour .tour-steps button.tour-step.tour-step-current {
+  color: var(--dell-blue, #0672cb);
+  font-weight: 500;
+  border-color: var(--dell-blue, #0672cb);
+}
+.tour-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tour-sources a {
+  font-size: 13px;
+  color: var(--dell-blue, #0672cb);
+}

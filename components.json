@@ -254,7 +254,7 @@
       "name": "DellPowerScale",
       "directory": "DellPowerScale",
       "family": "storage",
-      "status": "partial",
+      "status": "built",
       "description": "Scale-out NAS with one namespace: growing is adding a node, never a migration.",
       "backendPort": 8023,
       "frontendPort": 5196,

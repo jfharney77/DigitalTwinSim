@@ -1,0 +1,99 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "access",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "There is no inside",
+        "implicit trust grants"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#phase=breach",
+      "name": "breach",
+      "svg": true,
+      "visible": [
+        ".poweron-desc"
+      ],
+      "text": [
+        "while inside"
+      ]
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "text": [
+        "Overview",
+        "Specs"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "visible": [
+        ".cat-card"
+      ],
+      "text": [
+        "Categories",
+        "Where it lives"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "visible": [
+        ".uc-part"
+      ],
+      "text": [
+        "Build sheet",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "Seven pillars and no wall",
+        "Inside, and reaching nothing"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/breach-reaches-nothing",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "An attacker compromises a host inside the network",
+        "being inside was never worth anything"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

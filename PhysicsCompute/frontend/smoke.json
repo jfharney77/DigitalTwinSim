@@ -1,0 +1,174 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "simulator",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge-row",
+        ".gallery-hero",
+        ".cfg-row select",
+        ".scenario-list button"
+      ],
+      "text": [
+        "Guided scenarios",
+        "training throughput",
+        "HGX baseboard",
+        "PowerEdge XE9680"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#idrac",
+      "name": "idrac",
+      "visible": [
+        ".redfish-json"
+      ],
+      "text": [
+        "mock Redfish explorer",
+        "#Thermal.v1_7_0.Thermal",
+        "GPU Hottest Temp"
+      ],
+      "play": {
+        "click": "button:text-is('Freeze response')",
+        "watch": ".thermal-center .btnrow button",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=positional",
+      "name": "scenario-positional",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "8 GPUs at 30 °C inlet",
+        "PowerEdge XE7745"
+      ],
+      "play": {
+        "click": ".levelctl-scale button:text-is('1')",
+        "watch": ".scenario-narration",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=power-plant",
+      "name": "scenario-power-plant",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Why AI servers are power-plant problems"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=starved",
+      "name": "scenario-starved",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Starved GPUs"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=air-vs-liquid",
+      "name": "scenario-air-vs-liquid",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Air vs liquid"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=populate",
+      "name": "scenario-populate",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Populate the rack",
+        "PowerEdge XE9712"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=warm-water",
+      "name": "scenario-warm-water",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Warm water day",
+        "coolant supply"
+      ],
+      "play": {
+        "click": ".levelctl-scale button:text-is('5')",
+        "watch": ".scenario-narration",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=pump-down",
+      "name": "scenario-pump-down",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "One pump down",
+        "Degrade pump now"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    }
+  ]
+}

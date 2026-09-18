@@ -1,0 +1,100 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "bringup",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "Telemetry",
+        "BMC domain draw"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#phase=services",
+      "name": "deeplink-phase",
+      "svg": true,
+      "visible": [
+        ".poweron-desc"
+      ],
+      "text": [
+        "services + Lifecycle Controller"
+      ]
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-desc"
+      ],
+      "text": [
+        "At a glance",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-name",
+        ".cat-card"
+      ],
+      "text": [
+        "Where it lives"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "text": [
+        "Enabled capabilities",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      },
+      "text": [
+        "Ready and watching, host still off",
+        "A server that is switched off"
+      ]
+    },
+    {
+      "hash": "#tour/always-on",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "Out-of-band watch (steady state)",
+        "The host has never powered on"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

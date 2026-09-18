@@ -1,0 +1,101 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "sim",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".controls select"
+      ],
+      "text": [
+        "Matrix multiply simulator",
+        "Counters",
+        "Roofline",
+        "Legend"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".region-search"
+      ],
+      "text": [
+        "Overview",
+        "Sources",
+        "Compare dies"
+      ],
+      "play": {
+        "click": ".an-region >> nth=0",
+        "watch": ".controls",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#anatomy/gb200/nvlink",
+      "name": "anatomy-region",
+      "svg": true,
+      "visible": [
+        ".an-region"
+      ],
+      "text": [
+        "B200 (GB200",
+        "NVLink 5 × 18",
+        "18 fifth-generation NVLink ports"
+      ]
+    },
+    {
+      "hash": "#anatomy/gh100/vs/gb200",
+      "name": "anatomy-compare",
+      "svg": true,
+      "text": [
+        "vs",
+        "Side by side",
+        "Back to single die"
+      ],
+      "play": {
+        "click": "button:text-is('Back to single die')",
+        "watch": ".an-hero h2",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#live",
+      "name": "live",
+      "svg": true,
+      "text": [
+        "Live CUDA",
+        "Session",
+        "Recordings",
+        "waiting for events"
+      ],
+      "play": {
+        "click": "button:has-text('Guided lessons')",
+        "watch": ".stage",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#live/tour",
+      "name": "live-tour",
+      "svg": true,
+      "text": [
+        "the guided lessons",
+        "Exit tour"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".stage h4",
+        "times": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "poweron",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc", ".legend"],
+      "text": ["AC connected", "1 / 14", "NVRAM write cache"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 3 }
+    },
+    {
+      "hash": "#phase=drives",
+      "name": "poweron-phase-drives",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc"],
+      "text": ["7 / 14", "NVMe discovery — both nodes see every drive"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 1 }
+    },
+    {
+      "hash": "#step=13",
+      "name": "poweron-step-last",
+      "svg": true,
+      "visible": [".phase"],
+      "text": ["14 / 14", "Serving I/O — active/active"],
+      "play": { "click": "button:text-is('Reset')", "watch": ".phase", "times": 1 }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [".an-panel .stat", ".an-sources a"],
+      "text": ["Controller nodes", "Drive slots", "PowerStore 5200T base enclosure"]
+    },
+    {
+      "hash": "#anatomy/cpu-a",
+      "name": "anatomy-cpu-a",
+      "svg": true,
+      "visible": [".an-kind"],
+      "text": ["Xeon · Node A", "node CPU"]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [".cat-section .cat-card", ".cat-index button"],
+      "text": ["Appliance model", "NVRAM write cache", "Clustering (scale-out)"],
+      "play": { "click": ".cat-index button >> nth=2", "watch": ".cat-map .mini", "times": 1 }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [".uc-build table tbody tr", ".uc-tabs button"],
+      "text": ["VMware storage consolidation"],
+      "play": { "click": ".uc-tabs button:not(.active) >> nth=0", "watch": ".an-hero h2", "times": 1 }
+    },
+    {
+      "hash": "#usecases/edge-file",
+      "name": "usecases-edge-file",
+      "svg": true,
+      "visible": [".uc-build table tbody tr"],
+      "text": ["Edge site: block + file from one box"]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [".tour-caption"],
+      "play": { "click": "button:text-is('Next')", "watch": ".tour-caption", "times": 2 },
+      "text": ["Two copies before the answer", "Twenty-five slots, all NVMe"]
+    },
+    {
+      "hash": "#tour/mirrored-ack",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [".tour-caption", ".tour-step-current"],
+      "text": ["NVRAM write cache initializes", "Only then is the host acknowledged"],
+      "play": { "click": "button:text-is('Previous')", "watch": ".tour-caption", "times": 1 }
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "namespace",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".legend"
+      ],
+      "text": [
+        "Telemetry",
+        "There are no volumes",
+        "Four nodes racked, drives unjoined",
+        "1 / 8"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=addnode",
+      "name": "namespace-phase-addnode",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "6 / 8",
+        "Two nodes join — the namespace simply becomes larger",
+        "600 TB"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#step=7",
+      "name": "namespace-step-last",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "8 / 8",
+        "Serving at six nodes — same single namespace"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-panel .stat",
+        ".an-sources a"
+      ],
+      "text": [
+        "Overview",
+        "Specs",
+        "Sources",
+        "Dell PowerScale — scale-out NAS cluster"
+      ]
+    },
+    {
+      "hash": "#anatomy/namespace",
+      "name": "anatomy-namespace",
+      "svg": true,
+      "visible": [
+        ".an-kind"
+      ],
+      "text": [
+        "One namespace — /ifs",
+        "the single namespace"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-section .cat-card",
+        ".cat-index button"
+      ],
+      "text": [
+        "Categories",
+        "Node tiers",
+        "OneFS operating system"
+      ],
+      "play": {
+        "click": ".cat-index button >> nth=2",
+        "watch": ".cat-map .mini",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr",
+        ".uc-tabs button"
+      ],
+      "text": [
+        "Build sheet",
+        "What you get",
+        "A media archive that grows unpredictably and can never pause"
+      ],
+      "play": {
+        "click": ".uc-tabs button:not(.active) >> nth=0",
+        "watch": ".an-hero h2",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases/ai-corpus",
+      "name": "usecases-ai-corpus",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr"
+      ],
+      "text": [
+        "The file tier under an AI factory's training corpus",
+        "Build sheet"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "Four protocols over six identical nodes",
+        "Every node holds part of every file"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/onefs-stripe",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "One file system striped across every node",
+        "every node holds part of every file"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

@@ -18,3 +18,8 @@ GPU/backend/sessions/*.jsonl
 
 # twin-ui gallery build output
 packages/twin-ui/dist-gallery/
+
+# Browser smoke tests (scripts/smoke.sh): screenshots, server logs, Playwright output
+e2e/artifacts/
+e2e/test-results/
+e2e/playwright-report/

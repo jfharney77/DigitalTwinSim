@@ -1,0 +1,60 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "root",
+      "svg": true,
+      "visible": [".scenario-list button", ".an-panel .stat", ".event-log", "input[type=range]"],
+      "text": ["Guided scenarios", "Instruments", "Environment — the unlocked sliders", "Rooftop in Phoenix", "total DC power"],
+      "play": { "click": ".scenario-list button:text-is('Rooftop in Phoenix')", "watch": "label.field:has-text('Ambient')", "times": 1 }
+    },
+    {
+      "hash": "#scenario=phoenix-rooftop",
+      "name": "scenario-phoenix-rooftop",
+      "svg": true,
+      "visible": [".scenario-narration", ".scenario-list button.active:text-is('Rooftop in Phoenix')"],
+      "text": ["Ambient 38 °C"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#scenario=fargo-february",
+      "name": "scenario-fargo-february",
+      "svg": true,
+      "visible": [".scenario-narration", ".scenario-list button.active:text-is('February in Fargo')"],
+      "text": ["Ambient -15 °C"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#scenario=filter-nobody-changed",
+      "name": "scenario-filter-nobody-changed",
+      "svg": true,
+      "visible": [".scenario-narration", ".scenario-list button.active:text-is('The filter nobody changed')"],
+      "text": ["Months since filter service: 6"],
+      "play": { "click": "button:text-is('Change the filter now')", "watch": ".event-log", "times": 1 }
+    },
+    {
+      "hash": "#scenario=brownout",
+      "name": "scenario-brownout",
+      "svg": true,
+      "visible": [".scenario-narration", ".scenario-list button.active:text-is('Brownout at the cell site')"],
+      "text": ["Ambient 30 °C"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#scenario=hdd-mistake",
+      "name": "scenario-hdd-mistake",
+      "svg": true,
+      "visible": [".scenario-narration", ".scenario-list button.active:text-is('The HDD mistake')"],
+      "text": ["Ambient 30 °C"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#scenario=mountain-site",
+      "name": "scenario-mountain-site",
+      "svg": true,
+      "visible": [".scenario-narration", ".scenario-list button.active:text-is('The mountain site')"],
+      "text": ["Altitude 2500 m"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    }
+  ]
+}

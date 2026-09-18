@@ -1,0 +1,42 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "sim",
+      "svg": true,
+      "visible": [".scenario-list button", ".cfg-presets button", ".gauge-row .gauge", "input[aria-label='timeline scrubber']"],
+      "text": ["Burst, budget, skin, battery", "Configuration rules", "Instruments", "Strip charts", "The 10-minute benchmark lie"],
+      "play": { "click": "button:text-is('Idle')", "watch": "header .sub", "times": 2 }
+    },
+    {
+      "hash": "#scenario=benchmark-lie",
+      "name": "scenario-benchmark-lie",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["The 10-minute benchmark lie"],
+      "play": { "click": "button:text-is('Reset')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=undersized-charger",
+      "name": "scenario-undersized-charger",
+      "svg": true,
+      "visible": [".scenario-narration", ".rule-warning"],
+      "text": ["The undersized charger"]
+    },
+    {
+      "hash": "#scenario=meeting-room",
+      "name": "scenario-meeting-room",
+      "svg": true,
+      "visible": [".scenario-narration"],
+      "text": ["Meeting-room inference", "Pro Max Plus"],
+      "play": { "click": "button:text-is('Explain mode')", "watch": ".thermal-grid > .thermal-col:nth-child(3)", "times": 1 }
+    },
+    {
+      "hash": "#brands",
+      "name": "brands",
+      "visible": [".cat-card", ".an-sources a"],
+      "text": ["Dell's client brands, mapped", "Reading a model name", "Dell Pro Max", "Alienware"],
+      "play": { "click": "button:text-is('Simulator')", "watch": ".an-hero h2", "times": 1 }
+    }
+  ]
+}

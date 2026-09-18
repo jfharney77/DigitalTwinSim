@@ -1,0 +1,148 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "root",
+      "svg": true,
+      "visible": [
+        ".monitor-view",
+        ".strip-chart",
+        ".instr-row",
+        ".scenario-list button",
+        ".carbon-bar",
+        ".btnrow button.active"
+      ],
+      "text": [
+        "UltraSharp Display Physics",
+        "Guided scenarios",
+        "Instruments",
+        "Lifetime carbon",
+        "Mini-LED 32\" 4K",
+        "BACKLIGHT — 2,000 ZONES"
+      ],
+      "play": {
+        "click": "button:text-is('Dock a laptop (90 W)')",
+        "watch": ".instr-row:has-text('Hub → laptop') .instr-value",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=does-not-exist",
+      "name": "scenario-unknown",
+      "svg": true,
+      "visible": [
+        ".monitor-view",
+        ".instr-row"
+      ],
+      "text": [
+        "Guided scenarios",
+        "Wall power"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=dark-mode",
+      "name": "scenario-dark-mode",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question",
+        ".monitor-view"
+      ],
+      "text": [
+        "Dark mode actually saves power (on the right panel)",
+        "Wall power"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=brightness-bill",
+      "name": "scenario-brightness-bill",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question",
+        ".monitor-view"
+      ],
+      "text": [
+        "Brightness is the whole bill",
+        "Wall power"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=hdr-burst",
+      "name": "scenario-hdr-burst",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question",
+        ".monitor-view"
+      ],
+      "text": [
+        "The HDR burst",
+        "Wall power"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=hub-meter",
+      "name": "scenario-hub-meter",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question",
+        ".monitor-view"
+      ],
+      "text": [
+        "The 220-watt monitor that isn't",
+        "Wall power"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=embodied-surprise",
+      "name": "scenario-embodied-surprise",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question",
+        ".monitor-view"
+      ],
+      "text": [
+        "The embodied-carbon surprise",
+        "Wall power"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    }
+  ]
+}

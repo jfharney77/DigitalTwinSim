@@ -8,6 +8,10 @@
     "*/frontend"
   ],
   "scripts": {
-    "gallery": "npm run gallery --workspace @twinsim/twin-ui"
+    "gallery": "npm run gallery --workspace @twinsim/twin-ui",
+    "smoke": "scripts/smoke.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
   }
 }

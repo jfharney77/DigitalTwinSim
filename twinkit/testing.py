@@ -34,6 +34,9 @@ __all__ = [
     "assert_deterministic",
     "assert_engine_is_pure",
     "IMPURE_MODULES",
+    "assert_tour_invariants",
+    "TOUR_MIN_MS",
+    "TOUR_MAX_MS",
 ]
 
 #: Imports an engine must never carry. The engine is a pure function from a
@@ -296,3 +299,149 @@ def activate_backend_for(path: Any) -> None:
     ]
     if candidates:
         _activate(max(candidates, key=len))
+
+
+# --- tour mode ---------------------------------------------------------------
+
+#: A tour lands between two and six minutes (ACTIVE_TWIN_SPEC.md section 6):
+#: shorter is a slideshow, longer is a lecture nobody finishes.
+TOUR_MIN_MS = 2 * 60 * 1000
+TOUR_MAX_MS = 6 * 60 * 1000
+
+
+def assert_tour_invariants(
+    tour: Any,
+    anatomy: Any,
+    trace: Sequence[Any],
+    signature_step_id: str,
+    *,
+    module: Any = None,
+    layers: dict[str, int] | None = None,
+    public_dir: Any = None,
+    max_travel: float | None = None,
+) -> None:
+    """Assert the tour-mode invariants of ACTIVE_TWIN_SPEC.md section 6.
+
+    ``tour`` is a :class:`twinkit.tour.Tour` or a
+    :class:`twinkit.tour.TourResponse` (whose ``layers`` are then checked to
+    cover the map). ``anatomy`` is the component's map, ``trace`` the engine's
+    full trace, and ``signature_step_id`` the step the product's one idea lives
+    in — a tour without it fails.
+
+    Optional: ``module`` — the component's ``app.tour`` module, AST-checked for
+    purity exactly like an engine; ``layers`` — the region-to-layer mapping when
+    ``tour`` is a bare ``Tour``; ``public_dir`` — the frontend's ``public/``
+    directory, so every photo URL must name a file that actually ships;
+    ``max_travel`` — the camera-travel bound between steps whose boxes do not
+    overlap (default ``(W + H) / 2``, in map units).
+    """
+    import pathlib as _pathlib
+
+    from .tour import boxes_overlap, camera_travel, region_boxes
+
+    if hasattr(tour, "tour") and hasattr(tour, "layers"):
+        layers = tour.layers if layers is None else layers
+        tour = tour.tour
+    steps = list(tour.steps)
+    assert steps, "tour has no steps"
+
+    known = set(region_boxes(anatomy))
+    W, H = float(anatomy.width), float(anatomy.height)
+    bound = max_travel if max_travel is not None else (W + H) / 2
+
+    # Ids are unique and kebab-case — they key deep links and audio files.
+    ids = [s.id for s in steps]
+    assert len(ids) == len(set(ids)), f"duplicate step ids: {ids}"
+    for sid in ids:
+        assert sid and sid == sid.lower() and " " not in sid and "_" not in sid, (
+            f"step id {sid!r} is not kebab-case"
+        )
+    assert signature_step_id in ids, (
+        f"signature step {signature_step_id!r} missing — the tour cannot ship "
+        "without the product's one idea"
+    )
+
+    # Scripts and titles are non-empty; the script *is* the content.
+    for s in steps:
+        assert s.title.strip(), f"step {s.id}: empty title"
+        assert s.script.strip(), f"step {s.id}: empty script"
+
+    # Every lit region resolves.
+    for s in steps:
+        for rid in s.region_ids:
+            assert rid in known, f"step {s.id}: unknown region {rid!r}"
+
+    # Camera boxes: positive area, inside the map.
+    eps = 1e-6
+    for s in steps:
+        c = s.camera
+        assert c.w > 0 and c.h > 0, f"step {s.id}: camera has no area"
+        assert c.x >= -eps and c.y >= -eps, f"step {s.id}: camera starts off the map"
+        assert c.x + c.w <= W + eps and c.y + c.h <= H + eps, (
+            f"step {s.id}: camera {c} runs past the map ({W} x {H})"
+        )
+
+    # No teleporting: consecutive boxes overlap, or the move is bounded.
+    for a, b in zip(steps, steps[1:]):
+        if not boxes_overlap(a.camera, b.camera):
+            travel = camera_travel(a.camera, b.camera)
+            assert travel <= bound, (
+                f"camera jumps {travel:.1f} units from {a.id} to {b.id} "
+                f"(bound {bound:.1f}) with no overlap"
+            )
+
+    # Layers peel inward; at most one decrease, and only into the final step.
+    reveals = [s.layer_reveal for s in steps]
+    for i, (a, b) in enumerate(zip(reveals, reveals[1:]), start=1):
+        if b < a:
+            assert i == len(steps) - 1, (
+                f"layer_reveal falls at {steps[i].id} ({a} -> {b}); only the "
+                "final reassemble step may close the product back up"
+            )
+    assert all(r >= 0 for r in reveals), "negative layer_reveal"
+
+    # Layer map covers the whole map and nothing else.
+    if layers is not None:
+        assert set(layers) == known, (
+            f"layers do not match the map: missing {sorted(known - set(layers))}, "
+            f"extra {sorted(set(layers) - known)}"
+        )
+        deepest = max(layers.values())
+        assert max(reveals) <= deepest, (
+            f"a step reveals layer {max(reveals)} but the deepest layer is {deepest}"
+        )
+
+    # Trace cursor: valid, and the tour never runs the simulation backwards.
+    cursors = [s.trace_cursor for s in steps if s.trace_cursor is not None]
+    for s in steps:
+        if s.trace_cursor is not None:
+            assert 0 <= s.trace_cursor < len(trace), (
+                f"step {s.id}: trace_cursor {s.trace_cursor} outside 0..{len(trace) - 1}"
+            )
+    for a, b in zip(cursors, cursors[1:]):
+        assert a <= b, f"trace_cursor runs backwards ({a} -> {b})"
+
+    # Duration: every step positive, the whole tour 2-6 minutes.
+    for s in steps:
+        assert s.duration_ms > 0, f"step {s.id}: non-positive duration"
+    total = sum(s.duration_ms for s in steps)
+    assert TOUR_MIN_MS <= total <= TOUR_MAX_MS, (
+        f"tour runs {total / 1000:.0f} s; it must land in 120-360 s"
+    )
+
+    # Photos resolve, are local, and are credited.
+    photos = {p.id: p for p in getattr(tour, "photos", [])}
+    for p in photos.values():
+        assert p.credit.strip(), f"photo {p.id}: missing credit"
+        assert p.url.startswith("/") and "//" not in p.url, (
+            f"photo {p.id}: {p.url!r} is not a local file — no hotlinking"
+        )
+        if public_dir is not None:
+            path = _pathlib.Path(public_dir) / p.url.lstrip("/")
+            assert path.is_file(), f"photo {p.id}: {path} does not exist"
+    for s in steps:
+        if s.photo_id is not None:
+            assert s.photo_id in photos, f"step {s.id}: unknown photo {s.photo_id!r}"
+
+    if module is not None:
+        assert_engine_is_pure(module)

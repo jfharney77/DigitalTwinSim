@@ -1,0 +1,111 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "poweron",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "Telemetry",
+        "Racked and cabled, dark"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=fuse",
+      "name": "phase-fuse",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "NVSwitch fuses eight GPUs into one domain"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#step=6",
+      "name": "step-6",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "Burn-in passed"
+      ]
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "text": [
+        "Overview",
+        "PowerEdge XE9680 · 8-GPU HGX server",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "text": [
+        "Categories",
+        "GPU baseboard",
+        "Where it lives"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "text": [
+        "Build sheet",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "The domain snaps to eight, and stops",
+        "A big server, but still a server"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/domain-stops-at-eight",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "NVSwitch fuses eight GPUs into one domain",
+        "NVLink stops here. Scale does not."
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

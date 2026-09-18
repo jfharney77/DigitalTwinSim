@@ -1,0 +1,173 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "estate",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".legend"
+      ],
+      "text": [
+        "You can change your mind",
+        "Racks of separate compute",
+        "1 / 9",
+        "control planes"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=growstorage",
+      "name": "estate-phase-growstorage",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "7 / 9",
+        "Storage doubles",
+        "unchanged"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#step=8",
+      "name": "estate-step-last",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "9 / 9",
+        "Two hypervisors, one control plane"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-panel .stat",
+        ".an-sources a"
+      ],
+      "text": [
+        "Overview",
+        "Specs",
+        "Sources",
+        "Dell Private Cloud"
+      ]
+    },
+    {
+      "hash": "#anatomy/hv-nutanix",
+      "name": "anatomy-hv-nutanix",
+      "svg": true,
+      "visible": [
+        ".an-kind"
+      ],
+      "text": [
+        "hypervisor slot"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-section .cat-card",
+        ".cat-index button"
+      ],
+      "text": [
+        "Categories",
+        "Architecture",
+        "Hypervisor",
+        "Storage pool"
+      ],
+      "play": {
+        "click": ".cat-index button >> nth=2",
+        "watch": ".cat-map .mini",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr",
+        ".uc-tabs button"
+      ],
+      "text": [
+        "Build sheet",
+        "What you get",
+        "An estate that wants the option to leave"
+      ],
+      "play": {
+        "click": ".uc-tabs button:not(.active) >> nth=0",
+        "watch": ".an-hero h2",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases/lopsided-growth",
+      "name": "usecases-lopsided-growth",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr"
+      ],
+      "text": [
+        "A business whose data grows and whose compute does not",
+        "Build sheet"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "A stack drawn in layers",
+        "A second hypervisor, and nobody notices"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/hypervisor-switch",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "Some workloads move to a second hypervisor",
+        "In a coupled architecture the alternative"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

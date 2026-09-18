@@ -44,6 +44,21 @@
   min-width: 0;
 }
 
+.app.dell .tw-band span {
+  /* Narrow bands (short phases at phone width) cut their label with an
+   * ellipsis rather than mid-word; the band's title still names it. */
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .app.dell .tw-band {
+    letter-spacing: 0.02em;
+    padding: 0 2px;
+  }
+}
+
 .app.dell .tw-band:last-child {
   border-right: 0;
 }

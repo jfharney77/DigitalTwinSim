@@ -1,0 +1,188 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "poweron",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".legend"
+      ],
+      "text": [
+        "Telemetry",
+        "GPUs in NVLink domain",
+        "1 / 8",
+        "0 / 72",
+        "Rack integrated, facility connected"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=coolant",
+      "name": "poweron-phase-coolant",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "3 / 8",
+        "liquid before silicon",
+        "coolant loop priming"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#phase=fused",
+      "name": "poweron-phase-fused",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "7 / 8",
+        "72 / 72",
+        "domain fused — one GPU"
+      ]
+    },
+    {
+      "hash": "#step=7",
+      "name": "poweron-step-last",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "8 / 8",
+        "accepting jobs",
+        "72 / 72"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-panel .stat",
+        ".an-sources a"
+      ],
+      "text": [
+        "Overview",
+        "Specs",
+        "Sources",
+        "PowerEdge XE9712 · GB200 NVL72 rack"
+      ]
+    },
+    {
+      "hash": "#anatomy/cdu",
+      "name": "anatomy-cdu",
+      "svg": true,
+      "visible": [
+        ".an-kind"
+      ],
+      "text": [
+        "CDU (liquid cooling)",
+        "liquid cooling"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-section .cat-card",
+        ".cat-index button"
+      ],
+      "text": [
+        "Categories",
+        "Rack platform",
+        "NVLink scale-up fabric"
+      ],
+      "play": {
+        "click": ".cat-index button >> nth=2",
+        "watch": ".cat-map .mini",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr",
+        ".uc-tabs button"
+      ],
+      "text": [
+        "Build sheet",
+        "What you get",
+        "Foundation-model training"
+      ],
+      "play": {
+        "click": ".uc-tabs button:not(.active) >> nth=0",
+        "watch": ".an-hero h2",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases/sovereign",
+      "name": "usecases-sovereign",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr"
+      ],
+      "text": [
+        "Sovereign AI factory",
+        "Build sheet"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      },
+      "text": [
+        "The rack is the computer",
+        "Seventy-two GPUs become one"
+      ]
+    },
+    {
+      "hash": "#tour/atomic-fuse",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "One NVLink domain — 72 GPUs become one accelerator",
+        "the fuse is atomic"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

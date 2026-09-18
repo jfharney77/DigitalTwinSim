@@ -1,0 +1,170 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "boot",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".legend"
+      ],
+      "text": [
+        "AC disconnected",
+        "1 / 13",
+        "Blocks"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=onie",
+      "name": "boot-phase-onie",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "5 / 13",
+        "ONIE bootloader"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#step=12",
+      "name": "boot-step-last",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "13 / 13",
+        "Line-rate forwarding"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-panel .stat",
+        ".an-sources a"
+      ],
+      "text": [
+        "Overview",
+        "Specs",
+        "Sources",
+        "PowerSwitch E3200-ON"
+      ]
+    },
+    {
+      "hash": "#anatomy/asic",
+      "name": "anatomy-asic",
+      "svg": true,
+      "visible": [
+        ".an-kind"
+      ],
+      "text": [
+        "Switching ASIC \u00b7 data plane",
+        "switching ASIC (data plane)"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-section .cat-card",
+        ".cat-index button"
+      ],
+      "text": [
+        "Categories",
+        "Network operating system",
+        "SmartFabric OS10"
+      ],
+      "play": {
+        "click": ".cat-index button >> nth=2",
+        "watch": ".cat-map .mini",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr",
+        ".uc-tabs button"
+      ],
+      "text": [
+        "Build sheet",
+        "What you get",
+        "Wi-Fi 6E/7 campus edge"
+      ],
+      "play": {
+        "click": ".uc-tabs button:not(.active) >> nth=0",
+        "watch": ".an-hero h2",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases/fiber-distribution",
+      "name": "usecases-fiber",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr"
+      ],
+      "text": [
+        "Fiber branch distribution",
+        "Build sheet"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "Forty-eight ports and a console"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/poe-peak",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "PoE delivered to devices",
+        "the PoE budget leaving through the front"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

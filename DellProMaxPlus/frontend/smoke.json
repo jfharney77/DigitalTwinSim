@@ -1,0 +1,81 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "inference",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc", ".legend"],
+      "text": ["Telemetry", "The weights never move", "1 / 8", "model on disk"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 3 }
+    },
+    {
+      "hash": "#phase=load",
+      "name": "inference-phase-load",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc"],
+      "text": ["3 / 8", "52 Gb/s — loading", "61 GB / 64 GB"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 1 }
+    },
+    {
+      "hash": "#step=7",
+      "name": "inference-step-last",
+      "svg": true,
+      "visible": [".phase"],
+      "text": ["8 / 8", "network disconnected"],
+      "play": { "click": "button:text-is('Reset')", "watch": ".phase", "times": 1 }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [".an-panel .stat", ".an-sources a"],
+      "text": ["Overview", "Specs", "Sources", "discrete NPU inference path"]
+    },
+    {
+      "hash": "#anatomy/aimem",
+      "name": "anatomy-aimem",
+      "svg": true,
+      "visible": [".an-kind"],
+      "text": ["64 GB dedicated AI memory (LPDDR4x)", "dedicated AI memory"]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [".cat-card", ".cat-index button"],
+      "text": ["Categories", "Discrete NPU card", "Host processor"],
+      "play": { "click": ".cat-index button >> nth=2", "watch": ".cat-map .mini", "times": 1 }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [".uc-build table tbody tr", ".uc-tabs button"],
+      "text": ["Build sheet", "What you get", "Case review on material that cannot leave the building"],
+      "play": { "click": ".uc-tabs button:not(.active) >> nth=0", "watch": ".an-hero h2", "times": 1 }
+    },
+    {
+      "hash": "#usecases/disconnected-field",
+      "name": "usecases-field",
+      "svg": true,
+      "visible": [".uc-build table tbody tr"],
+      "text": ["A field engineer where there is no connectivity at all", "Build sheet"]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [".tour-caption"],
+      "text": ["A laptop with a model on its drive"],
+      "play": { "click": "button:text-is('Next')", "watch": ".tour-caption", "times": 2 }
+    },
+    {
+      "hash": "#tour/weights-cross-once",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [".tour-caption", ".tour-step-current"],
+      "text": ["61 GB of weights cross PCIe — the only time they will", "what crosses is the model"],
+      "play": { "click": "button:text-is('Previous')", "watch": ".tour-caption", "times": 1 }
+    }
+  ]
+}

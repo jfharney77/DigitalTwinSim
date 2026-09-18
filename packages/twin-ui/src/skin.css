@@ -23,6 +23,9 @@
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  /* The copied dark base sets the title in spaced capitals; the Dell skin
+   * writes it as the product name is written. */
+  text-transform: none;
 }
 .app.dell .nav button {
   background: none;
@@ -77,6 +80,9 @@
 .app.dell .controls {
   background: transparent;
   border-left: none;
+  /* The copied base adds a border-top under 880px: a divider rule, which
+   * the skin forbids. */
+  border-top: none;
   padding: 24px 32px 24px 24px;
   gap: 16px;
 }
@@ -202,6 +208,12 @@
   color: var(--dell-muted);
   font-size: 13px;
 }
+/* The scenario apps' build rows are `label.field.cfg-row`; the copied base's
+ * `label.field { flex-direction: column }` would otherwise stack them. */
+.app.dell label.field.cfg-row {
+  flex-direction: row;
+  align-items: center;
+}
 .app.dell input[type="range"] {
   accent-color: var(--dell-blue);
 }
@@ -220,4 +232,70 @@
 }
 .app.dell .poweron-desc strong {
   font-weight: 700;
+}
+
+/* Page-chrome accents in the scenario (physics) apps.
+ *
+ * Their copied stylesheet writes `var(--accent, #0672cb)` expecting Dell blue,
+ * but tokens.css defines --accent as the dark diagram's amber, so the fallback
+ * never fires and these rules drew yellow on white. --accent stays the diagram
+ * accent; on the page chrome the skin says Dell blue. */
+.app.dell .playback-row button.active,
+.app.dell .scenario-list button.active {
+  outline-color: var(--dell-blue);
+}
+.app.dell .explain-card {
+  border-left-color: var(--dell-blue);
+}
+.app.dell .explain-live,
+.app.dell .scenario-question {
+  color: var(--dell-blue);
+}
+
+/* Phone widths.
+ *
+ * Every twin's copied stylesheet collapses `.app` to one `1fr` column under
+ * 880px, and a 1fr track cannot shrink below its content's min width, so a
+ * long header row (title, nav, status, reading-level control) or a wide table
+ * pushed the page sideways at 390px. These rules were being re-typed into each
+ * component's styles.css; they live here now. */
+@media (max-width: 880px) {
+  .app.dell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app.dell header {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 8px;
+    padding: 12px 16px;
+  }
+  .app.dell .an-hero {
+    padding: 20px 16px 24px;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 30px;
+  }
+  .app.dell .stage,
+  .app.dell .controls {
+    padding: 16px;
+    min-width: 0;
+  }
+}
+@media (max-width: 600px) {
+  .app.dell header .sub {
+    margin-left: 0;
+    flex-basis: 100%;
+    order: 10;
+  }
+  .app.dell .an-hero h2 {
+    font-size: 26px;
+  }
+  .app.dell .an-card {
+    padding: 16px;
+  }
+  .app.dell .uc-build {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
 }

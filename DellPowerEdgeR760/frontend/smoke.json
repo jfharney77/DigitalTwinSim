@@ -1,0 +1,81 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "poweron",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc", ".legend"],
+      "text": ["Telemetry", "AC connected", "1 / 15"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 3 }
+    },
+    {
+      "hash": "#phase=post",
+      "name": "poweron-phase-post",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc"],
+      "text": ["8 / 15", "POST"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 1 }
+    },
+    {
+      "hash": "#step=14",
+      "name": "poweron-step-last",
+      "svg": true,
+      "visible": [".phase"],
+      "text": ["15 / 15", "operating system"],
+      "play": { "click": "button:text-is('Reset')", "watch": ".phase", "times": 1 }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [".an-panel .stat", ".an-sources a"],
+      "text": ["Overview", "Specs", "Sources", "PowerEdge R760"]
+    },
+    {
+      "hash": "#anatomy/cpu1",
+      "name": "anatomy-cpu1",
+      "svg": true,
+      "visible": [".an-kind"],
+      "text": ["CPU 1 \u00b7 Xeon Scalable", "CPU socket + heatsink"]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [".cat-section .cat-card", ".cat-index button"],
+      "text": ["Categories", "Processors", "Memory"],
+      "play": { "click": ".cat-index button >> nth=2", "watch": ".cat-map .mini", "times": 1 }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [".uc-build table tbody tr", ".uc-tabs button"],
+      "text": ["Build sheet", "What you get", "Virtualization consolidation host"],
+      "play": { "click": ".uc-tabs button:not(.active) >> nth=0", "watch": ".an-hero h2", "times": 1 }
+    },
+    {
+      "hash": "#usecases/database",
+      "name": "usecases-database",
+      "svg": true,
+      "visible": [".uc-build table tbody tr"],
+      "text": ["OLTP database server", "Build sheet"]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [".tour-caption"],
+      "text": ["A 2U server, cords in, still dark"],
+      "play": { "click": "button:text-is('Next')", "watch": ".tour-caption", "times": 2 }
+    },
+    {
+      "hash": "#tour/memory-training",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [".tour-caption", ".tour-step-current"],
+      "text": ["DDR5 memory training", "the single longest stage in the trace"],
+      "play": { "click": "button:text-is('Previous')", "watch": ".tour-caption", "times": 1 }
+    }
+  ]
+}

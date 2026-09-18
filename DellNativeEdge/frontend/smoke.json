@@ -1,0 +1,105 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "onboard",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "Nobody touches the device",
+        "operator actions"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=managed",
+      "name": "deeplink-phase",
+      "svg": true,
+      "visible": [
+        ".poweron-desc"
+      ],
+      "text": [
+        "4 / 4"
+      ]
+    },
+    {
+      "hash": "#architecture",
+      "name": "architecture",
+      "svg": true,
+      "visible": [
+        ".an-hero h2",
+        ".an-sources"
+      ],
+      "text": [
+        "Facts",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#capabilities",
+      "name": "capabilities",
+      "svg": true,
+      "visible": [
+        ".cat-section",
+        ".cat-index button"
+      ],
+      "text": [
+        "Where it runs"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-tabs",
+        ".uc-build table"
+      ],
+      "text": [
+        "Capabilities used",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "A sealed crate at a site with no IT staff"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/zero-touch",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "Power and a network cable — the only human action",
+        "operator-actions counter ticks from zero to one"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

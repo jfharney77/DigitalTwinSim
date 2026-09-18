@@ -1,0 +1,166 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "join",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".legend"
+      ],
+      "text": [
+        "Telemetry",
+        "The estate before",
+        "1 / 11",
+        "downtime"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=rebalance",
+      "name": "join-phase-rebalance",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "7 / 11",
+        "Volumes rebalance live"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#step=10",
+      "name": "join-step-last",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "11 / 11",
+        "Steady on Elite"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-panel .stat",
+        ".an-sources a"
+      ],
+      "text": [
+        "Overview",
+        "Specs",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#anatomy/cluster-mesh",
+      "name": "anatomy-mesh",
+      "svg": true,
+      "visible": [
+        ".an-kind"
+      ],
+      "text": [
+        "200 Gb RDMA cluster mesh"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-section .cat-card",
+        ".cat-index button"
+      ],
+      "text": [
+        "Categories",
+        "Appliance model",
+        "PowerStore Elite 5500"
+      ],
+      "play": {
+        "click": ".cat-index button >> nth=2",
+        "watch": ".cat-map .mini",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr",
+        ".uc-tabs button"
+      ],
+      "text": [
+        "A hospital modernizes without a maintenance window"
+      ],
+      "play": {
+        "click": ".uc-tabs button:not(.active) >> nth=0",
+        "watch": ".an-hero h2",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases/consolidation-3u",
+      "name": "usecases-consolidation",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr"
+      ],
+      "text": [
+        "Nine arrays become one 3U appliance"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "Two appliances, one rack"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/zero-downtime-join",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "The Elite joins the existing cluster",
+        "a membership operation, not a data"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

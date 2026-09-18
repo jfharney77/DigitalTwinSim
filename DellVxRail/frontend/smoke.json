@@ -1,0 +1,173 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "firstrun",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".legend"
+      ],
+      "text": [
+        "Telemetry",
+        "Nodes racked, AC connected",
+        "1 / 9"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#phase=primary",
+      "name": "firstrun-phase-primary",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "6 / 9",
+        "primary election"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#step=8",
+      "name": "firstrun-step-last",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "9 / 9",
+        "serving VMs"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-panel .stat",
+        ".an-sources a",
+        ".an-photo img"
+      ],
+      "text": [
+        "Overview",
+        "Specs",
+        "Sources",
+        "VxRail four-node cluster",
+        "Nodes per cluster"
+      ]
+    },
+    {
+      "hash": "#anatomy/tor-a",
+      "name": "anatomy-tor-a",
+      "svg": true,
+      "visible": [
+        ".an-kind"
+      ],
+      "text": [
+        "Top-of-rack switch A",
+        "top-of-rack fabric"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-section .cat-card",
+        ".cat-index button"
+      ],
+      "text": [
+        "Categories",
+        "Node platform",
+        "Processor"
+      ],
+      "play": {
+        "click": ".cat-index button >> nth=2",
+        "watch": ".cat-map .mini",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr",
+        ".uc-tabs button"
+      ],
+      "text": [
+        "Build sheet",
+        "What you get",
+        "Virtual desktop infrastructure (VDI)"
+      ],
+      "play": {
+        "click": ".uc-tabs button:not(.active) >> nth=0",
+        "watch": ".an-hero h2",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#usecases/vcf-private-cloud",
+      "name": "usecases-vcf",
+      "svg": true,
+      "visible": [
+        ".uc-build table tbody tr"
+      ],
+      "text": [
+        "VMware Cloud Foundation private cloud",
+        "Build sheet"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      },
+      "text": [
+        "One node breaks lockstep",
+        "Four identical nodes and a pair of switches"
+      ]
+    },
+    {
+      "hash": "#tour/primary-election",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "Primary-node election — VxRail Manager powers up",
+        "Exactly one node is lit"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

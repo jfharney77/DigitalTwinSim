@@ -1,0 +1,120 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "root",
+      "svg": true,
+      "visible": [
+        "svg",
+        ".scenario-list button",
+        ".stat",
+        ".playback-row input[type=range]"
+      ],
+      "text": [
+        "Data Domain · Dedupe Physics",
+        "Guided scenarios",
+        "Instruments",
+        "dedupe ratio (emergent)",
+        "Planning review",
+        "Why 30 backups fit in 2×"
+      ],
+      "play": {
+        "click": ".scenario-list button >> nth=0",
+        "watch": ".an-panel:has(.scenario-list)",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#",
+      "name": "root-explain",
+      "svg": true,
+      "visible": [
+        ".stat"
+      ],
+      "text": [
+        "Explain mode",
+        "dedupe ratio (emergent)"
+      ],
+      "play": {
+        "click": "button:text-is('Explain mode')",
+        "watch": ".thermal-col:has(.stat)",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=thirty-fulls",
+      "name": "scenario-thirty-fulls",
+      "svg": true,
+      "visible": [
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "How many terabytes did backup #30 actually add to the store?"
+      ],
+      "play": {
+        "click": "button:text-is('Reset (clear events)')",
+        "watch": ".an-panel:has(.scenario-list)",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=encrypted-source",
+      "name": "scenario-encrypted-source",
+      "svg": true,
+      "visible": [
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "The encrypted-source mistake"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=entropy-alarm",
+      "name": "scenario-entropy-alarm",
+      "svg": true,
+      "visible": [
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Entropy as a smoke alarm"
+      ],
+      "play": {
+        "click": ".scenario-list button:not(.active) >> nth=0",
+        "watch": ".scenario-narration",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=index-knee",
+      "name": "scenario-index-knee",
+      "svg": true,
+      "visible": [
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "The fingerprint-index knee"
+      ]
+    },
+    {
+      "hash": "#scenario=retention-dial",
+      "name": "scenario-retention-dial",
+      "svg": true,
+      "visible": [
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Retention is the ratio's engine"
+      ]
+    }
+  ]
+}

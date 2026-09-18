@@ -1,0 +1,149 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "root",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge",
+        ".strip-chart",
+        ".cfg-row select",
+        ".scenario-list button"
+      ],
+      "text": [
+        "Guided scenarios",
+        "Instruments",
+        "Events land at the playback cursor",
+        "Production estate",
+        "Backups aren't enough",
+        "One stolen laptop"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=backups-arent-enough",
+      "name": "scenario-backups-arent-enough",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge",
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "How many intact copies existed",
+        "Cyber Vault"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=rto-surprise",
+      "name": "scenario-rto-surprise",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge",
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "What fraction of the RTO was decision time",
+        "Restore pipe"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=slow-burn",
+      "name": "scenario-slow-burn",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge",
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "How much older is the named clean point",
+        "Cyber Detect scan"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=two-am",
+      "name": "scenario-two-am",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge",
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "What was the time-to-contain on each preset",
+        "Response model"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=alert-fatigue",
+      "name": "scenario-alert-fatigue",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge",
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "How deep was the queue when the real alert arrived",
+        "Noise ("
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=stolen-laptop",
+      "name": "scenario-stolen-laptop",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge",
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "What did the flood reach under each architecture",
+        "Mark identity hostile"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    }
+  ]
+}

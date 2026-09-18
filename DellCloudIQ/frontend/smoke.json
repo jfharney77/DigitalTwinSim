@@ -1,0 +1,104 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "pipeline",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "Telemetry",
+        "health score"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#phase=detect",
+      "name": "pipeline-detect",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "risk detected"
+      ]
+    },
+    {
+      "hash": "#architecture",
+      "name": "architecture",
+      "svg": true,
+      "visible": [
+        ".an-desc"
+      ],
+      "text": [
+        "Overview",
+        "Facts",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#capabilities",
+      "name": "capabilities",
+      "visible": [
+        ".cat-card"
+      ],
+      "text": [
+        "Categories",
+        "Where it runs"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "visible": [
+        ".uc-part"
+      ],
+      "text": [
+        "Capabilities used",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "No box, just an estate",
+        "The score dips before anyone complains"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/analyze-dip",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "A risk crosses threshold",
+        "AIOps has the risk before the impact is felt"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

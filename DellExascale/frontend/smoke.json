@@ -1,0 +1,97 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "datapath",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "Telemetry",
+        "servers streaming"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#phase=checkpoint",
+      "name": "deeplink-phase",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "checkpoint burst"
+      ]
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "text": [
+        "Overview",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "visible": [
+        ".cat-card"
+      ],
+      "text": [
+        "Categories"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "visible": [
+        ".uc-tabs"
+      ],
+      "text": [
+        "Build sheet"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      },
+      "text": [
+        "The metadata server steps aside",
+        "A rack of GPUs and a rack of storage"
+      ]
+    },
+    {
+      "hash": "#tour/metadata-leaves",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "Parallel read fans out — the metadata server steps aside",
+        "This is the twin's one idea"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "simulator",
+      "svg": true,
+      "visible": [".gauge-row", ".gallery-cards .gallery-card", ".timeline svg", ".strip-chart", ".scenario-list button"],
+      "text": ["One knee, six architectures", "Instruments", "Event log", "IOPS delivered / demand", "Find the knee"],
+      "play": { "click": "button:text-is('×24h')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=find-the-knee",
+      "name": "scenario-find-the-knee",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question"],
+      "text": ["At what fraction of the ceiling"],
+      "play": { "click": "button:text-is('×24h')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=controller-failover",
+      "name": "scenario-controller-failover",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["Controller failover under load"]
+    },
+    {
+      "hash": "#scenario=sync-distance",
+      "name": "scenario-sync-distance",
+      "svg": true,
+      "visible": [".scenario-narration"],
+      "text": ["SRDF write tax"]
+    },
+    {
+      "hash": "#scenario=scale-out-rebuild",
+      "name": "scenario-scale-out-rebuild",
+      "svg": true,
+      "visible": [".scenario-narration"],
+      "text": ["Fail a node", "Add 5 nodes"]
+    },
+    {
+      "hash": "#scenario=immutable-bucket",
+      "name": "scenario-immutable-bucket",
+      "svg": true,
+      "visible": [".scenario-narration"],
+      "text": ["Attempt delete"]
+    },
+    {
+      "hash": "#scenario=right-size-the-mix",
+      "name": "scenario-right-size-the-mix",
+      "svg": true,
+      "visible": [".scenario-narration"],
+      "text": ["GPU idle due to data"],
+      "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(h2:text-is('Instruments'))", "times": 1 }
+    }
+  ]
+}

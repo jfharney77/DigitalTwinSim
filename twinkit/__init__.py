@@ -13,7 +13,11 @@ Adding a component is now a directory with an engine, a profile list, and a
     twinkit.models    CamelModel, camel()
     twinkit.leveling  L(), leveled(), leveled_all(), resolve()
     twinkit.api       make_app(), Level
-    twinkit.testing   TraceProfile, assert_trace_invariants(), assert_engine_is_pure()
+    twinkit.testing   TraceProfile, assert_trace_invariants(), assert_engine_is_pure(),
+                      assert_tour_invariants()
+    twinkit.tour      Tour, TourStep, TourResponse, camera_around(), whole_map()
+                      — the narrated tour's models; the player is
+                      @twinsim/twin-ui's TourPlayer (DellPowerStore/TOUR_PATTERN.md)
 
 ``twinkit.testing`` is importable without FastAPI installed, so it stays cheap
 for the pure-engine tests.

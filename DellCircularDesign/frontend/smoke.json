@@ -1,0 +1,104 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "lifecycle",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "Material ledger",
+        "The trace that closes"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#phase=sort",
+      "name": "deeplink-sort",
+      "svg": true,
+      "visible": [
+        ".ctr-check-ok"
+      ],
+      "text": [
+        "mass is conserved"
+      ]
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "visible": [
+        ".an-sources"
+      ],
+      "text": [
+        "Overview",
+        "Specs"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "svg": true,
+      "visible": [
+        ".cat-section"
+      ],
+      "text": [
+        "Categories",
+        "Where it acts"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "svg": true,
+      "visible": [
+        ".uc-build table"
+      ],
+      "text": [
+        "Plan sheet",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "Ten tonnes, a third of it used before",
+        "Taken back, and every kilogram counted"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/disassembly",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "Take-back at year seven — the mass accounting opens",
+        "From this step the ledger closes"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

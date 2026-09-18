@@ -44,7 +44,7 @@ EDITORIAL: dict[str, tuple[str, str, str]] = {
             "A next-generation appliance joining a live cluster: modernization with zero downtime."),
     "DellPowerMax": ("storage", "built",
             "Rack-scale scale-out storage: drives hang off an InfiniBand fabric, not a director's bus."),
-    "DellPowerScale": ("storage", "partial",
+    "DellPowerScale": ("storage", "built",
             "Scale-out NAS with one namespace: growing is adding a node, never a migration."),
     "DellPowerFlex": ("storage", "built",
             "Software-defined block storage: delete the controller and every node rebuilds."),
@@ -188,7 +188,9 @@ def trace_endpoint(directory: pathlib.Path) -> str | None:
             r'@app\.(?:get|post)\("(/api/[a-z_]+)"(?:, response_model=(\w+))?',
             main.read_text(),
         )
-        if path not in ("/api/health", "/api/levels")
+        # /api/tour returns the shared TourResponse (narrated tour mode), not
+        # the component's trace.
+        if path not in ("/api/health", "/api/levels", "/api/tour")
     ]
     for path, model in routes:
         if model and model.endswith("Response"):

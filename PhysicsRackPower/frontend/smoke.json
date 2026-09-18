@@ -1,0 +1,59 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "simulator",
+      "svg": true,
+      "visible": [".thermal-grid", ".rack-svg", ".scenario-list button", ".load-row", ".phase-meter", ".runtime-pair", ".strip-chart"],
+      "text": ["Rack build", "Guided scenarios", "Phase balance", "UPS & battery", "Event log", "Balanced rack", "predicted (front panel)"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#utility-fail",
+      "name": "simulator-utility-fail",
+      "visible": [".runtime-pair", ".event-log"],
+      "text": ["Utility fails now"],
+      "play": { "click": "button:text-is('Utility fails now')", "watch": ".an-panel:has(> h2:text-is('UPS & battery'))", "times": 1 }
+    },
+    {
+      "hash": "#scenario=balance-the-phases",
+      "name": "scenario-balance-the-phases",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question"],
+      "text": ["Balance the phases", "Strip charts"],
+      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=old-batteries",
+      "name": "scenario-old-batteries",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["The 4-year-old batteries"],
+      "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(> h2:text-is('UPS & battery'))", "times": 1 }
+    },
+    {
+      "hash": "#scenario=self-test-truth",
+      "name": "scenario-self-test-truth",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["The self-test that told the truth"],
+      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=breaker-math",
+      "name": "scenario-breaker-math",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration", ".rules"],
+      "text": ["Breaker math"],
+      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+    },
+    {
+      "hash": "#scenario=chemistry-choice",
+      "name": "scenario-chemistry-choice",
+      "svg": true,
+      "visible": [".scenario-list button.active", ".scenario-narration"],
+      "text": ["Lithium ages differently"],
+      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    }
+  ]
+}

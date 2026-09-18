@@ -1,0 +1,95 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "incident",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "metadata alerts",
+        "It reads the data, not the metadata"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "text": [
+        "Overview",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "visible": [
+        ".cat-name"
+      ],
+      "text": [
+        "Categories"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "text": [
+        "Build sheet",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#phase=verdict",
+      "name": "deeplink-verdict",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "the answer, as a date"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      },
+      "text": [
+        "Seven copies on a line",
+        "Four ruined, and the row looks the same"
+      ]
+    },
+    {
+      "hash": "#tour/blind-then-read",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "Metadata and behaviour detection see nothing",
+        "Nothing on this screen says which four"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

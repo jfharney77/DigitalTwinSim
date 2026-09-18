@@ -1,0 +1,92 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "thermal",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc"
+      ],
+      "text": [
+        "Heat balance",
+        "books balance"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#phase=verify",
+      "name": "deeplink-phase",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "leak / flow verification"
+      ]
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "text": [
+        "Overview",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#components",
+      "name": "components",
+      "text": [
+        "Categories",
+        "Where it lives"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "text": [
+        "Build sheet",
+        "What you get"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "A rack drawn as plumbing"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/heat-balance",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "IT load arrives — heat appears on the cold plates",
+        "Liquid plus air equals IT load, exactly"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}

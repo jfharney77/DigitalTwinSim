@@ -1,0 +1,141 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "root",
+      "svg": true,
+      "visible": [
+        ".an-region",
+        ".gauge-row",
+        ".scenario-list button",
+        ".stat"
+      ],
+      "text": [
+        "Guided scenarios",
+        "Instruments",
+        "Event log",
+        "throughput",
+        "AI Data Platform"
+      ],
+      "play": {
+        "click": "button:text-is('\u00d748h')",
+        "watch": "header .sub",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#scenario=find-the-bottleneck",
+      "name": "scenario-find-the-bottleneck",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Find the bottleneck",
+        "throughput"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=kv-trick",
+      "name": "scenario-kv-trick",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "The KV-cache trick",
+        "throughput"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=stale-data",
+      "name": "scenario-stale-data",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Stale data, confident model",
+        "throughput"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=tune-the-detector",
+      "name": "scenario-tune-the-detector",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Tune the anomaly detector (scored)",
+        "precision \u00b7 recall"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=days-to-full",
+      "name": "scenario-days-to-full",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Days-to-full",
+        "precision \u00b7 recall"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=green-but-sick",
+      "name": "scenario-green-but-sick",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".an-region"
+      ],
+      "text": [
+        "Green but sick",
+        "precision \u00b7 recall"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    }
+  ]
+}

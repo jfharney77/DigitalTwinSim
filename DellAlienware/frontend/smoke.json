@@ -1,0 +1,75 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "powerpath",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".pp-desc"
+      ],
+      "text": [
+        "Telemetry",
+        "Summary",
+        "Scenario"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#anatomy",
+      "name": "anatomy",
+      "svg": true,
+      "text": [
+        "Overview",
+        "Sources"
+      ]
+    },
+    {
+      "hash": "#usecases",
+      "name": "usecases",
+      "text": [
+        "Where this happens",
+        "Outcome"
+      ]
+    },
+    {
+      "hash": "#tour",
+      "name": "tour",
+      "svg": true,
+      "visible": [
+        ".tour-caption"
+      ],
+      "text": [
+        "A laptop, a brick, and a cord between them",
+        "Prove what you are first"
+      ],
+      "play": {
+        "click": "button:text-is('Next')",
+        "watch": ".tour-caption",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#tour/psid-handshake",
+      "name": "tour-signature",
+      "svg": true,
+      "visible": [
+        ".tour-caption",
+        ".tour-step-current"
+      ],
+      "text": [
+        "PSID handshake",
+        "Wattage the platform cannot verify is wattage it will not budget for"
+      ],
+      "play": {
+        "click": "button:text-is('Previous')",
+        "watch": ".tour-caption",
+        "times": 1
+      }
+    }
+  ]
+}
