@@ -16,6 +16,7 @@ body.learn { background: #fff; }
 div.lvl-novice, li.lvl-novice { display: none; }
 body[data-register="novice"] div.lvl-novice { display: block; }
 body[data-register="novice"] div.lvl-standard { display: none; }
+body[data-register="novice"] li.lvl-novice { display: list-item; }
 
 .crumb { color: var(--dell-muted); }
 .prereqs, .trim, .how, .start, .cite, .hint, .done-line { color: var(--dell-muted); }
@@ -64,6 +65,21 @@ body[data-register="novice"] div.lvl-standard { display: none; }
 .how { font-size: 14px; margin-top: 2px; max-width: 72ch; }
 .start { font-size: 13px; margin-top: 10px; }
 
+/* A link label that would answer the prediction has a neutral twin shown
+   while the link is locked. */
+.entry-link .label-locked { display: none; }
+.entry-link.locked .label-open { display: none; }
+.entry-link.locked .label-locked { display: inline; }
+.note-line { font-size: 15px; max-width: 72ch; margin: 0 0 4px; }
+/* The start command is for a twin that is not answering. setup.js adds its
+   own start hint beside the chip; the entry already carries one. */
+.entry:has(.chip.up) .start, .failure:has(.chip.up) .start { display: none; }
+.learn .chip-hint { display: none; }
+/* Something else holds this twin's port: say so, and show the start command
+   even though the chip reads running. */
+.wrong-app-line { color: #b3261e; font-size: 14px; max-width: 72ch; margin: 0 0 6px; }
+.entry.wrong-app:has(.chip.up) .start { display: block; }
+
 /* Checks */
 .checks { display: flex; flex-direction: column; gap: 18px; }
 .check .question { font-weight: 500; max-width: 72ch; }
@@ -98,6 +114,21 @@ body[data-register="novice"] div.lvl-standard { display: none; }
 .twins { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .twins span { font-size: 12px; color: var(--dell-muted); border: 1px solid var(--dell-border); border-radius: 4px; padding: 1px 8px; }
 .reset { margin-top: 24px; }
+
+/* When it goes wrong: the same predict contract, one stop per failure trace */
+.failure { margin-top: 26px; }
+.failure h3 { font-size: 17px; }
+.failure .question { font-size: 16px; }
+.failure .entry-links { margin-top: 12px; }
+
+/* Do it: the graded lab, and the capstone's coupled chain. Same shape as a
+   failure stop — a heading, the goal, the deep link — so the page reads the
+   same whether the module is being watched or worked. */
+.lab, .coupling { margin-top: 26px; }
+.lab h3 { font-size: 17px; }
+.lab .question { font-size: 16px; }
+.lab .entry-links, .coupling .entry-links { margin-top: 12px; }
+.lab:has(.chip.up) .start, .coupling:has(.chip.up) .start { display: none; }
 
 /* Phones: 16px gutters, the level control on its own row, nothing wider
    than the screen. */

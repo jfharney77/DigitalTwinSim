@@ -45,7 +45,7 @@
       <g data-wt="fabric">
         <rect x="20" y="80" width="830" height="90" rx="6" fill="var(--panel)" stroke="var(--fabric)"/>
         <text x="36" y="106" fill="var(--fabric)" font-size="13">SPECTRUM-X ETHERNET FABRIC — leaf/spine, 400 GbE per GPU</text>
-        <text x="36" y="126" fill="var(--txt-dim)" font-size="11">~3.6 Tb/s of NICs per server · RoCE, lossless under incast</text>
+        <text x="36" y="126" fill="var(--txt-dim)" font-size="11">3.2 Tb/s of GPU NICs per server (~3.6 with the host link) · RoCE, lossless under incast</text>
         <text x="36" y="146" fill="var(--txt)" font-size="11">twin: DellPowerSwitchSN6000 — “the fabric never drops a packet”</text>
         <rect x="600" y="95" width="110" height="28" rx="4" fill="var(--bg)" stroke="var(--fabric)"/>
         <text x="620" y="113" fill="var(--fabric)" font-size="11">SPINE ×2</text>
@@ -147,9 +147,9 @@
       { focus: ["cooling"],
         text: "Liquid before silicon. Cold plates, CDUs, and facility water must be flowing and verified before dense GPUs are allowed to draw power — the IR7000 twin's whole trace is this step." },
       { focus: ["racks"],
-        text: "The compute: Dell PowerEdge XE9680-class servers, eight GPUs each, 64 per liquid-cooled rack, ~1,500 racks at first build — the XE9680 twin plays one box's bring-up, NVSwitch fusing its eight GPUs. In the GB200 expansion racks, NVLink instead fuses 72 GPUs into one rack-wide domain — the XE9712 twin's signature step." },
+        text: "The compute: 8-GPU HGX servers of the PowerEdge XE9680 class (the Dell model at Colossus is unpublished; the toured liquid racks were Supermicro's), eight GPUs each, 64 per liquid-cooled rack, ~1,500 racks at first build — the XE9680 twin plays one box's bring-up, NVSwitch fusing its eight GPUs. In the GB200 expansion racks, NVLink instead fuses 72 GPUs into one rack-wide domain — the XE9712 twin's signature step." },
       { focus: ["fabric", "racks"],
-        text: "Every GPU gets its own 400 GbE port onto the Spectrum-X Ethernet fabric — ~3.6 Tb/s of network per server. NVLink stops at the rack wall; this fabric is what makes 100,000 GPUs one machine." },
+        text: "Every GPU gets its own 400 GbE port onto the Spectrum-X Ethernet fabric — 8 × 400 GbE is 3.2 Tb/s per server for the GPUs, ~3.6 Tb/s counting the host's own link. NVLink stops at the rack wall; this fabric is what makes 100,000 GPUs one machine." },
       { focus: ["storage", "fabric"],
         text: "Training data fans out to every rack at once. That many-to-one read pattern (incast) is precisely the congestion the SN6000 twin drives its fabric into — and the fabric must absorb it without dropping a packet." },
       { focus: ["racks", "fabric", "cooling", "power", "storage", "flows"],
@@ -162,8 +162,8 @@
     <tr><th>Block</th><th>Twin in this repo</th><th>Basis</th><th>Open it</th></tr>
     <tr data-wt-ref="racks">
       <td>8-GPU HGX servers (first build — 64 GPUs per rack)</td>
-      <td><code>DellPowerEdgeXE9680/</code> — eight GPUs fuse in the box; the NVLink domain stops at the chassis wall, one NIC per GPU</td>
-      <td><span class="basis sourced">sourced</span></td>
+      <td><code>DellPowerEdgeXE9680/</code> — eight GPUs fuse in the box; the NVLink domain stops at the chassis wall, one NIC per GPU. The 8-GPU HGX server is sourced; the Dell model name is not published, so the XE9680 is the class stand-in</td>
+      <td><span class="basis inferred">inferred</span></td>
       <td><a href="http://localhost:5201/" data-twin-port="5201" data-twin-start="DellPowerEdgeXE9680" data-twin-trace="poweron">localhost:5201</a> · <a href="http://localhost:5201/#anatomy">server anatomy</a></td>
     </tr>
     <tr data-wt-ref="racks">
@@ -210,7 +210,7 @@
   </p>
   <ul>
     <li><a href="http://localhost:5201/#phase=fuse">XE9680 at the fuse</a> — eight GPUs snap into one NVLink domain on the baseboard, atomically, and the counter never grows past 8: the domain stops at the chassis wall. Colossus's first build did this ~12,500 times.</li>
-    <li><a href="http://localhost:5201/#phase=fabric">XE9680 joining the fabric</a> — eight NICs train, one per GPU (~3.6 Tb/s per server): the step where a box becomes a cluster member.</li>
+    <li><a href="http://localhost:5201/#phase=fabric">XE9680 joining the fabric</a> — eight NICs train, one per GPU (3.2 Tb/s per server; ~3.6 with the host's ninth link): the step where a box becomes a cluster member.</li>
     <li><a href="http://localhost:5181/#phase=fused">XE9712 at the fuse</a> — the step where 72 GPUs snap into a single NVLink domain, all at once or not at all. Colossus's expansion racks do this 8,000+ times over.</li>
     <li><a href="http://localhost:5181/#phase=coolant">XE9712 waiting on coolant</a> — "liquid before silicon": the rack pauses until the loop proves itself.</li>
     <li><a href="http://localhost:5185/#phase=congestion">SN6000 under congestion</a> — the busiest link driven past 95% with zero packets dropped; Colossus's training traffic lives here.</li>
@@ -223,6 +223,8 @@
     What the sources actually state: Dell and Supermicro supplied the servers; 100k GPUs in
     122 days, then 200k; 8-GPU HGX servers, 64 GPUs per liquid-cooled rack, ~1,500 racks;
     400 GbE per GPU on Spectrum-X; a ~$5B Dell order of Blackwell systems for the expansion.
+    The sources do not name the Dell server model, and the liquid-cooled racks shown on the
+    public tour were Supermicro's, so the XE9680 block is inferred from the 8-GPU HGX class.
     The specific rack counts drawn here, the four-rack grouping, and the storage tier are
     illustrative — xAI has not published its storage architecture, so the Exascale twin is a
     representative stand-in, not a claim.
@@ -230,7 +232,8 @@
     <span class="lvl-novice">
     What the news reports actually say: Dell and Supermicro built the servers; 100,000 GPUs
     were running within 122 days and 200,000 soon after; each server holds 8 GPUs, each rack
-    64, roughly 1,500 racks; every GPU has its own fast network port. Everything else in the
+    64, roughly 1,500 racks; every GPU has its own fast network port. Nobody has published which Dell server model was
+    used, so the XE9680 here is our best match for that kind of machine. Everything else in the
     drawing — how many racks are shown, how the storage works — is our illustration, not
     something xAI has confirmed. Blocks tagged "representative" are educated stand-ins.
     </span>

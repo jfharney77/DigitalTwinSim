@@ -368,6 +368,9 @@ def _all_cites():
         for check in m["checks"]:
             for c in check["cite"]:
                 yield m, c
+        for f in m.get("failures", []):
+            for c in f["cite"]:
+                yield m, c
 
 
 def test_cites_resolve():
@@ -406,6 +409,330 @@ def test_quoted_numbers():
                 where = f"step {pin['step']} {pin['field']}"
             if got != pin["value"]:
                 problems.append(f"{m['id']}: {pin['twin']} {where} is {got}, course quotes {pin['value']}")
+    if problems:
+        _fail(problems)
+
+
+def test_a_novice_reader_meets_no_unleveled_prose():
+    """Simulated level-1 students gave up on the second line of a module
+    whenever the lede was plain and the next thing was not. Everything a
+    reader meets before and after the twin is authored in both registers:
+    the prerequisite, every objective, every check question and answer, and
+    every how-to or bridging note under a link. Options may stay a plain
+    string when the words are already plain; a leveled one must differ."""
+    problems = []
+
+    def two(where, v):
+        if not isinstance(v, dict) or not v.get("standard") or not v.get("novice"):
+            problems.append(f"{where}: needs a standard and a novice register")
+        elif v["standard"] == v["novice"]:
+            problems.append(f"{where}: registers are identical")
+
+    for m in modules():
+        mid = m["id"]
+        if m.get("background"):
+            two(f"{mid} background", m["background"])
+        for i, o in enumerate(m["objectives"]):
+            two(f"{mid} objective {i}", o)
+        for i, c in enumerate(m["checks"]):
+            two(f"{mid} check {i} q", c["q"])
+            two(f"{mid} check {i} a", c["a"])
+        for e in m["entries"]:
+            if "note" in e:
+                two(f"{mid} {e['twin']} note", e["note"])
+            for link in e["links"]:
+                if "how" in link:
+                    two(f"{mid} {e['twin']} how", link["how"])
+        stops = [("predict", m["predict"]["options"])] + [(f["scenario"], f["options"]) for f in m.get("failures", [])]
+        for name, options in stops:
+            for i, o in enumerate(options):
+                if isinstance(o, dict):
+                    two(f"{mid} {name} option {i}", o)
+        if not m["core"] and not m.get("background"):
+            problems.append(f"{mid}: an elective defines its terms in a background line")
+    if problems:
+        _fail(problems)
+
+
+def test_modules_with_several_twins_bridge_between_them():
+    """A bare list of links left every persona asking why they were being
+    sent to the next app. From the second twin on, an entry says what it adds
+    (`note`) or what to do there (`how` on a link); a physics app, which opens
+    as a dense console, always says what to watch."""
+    problems = []
+    for m in modules():
+        for i, e in enumerate(m["entries"]):
+            guided = "note" in e or any("how" in link for link in e["links"])
+            if e["twin"].startswith("Physics") and not any("how" in link for link in e["links"]):
+                problems.append(f"{m['id']}: {e['twin']} links say nothing about what to watch")
+            elif i > 0 and e.get("port") and not guided:
+                problems.append(f"{m['id']}: nothing bridges into {e['twin']}")
+    if problems:
+        _fail(problems)
+
+
+def test_entries_know_their_twin_by_its_page_title():
+    """The liveness chip only knows that something answers on a port.
+    learn.js compares the answering page's <title> with `pageTitle`, so each
+    entry carries its twin's real title, and no two twins share one."""
+    problems, seen = [], {}
+    for m, e in entries():
+        if not e.get("port"):
+            continue
+        html = (ROOT / e["twin"] / "frontend" / "index.html").read_text()
+        title = re.search(r"<title>(.*?)</title>", html, re.S).group(1).strip()
+        if e.get("pageTitle") != title:
+            problems.append(f"{m['id']}: {e['twin']} pageTitle is {e.get('pageTitle')!r}, index.html says {title!r}")
+        if seen.setdefault(title, e["twin"]) != e["twin"]:
+            problems.append(f"{e['twin']} and {seen[title]} share the page title {title!r}")
+    if problems:
+        _fail(problems)
+
+
+# ---- numbers quoted from guided scenarios ----------------------------------
+
+@lru_cache(maxsize=None)
+def guided_trace(twin, scenario, patch_json):
+    """A physics app's guided scenario, run through the app's own routes in
+    its own interpreter: the scenario body GET /api/scenarios serves, with an
+    optional patch merged in (the change the course tells the reader to make),
+    POSTed to /api/simulate. None when the venv is absent."""
+    backend = ROOT / twin / "backend"
+    py = backend / ".venv" / "bin" / "python"
+    if not py.exists():
+        return None
+    code = (
+        "import json, sys, warnings\n"
+        "warnings.simplefilter('ignore')\n"
+        "from fastapi.testclient import TestClient\n"
+        "from app.main import app\n"
+        "c = TestClient(app)\n"
+        "body = [s for s in c.get('/api/scenarios').json() if s['id'] == sys.argv[1]][0]['scenario']\n"
+        "def merge(a, b):\n"
+        "    for k, v in b.items():\n"
+        "        if isinstance(v, dict) and isinstance(a.get(k), dict): merge(a[k], v)\n"
+        "        else: a[k] = v\n"
+        "merge(body, json.loads(sys.argv[2]))\n"
+        "print(json.dumps(c.post('/api/simulate', json=body).json()['trace']))\n"
+    )
+    out = subprocess.run([str(py), "-c", code, scenario, patch_json], cwd=backend,
+                         capture_output=True, text=True, timeout=180)
+    if out.returncode != 0:
+        raise AssertionError(f"{twin}: running scenario {scenario} failed:\n{out.stderr[-800:]}")
+    return json.loads(out.stdout.strip().splitlines()[-1])
+
+
+def test_scenario_quoted_numbers():
+    """The numbers the course quotes from a physics app's guided scenario
+    (`scenarioPins`): read at a tick of the scenario's own trace (-1 is the
+    last), within `tol` (default 0.5, so a quoted "about 65 W" pins 64.9)."""
+    problems = []
+    for m in modules():
+        linked = {(e["twin"], l["id"]) for e in m["entries"] for l in e["links"] if l["kind"] == "scenario"}
+        for pin in m.get("scenarioPins", []):
+            where = f"{m['id']}: {pin['twin']} {pin['scenario']}"
+            if (pin["twin"], pin["scenario"]) not in linked:
+                problems.append(f"{where} is pinned but not linked from the module")
+                continue
+            trace = guided_trace(pin["twin"], pin["scenario"], json.dumps(pin.get("patch", {}), sort_keys=True))
+            if trace is None:
+                continue
+            step = pin["step"]
+            if not -len(trace) <= step < len(trace):
+                problems.append(f"{where} has no tick {step}")
+                continue
+            got, want = trace[step].get(pin["field"]), pin["value"]
+            if isinstance(want, bool) or isinstance(want, str):
+                ok = got == want
+            else:
+                ok = isinstance(got, (int, float)) and abs(got - want) <= pin.get("tol", 0.5)
+            if not ok:
+                problems.append(f"{where} tick {step} {pin['field']} is {got!r}, course quotes {want!r}")
+    if problems:
+        _fail(problems)
+
+
+# ---- failure scenarios ----------------------------------------------------
+
+def failures():
+    """Every "when it goes wrong" stop: (module, stop)."""
+    for m in modules():
+        for f in m.get("failures", []):
+            yield m, f
+
+
+@lru_cache(maxsize=None)
+def scenario_probe(twin, scenario, request_json):
+    """Ask the twin's own backend about a failure scenario, in the twin's own
+    interpreter and through its real routes (FastAPI's TestClient, no server,
+    no port): the ids GET /api/scenarios lists, the scenario's trace, and the
+    status an unknown id gets. None when the venv is absent."""
+    backend = ROOT / twin / "backend"
+    py = backend / ".venv" / "bin" / "python"
+    if not py.exists():
+        return None
+    code = (
+        "import json, sys, warnings\n"
+        "warnings.simplefilter('ignore')\n"
+        "from fastapi.testclient import TestClient\n"
+        "from app.main import app\n"
+        "req = json.loads(sys.argv[2])\n"
+        "c = TestClient(app)\n"
+        "def call(sid):\n"
+        "    url = '/api/' + req['endpoint'] + '?scenario=' + sid\n"
+        "    return c.post(url, json=req['body']) if req['method'] == 'POST' else c.get(url)\n"
+        "r = call(sys.argv[1])\n"
+        "body = r.json()\n"
+        "print(json.dumps({\n"
+        "    'ids': [s['id'] for s in c.get('/api/scenarios').json()],\n"
+        "    'status': r.status_code,\n"
+        "    'trace': body.get('trace') if isinstance(body, dict) else None,\n"
+        "    'unknown': call('no-such-scenario').status_code,\n"
+        "}))\n"
+    )
+    out = subprocess.run([str(py), "-c", code, scenario, request_json], cwd=backend,
+                         capture_output=True, text=True, timeout=120)
+    if out.returncode != 0:
+        raise AssertionError(f"{twin}: probing scenario {scenario} failed:\n{out.stderr[-800:]}")
+    return json.loads(out.stdout.strip().splitlines()[-1])
+
+
+def _failure_request(f):
+    """How the stop's trace is fetched: GET /api/<trace>?scenario=<id>, or the
+    explicit request a POST twin (Alienware) needs."""
+    req = f.get("request") or {"method": "GET", "endpoint": f["trace"], "body": None}
+    return json.dumps(req, sort_keys=True)
+
+
+def _failure_trace(f):
+    probe = scenario_probe(f["twin"], f["scenario"], _failure_request(f))
+    return None if probe is None else probe
+
+
+def test_failure_scenario_ids_exist_in_the_backend():
+    """#scenario=<id> on a narrative twin names a scenario its backend really
+    serves. Without a venv: the id is a string literal in backend/app, the
+    route exists, and App.tsx reads scenario= from the hash. With one: the id
+    is in GET /api/scenarios, the trace comes back 200, an unknown id is a
+    404 (so a typo cannot silently play the happy path), and the phase or
+    step the link pauses on is where the course says it is."""
+    problems = []
+    for m, f in failures():
+        twin, sid = f["twin"], f["scenario"]
+        app_dir = ROOT / twin / "backend" / "app"
+        if not any(f'"{sid}"' in p.read_text() for p in app_dir.glob("*.py")):
+            problems.append(f"{m['id']}: {twin} backend/app never names scenario {sid!r}")
+        req = json.loads(_failure_request(f))
+        main = (app_dir / "main.py").read_text()
+        if f'"/api/{req["endpoint"]}"' not in main or '"/api/scenarios"' not in main:
+            problems.append(f"{m['id']}: {twin} main.py lacks /api/{req['endpoint']} or /api/scenarios")
+        if "scenario" not in (ROOT / twin / "frontend" / "src" / "App.tsx").read_text():
+            problems.append(f"{m['id']}: {twin} App.tsx does not read #scenario=")
+        at = f["at"]
+        if at["kind"] not in ("phase", "step"):
+            problems.append(f"{m['id']}: {twin} failure stop pauses on a phase or a step")
+            continue
+        probe = _failure_trace(f)
+        if probe is None:
+            continue
+        if sid not in probe["ids"]:
+            problems.append(f"{m['id']}: {twin} /api/scenarios lists {probe['ids']}, not {sid!r}")
+        if probe["status"] != 200 or not probe["trace"]:
+            problems.append(f"{m['id']}: {twin} scenario {sid} returned {probe['status']} with no trace")
+            continue
+        if probe["unknown"] != 404:
+            problems.append(f"{m['id']}: {twin} answers an unknown scenario id with {probe['unknown']}, not 404")
+        trace = probe["trace"]
+        if at["kind"] == "phase":
+            if at["value"] not in {s["phase"] for s in trace}:
+                problems.append(f"{m['id']}: {twin} #scenario={sid}&phase={at['value']} is not a phase of that trace")
+        else:
+            n = at["value"]
+            if not 0 <= n < len(trace):
+                problems.append(f"{m['id']}: {twin} #scenario={sid}&step={n} is past the last step")
+            elif trace[n]["phase"] != at["expectPhase"]:
+                problems.append(f"{m['id']}: {twin} {sid} step {n} is {trace[n]['phase']}, course expects {at['expectPhase']}")
+    if problems:
+        _fail(problems)
+
+
+def test_failure_quoted_numbers():
+    """The numbers a failure stop quotes, read off the failure trace itself."""
+    problems = []
+    for m, f in failures():
+        probe = _failure_trace(f)
+        if probe is None or not probe["trace"]:
+            continue
+        trace = probe["trace"]
+        for pin in f.get("pins", []):
+            if "agg" in pin:
+                got, where = max(s[pin["field"]] for s in trace), f"max {pin['field']}"
+            elif pin["step"] >= len(trace):
+                problems.append(f"{m['id']}: {f['scenario']} has no step {pin['step']}")
+                continue
+            else:
+                got, where = trace[pin["step"]].get(pin["field"]), f"step {pin['step']} {pin['field']}"
+            if got != pin["value"]:
+                problems.append(f"{m['id']}: {f['twin']} {f['scenario']} {where} is {got!r}, course quotes {pin['value']!r}")
+    if problems:
+        _fail(problems)
+
+
+def test_failure_stops_have_the_contract():
+    """A failure stop is a prediction like any other: a question and an
+    answer in both registers, at least three options, a valid answer index,
+    the tests that settle it, quoted numbers pinned, and a twin the module
+    already teaches at its registered port."""
+    reg = json.loads((ROOT / "ports.json").read_text())["twins"]
+    problems, seen = [], set()
+    for m, f in failures():
+        where = f"{m['id']}/{f.get('scenario')}"
+        for key in ("twin", "port", "name", "scenario", "at", "label", "q", "options", "answer", "a", "cite", "pins"):
+            if key not in f:
+                problems.append(f"{where}: missing {key}")
+        if problems and problems[-1].startswith(where):
+            continue
+        if f["twin"] not in {e["twin"] for e in m["entries"]}:
+            problems.append(f"{where}: {f['twin']} is not a twin this module teaches")
+        if reg.get(f["twin"], {}).get("frontend") != f["port"]:
+            problems.append(f"{where}: port {f['port']} is not {f['twin']}'s frontend port in ports.json")
+        if "trace" not in f and "request" not in f:
+            problems.append(f"{where}: needs a trace endpoint or an explicit request")
+        for field in ("q", "a"):
+            v = f[field]
+            if not isinstance(v, dict) or not v.get("standard") or not v.get("novice") or v["standard"] == v["novice"]:
+                problems.append(f"{where}: {field} needs two distinct registers")
+        if len(f["options"]) < 3 or not 0 <= f["answer"] < len(f["options"]):
+            problems.append(f"{where}: needs at least 3 options and a valid answer index")
+        if not f["cite"] or not f["pins"]:
+            problems.append(f"{where}: needs a cite and at least one pinned number")
+        if (f["twin"], f["scenario"]) in seen:
+            problems.append(f"{where}: listed twice")
+        seen.add((f["twin"], f["scenario"]))
+    if problems:
+        _fail(problems)
+
+
+def test_what_goes_wrong_track_strings_every_failure():
+    """The failure track visits every failure stop exactly once, and asks
+    nothing of a module that has none."""
+    problems = []
+    tracks = [t for t in course()["tracks"] if t.get("failuresOnly")]
+    if [t["id"] for t in tracks] != ["what-goes-wrong"]:
+        _fail(["exactly one failuresOnly track, id what-goes-wrong"])
+    by_id = {m["id"]: m for m in modules()}
+    visited = []
+    for s in tracks[0]["steps"]:
+        stops = [f for f in by_id[s["module"]].get("failures", []) if "only" not in s or f["twin"] in s["only"]]
+        if not stops:
+            problems.append(f"what-goes-wrong: {s['module']} shows no failure stop")
+        for twin in s.get("only", []):
+            if twin not in {f["twin"] for f in stops}:
+                problems.append(f"what-goes-wrong: {s['module']} keeps {twin}, which has no failure stop")
+        visited += [(f["twin"], f["scenario"]) for f in stops]
+    every = [(f["twin"], f["scenario"]) for _, f in failures()]
+    if sorted(visited) != sorted(every):
+        problems.append(f"what-goes-wrong visits {sorted(visited)}, the course has {sorted(every)}")
     if problems:
         _fail(problems)
 
@@ -524,6 +851,182 @@ def test_clean_design_copy():
 def test_root_index_links_learn():
     if 'href="Learn/index.html"' not in (ROOT / "index.html").read_text():
         _fail(["index.html does not link Learn/index.html"])
+
+
+# ---- graded labs and coupled chains ---------------------------------------
+# A lab stop is do-mode: the module's app grades a scenario the reader builds.
+# The course only links to it, so what can drift is the id, the title, the
+# difficulty and the port — all pinned here against the app's own labs.py.
+
+LAB_ID_RE = re.compile(r'id="([a-z0-9-]+)"')
+
+
+@lru_cache(maxsize=None)
+def app_labs(twin):
+    """{lab id: (title, difficulty)} read out of <twin>/backend/app/labs.py.
+    Read, not imported: the file is pure data plus a pure grader, and the
+    course has no business starting an interpreter per twin for this."""
+    path = ROOT / twin / "backend" / "app" / "labs.py"
+    if not path.exists():
+        return {}
+    text = path.read_text()
+    found = {}
+    for m in re.finditer(r"^[A-Z_0-9]+ = Lab\(\n(.*?)^\)", text, re.S | re.M):
+        block = m.group(1)
+        lid = LAB_ID_RE.search(block)
+        title = re.search(r'title="([^"]+)"', block)
+        diff = re.search(r"difficulty=(\d)", block)
+        if lid and title and diff:
+            found[lid.group(1)] = (title.group(1), int(diff.group(1)))
+    return found
+
+
+def lab_stops():
+    for m in modules():
+        if "lab" in m:
+            yield m, m["lab"]
+
+
+def test_lab_stops_name_real_labs():
+    """Every lab stop names a lab the app actually declares, with the app's
+    own title and difficulty, on the twin's registered frontend port, and the
+    app's frontend answers the #lab=<id> deep link the course sends."""
+    reg = json.loads((ROOT / "ports.json").read_text())["twins"]
+    problems = []
+    for m, lab in lab_stops():
+        twin = lab["twin"]
+        known = app_labs(twin)
+        if not known:
+            problems.append(f"{m['id']}: {twin} declares no labs")
+            continue
+        if lab["id"] not in known:
+            problems.append(f"{m['id']}: {twin} has no lab {lab['id']} (has {', '.join(sorted(known))})")
+            continue
+        title, difficulty = known[lab["id"]]
+        if lab["title"] != title:
+            problems.append(f"{m['id']}: lab title is {lab['title']!r}, {twin} says {title!r}")
+        if lab["difficulty"] != difficulty:
+            problems.append(f"{m['id']}: lab difficulty is {lab['difficulty']}, {twin} says {difficulty}")
+        if reg.get(twin, {}).get("frontend") != lab["port"]:
+            problems.append(f"{m['id']}: lab port :{lab['port']} is not {twin}'s frontend port")
+        app = ROOT / twin / "frontend" / "src" / "App.tsx"
+        if "#lab=" not in app.read_text():
+            problems.append(f"{m['id']}: {twin}/frontend/src/App.tsx has no #lab= deep link")
+        for cite in lab["cite"]:
+            path, _, name = cite.partition("::")
+            f = ROOT / path
+            if not f.exists() or not re.search(rf"^def {re.escape(name)}\(", f.read_text(), re.M):
+                problems.append(f"{m['id']}: lab cite {cite} does not resolve")
+    if problems:
+        _fail(problems)
+
+
+def test_every_module_whose_app_has_labs_carries_the_lab_stop():
+    """A lab that exists and is never linked is a lab nobody finds. If any
+    twin in a module declares labs, the module carries a stop for one of them."""
+    problems = []
+    for m in modules():
+        if "lab" in m:
+            continue
+        for e in m["entries"]:
+            if app_labs(e["twin"]):
+                problems.append(f"{m['id']}: {e['twin']} has graded labs and the module links none")
+    if problems:
+        _fail(problems)
+
+
+def test_lab_prose_is_authored_in_both_registers():
+    """Same rule as everything else a reader meets: two registers, and they
+    have to differ. `how` may be shared between stops (it describes the same
+    mechanism); the goal and the lever are about this lab."""
+    problems = []
+    for m, lab in lab_stops():
+        for field in ("goal", "lever", "how"):
+            v = lab.get(field)
+            if not isinstance(v, dict) or not v.get("standard") or not v.get("novice"):
+                problems.append(f"{m['id']} lab {field}: needs a standard and a novice register")
+            elif v["standard"] == v["novice"]:
+                problems.append(f"{m['id']} lab {field}: registers are identical")
+        if not isinstance(lab.get("label"), str) or not lab["label"]:
+            problems.append(f"{m['id']} lab: label must be one plain string")
+    if problems:
+        _fail(problems)
+
+
+def test_the_labs_track_is_every_lab_stop_in_course_order():
+    tracks = {t["id"]: t for t in course()["tracks"]}
+    problems = []
+    if "labs" not in tracks:
+        _fail(["there is no 'labs' track"])
+    track = tracks["labs"]
+    if not track.get("labsOnly"):
+        problems.append("the labs track must set labsOnly, or it renders as a normal track")
+    want = [m["id"] for m, _ in lab_stops()]
+    got = [s["module"] for s in track["steps"]]
+    if got != want:
+        problems.append(f"labs track is {got}, the lab stops in course order are {want}")
+    js = (LEARN / "learn.js").read_text()
+    for needed in ("labsOnly", "renderLabSection", "#lab="):
+        if needed not in js:
+            problems.append(f"learn.js does not handle {needed}")
+    if problems:
+        _fail(problems)
+
+
+# The capstone's last stop is the coupled chain: compose/ runs two engines at
+# once, and the couplings the course names have to be the ones that exist.
+
+def coupling_ids():
+    text = (ROOT / "compose" / "catalog.py").read_text()
+    return set(re.findall(r'id="(c\d+)"', text))
+
+
+def chain_ids():
+    text = (ROOT / "compose" / "presets.py").read_text()
+    return set(re.findall(r'id="([a-z0-9-]+)"', text))
+
+
+def test_the_capstone_ends_on_the_coupled_chain():
+    """M12 is the last core module, and the thing after its lab is the chain
+    that computes the factory from the other engines' traces. Every coupling
+    id, the chain id, the port and both cites are pinned against compose/."""
+    problems = []
+    capstone = [m for m in modules() if m["core"]][-1]
+    if "couplings" not in capstone:
+        _fail([f"{capstone['id']} is the last core module and names no coupled chain"])
+    c = capstone["couplings"]
+    reg = json.loads((ROOT / "ports.json").read_text())["twins"]
+    if reg.get(c["twin"], {}).get("frontend") != c["port"]:
+        problems.append(f"{capstone['id']}: coupled chain port :{c['port']} is not {c['twin']}'s frontend port")
+    known_couplings, known_chains = coupling_ids(), chain_ids()
+    if not known_couplings or not known_chains:
+        problems.append("compose/catalog.py or compose/presets.py declares nothing")
+    if c["chain"] not in known_chains:
+        problems.append(f"{capstone['id']}: chain {c['chain']} is not a preset chain in compose/presets.py")
+    for cid in c["ids"]:
+        if cid not in known_couplings:
+            problems.append(f"{capstone['id']}: coupling {cid} is not in compose/catalog.py")
+    for cid in c["seams"]:
+        if cid not in c["ids"]:
+            problems.append(f"{capstone['id']}: seam {cid} is not one of the chain's couplings")
+    for field in ("text", "how"):
+        v = c[field]
+        if not v.get("standard") or not v.get("novice") or v["standard"] == v["novice"]:
+            problems.append(f"{capstone['id']} couplings {field}: needs two distinct registers")
+    for cite in c["cite"]:
+        path, _, name = cite.partition("::")
+        f = ROOT / path
+        if not f.exists() or not re.search(rf"^def {re.escape(name)}\(", f.read_text(), re.M):
+            problems.append(f"{capstone['id']}: coupling cite {cite} does not resolve")
+    app = ROOT / c["twin"] / "frontend" / "src" / "App.tsx"
+    text = app.read_text()
+    for hashed in ("#chain=", "#seams"):
+        if hashed not in text:
+            problems.append(f"{c['twin']}/frontend/src/App.tsx has no {hashed} deep link")
+    if "renderCouplings" not in (LEARN / "learn.js").read_text():
+        problems.append("learn.js does not render the coupled chain")
+    if problems:
+        _fail(problems)
 
 
 TESTS = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

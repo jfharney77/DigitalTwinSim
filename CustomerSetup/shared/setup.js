@@ -283,6 +283,15 @@
       });
       host.appendChild(b);
     });
+    // The twins author five registers; these pages author two. Say so where the
+    // reader can see it — a tooltip is invisible on touch, and a button that
+    // changes nothing without explanation reads as a broken control.
+    var note = document.createElement("span");
+    note.className = "level-note";
+    note.textContent =
+      "These pages are written in two registers: Novice and Plain read alike, " +
+      "Standard to Expert read alike. The twins distinguish all five.";
+    host.appendChild(note);
     applyLevel(readLevel());
   }
 

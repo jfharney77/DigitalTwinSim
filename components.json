@@ -546,6 +546,17 @@
       "frontendPort": 5213,
       "traceEndpoint": "/api/simulate",
       "spec": null
+    },
+    {
+      "name": "compose",
+      "directory": "compose",
+      "family": "composition",
+      "status": "built",
+      "description": "Two engines at once: one twin's trace becomes another's scenario, with an identity asserted across the seam.",
+      "backendPort": 8048,
+      "frontendPort": 5221,
+      "traceEndpoint": "/api/run",
+      "spec": null
     }
   ]
 }

@@ -1,0 +1,76 @@
+# The hosted site, on GitHub Pages — the same build the GitLab `pages` job
+# runs (.gitlab-ci.yml), publishing the same site/ directory. The bundles use
+# `vite build --base=./`, so the same files serve from /<Component>/ on GitLab
+# Pages and /<repo>/<Component>/ here with no per-host configuration.
+#
+# What the build does, and what it cannot do, is in docs/STATIC_HOSTING.md.
+# Nothing is committed: site/ is generated and gitignored.
+#
+# Size, measured on the full build (43 components): ~144 MB and ~2,300 files,
+# almost all snapshot JSON. Over the wire it is far less — Pages serves it
+# gzipped and a trace compresses about seventy to one.
+
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:      # the manual branch build, GitLab's `pages-preview`
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; let a running one finish rather than cancelling it
+# half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # No component .venv exists on a runner, so scripts/build_static.py runs
+      # under this interpreter: the engines are pure Python and need only
+      # fastapi + pydantic to import.
+      - run: pip install "fastapi>=0.110" "pydantic>=2.6"
+
+      - run: npm ci
+
+      - name: Assemble site/
+        run: scripts/build_site.sh
+
+      - name: Report what was published
+        run: |
+          du -sh site
+          cat site/hosted.json
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

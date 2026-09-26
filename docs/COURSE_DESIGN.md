@@ -572,6 +572,7 @@ one track marks it done in all of them.
 | `security` | Security and resilience teams | M2 (iDRAC only) → M9 → M10 (NativeEdge only) → M8 (gray failure only) | 2 h |
 | `operations` | Platform and ops teams | M2 → M10 → M7 (PowerScale only) → M9 (PowerProtect only) | 2 h |
 | `executive-overview` | Decision makers | Predict-before-you-play only, no checks: M1, M4, M7, M9, M12 | 45 min |
+| `what-goes-wrong` | Operators and anyone on call | Failure stops only: M2 (iDRAC) → M4 (XE9712) → M6 (PowerStore) → M8 (SN6000) → M9 (PowerProtect, Cyber Detect) → M10 (CloudIQ, VxRail, NativeEdge) → E6 (Alienware) | 90 min |
 
 The executive track uses each module's predict question and the one-sentence
 idea, and skips the check questions. That fits the reading-level mechanism
@@ -776,8 +777,9 @@ is what `test_cites_resolve` requires.
   `{twin, step, field, value}` tuples and check them through each twin's venv, in
   the same subprocess pattern as `test_step_fallbacks_are_in_range_and_phase`.
 - Wording follows the twins: figures are illustrative unless the twin marks them
-  sourced. Dell's product claims (for example Cyber Detect's 99.99%) are
-  attributed to Dell, as the twins attribute them.
+  sourced. Product claims are attributed as the twins attribute them (for
+  example Cyber Detect's 99.99%, which Dell quotes from a 2024 ESG report
+  commissioned by Index Engines).
 
 ---
 
@@ -826,4 +828,118 @@ Reality moved while this brief was written, and the build follows reality:
   and checks are standard-register only.
 - Registered: `ports.json` `reserved.learnPages = 5172`, the `Learn` CI shard
   in `.gitlab-ci.yml`, and the root `index.html` link.
+
+## 10. Failure stops (added 2026-09-18)
+
+Ten narrative twins now serve one failure trace each beside the happy path
+(`GET /api/<trace>?scenario=<id>`, listed by `GET /api/scenarios`, opened in
+the UI with `#scenario=<id>&phase=<name>` or `&step=N`; the happy path is
+pinned byte-identical in each twin). The course uses them as follows.
+
+- **A "When it goes wrong" stop per twin**, in the module that already teaches
+  it, after the checks. It is a prediction under the same contract as the
+  module's own: a question in both registers, three options, a commitment
+  that unlocks the deep link, the answer hidden until revealed, and the tests
+  that settle it. The data lives in the module's `failures` list in
+  `course.js`; `learn.js` renders it; no generated page changes.
+- **The stops are optional inside a module.** A module is still done on its
+  reveal plus its checks. The `what-goes-wrong` track (`failuresOnly`) shows
+  only the stops, and there a stop is done when each answer is revealed.
+  The short track (`predictOnly`) hides them.
+- **Pinned like everything else.** `test_failure_scenario_ids_exist_in_the_backend`
+  checks each id against the twin's `backend/app` statically and, through the
+  twin's own `.venv` and FastAPI's `TestClient`, against `GET /api/scenarios`,
+  the scenario trace, the 404 for an unknown id, and the phase or step the link
+  pauses on. `test_failure_quoted_numbers` reads every quoted number from the
+  failure trace. Alienware's trace is a `POST`, so its stop carries the request
+  body the test sends.
+
+| Module | Twin | Scenario | The invariant the stop teaches | Settled by |
+|---|---|---|---|---|
+| M2 | DellIDRAC | `firmware-update-rollback` | The host never changes power state while iDRAC is dark; one bootable image always remains | `test_firmware_rollback.py::test_the_host_power_state_never_changes` |
+| M4 | DellPowerEdgeXE9712 | `coolant-fault` | No GPU draws power without verified flow; the domain is 0 or 72, never 68 | `test_scenarios.py::test_the_domain_is_only_ever_0_or_72_never_68` |
+| M6 | DellPowerStore | `node-loss-failover` | Zero acknowledged writes lost; writes stay mirrored on the shared NVRAM pair (not the 500) | `test_failover.py::test_writes_stay_mirrored_while_single_node` |
+| M8 | DellPowerSwitchSN6000 | `gray-link` | The sick link reads up, drops stay 0, and throughput returns only when an operator steers traffic | `test_gray_link.py::test_throughput_recovers_only_after_traffic_is_steered` |
+| M9 | DellPowerProtect | `cleaning-gc` | Expiry frees nothing; a clean frees only what nothing references; locked data never goes early | `test_cleaning_scenario.py::test_the_first_clean_returns_less_than_the_estimate` |
+| M9 | DellCyberDetect | `dwell-exceeds-retention` | A corrupted copy is never certified clean; recovery goes off-array at an older point | `test_scenarios.py::test_a_corrupted_copy_is_never_certified_clean` |
+| M10 | DellCloudIQ | `connected-no-data` | Never a green score on no data; only the customer side can fix it | `test_scenarios.py::test_never_a_green_score_on_no_data` |
+| M10 | DellVxRail | `node-add-mismatch` | A mismatched node never joins vSAN; the refusal touches nothing | `test_nodeadd.py::test_a_mismatched_node_never_joins_vsan` |
+| M10 | DellNativeEdge | `attestation-fails` | Nothing is deployed to an unattested device, and one bad device never delays the rest | `test_scenarios.py::test_one_bad_device_never_blocks_the_estate` |
+| E6 | DellAlienware | `charge-taper-diagnostics` | Every zero-charge state has one named limiter; the thermal pause holds with hysteresis | `test_diagnostics.py::test_the_heat_pause_is_not_a_budget_problem` |
+
+The realism limits the twins state are carried into the answers: the iDRAC
+image switch is inferred, the XE9712 rack-wide hold is site policy, the
+PowerStore answer excludes the 500, the SN6000 steer-then-shut split is
+operator practice, the Cyber Detect all-suspicious sequence is the twin's own
+reading, the NativeEdge single-device failure is illustrative, the VxRail
+refusal assumes an unsupported version pair, and the Alienware 45 °C and
+42 °C thresholds are stand-ins.
+
+## 11. Revision after the student review (2026-09-19)
+
+Three simulated students (a newcomer reading at level 1, a practitioner at
+level 3, a sceptical expert at level 5) took every module against the running
+twins. `Learn/course.js` is the source of truth for what the pages say; §3 and
+§7 above are the original brief and are superseded wherever they differ from
+it. The findings clustered, and each cluster became a rule the tests now hold.
+
+- **Only part of a page changed with the level.** The lede and the prediction
+  were in two registers; the prerequisite, objectives, options, checks and
+  every line under a link were not, so a level-1 reader met several undefined
+  terms on the second line of most modules. Everything is now authored twice
+  (`test_a_novice_reader_meets_no_unleveled_prose`), electives define their
+  terms in a `background` line, and the pytest ids under an answer show in the
+  standard register only.
+- **Answers quoted the engine, not the screen.** Step numbers were the 0-based
+  `#step=` index against a UI that counts from one; phases were engine ids
+  (`bmc`, `gpuinit`, `growstorage`) the UI never shows; "cycle cost" appears on
+  no screen; several numbers were a test's assert bound ("more than 1.5×",
+  "under 40 W", "more than five times") when the screen shows a value. Answers
+  now use the on-screen numbering and labels, describe the dwell as what the
+  reader can watch (Run lingers, the elapsed clock jumps), gloss cycle cost
+  once as a relative weight, and quote the displayed value with the test's
+  bound named as a bound.
+- **Predictions were given away.** Ledes, objectives, stop headings and the
+  legible-but-locked link labels stated the answer. Ledes and objectives were
+  reworded to pose the question, `lockedLabel` gives a neutral label until the
+  reader commits, and three predictions that the module title settled were
+  replaced (M8 asks what happens to total throughput when the hot link cools;
+  M10 asks which Private Cloud stage takes longest; E5 asks what hosts see
+  during the rebalance). Questions whose answer depended on an unstated
+  premise now state it: M1 gives the die and the two starting numbers, M4's
+  failure stop states the single-partition policy and asks only about the
+  counter, M9 states that the attack stays under every threshold, M11 asks
+  about the weights and not about all traffic, E6's failure stop gives the
+  charge mode.
+- **The evidence was not on the linked screen.** Checks leaned on experiments
+  no link set up. Links were added for them (ME5 Lose a controller, MX7000's
+  two feed-loss runs, RackPower Balance the phases, PowerFlex at steady I/O,
+  the GPU simulator's LLM token decode workload in M11, Fleet's two ×8
+  presets), every physics-app link carries a `how` line naming the speed
+  control, the instrument and the moment to read it, and the XE9712 failure
+  link now lands on the leak the question is about.
+- **Nothing bridged one twin to the next.** Pairs of twins drawn separately
+  disagree on illustrative numbers (R760 and iDRAC standby watts and clocks,
+  IR7000 and PhysicsCDU flows, Pro Max Plus and PhysicsClient token rates),
+  and PowerScale's "no metadata server" sits beside Exascale's metadata
+  server. Each entry after a module's first now has a `note` saying what it
+  adds and how its numbers relate
+  (`test_modules_with_several_twins_bridge_between_them`).
+- **Overclaims.** M1's "not a property of the chip" (the ridge point is one),
+  M2's "cannot be skipped" (training is cached), M6's lockstep as a product
+  fact (it is the twin's symmetry; the nodes boot independently), M8's "loss
+  impossible to express" (congestion loss only, and both fabrics pay in
+  backpressure), M5's "share that leaves through the liquid" (all of it does;
+  91% is the cold-plate share), E1's self-test (a runtime calibration on real
+  units), E2's N+1 answer (true of the model's single-feed cabling).
+- **Scenario numbers are pinned.** `scenarioPins` and
+  `test_scenario_quoted_numbers` read every figure the text quotes from a
+  guided scenario through the app's own routes. Several twins changed while
+  this review ran (R760Thermal's fan-feedback run, PhysicsAIFactory's hold
+  power, PhysicsXR's filter run, PhysicsData's limiter readout, IR7000's
+  flows, PowerFlex's IOPS); the text quotes the current values.
+- **A chip that says running can be another app.** A dev server that finds
+  its port busy drifts onto the next, and the liveness ping cannot tell. Each
+  entry carries the twin's `pageTitle`; the page reads the title of whatever
+  answers on the port and says so when it is a different app.
 

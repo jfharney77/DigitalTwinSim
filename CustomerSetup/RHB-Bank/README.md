@@ -4,7 +4,8 @@ Open `setup.html` in a browser for the drawing.
 
 The publicly reported facts: RHB is a featured Dell customer story for PowerProtect Cyber
 Recovery — securing data with an air-gapped, immutable vault and AI-driven analytics
-(CyberSense) so recoveries start from a provably clean copy. PowerProtect Cyber Recovery is
+(CyberSense, which Dell now brands Cyber Detect for PowerProtect) so recoveries start from a
+provably clean copy. PowerProtect Cyber Recovery is
 the first solution endorsed under the Sheltered Harbor standard for financial-sector data
 vaulting and counts 1,300+ customers.
 

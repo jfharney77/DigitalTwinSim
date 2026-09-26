@@ -24,6 +24,11 @@ READMES = sorted(SETUP_DIR.glob("*/README.md"))
 INDEX = SETUP_DIR / "index.html"
 
 
+# `port: 5207`, and also `port: Number(process.env.PORT ?? 5207)` — the env
+# override is a runtime escape hatch; the literal is still the twin's own port.
+PORT_RE = r"port:\s*(?:[^,\n]*?\?\?\s*)?(\d+)"
+
+
 def _fail(msgs):
     raise AssertionError("\n".join(msgs))
 
@@ -65,7 +70,7 @@ def test_twin_dirs_and_ports():
             if not vite.exists():
                 problems.append(f"{page.parent.name}: {start} has no vite.config.ts")
                 continue
-            m = re.search(r"port:\s*(\d+)", vite.read_text())
+            m = re.search(PORT_RE, vite.read_text())
             if not m:
                 problems.append(f"{page.parent.name}: no port in {start}'s vite.config.ts")
             elif m.group(1) != port:
@@ -88,7 +93,7 @@ def _scan_twin_ports():
         back = d / "scripts" / "start_backend.sh"
         if vite.exists():
             t = vite.read_text()
-            m = re.search(r"port:\s*(\d+)", t)
+            m = re.search(PORT_RE, t)
             if m:
                 entry["frontend"] = int(m.group(1))
             m = re.search(r"target:[^,]*?localhost:(\d+)", t)

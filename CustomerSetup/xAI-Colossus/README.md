@@ -6,7 +6,11 @@ The publicly reported facts: Dell Technologies and Supermicro supplied the GPU s
 xAI's Colossus supercluster. 100,000 GPUs were brought online in 122 days and doubled to
 200,000 within about three more months. Servers are 8-GPU HGX systems, 64 GPUs per
 liquid-cooled rack, roughly 1,500 racks at the first build. Every GPU gets a dedicated
-400 GbE NIC on an NVIDIA Spectrum-X Ethernet fabric (~3.6 Tb/s of network per server).
+400 GbE NIC on an NVIDIA Spectrum-X Ethernet fabric: 8 × 400 GbE is 3.2 Tb/s for the GPUs,
+and ~3.6 Tb/s per server once the host's own ninth link is counted (ServeTheHome's figure).
+The Dell server model at Colossus has not been published, and the 64-GPU liquid-cooled racks
+shown on the public tour were Supermicro's; the XE9680 twin stands for the 8-GPU HGX class,
+so that block is tagged inferred, not sourced.
 The march toward one million GPUs runs on Dell-built NVIDIA Blackwell (B200/GB200) systems.
 
 Twins referenced by the drawing (frontend ports — start each with its `scripts/start_all.sh`):

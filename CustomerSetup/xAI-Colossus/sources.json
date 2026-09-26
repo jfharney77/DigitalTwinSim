@@ -16,7 +16,7 @@
     "supports": [
       "100k GPUs in 122 days, doubled to 200k in ~92 more",
       "8-GPU HGX servers, 64 GPUs per liquid-cooled rack, ~1,500 racks",
-      "400 GbE per GPU on Spectrum-X; ~3.6 Tb/s of NICs per server"
+      "400 GbE per GPU on Spectrum-X (8 x 400 GbE = 3.2 Tb/s); ~3.6 Tb/s per server counting the ninth host link"
     ]
   },
   {

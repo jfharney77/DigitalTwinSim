@@ -71,7 +71,10 @@ p.lvl-novice { display: none; }
 body[data-register="novice"] p.lvl-novice { display: block; }
 body[data-register="novice"] p.lvl-standard { display: none; }
 
-.level-control { float: right; display: flex; gap: 4px; align-items: center; }
+.level-control { float: right; display: flex; gap: 4px; align-items: center;
+  flex-wrap: wrap; justify-content: flex-end; max-width: 480px; }
+.level-control .level-note { flex-basis: 100%; text-align: right; margin: 4px 0 0;
+  font-size: 12px; line-height: 1.4; }
 .level-control span { color: var(--dell-muted); font-size: 13px; margin-right: 6px; }
 .level-control button {
   font: inherit; font-size: 13px; padding: 4px 10px;

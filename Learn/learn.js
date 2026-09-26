@@ -61,8 +61,38 @@
     return null;
   }
 
+  // The failure stops a module shows under a track step: all of them, or
+  // the ones for the twins the step keeps.
+  function failuresFor(m, step) {
+    return (m.failures || []).filter(function (f) {
+      return !step || !step.only || step.only.indexOf(f.twin) >= 0;
+    });
+  }
+
+  // The lab state a module keeps: attempted (the reader opened it) and passed
+  // (the reader scored it 70 or better in the app and said so here). The
+  // course never talks to the grader; the app does the grading.
+  function labState(m) {
+    var s = peek(m.id);
+    if (!s || !s.labs || !m.lab) return null;
+    return s.labs[m.lab.id] || null;
+  }
+
   function isDone(m, track) {
     var s = peek(m.id);
+    if (track && track.labsOnly) {
+      var ls = labState(m);
+      return !!(m.lab && ls && ls.passed);
+    }
+    if (track && track.failuresOnly) {
+      var stops = failuresFor(m, stepFor(track, m.id));
+      if (!s || !s.failures || !stops.length) return false;
+      for (var k = 0; k < stops.length; k++) {
+        var fs = s.failures[stops[k].scenario];
+        if (!fs || !fs.revealed) return false;
+      }
+      return true;
+    }
     if (!s || !s.revealed) return false;
     if (track && track.predictOnly) return true;
     for (var i = 0; i < m.checks.length; i++) if (!s.checks || !s.checks[i]) return false;
@@ -72,6 +102,17 @@
   function status(m, track) {
     if (isDone(m, track)) return "done";
     var s = peek(m.id);
+    if (track && track.labsOnly) {
+      var ls = labState(m);
+      return ls && (ls.attempted || ls.passed) ? "started" : "new";
+    }
+    if (track && track.failuresOnly) {
+      var touched = false;
+      if (s && s.failures) Object.keys(s.failures).forEach(function (k) {
+        if (s.failures[k].predicted !== undefined) touched = true;
+      });
+      return touched ? "started" : "new";
+    }
     return s && (s.predicted !== undefined || s.revealed) ? "started" : "new";
   }
   var STATUS_TEXT = { done: "Done", started: "In progress", "new": "Not started" };
@@ -104,9 +145,38 @@
     return wrap;
   }
 
+  // The same, inline: for an option label, a link label or a list item's text.
+  function regSpan(value) {
+    if (typeof value === "string") return document.createTextNode(value);
+    var wrap = document.createDocumentFragment();
+    wrap.appendChild(el("span", { "class": "lvl-standard", text: value.standard }));
+    wrap.appendChild(el("span", { "class": "lvl-novice", text: value.novice }));
+    return wrap;
+  }
+
   function modulePath(id, track, fromHome) {
     var base = (fromHome ? "modules/" : "") + id.toLowerCase() + ".html";
     return track && track.id !== "full" ? base + "#track=" + track.id : base;
+  }
+
+  // A track that shows the module whole: no failures-only view, no
+  // predict-only view, no trimmed entry list. The full course for a core
+  // module, the electives for an elective.
+  function wholeTrack(id) {
+    for (var i = 0; i < COURSE.tracks.length; i++) {
+      var t = COURSE.tracks[i];
+      var s = stepFor(t, id);
+      if (s && !s.only && !t.failuresOnly && !t.predictOnly && !t.labsOnly) return t;
+    }
+    return null;
+  }
+
+  // The "Open the whole module" link. It always names a track, because a
+  // bare module URL falls back to the reader's remembered track, which is
+  // the trimmed one they are trying to leave.
+  function wholePath(id) {
+    var t = wholeTrack(id);
+    return id.toLowerCase() + ".html#track=" + (t ? t.id : "full");
   }
 
   function homePath(fromHome, track) {
@@ -130,10 +200,241 @@
     }
   }
 
+  function failureHref(f) {
+    return "http://localhost:" + f.port + "/#scenario=" + f.scenario + "&" + f.at.kind + "=" + f.at.value;
+  }
+
+  // One "when it goes wrong" stop: a question about a failure scenario, a
+  // commitment, then the deep link into the twin's failure trace and the
+  // answer with the tests that settle it. Same contract as the module's own
+  // prediction: the link and the answer stay shut until the reader commits.
+  function renderFailure(m, f, state, onChange) {
+    if (!state.failures) state.failures = {};
+    if (!state.failures[f.scenario]) state.failures[f.scenario] = {};
+    var fs = state.failures[f.scenario];
+    var box = el("section", { "class": "failure predict" });
+    box.appendChild(el("h3", null, [regSpan(f.name)]));
+    box.appendChild(reg("p", f.q, "question"));
+    var form = el("div", { "class": "options", role: "radiogroup" });
+    var name = "failure-" + m.id + "-" + f.scenario;
+    f.options.forEach(function (opt, i) {
+      var input = el("input", { type: "radio", name: name, value: String(i), id: name + "-" + i });
+      if (fs.predicted === i) input.checked = true;
+      form.appendChild(el("label", { "class": "option", "for": name + "-" + i }, [input, el("span", null, [regSpan(opt)])]));
+    });
+    box.appendChild(form);
+    var commit = el("button", { type: "button", "class": "primary", text: "Commit my answer" });
+    var revealBtn = el("button", { type: "button", text: "Show the answer" });
+    box.appendChild(el("div", { "class": "buttons" }, [commit, revealBtn]));
+    var hint = el("p", { "class": "hint", text: "Commit an answer to unlock the failure trace and the answer." });
+    box.appendChild(hint);
+    var link = el("a", {
+      href: failureHref(f), "class": "entry-link locked", target: "_blank", rel: "noopener",
+      "aria-disabled": "true", "data-twin-port": String(f.port), "data-twin-start": f.twin
+    }, [
+      // A label that would name the answer has a neutral twin, lockedLabel,
+      // shown until the reader commits — as the entry links do.
+      el("span", { "class": "label-open" }, [regSpan(f.label)]),
+      el("span", { "class": "label-locked" }, [regSpan(f.lockedLabel || f.label)])
+    ]);
+    box.appendChild(el("ul", { "class": "entry-links" }, [el("li", null, [
+      link,
+      f.how ? reg("p", f.how, "how") : null,
+      reg("p", {
+        standard: "The link opens the twin on its failure trace, paused at this state. Press Reset there to play it through from the start.",
+        novice: "The link opens the model on the sequence where something goes wrong, stopped at this moment. Press Reset there to watch it from the beginning."
+      }, "how"),
+      // learn.css hides this once the liveness chip beside the link reports
+      // the twin running, exactly as it does for an entry's start line.
+      el("p", { "class": "start" }, [
+        "Start it from the repository root: ",
+        el("code", { text: "scripts/dev.sh " + f.twin })
+      ])
+    ])]));
+    var answer = el("div", { "class": "answer", hidden: "hidden" });
+    box.appendChild(answer);
+
+    link.addEventListener("click", function (ev) {
+      if (!link.classList.contains("locked")) return;
+      ev.preventDefault();
+      hint.classList.add("nudge");
+    });
+
+    function sync() {
+      var chosen = fs.predicted !== undefined;
+      commit.disabled = chosen;
+      commit.textContent = chosen ? "Answer committed" : "Commit my answer";
+      form.querySelectorAll("input").forEach(function (i) { i.disabled = chosen; });
+      revealBtn.hidden = !chosen || !!fs.revealed;
+      if (chosen) {
+        link.classList.remove("locked");
+        link.removeAttribute("aria-disabled");
+        hint.hidden = true;
+      }
+      if (fs.revealed) {
+        answer.innerHTML = "";
+        var right = fs.predicted === f.answer;
+        answer.appendChild(verdict(right, f.options[f.answer]));
+        answer.appendChild(reg("p", f.a));
+        answer.appendChild(citeList(f.cite));
+        answer.hidden = false;
+      }
+    }
+    commit.addEventListener("click", function () {
+      var picked = form.querySelector("input:checked");
+      if (!picked) { hint.classList.add("nudge"); hint.textContent = "Pick one of the options first."; return; }
+      fs.predicted = Number(picked.value);
+      save(); sync(); onChange();
+    });
+    revealBtn.addEventListener("click", function () {
+      fs.revealed = true;
+      save(); sync(); onChange();
+    });
+    sync();
+    return box;
+  }
+
+  function renderFailures(m, stops, state, onChange) {
+    mount.appendChild(el("h2", { text: "When it goes wrong" }));
+    mount.appendChild(reg("p", {
+      standard: "A twin's default trace is the path where everything works. Each twin named below also carries a failure trace, with its own invariant and its own tests. Predict first, then open the failure and step through it.",
+      novice: "The models normally show everything going right. Here something breaks. Guess what happens first, then open the model and watch."
+    }, "prereqs"));
+    stops.forEach(function (f) { mount.appendChild(renderFailure(m, f, state, onChange)); });
+  }
+
+  // setup.js's chip says "running" when anything answers on the port. A dev
+  // server that found its own port busy can drift onto a neighbour's, so ask
+  // the page on that port for its title and compare it with the twin's. Vite
+  // lets a localhost page read it; from file:// the read fails and nothing
+  // is shown.
+  function checkIdentity(entry, box) {
+    if (!window.fetch) return;
+    fetch("http://localhost:" + entry.port + "/", { cache: "no-store" })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var m = html.match(/<title>([\s\S]*?)<\/title>/i);
+        if (!m || m[1].trim() === entry.pageTitle) return;
+        // A textarea decodes entities without parsing markup.
+        var holder = el("textarea");
+        holder.innerHTML = m[1].trim();
+        box.classList.add("wrong-app");
+        box.insertBefore(el("p", { "class": "wrong-app-line" }, [
+          "Port " + entry.port + " is answering, but with a different app (" + holder.value +
+          "), so these links will not open this twin. Stop that app, then start this one."
+        ]), box.querySelector(".entry-links"));
+      })
+      .catch(function () { /* not running, or not readable from here */ });
+  }
+
+  // ---- the graded lab ------------------------------------------------------
+  // A guided scenario is watch-mode; a lab is do-mode. The course does not
+  // grade — the app does, in its own pure engine — so this section is a deep
+  // link into that app's lab, the reason the lab belongs to this module, and
+  // one honest self-report so a Labs-track reader can see where they are.
+  function labHref(lab) {
+    return "http://localhost:" + lab.port + "/#lab=" + lab.id;
+  }
+
+  function renderLab(m, state, onChange) {
+    var lab = m.lab;
+    if (!state.labs) state.labs = {};
+    if (!state.labs[lab.id]) state.labs[lab.id] = {};
+    var ls = state.labs[lab.id];
+    var box = el("section", { "class": "lab" });
+    box.appendChild(el("h3", null, [regSpan(lab.title)]));
+    box.appendChild(reg("p", lab.goal, "question"));
+    box.appendChild(reg("p", lab.lever, "how"));
+    var link = el("a", {
+      href: labHref(lab), "class": "entry-link", target: "_blank", rel: "noopener",
+      "data-twin-port": String(lab.port), "data-twin-start": lab.twin
+    }, [regSpan(lab.label)]);
+    box.appendChild(el("ul", { "class": "entry-links" }, [el("li", null, [
+      link,
+      reg("p", lab.how, "how"),
+      el("p", { "class": "start" }, [
+        "Start it from the repository root: ",
+        el("code", { text: "scripts/dev.sh " + lab.twin })
+      ])
+    ])]));
+    var mark = el("button", { type: "button", text: "I passed this lab" });
+    box.appendChild(el("div", { "class": "buttons marks" }, [mark]));
+    var line = el("p", { "class": "hint" });
+    box.appendChild(line);
+    box.appendChild(citeList(lab.cite));
+
+    function sync() {
+      mark.classList.toggle("active", !!ls.passed);
+      mark.textContent = ls.passed ? "Passed" : "I passed this lab";
+      line.textContent = ls.passed
+        ? "Marked as passed here. The app keeps the score; this page only remembers that you got there."
+        : "The app grades the run and shows the score. Mark it here when it passes, to keep your place in the Labs track.";
+    }
+    link.addEventListener("click", function () {
+      ls.attempted = true;
+      save();
+      onChange();
+    });
+    mark.addEventListener("click", function () {
+      ls.passed = !ls.passed;
+      ls.attempted = true;
+      save();
+      sync();
+      onChange();
+    });
+    sync();
+    return box;
+  }
+
+  function renderLabSection(m, state, onChange) {
+    mount.appendChild(el("h2", { text: "Do it: the graded lab" }));
+    mount.appendChild(reg("p", {
+      standard: "A guided scenario sets the dials and narrates. A lab hands you the goal and the constraints and grades what you build: the app runs its own pure engine over your scenario and measures every constraint from the trace, so delivered work is always one of them and an idle build cannot pass.",
+      novice: "So far the models have set their own controls and explained what happens. A lab is the other way round: it gives you a goal and some rules, you set the controls, and the app marks the result. One of the rules is always that the machine did real work, so doing nothing never passes."
+    }, "prereqs"));
+    mount.appendChild(renderLab(m, state, onChange));
+  }
+
+  // ---- the coupled chain (the capstone's last stop) -------------------------
+  function renderCouplings(m) {
+    var c = m.couplings;
+    mount.appendChild(el("h2", { text: "The chain, coupled" }));
+    mount.appendChild(reg("p", c.text, "prereqs"));
+    var box = el("section", { "class": "coupling" });
+    var list = el("ul", { "class": "entry-links" });
+    var chain = el("a", {
+      href: "http://localhost:" + c.port + "/#chain=" + c.chain,
+      "class": "entry-link", target: "_blank", rel: "noopener",
+      "data-twin-port": String(c.port), "data-twin-start": c.twin
+    }, ["Open the chain: the AI factory, fed by engines"]);
+    list.appendChild(el("li", null, [chain, reg("p", c.how, "how")]));
+    var seams = el("a", {
+      href: "http://localhost:" + c.port + "/#seams",
+      "class": "entry-link", target: "_blank", rel: "noopener",
+      "data-twin-port": String(c.port), "data-twin-start": c.twin
+    }, ["Open the seam table: every hand-off and its identity"]);
+    list.appendChild(el("li", null, [seams, el("p", { "class": "how" }, [
+      "The couplings this chain leans on: ", el("code", { text: c.ids.join(", ") }), "."
+    ])]));
+    box.appendChild(list);
+    box.appendChild(el("p", { "class": "start" }, [
+      "Start it from the repository root: ",
+      el("code", { text: "scripts/dev.sh " + c.twin })
+    ]));
+    box.appendChild(citeList(c.cite));
+    mount.appendChild(box);
+  }
+
   function renderEntry(entry, locked) {
     var box = el("div", { "class": "entry" });
-    box.appendChild(el("h3", { text: entry.name }));
+    box.appendChild(el("h3", null, [regSpan(entry.name)]));
+    if (entry.note) box.appendChild(reg("p", entry.note, "note-line"));
     var list = el("ul", { "class": "entry-links" });
+    // The step-count chip describes the trace, so it goes on the first link
+    // that opens the trace, not on a guided-tour link (a tour has its own,
+    // different number of beats).
+    var traceAt = 0;
+    for (var t = entry.links.length - 1; t >= 0; t--) if (entry.links[t].kind !== "tour") traceAt = t;
     entry.links.forEach(function (link, i) {
       var attrs = {
         href: hrefFor(entry, link),
@@ -145,17 +446,23 @@
       if (entry.port) {
         attrs["data-twin-port"] = String(entry.port);
         attrs["data-twin-start"] = entry.twin;
-        if (entry.trace && i === 0) attrs["data-twin-trace"] = entry.trace;
+        if (entry.trace && i === traceAt) attrs["data-twin-trace"] = entry.trace;
       }
-      var a = el("a", attrs, [link.label]);
+      // A label that would give the prediction away has a neutral twin,
+      // lockedLabel, shown until the reader commits.
+      var a = el("a", attrs, [
+        el("span", { "class": "label-open" }, [regSpan(link.label)]),
+        el("span", { "class": "label-locked" }, [regSpan(link.lockedLabel || link.label)])
+      ]);
       var item = el("li", null, [a]);
-      if (link.how) item.appendChild(el("p", { "class": "how", text: link.how }));
+      if (link.how) item.appendChild(reg("p", link.how, "how"));
       if (link.kind === "lesson") {
         item.appendChild(el("p", { "class": "how", text: "The lesson tour opens at its first lesson." }));
       }
       list.appendChild(item);
     });
     box.appendChild(list);
+    if (entry.port && entry.pageTitle) checkIdentity(entry, box);
     if (entry.port) {
       box.appendChild(el("p", { "class": "start" }, [
         "Start it from the repository root: ",
@@ -175,9 +482,19 @@
     if (!m) { mount.appendChild(el("p", { text: "This module is not in course.js." })); return; }
     var track = currentTrack();
     var step = stepFor(track, m.id);
-    if (!step) {
+    if (!hashParam("track") && wholeTrack(m.id) &&
+        (track.failuresOnly || track.predictOnly || (step && step.only))) {
+      // A bare module URL names no track. The remembered one would trim this
+      // module, so show it whole; every link inside a track carries #track=.
+      step = null;
+    }
+    if (!step && wholeTrack(m.id)) {
       // Opened under a track that skips this module (or an elective under
-      // the full track): use the first track that includes it.
+      // the full track): prefer a track that shows the module whole.
+      track = wholeTrack(m.id);
+      step = stepFor(track, m.id);
+    }
+    if (!step) {
       for (var k = 0; k < COURSE.tracks.length && !step; k++) {
         step = stepFor(COURSE.tracks[k], m.id);
         if (step) track = COURSE.tracks[k];
@@ -195,9 +512,47 @@
     mount.appendChild(el("h1", { text: m.title }));
     mount.appendChild(reg("p", m.idea, "lede"));
 
+    if (track && track.labsOnly && m.lab) {
+      var doneLab = el("p", { "class": "done-line" });
+      var refreshLab = function () {
+        doneLab.textContent = isDone(m, track)
+          ? "You have finished this stop."
+          : "Pass the lab in the app, then mark it here to finish this stop.";
+      };
+      mount.appendChild(el("p", { "class": "trim" }, [
+        "This track keeps only the lab in this module. ",
+        el("a", { href: wholePath(m.id), text: "Open the whole module" }),
+        " for the idea the lab is built on."
+      ]));
+      renderLabSection(m, state, refreshLab);
+      renderNav(m, track);
+      mount.appendChild(doneLab);
+      refreshLab();
+      return;
+    }
+
+    if (track && track.failuresOnly) {
+      var onlyStops = failuresFor(m, step);
+      var doneOnly = el("p", { "class": "done-line" });
+      var refreshOnly = function () {
+        var d = isDone(m, track);
+        doneOnly.textContent = d ? "You have finished this stop." : "Reveal each answer to finish this stop.";
+      };
+      mount.appendChild(el("p", { "class": "trim" }, [
+        "This track keeps only the failure in this module. ",
+        el("a", { href: wholePath(m.id), text: "Open the whole module" }),
+        " for the path where everything works."
+      ]));
+      renderFailures(m, onlyStops, state, refreshOnly);
+      renderNav(m, track);
+      mount.appendChild(doneOnly);
+      refreshOnly();
+      return;
+    }
+
     if (m.prereqs.length || m.background) {
       var pre = el("p", { "class": "prereqs" }, ["Before you start: "]);
-      if (m.background) pre.appendChild(document.createTextNode(m.background + " "));
+      if (m.background) { pre.appendChild(regSpan(m.background)); pre.appendChild(document.createTextNode(" ")); }
       if (m.prereqs.length) {
         pre.appendChild(document.createTextNode("It builds on "));
         m.prereqs.forEach(function (p, i) {
@@ -212,7 +567,7 @@
     if (m.objectives.length) {
       mount.appendChild(el("h2", { text: "What you will be able to do" }));
       mount.appendChild(el("ul", { "class": "objectives" }, m.objectives.map(function (o) {
-        return el("li", { text: o });
+        return el("li", null, [regSpan(o)]);
       })));
     }
 
@@ -225,7 +580,7 @@
     m.predict.options.forEach(function (opt, i) {
       var input = el("input", { type: "radio", name: name, value: String(i), id: name + "-" + i });
       if (state.predicted === i) input.checked = true;
-      form.appendChild(el("label", { "class": "option", "for": name + "-" + i }, [input, el("span", { text: opt })]));
+      form.appendChild(el("label", { "class": "option", "for": name + "-" + i }, [input, el("span", null, [regSpan(opt)])]));
     });
     predict.appendChild(form);
     var commit = el("button", { type: "button", "class": "primary", text: "Commit my answer" });
@@ -241,8 +596,7 @@
     function drawAnswer() {
       answer.innerHTML = "";
       var right = state.predicted === m.predict.answer;
-      answer.appendChild(el("p", { "class": "verdict " + (right ? "right" : "wrong"),
-        text: right ? "Your prediction matched." : "The answer is: " + m.predict.options[m.predict.answer] + "." }));
+      answer.appendChild(verdict(right, m.predict.options[m.predict.answer]));
       answer.appendChild(reg("p", m.predict.reveal));
       answer.appendChild(citeList(m.predict.cite));
       answer.hidden = false;
@@ -255,7 +609,7 @@
       entries = entries.filter(function (e) { return step.only.indexOf(e.twin) >= 0; });
       mount.appendChild(el("p", { "class": "trim" }, [
         "This track uses part of this module. ",
-        el("a", { href: modulePath(m.id, null, false), text: "Open the whole module" }),
+        el("a", { href: wholePath(m.id), text: "Open the whole module" }),
         "."
       ]));
     }
@@ -311,10 +665,10 @@
       var checks = el("section", { "class": "checks" });
       m.checks.forEach(function (c, i) {
         var box = el("div", { "class": "check" });
-        box.appendChild(el("p", { "class": "question", text: c.q }));
+        box.appendChild(reg("p", c.q, "question"));
         var d = el("details");
         d.appendChild(el("summary", { text: "Show answer" }));
-        d.appendChild(el("p", { text: c.a }));
+        d.appendChild(reg("p", c.a));
         d.appendChild(citeList(c.cite));
         var got = el("button", { type: "button", text: "Got it" });
         var missed = el("button", { type: "button", text: "Missed it" });
@@ -341,23 +695,22 @@
       mount.appendChild(checks);
     }
 
+    // When it goes wrong: optional stops, not part of finishing the module
+    // (the "What goes wrong" track is where they count).
+    var stops = failuresFor(m, step);
+    if (stops.length && !predictOnly) renderFailures(m, stops, state, function () {});
+
+    // Do it: the graded lab, where the module's app has one. Optional, like
+    // the failure stops — the "Labs" track is where it counts.
+    if (m.lab && !predictOnly) renderLabSection(m, state, function () {});
+
+    // The capstone ends on the coupled chain: the whole course, computed once.
+    if (m.couplings && !predictOnly) renderCouplings(m);
+
     // Bridge and next.
     mount.appendChild(el("h2", { text: "Where this leads" }));
     mount.appendChild(reg("p", m.bridge.text, "bridge"));
-    var idx = -1;
-    for (var i = 0; i < track.steps.length; i++) if (track.steps[i].module === m.id) idx = i;
-    var nav = el("p", { "class": "next-nav" });
-    if (idx > 0) {
-      var prev = byId[track.steps[idx - 1].module];
-      nav.appendChild(el("a", { href: modulePath(prev.id, track, false), text: "Back: " + prev.title }));
-    }
-    if (idx >= 0 && idx < track.steps.length - 1) {
-      var nxt = byId[track.steps[idx + 1].module];
-      nav.appendChild(el("a", { "class": "next", href: modulePath(nxt.id, track, false), text: "Next: " + nxt.title }));
-    } else {
-      nav.appendChild(el("a", { "class": "next", href: homePath(false, track), text: "Back to the course home" }));
-    }
-    mount.appendChild(nav);
+    renderNav(m, track);
     var doneLine = el("p", { "class": "done-line" });
     mount.appendChild(doneLine);
 
@@ -377,13 +730,40 @@
     refreshDone();
   }
 
+  function renderNav(m, track) {
+    var idx = -1;
+    for (var i = 0; i < track.steps.length; i++) if (track.steps[i].module === m.id) idx = i;
+    var nav = el("p", { "class": "next-nav" });
+    if (idx > 0) {
+      var prev = byId[track.steps[idx - 1].module];
+      nav.appendChild(el("a", { href: modulePath(prev.id, track, false), text: "Back: " + prev.title }));
+    }
+    if (idx >= 0 && idx < track.steps.length - 1) {
+      var nxt = byId[track.steps[idx + 1].module];
+      nav.appendChild(el("a", { "class": "next", href: modulePath(nxt.id, track, false), text: "Next: " + nxt.title }));
+    } else {
+      nav.appendChild(el("a", { "class": "next", href: homePath(false, track), text: "Back to the course home" }));
+    }
+    mount.appendChild(nav);
+  }
+
+  function verdict(right, option) {
+    if (right) return el("p", { "class": "verdict right", text: "Your prediction matched." });
+    return el("p", { "class": "verdict wrong" }, ["The answer is: ", regSpan(option), "."]);
+  }
+
+  // The tests that settle an answer. A reader in the novice register is told
+  // that the answer is tested; the test ids are for readers who will open them.
   function citeList(cites) {
-    var p = el("p", { "class": "cite" }, ["Settled by "]);
+    var wrap = document.createDocumentFragment();
+    var p = el("p", { "class": "cite lvl-standard" }, ["Settled by "]);
     cites.forEach(function (c, i) {
       if (i) p.appendChild(document.createTextNode(", "));
       p.appendChild(el("code", { text: c }));
     });
-    return p;
+    wrap.appendChild(p);
+    wrap.appendChild(el("p", { "class": "cite lvl-novice", text: "The model's own automatic tests check this answer." }));
+    return wrap;
   }
 
   // The short track reads in the plain register unless the reader already
@@ -433,6 +813,12 @@
     if (track.predictOnly) {
       mount.appendChild(el("p", { "class": "prereqs", text: "This track keeps each module's prediction and skips the check questions." }));
     }
+    if (track.labsOnly) {
+      mount.appendChild(el("p", { "class": "prereqs", text: "This track visits only the graded lab in each module that has one: a goal, some constraints, and a scenario you build yourself. The app grades the run in its own engine; each stop links back to the module the lab is built on." }));
+    }
+    if (track.failuresOnly) {
+      mount.appendChild(el("p", { "class": "prereqs", text: "This track visits only the failure in each module: one thing that breaks, what you would see, and the test that pins what the twin does about it. Each stop links back to its whole module." }));
+    }
     var list = el("ul", { "class": "modules" });
     track.steps.forEach(function (s) {
       var m = byId[s.module];
@@ -443,10 +829,16 @@
       ]);
       item.appendChild(reg("p", m.idea, "idea"));
       var twins = el("p", { "class": "twins" });
-      m.entries.forEach(function (e) {
-        if (s.only && s.only.indexOf(e.twin) < 0) return;
-        twins.appendChild(el("span", { text: e.name }));
-      });
+      if (track.labsOnly) {
+        if (m.lab) twins.appendChild(el("span", null, [regSpan(m.lab.title)]));
+      } else if (track.failuresOnly) {
+        failuresFor(m, s).forEach(function (f) { twins.appendChild(el("span", null, [regSpan(f.name)])); });
+      } else {
+        m.entries.forEach(function (e) {
+          if (s.only && s.only.indexOf(e.twin) < 0) return;
+          twins.appendChild(el("span", null, [regSpan(e.name)]));
+        });
+      }
       item.appendChild(twins);
       list.appendChild(item);
     });

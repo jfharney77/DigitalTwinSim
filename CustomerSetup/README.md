@@ -15,7 +15,7 @@ per-block basis tags (sourced / inferred / representative) say exactly which is 
 | `xAI-Colossus/` | xAI (Memphis, TN) | Colossus AI supercluster — 100k+ GPUs in 122 days, Dell PowerEdge GPU servers, Spectrum-X Ethernet, liquid cooling | XE9712, SN6000, IR7000, Exascale, GPU |
 | `TACC-Horizon/` | Texas Advanced Computing Center (Austin, TX) | Horizon — largest academic supercomputer in the US, Dell IRSS liquid-cooled racks, 4,000 NVIDIA GPUs, Quantum-X800 InfiniBand | XE9712, IR7000, SN6000, iDRAC, GPU |
 | `McLarenRacing/` | McLaren Racing (Woking, UK) | F1 factory HPC + trackside edge — PowerEdge, PowerStore, PowerScale, Dell AI Factory, ~1.5 TB per race weekend | R760, PowerStore, PowerScale, GPU, CloudIQ |
-| `RHB-Bank/` | RHB Banking Group (Malaysia) | Air-gapped cyber-recovery vault — PowerProtect Cyber Recovery + CyberSense over the production estate | PowerProtect, CyberDetect, PowerStore, PowerMax |
+| `RHB-Bank/` | RHB Banking Group (Malaysia) | Air-gapped cyber-recovery vault — PowerProtect Cyber Recovery + CyberSense (now Cyber Detect for PowerProtect) over the production estate | PowerProtect, CyberDetect, PowerStore, PowerMax |
 | `Rackspace/` | Rackspace Technology | Managed private clouds — VMware Cloud Foundation on VxRail, PowerStore beside the HCI | VxRail, PowerStore, R760, PrivateCloud |
 | `F1Soft/` | F1Soft (Kathmandu, Nepal) | National payments platform on PowerFlex software-defined storage | PowerFlex, R760, SN6000, CloudIQ |
 | `DoD-FortZero/` | US Department of Defense | Project Fort Zero Target Level zero-trust validation — seven pillars, one policy engine, no perimeter drawn | FortZero, iDRAC, PrivateCloud, R760 |
@@ -73,3 +73,22 @@ cross-reference: twin dirs exist, `data-twin-port` matches each twin's `vite.con
 relative links resolve, every `#phase=` name appears in that twin's `engine.py`, every
 walkthrough focus names a real `data-wt` group, and every page keeps the honesty features
 (sources, note box, basis tags, both registers). Keep it green when adding a setup.
+
+## Hosted mode: the same pages with no twin running
+
+These pages are written for localhost — a block's link is
+`http://localhost:<port>/#phase=<name>`, and the chip beside it pings that port. On the
+hosted site there are no ports, and neither `setup.html` nor `shared/setup.js` is edited
+for it: `scripts/build_site.sh` copies them into `site/` and injects
+`scripts/static/twin-hosted.js`, which rewrites every `localhost` link to the sibling
+twin's directory, answers the chips' pings from the hosted files (so the step-count and
+phase-span enrichment still reads out of the twin's JSON snapshot), relabels `running` →
+`hosted` and drops the start-command hints. A block whose twin is not on the hosted site
+loses its `href` and gains a tooltip rather than pointing nowhere.
+
+Two consequences when editing a page. A `data-twin-start="<Directory>"` attribute is what
+disambiguates a shared port (PowerMax and E3200 both answer on 5178), so give every twin
+link one. And anything the page fetches itself must go through a `localhost` URL the
+resolver recognises, or it will not be answered on the hosted build —
+`e2e/static_pages.check.mjs` fails the build if a link is left pointing at localhost or a
+chip still reads "running".

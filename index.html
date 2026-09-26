@@ -39,11 +39,16 @@
   <p class="lede">
     Interactive digital twins of Dell hardware and platforms — each a pure simulation engine
     behind a data-driven diagram, built to teach one idea per machine. Chips show which twins
-    are running right now; start one with <code>./&lt;Twin&gt;/scripts/start_all.sh</code>.
+    are running right now; start one with <code>scripts/dev.sh &lt;Twin&gt;</code>, or read the
+    whole thing with no backend at all — <code>scripts/build_site.sh</code> writes it out as
+    plain files (the recipe is <code>docs/STATIC_HOSTING.md</code> in the repository).
     Real customer deployments assembled from these twins live in the
     <a href="CustomerSetup/index.html">CustomerSetup gallery</a>.
     To learn the twins in a teaching order, with a question to answer before each one,
-    <a href="Learn/index.html">take the course</a>.
+    <a href="Learn/index.html">take the course</a> — or go straight to its
+    <a href="Learn/index.html#track=labs">Labs track</a>, where each stop hands you a goal
+    and grades the scenario you build. Two engines at once, with an identity asserted across
+    the hand-off, is <a href="http://localhost:5221/">compose</a>.
   </p>
 
   <h2>Twins</h2>
@@ -56,52 +61,58 @@
   </div>
 </main>
 <script>
-  var TWINS = [
-    ["GPU", 5173, "What happens inside a GPU die during one matmul — and the roofline it lives under."],
-    ["DellPowerEdgeR760", 5174, "What happens when a server powers on, from BMC to OS."],
-    ["DellPowerStore", 5175, "A dual-controller all-NVMe array brings up both nodes in lockstep."],
-    ["DellAlienware", 5176, "The AC power path: adapter handshake, power budget, hybrid battery boost."],
-    ["DellIDRAC", 5177, "The BMC that boots before the server — and never sleeps."],
-    ["DellPowerMax", 5178, "Scale-out storage where the drives hang off an InfiniBand fabric."],
-    ["DellPowerSwitchE3200", 5178, "An open-networking switch boots via ONIE to line-rate forwarding."],
-    ["DellVxRail", 5179, "Four identical nodes fuse their drives into one vSAN datastore."],
-    ["DellCloudIQ", 5180, "A batch of telemetry becomes an actionable insight."],
-    ["DellPowerEdgeXE9712", 5181, "72 GPUs fuse into one NVLink domain — liquid before silicon."],
-    ["DellIR7000", 5182, "Heat in equals heat out, exactly — the liquid-cooling loop."],
-    ["DellPowerProtect", 5183, "The vaulted copy is sealed before the attack and survives it."],
-    ["DellExascale", 5184, "Metadata leaves the data path; clients read from every server at once."],
-    ["DellPowerSwitchSN6000", 5185, "The AI fabric never drops a packet — proven under congestion."],
-    ["DellProMaxPlus", 5186, "The model weights cross the PCIe link exactly once, then never leave."],
-    ["DellPowerFlex", 5189, "No controller: every surviving node rebuilds at once."],
-    ["DellCyberDetect", 5192, "Which backup is clean — the answer is a date, not an alert."],
-    ["DellFortZero", 5195, "Zero trust: no perimeter drawn, nothing trusted implicitly."],
-    ["DellPowerScale", 5196, "There are no volumes — one namespace, however many nodes."],
-    ["DellPrivateCloud", 5198, "The hypervisor is a choice, not a foundation."],
-    ["DellCircularDesign", 5197, "The only trace that closes: mass in equals mass out, loss stated."],
-    ["DellPowerEdgeXE9680", 5201, "Eight GPUs fuse in the box; the domain stops at the chassis wall."],
-    ["DellQuantumX800", 5202, "InfiniBand: lossless by construction — no send without a granted credit."],
-    ["DellNativeEdge", 5187, "Zero-touch edge: exactly one human action per site, ever."],
-    ["DellPowerEdgeR760Thermal", 5203, "Load → power → heat → fans → feedback: the R760 while it runs."]
-  ];
+  // The twins are components.json, read at load time — the registry of record,
+  // so this page cannot drift from disk. Served from the repo root in dev and
+  // copied next to this file on the hosted site; opened straight off the file
+  // system, the fetch is blocked and the page says so instead of lying.
+  var FAMILY_ORDER = ["accelerator", "server", "rack", "storage", "network", "facility",
+                      "platform", "management", "resilience", "client", "edge",
+                      "lifecycle", "composition"];
 
   var grid = document.getElementById("twins");
-  TWINS.forEach(function (t) {
-    var name = t[0], port = t[1], idea = t[2];
-    var card = document.createElement("div");
-    card.className = "twin";
-    card.innerHTML =
-      '<div class="top"><h3><a href="http://localhost:' + port + '/">' + name + "</a></h3>" +
+
+  function card(c) {
+    var box = document.createElement("div");
+    box.className = "twin";
+    var port = c.frontendPort;
+    box.innerHTML =
+      '<div class="top"><h3><a href="http://localhost:' + port + '/">' + c.name + "</a></h3>" +
       '<span class="chip unknown">checking…</span></div>' +
-      '<div class="idea">' + idea + "</div>" +
-      '<div class="meta">:' + port + " · <code>./" + name + "/scripts/start_all.sh</code></div>";
-    grid.appendChild(card);
-    var chip = card.querySelector(".chip");
+      '<div class="idea"></div>' +
+      // On the hosted site there is nothing to start, so the dev command is
+      // dropped rather than printed as advice nobody here can take.
+      (window.TWIN_HOSTED
+        ? '<div class="meta">' + c.family + "</div>"
+        : '<div class="meta">:' + port + " · <code>scripts/dev.sh " + c.directory + "</code></div>");
+    box.querySelector(".idea").textContent = c.description;
+    box.querySelector("a").setAttribute("data-twin-start", c.directory);
+    grid.appendChild(box);
+    var chip = box.querySelector(".chip");
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, 2000);
     fetch("http://localhost:" + port + "/", { mode: "no-cors", cache: "no-store", signal: ctrl.signal })
       .then(function () { clearTimeout(timer); chip.className = "chip up"; chip.textContent = "running"; },
             function () { clearTimeout(timer); chip.className = "chip down"; chip.textContent = "not running"; });
-  });
+  }
+
+  fetch("components.json", { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var built = data.components.filter(function (c) { return c.frontendPort; });
+      built.sort(function (a, b) {
+        var fa = FAMILY_ORDER.indexOf(a.family), fb = FAMILY_ORDER.indexOf(b.family);
+        if (fa !== fb) return (fa < 0 ? 99 : fa) - (fb < 0 ? 99 : fb);
+        return a.name < b.name ? -1 : 1;
+      });
+      built.forEach(card);
+    })
+    .catch(function () {
+      var note = document.createElement("p");
+      note.className = "twin";
+      note.textContent = "This page lists the twins from components.json. Serve this directory " +
+        "(python3 -m http.server, or scripts/build_site.sh for the hosted build) and reload.";
+      grid.appendChild(note);
+    });
 </script>
 </body>
 </html>

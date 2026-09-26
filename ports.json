@@ -210,6 +210,11 @@
    "frontend": 5213,
    "proxyDefault": 8040,
    "backend": 8040
+  },
+  "compose": {
+   "frontend": 5221,
+   "proxyDefault": 8048,
+   "backend": 8048
   }
  },
  "knownCollisions": {

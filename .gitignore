@@ -23,3 +23,9 @@ packages/twin-ui/dist-gallery/
 e2e/artifacts/
 e2e/test-results/
 e2e/playwright-report/
+# ...and Playwright's own default, when a run is started by hand from the repo root
+/test-results/
+
+# Static hosting (docs/STATIC_HOSTING.md): generated per-twin builds and the assembled site
+dist-static/
+/site/

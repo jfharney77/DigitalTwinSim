@@ -17,7 +17,7 @@
   <p class="lede lvl-standard">
     RHB, one of Malaysia's largest banking groups, is a featured Dell customer for
     PowerProtect Cyber Recovery: business-critical data moves through an operational air gap
-    into an isolated, immutable vault, where AI-driven analytics (CyberSense) validate every
+    into an isolated, immutable vault, where AI-driven analytics (CyberSense, now branded Cyber Detect for PowerProtect) validate every
     copy — so that after an attack the bank restores a copy it can prove is clean. The
     architecture is the one Dell's Sheltered Harbor-endorsed reference describes for
     financial institutions, and it is exactly the data path two of this repo's twins model
@@ -28,7 +28,7 @@
     company's data and demands payment — it keeps a copy of its critical data in a "vault":
     a set of Dell systems that are disconnected from the network almost all the time (an
     "air gap"), where copies are locked so they cannot be altered. Software called
-    CyberSense reads every copy byte by byte to certify which ones are clean. If an attack
+    CyberSense (Dell now calls it Cyber Detect for PowerProtect) reads every copy byte by byte to certify which ones are clean. If an attack
     gets through, the bank restores from a copy it can prove was made before the attack —
     instead of guessing.
   </p>
@@ -158,7 +158,7 @@
       <td><a href="http://localhost:5183/" data-twin-port="5183" data-twin-start="DellPowerProtect" data-twin-trace="lifecycle">localhost:5183</a> · <a href="http://localhost:5183/#usecases">use cases</a></td>
     </tr>
     <tr data-wt-ref="vault">
-      <td>CyberSense-style content analytics</td>
+      <td>CyberSense content analytics (now Cyber Detect for PowerProtect)</td>
       <td><code>DellCyberDetect/</code> — byte-level inspection naming the last clean snapshot; built as the companion to the vault twin</td>
       <td><span class="basis sourced">sourced</span></td>
       <td><a href="http://localhost:5192/" data-twin-port="5192" data-twin-start="DellCyberDetect" data-twin-trace="detect">localhost:5192</a> · <a href="http://localhost:5192/#anatomy">timeline anatomy</a></td>
