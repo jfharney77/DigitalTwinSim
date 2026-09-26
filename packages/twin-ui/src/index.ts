@@ -34,3 +34,6 @@ export type {
   RegionLook,
   TourStage,
 } from "./components/tour";
+// Static hosting (docs/STATIC_HOSTING.md): the fetch shim a twin's api.ts uses
+// so the same build can run against a backend or with none.
+export { apiFetch, assetUrl, hostedHref, warmEngine, isStatic, bodyKey } from "./staticApi";

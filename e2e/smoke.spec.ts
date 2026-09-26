@@ -52,7 +52,7 @@ function collect(page: Page, ignoreApi: RegExp[]) {
     const at = msg.location()?.url;
     if (msg.type() === "error") problems.push(`console.error: ${msg.text()}${at ? ` (at ${at})` : ""}`);
   });
-  const isApi = (url: string) => new URL(url).pathname.startsWith("/api/");
+  const isApi = (url: string) => /^(\/[^/]+)?\/api(-static)?\//.test(new URL(url).pathname);
   page.on("response", (res) => {
     const url = res.url();
     if (isApi(url) && res.status() >= 400 && !ignoreApi.some((re) => re.test(url))) {
@@ -77,12 +77,17 @@ for (const route of manifest.routes) {
   const title = `${component} ${route.hash || "/"}${route.name ? ` (${route.name})` : ""}`;
   test(title, async ({ page }) => {
     const ignoreApi = (manifest.ignoreApi ?? []).map((s) => new RegExp(s));
-    const ignoreConsole = [...(manifest.ignoreConsole ?? []), ...(route.ignoreConsole ?? [])].map(
+    // The skin's webfont is hotlinked from Google Fonts. On a machine with no
+    // internet the stylesheet fails and the page renders in the fallback font —
+    // a fact about the network, not about the twin, so it is not a smoke failure.
+    const ignoreConsole = ["fonts\\.googleapis\\.com", ...(manifest.ignoreConsole ?? []),
+                           ...(route.ignoreConsole ?? [])].map(
       (s) => new RegExp(s),
     );
     const problems = collect(page, ignoreApi);
 
-    await page.goto("/" + route.hash, { waitUntil: "load" });
+    // SMOKE_PATH: the sub-path a statically hosted twin lives under (scripts/smoke_static.sh).
+    await page.goto((process.env.SMOKE_PATH ?? "/") + route.hash, { waitUntil: "load" });
 
     // Wait for the manifest's anchors first: they are the "page has rendered" signal.
     for (const sel of route.visible ?? []) {
@@ -127,7 +132,7 @@ for (const route of manifest.routes) {
         .not.toBe(before);
     }
 
-    const out = join(here, "artifacts", component!);
+    const out = process.env.SMOKE_ARTIFACTS ?? join(here, "artifacts", component!);
     mkdirSync(out, { recursive: true });
     // Twin pages scroll inside a container rather than the document, which
     // fullPage cannot see — so grow the viewport to the tallest scroller first.

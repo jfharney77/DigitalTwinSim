@@ -37,6 +37,7 @@ __all__ = [
     "assert_tour_invariants",
     "TOUR_MIN_MS",
     "TOUR_MAX_MS",
+    "assert_lab_invariants",
 ]
 
 #: Imports an engine must never carry. The engine is a pure function from a
@@ -442,6 +443,158 @@ def assert_tour_invariants(
     for s in steps:
         if s.photo_id is not None:
             assert s.photo_id in photos, f"step {s.id}: unknown photo {s.photo_id!r}"
+
+    if module is not None:
+        assert_engine_is_pure(module)
+
+
+# --- graded labs ---------------------------------------------------------------
+
+#: The reading levels a lab's prose must be authored at (3 is the standard text).
+LAB_AUTHORED_LEVELS = (1, 3, 5)
+
+
+def assert_lab_invariants(
+    labs: Sequence[Any],
+    grade: Any,
+    reference_solutions: dict[str, Any],
+    *,
+    explain_ids: Iterable[str],
+    registry: dict[str, dict[int, str]],
+    parse_start: Any,
+    gaming_attempts: dict[str, dict[str, Any]] | None = None,
+    module: Any = None,
+) -> None:
+    """Assert the graded-lab invariants of ``docs/LAB_PATTERN.md``.
+
+    ``labs`` is the app's ``list[twinkit.labs.Lab]``; ``grade`` is its pure
+    ``grade_scenario(lab_id, scenario) -> LabResult``; ``reference_solutions``
+    maps every lab id to a scenario that passes it. ``explain_ids`` are the ids
+    the app's Explain entries carry; ``registry`` is the app's leveling
+    registry (``app.leveling.registry()``); ``parse_start`` turns a lab's
+    ``start`` JSON back into the app's Scenario (usually
+    ``Scenario.model_validate``). Optional: ``gaming_attempts`` — per lab, named
+    scenarios that must NOT pass (zero load is mandatory when given);
+    ``module`` — the app's ``labs`` module, AST-checked for purity like an
+    engine.
+
+    What it pins:
+
+    * ids unique and kebab-case; difficulty never falls through the list;
+    * every lab has a delivered-work criterion (``guards_work``) — a lab a
+      powered-down or idle system could pass is not a lab;
+    * every criterion and objective cites a real Explain entry and carries the
+      equation it tests;
+    * the reference solution passes and the lab's own ``start`` scenario — the
+      naive default — fails; the score agrees with ``passed`` either way;
+    * grading is deterministic (two calls, identical dumps) and pure;
+    * hints exist, and hints, goal prose and every ``why`` are authored at
+      levels 1, 3 and 5;
+    * every named gaming attempt fails.
+    """
+    from .labs import PASS_FLOOR
+
+    labs = list(labs)
+    assert labs, "no labs"
+    known_explains = set(explain_ids)
+
+    ids = [lab.id for lab in labs]
+    assert len(ids) == len(set(ids)), f"duplicate lab ids: {ids}"
+    for lid in ids:
+        assert lid and lid == lid.lower() and " " not in lid and "_" not in lid, (
+            f"lab id {lid!r} is not kebab-case"
+        )
+    difficulties = [lab.difficulty for lab in labs]
+    assert difficulties == sorted(difficulties), (
+        f"labs are not in rising difficulty: {difficulties}"
+    )
+    assert set(reference_solutions) == set(ids), (
+        "every lab needs a reference solution: "
+        f"missing {sorted(set(ids) - set(reference_solutions))}, "
+        f"extra {sorted(set(reference_solutions) - set(ids))}"
+    )
+
+    def _levelled(text: str, where: str) -> None:
+        assert text.strip(), f"{where}: empty prose"
+        variants = registry.get(text)
+        assert variants is not None, f"{where}: prose is not registered with L(...)"
+        missing = [lv for lv in LAB_AUTHORED_LEVELS if lv not in variants]
+        assert not missing, f"{where}: no variant at level(s) {missing}"
+
+    for lab in labs:
+        where = f"lab {lab.id}"
+        assert lab.title.strip(), f"{where}: empty title"
+
+        # Criteria: unique ids, a work floor, and a citation on every line.
+        cids = [c.id for c in lab.criteria]
+        assert cids, f"{where}: no criteria"
+        assert len(cids) == len(set(cids)), f"{where}: duplicate criterion ids"
+        assert any(c.guards_work for c in lab.criteria), (
+            f"{where}: no delivered-work criterion — an idle system would pass"
+        )
+        for c in lab.criteria:
+            assert c.explain_id in known_explains, (
+                f"{where}/{c.id}: explain id {c.explain_id!r} is not an Explain entry"
+            )
+            assert c.equation.strip(), f"{where}/{c.id}: no equation cited"
+            _levelled(c.why, f"{where}/{c.id}.why")
+        if lab.objective is not None:
+            o = lab.objective
+            assert o.explain_id in known_explains, (
+                f"{where}: objective cites unknown explain id {o.explain_id!r}"
+            )
+            assert o.equation.strip(), f"{where}: objective cites no equation"
+            assert o.par != o.worst, f"{where}: objective par equals worst"
+            assert (o.par < o.worst) == (o.direction == "minimize"), (
+                f"{where}: objective par/worst are on the wrong sides for {o.direction}"
+            )
+
+        # Prose at levels 1/3/5.
+        _levelled(lab.goal.statement, f"{where}.goal.statement")
+        _levelled(lab.goal.delivered_work, f"{where}.goal.deliveredWork")
+        assert lab.goal.constraints, f"{where}: no constraints listed"
+        for i, text in enumerate(lab.goal.constraints):
+            _levelled(text, f"{where}.goal.constraints[{i}]")
+        assert len(lab.hints) >= 2, f"{where}: progressive hints need at least two"
+        assert len(set(lab.hints)) == len(lab.hints), f"{where}: duplicate hints"
+        for i, text in enumerate(lab.hints):
+            _levelled(text, f"{where}.hints[{i}]")
+
+        # The reference passes; the score says so.
+        ref = grade(lab.id, reference_solutions[lab.id])
+        assert ref.passed, (
+            f"{where}: reference solution fails — "
+            f"{[c.id for c in ref.criteria if not c.passed]}"
+        )
+        assert PASS_FLOOR <= ref.score <= 100, f"{where}: reference scored {ref.score}"
+        assert [c.id for c in ref.criteria] == cids, f"{where}: result lines drifted"
+        if lab.objective is not None:
+            assert ref.objective is not None and ref.objective.fraction >= 0.9, (
+                f"{where}: the reference earns only "
+                f"{ref.objective.fraction if ref.objective else 0:.2f} of the "
+                "objective — par is out of reach"
+            )
+
+        # The naive default — the scenario the lab page opens with — fails.
+        assert lab.start, f"{where}: no start scenario"
+        naive = grade(lab.id, parse_start(lab.start))
+        assert not naive.passed, f"{where}: the start scenario already passes"
+        assert 0 <= naive.score < PASS_FLOOR, f"{where}: naive run scored {naive.score}"
+
+        # Deterministic: the same scenario earns the same result, byte for byte.
+        again = grade(lab.id, reference_solutions[lab.id])
+        assert again.model_dump() == ref.model_dump(), f"{where}: grading is not deterministic"
+
+        # The cheap ways out are closed.
+        if gaming_attempts is not None:
+            attempts = gaming_attempts.get(lab.id, {})
+            assert any("zero" in name or "idle" in name for name in attempts), (
+                f"{where}: no zero-load gaming attempt is tested"
+            )
+            for name, scenario in attempts.items():
+                result = grade(lab.id, scenario)
+                assert not result.passed, f"{where}: gamed by {name!r} (score {result.score})"
+                assert result.score < PASS_FLOOR
 
     if module is not None:
         assert_engine_is_pure(module)

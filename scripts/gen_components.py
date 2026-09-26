@@ -127,6 +127,10 @@ EDITORIAL: dict[str, tuple[str, str, str]] = {
     "PhysicsAIFactory": ("rack", "built",
             "The capstone: six coupled subsystems, and GPUs idle because data did not arrive."),
 
+    # --- the composition layer ------------------------------------------------
+    "compose": ("composition", "built",
+            "Two engines at once: one twin's trace becomes another's scenario, with an identity asserted across the seam."),
+
     # --- specced, not built ---------------------------------------------------
     "DellAIDataPlatform": ("management", "scaffold", "Spec only: the AI data platform pipeline."),
     "DellAPEX": ("platform", "scaffold", "Spec only: consumption-model infrastructure."),
