@@ -1,0 +1,16 @@
+{
+  "params": {
+    "chain": [
+      "heat-to-cdu",
+      "closed-loop",
+      "storage-feed",
+      "gray-fabric",
+      "wall-watts",
+      "attack-to-appliance",
+      "hostile-sites",
+      "factory-fed",
+      "factory-fed-bad-day"
+    ]
+  },
+  "skip": ["/api/run/custom"]
+}

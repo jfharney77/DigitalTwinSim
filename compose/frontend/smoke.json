@@ -1,0 +1,74 @@
+{
+  "routes": [
+    {
+      "hash": "",
+      "name": "chains",
+      "svg": true,
+      "visible": [
+        ".engine-card",
+        ".seam-connector",
+        ".seam-chart.is-seam",
+        ".scenario-list button",
+        ".scrub-field input[type=range]"
+      ],
+      "text": [
+        "Composition",
+        "Both engines, one time axis",
+        "the seam",
+        "What the adapter injected",
+        "Chains",
+        "Playback"
+      ],
+      "play": {
+        "click": "button:text-is('×16')",
+        "watch": ".scrub-field span",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#chain=closed-loop",
+      "name": "chain-closed-loop",
+      "svg": true,
+      "visible": [
+        ".iteration-panel",
+        ".iter-bar",
+        ".seam-connector"
+      ],
+      "text": [
+        "The loop settling",
+        "converged",
+        "Supply temperature coming back"
+      ],
+      "play": {
+        "click": ".iter-bar",
+        "watch": ".iter-readout",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#chain=hostile-sites",
+      "name": "chain-hostile-sites",
+      "svg": true,
+      "visible": [".seam-connector", ".engine-card"],
+      "text": ["Faults across the seam", "admin-hours"]
+    },
+    {
+      "hash": "#chain=factory-fed",
+      "name": "chain-factory-fed",
+      "svg": true,
+      "visible": [".seam-connector", ".seam-chart.is-seam"],
+      "text": ["Tokens per second", "Facility power", "Where the two modes disagree"]
+    },
+    {
+      "hash": "#seams",
+      "name": "seams",
+      "visible": [".coupling-card", ".constants-table"],
+      "text": [
+        "The seams",
+        "Constants the seams own",
+        "identity",
+        "estimate"
+      ]
+    }
+  ]
+}
