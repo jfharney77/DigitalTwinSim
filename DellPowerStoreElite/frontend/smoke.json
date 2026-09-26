@@ -78,7 +78,7 @@
         ".an-kind"
       ],
       "text": [
-        "200 Gb RDMA cluster mesh"
+        "Cluster network (Ethernet)"
       ]
     },
     {
@@ -92,7 +92,7 @@
       "text": [
         "Categories",
         "Appliance model",
-        "PowerStore Elite 5500"
+        "PowerStore 5500 (Elite)"
       ],
       "play": {
         "click": ".cat-index button >> nth=2",

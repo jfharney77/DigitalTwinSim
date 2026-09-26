@@ -167,9 +167,9 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
                     "units, the chips that do the maths behind AI). So one tray is "
                     "two Grace processors and four Blackwell GPUs. With the water "
                     "flowing, the processors start first, and every tray starts at "
-                    "the same moment, like the nodes in the VxRail twin. The "
-                    "graphics chips on the left stay dark for now: they wake in "
-                    "the next stage. For now the trays are still separate "
+                    "the same moment, like a row of identical computers switched on "
+                    "together. The graphics chips on the left stay dark for now: they "
+                    "wake in the next stage. For now the trays are still separate "
                     "computers that share a rack."
                 ),
                 standard=(
@@ -177,16 +177,17 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
                     "one NVIDIA Grace CPU (72 Arm cores) fused to two Blackwell "
                     "GPUs on one board over NVLink-C2C, a chip-to-chip link far "
                     "faster than PCIe. So every tray is two Grace and four "
-                    "Blackwell, under cold plates with no fans. With coolant "
+                    "Blackwell, under cold plates instead of fan-cooled heatsinks. With coolant "
                     "flowing, the Grace CPUs boot first, and every tray boots in "
                     "lockstep, as VxRail nodes do; the GPUs stay dark until the "
                     "next stage. The trays below mirror this one. For now they "
                     "are separate Arm servers that share a rack."
                 ),
                 expert=(
-                    "Tray: 2x GB200 = 2 Grace (72 Arm cores) + 4 Blackwell over "
-                    "NVLink-C2C, cold-plated. Grace boots, GPUs still in reset; "
-                    "trays in lockstep on -t1..-t4. Still discrete systems."
+                    "Tray: 2x GB200 = 2 Grace (72 Arm cores each) + 4 Blackwell, one "
+                    "Grace + 2 Blackwell per superchip over NVLink-C2C, cold-plated. "
+                    "Grace boots, GPUs still in reset; trays in lockstep on -t1..-t4. "
+                    "Still discrete systems."
                 ),
             ),
             # Close on trays 1 and 2; trays 3 and 4 below are identical.
@@ -201,31 +202,36 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
             title="Why the switch trays sit in the middle",
             script=L(
                 novice=(
-                    "Now all 72 graphics chips wake up on their cold plates. This "
-                    "is where the rack's power use jumps the most, because each "
-                    "one can draw around a kilowatt (an illustrative figure). But "
-                    "each chip can so far only talk to its own tray. The thing "
-                    "that will join them is the dark band in the middle, not "
-                    "switched on yet: the NVLink switch trays. NVLink is NVIDIA's fast link between graphics "
-                    "chips. The switch trays sit in the middle of the rack on "
-                    "purpose, so the copper cable to even the farthest tray stays "
-                    "short. Short copper means no need to convert to light, and "
-                    "copper is cheaper, cooler and more reliable."
+                    "Now all 72 graphics chips wake up on their cold plates. This is "
+                    "where the rack's power use jumps the most: in this model each "
+                    "chip is tested under load as it wakes, and a working chip can "
+                    "draw around a kilowatt (an illustrative figure). A chip with "
+                    "nothing to do draws far less. But each chip can so far only talk "
+                    "to its own tray. The thing that will join them is the dark band "
+                    "in the middle, not switched on yet: the NVLink switch trays. "
+                    "NVLink is NVIDIA's fast link between graphics chips. The switch "
+                    "trays sit in the middle of the rack on purpose, so the copper "
+                    "cable to even the farthest tray stays short. Short copper means "
+                    "no need to convert to light, and copper is cheaper, cooler and "
+                    "more reliable."
                 ),
                 standard=(
                     "All 72 Blackwell GPUs now come out of reset on their cold "
-                    "plates, the largest power step in the trace at roughly a "
-                    "kilowatt each (illustrative). Yet each can so far talk only to "
-                    "its own tray. What will join them is the band in the middle, "
-                    "still dark: the NVLink switch trays, carrying NVSwitch chips that cross-connect "
-                    "every GPU. They sit at mid-rack on purpose, so the copper run "
-                    "to the farthest tray stays short enough to skip optics. Copper "
-                    "is cheaper, cooler and more reliable at this scale."
+                    "plates. It is the largest power step in the trace because this "
+                    "twin wakes each GPU into a self-test under load, roughly a "
+                    "kilowatt each (illustrative); an idle GPU draws far less. Yet "
+                    "each can so far talk only to its own tray. What will join them "
+                    "is the band in the middle, still dark: the NVLink switch trays, "
+                    "carrying NVSwitch chips that cross-connect every GPU. They sit "
+                    "at mid-rack on purpose, so the copper run to the farthest tray "
+                    "stays short enough to skip optics. Copper is cheaper, cooler and "
+                    "more reliable at this scale."
                 ),
                 expert=(
-                    "GPUs out of reset: largest power step (~1 kW each, "
-                    "illustrative); unfused. NVSwitch trays (still dark) mid-rack "
-                    "bound copper run length, so no optics."
+                    "GPUs out of reset: largest power step, modelled as self-test "
+                    "under load (~1 kW each, illustrative; idle draw is far lower); "
+                    "unfused. NVSwitch trays (still dark) mid-rack bound copper run "
+                    "length, so no optics."
                 ),
             ),
             # The middle of the rack: trays 2 and 3 either side of the switches.
@@ -237,33 +243,36 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
         ),
         TourStep(
             id="fabric-training",
-            title="Five thousand links, one at a time",
+            title="Five thousand cables, every link trained",
             script=L(
                 novice=(
-                    "This is the slowest part of the whole start-up, so the "
-                    "timeline lingers here. The switch trays start up, and then "
-                    "more than five thousand copper links through the cable bundle "
-                    "at the back of the rack come up one by one. Each link is "
-                    "negotiated, tuned and checked for errors. Until the very last "
-                    "one is ready there is no shared network at all, just chips "
-                    "and switches testing their connections with each other. "
-                    "The right-hand switch block, partly out of view, does the "
+                    "This is the slowest part of the whole start-up, so the timeline "
+                    "lingers here. The switch trays start up, and then the links "
+                    "between chips are trained: 1,296 links, carried by more than "
+                    "five thousand copper cables in the bundle at the back of the "
+                    "rack. Training means the two ends of a link agree on a speed, "
+                    "tune their signals and check for errors. The links train side by "
+                    "side, and the stage is slow because everything waits for the "
+                    "last one. Until it is ready there is no shared network at all, "
+                    "just chips and switches testing their connections with each "
+                    "other. The right-hand switch block, partly out of view, does the "
                     "same as the left."
                 ),
                 standard=(
-                    "The single longest stage, which is why playback dwells here. "
-                    "The switch trays boot their NVSwitch chips, and then the "
-                    "fabric trains: more than 5,000 copper links through the "
-                    "cable cartridge at the back of the rack come up one by one, "
+                    "The single longest stage, which is why playback dwells here. The "
+                    "switch trays boot their NVSwitch chips, and then the fabric "
+                    "trains: 1,296 NVLink links, 18 per GPU, carried by more than "
+                    "5,000 copper cables in the cartridge at the back of the rack, "
                     "each negotiated, tuned and error-checked at 200 Gb/s per lane. "
-                    "Until the last link trains there is no domain, only GPUs and "
-                    "switches exchanging link-training patterns. The right-hand "
-                    "switch block, cut off at the edge, mirrors the left."
+                    "They train in parallel; the wait is for the last one. Until it "
+                    "trains there is no domain, only GPUs and switches exchanging "
+                    "link-training patterns. The right-hand switch block, cut off at "
+                    "the edge, mirrors the left."
                 ),
                 expert=(
-                    "Max dwell: NVSwitch trays up, >5,000 copper links trained at "
-                    "200 Gb/s/lane through the rear cartridge. No domain until the "
-                    "last link."
+                    "Max dwell: NVSwitch trays up; 1,296 NVLink5 links (72 x 18) "
+                    "train in parallel over >5,000 copper cables at 200 Gb/s/lane "
+                    "through the rear cartridge. No domain until the last link."
                 ),
             ),
             camera=CameraTarget(x=0, y=24, w=60, h=52),
@@ -274,37 +283,38 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
         ),
         TourStep(
             id=SIGNATURE_STEP_ID,
-            title="Seventy-two GPUs become one",
+            title="Seventy-two GPUs, one domain",
             script=L(
                 novice=(
-                    "This is the moment the rack exists for. The software that "
-                    "runs the switch network stitches every trained link into one "
-                    "network where every graphics chip reaches every other chip "
-                    "directly. All 72 can now read and write each other's memory "
-                    "at enormous speed, so software stops seeing 72 separate cards "
-                    "and sees something close to one giant chip with all their "
-                    "memory pooled together. Watch the counter of joined chips: it "
-                    "goes straight from zero to 72. There is never a moment when "
-                    "some are joined and some are not. A model too large for any "
-                    "single chip can now spread across all of them as if they were "
-                    "one. In the XE9680 twin the same kind of link stops at eight "
-                    "chips, at the wall of one server."
+                    "This is the moment the rack exists for. The software that runs "
+                    "the switch network stitches every trained link into one network "
+                    "where every graphics chip reaches every other chip directly. All "
+                    "72 can now read and write each other's memory at enormous speed. "
+                    "Programs still see 72 chips, but the chips share work and memory "
+                    "so closely that NVIDIA describes the rack as one giant chip. "
+                    "Watch the counter of joined chips: it goes straight from zero to "
+                    "72. There is never a moment when some are joined and some are "
+                    "not. A model too large for any single chip can now spread across "
+                    "all of them. In the XE9680 twin the same kind of link stops at "
+                    "eight chips, at the wall of one server."
                 ),
                 standard=(
-                    "The signature moment. The fabric manager stitches every "
-                    "trained link into a single all-to-all NVLink domain. All 72 "
-                    "GPUs can read and write each other's memory at 1.8 TB/s each, "
-                    "about 130 TB/s in total, so software sees something close to "
-                    "one enormous GPU with 13.5 TB of pooled HBM3e memory. The "
-                    "GPUs-in-domain counter goes from 0 to 72 in one step: the fuse "
-                    "is atomic, and no partial domain ever exists. The XE9680 twin "
-                    "keeps this wall at eight GPUs and the chassis; here it is the "
-                    "rack."
+                    "The signature moment. The fabric manager stitches every trained "
+                    "link into a single all-to-all NVLink domain. All 72 GPUs can "
+                    "read and write each other's memory at 1.8 TB/s each, about 130 "
+                    "TB/s in total, across 13.4 TB of HBM3e (high-bandwidth memory, "
+                    "the DRAM stacked beside each GPU). Those are NVIDIA's figures. "
+                    "Software still sees 72 GPUs on 18 hosts; NVIDIA markets the "
+                    "domain as one enormous GPU. The GPUs-in-domain counter goes from "
+                    "0 to 72 in one step: the fuse is atomic, and no partial domain "
+                    "ever exists. The XE9680 twin keeps this wall at eight GPUs and "
+                    "the chassis; here it is the rack."
                 ),
                 expert=(
-                    "Signature: atomic fuse. All-to-all NVLink domain, 1.8 TB/s per "
-                    "GPU, ~130 TB/s aggregate, 13.5 TB pooled HBM3e as one logical "
-                    "device. gpusInDomain in {0, 72}, never partial."
+                    "Signature: atomic fuse. One 72-GPU all-to-all NVLink domain: 72 "
+                    "CUDA devices, 18 hosts, 1.8 TB/s per GPU, ~130 TB/s aggregate, "
+                    "13.4 TB HBM3e total (NVIDIA's figures); marketed as a single "
+                    "GPU. gpusInDomain in {0, 72}, never partial."
                 ),
             ),
             camera=camera_around(anatomy, gpus + switches, pad=2.0),
@@ -315,7 +325,7 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
         ),
         TourStep(
             id="ready",
-            title="One rack, one giant GPU, ready",
+            title="One rack, one domain, ready",
             script=L(
                 novice=(
                     "The last stage is a full check-up. Health checks and a test workload "

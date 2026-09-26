@@ -18,6 +18,10 @@ function substituted(id: string, s: SimState): string {
       return s.rebuilding
         ? `${s.rebuildHoursRemaining.toFixed(1)} h remaining at ${s.rebuildPct.toFixed(1)}% done`
         : "no rebuild running";
+    case "risk-index":
+      return s.degraded
+        ? `index ${s.riskIndex.toFixed(0)} with ${s.drivesFailed} member(s) out${s.rebuilding ? `, ${s.rebuildHoursRemaining.toFixed(1)} h left on the running rebuild` : ", no rebuild running"}`
+        : s.online ? "0: no member out" : "array offline";
     case "latency-knee":
       return `${s.latencyMs.toFixed(2)} ms at ${s.diskUtilPct.toFixed(0)}% busy`;
     default:
@@ -64,10 +68,14 @@ export function Instruments({
   state,
   explains,
   explainOn,
+  controllersConfigured,
 }: {
   state: SimState | null;
   explains: Explain[];
   explainOn: boolean;
+  // The build's controller count, so a lost canister reads as degraded
+  // here and in the header — losing redundancy is not a normal state.
+  controllersConfigured: number;
 }) {
   const s = state;
   const ex = (id: string) => explains.find((e) => e.id === id);
@@ -92,6 +100,12 @@ export function Instruments({
       <h2>Instruments</h2>
       {s && !s.online && (
         <div className="mini rule-error">■ ARRAY OFFLINE — see the event log</div>
+      )}
+      {s && s.online && s.controllersAlive < controllersConfigured && (
+        <div className="mini rule-warning">
+          △ DEGRADED — one controller down; the survivor owns every volume and
+          write cache is write-through
+        </div>
       )}
       {s?.degraded && s.online && (
         <div className="mini rule-warning">
@@ -125,13 +139,22 @@ export function Instruments({
       </div>
       {s && (
         <>
-          <div className="stat"><span>capacity</span><span>{s.usableTb} TB usable</span></div>
+          <div className="stat">
+            <span>capacity</span>
+            <span>{s.online ? `${s.usableTb} TB usable` : `offline · 0 of ${s.usableTb} TB reachable`}</span>
+          </div>
           <Bar
             total={s.rawTb}
             segments={[
               { label: "usable", tb: s.usableTb, color: "#2596be" },
               { label: "protection", tb: s.overheadTb, color: "#e8c33d" },
-              { label: "spare", tb: s.spareTb, color: "#3a4a5e" },
+              {
+                // The ledger is the build's: a claimed spare is still the
+                // spare drive's terabytes, now working as a rebuild target.
+                label: s.spareTb > 0 && s.sparesLeft === 0 ? "spare (in use)" : "spare",
+                tb: s.spareTb,
+                color: "#3a4a5e",
+              },
             ]}
           />
           <Info id="usable-capacity" />
@@ -147,12 +170,12 @@ export function Instruments({
       )}
       <Info id="rebuild-time" />
       <div className="stat">
-        <span>second-failure risk</span>
+        <span>exposure index</span>
         <span style={{ color: risk > 60 ? "#c8281e" : risk > 20 ? "#e8c33d" : undefined }}>
           {s ? `${risk.toFixed(0)} / 100` : "—"}
         </span>
       </div>
-      <div className="margin-bar" title="second-failure exposure (illustrative)">
+      <div className="margin-bar" title="exposure index — how exposed the array is to one more failure, and for how long (unitless, illustrative)">
         <div
           className="margin-fill"
           style={{
@@ -161,8 +184,9 @@ export function Instruments({
           }}
         />
       </div>
+      <Info id="risk-index" />
       <div className="mini" style={{ marginTop: 6 }}>
-        Values wear the ~ of a simplified model: drive constants are
+        The exposure figure is a unitless index, not a probability, and it prices the next failure — whichever number that is. Values wear the ~ of a simplified model: drive constants are
         estimates (see the footnote), and the point is the relationships —
         watch one host write become {s?.writePenalty ?? "N"} disk writes.
       </div>

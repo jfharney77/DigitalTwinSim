@@ -11,6 +11,7 @@ from .models import (
     Environment,
     Explain,
     GuidedScenario,
+    Intro,
     Scenario,
     SimEvent,
     SystemConfig,
@@ -18,16 +19,51 @@ from .models import (
     WorkloadPreset,
 )
 
+# --- Page intro --------------------------------------------------------------
+
+INTRO = Intro(
+    title="From one hot slot to a hundred-kilowatt rack",
+    text=L(
+        novice=(
+            "Three AI machines, one simulator. Watch how much power they "
+            "draw, how hot they get, and how the heat leaves: by air in "
+            "the two servers (the XE7745 and the XE9680), by water in "
+            "the XE9712 rack. Pick a guided scenario on the left to "
+            "start; each one tells you what to watch. The iDRAC tab "
+            "shows the same readings in the format a real Dell server "
+            "reports them."
+        ),
+        standard=(
+            "Three machines on one engine. In the XE7745, eight "
+            "identical GPUs sit in unequal seats, and the one breathing "
+            "the warmest air throttles first. In the XE9680, eight GPUs "
+            "on one baseboard heat up and throttle together, and starve "
+            "together when the data pipeline lags. In the XE9712 rack "
+            "the heat leaves in water, and the arithmetic is enforced "
+            "to the watt: liquid heat plus air heat equals DC power, "
+            "and the water's temperature rise is ΔT = Q/(ṁ·cp). The "
+            "iDRAC tab serves the simulator's state as the Redfish JSON "
+            "a digital twin would read from real hardware."
+        ),
+        expert=(
+            "One engine, three personalities: XE7745 per-slot preheat, "
+            "XE9680 one-zone HGX with a data-feed cap, XE9712 liquid "
+            "loop (liquid + air = DC exact; ΔT = Q/(ṁ·cp)). iDRAC tab: "
+            "SimState as Redfish Thermal JSON."
+        ),
+    ),
+)
+
 # --- Config presets --------------------------------------------------------
 
 XE7745_8GPU = SystemConfig(
     product="xe7745", cpu_tdp_w=350, pcie_gpus=8, pcie_gpu_tdp_w=600,
-    psu_capacity_w=2800,
+    psu_capacity_w=3200,
 )
 
 XE7745_4GPU = SystemConfig(
     product="xe7745", cpu_tdp_w=350, pcie_gpus=4, pcie_gpu_tdp_w=450,
-    psu_capacity_w=2400,
+    psu_capacity_w=2900,
 )
 
 XE9680_H100 = SystemConfig(product="xe9680", cpu_tdp_w=350, sxm_gpu_tdp_w=700, nics=8)
@@ -118,7 +154,8 @@ GUIDED_SCENARIOS = [
                 novice=(
                     "The machine idles for two minutes, then training "
                     "starts. Watch the power number: it leaps from "
-                    "about one kilowatt to more than ten, in seconds. "
+                    "about one and a half kilowatts to about eleven, "
+                    "in seconds. "
                     "One rack of these swings by the demand of a small "
                     "neighborhood every time a job starts or stops. "
                     "This is why building an AI data center is mostly "
@@ -126,16 +163,17 @@ GUIDED_SCENARIOS = [
                     "easy part."
                 ),
                 standard=(
-                    "The B200-class XE9680 idles at roughly a kilowatt "
+                    "The B200-class XE9680 idles near 1.5 kW "
                     "— idle GPUs still hold ~10% of TDP — and training "
-                    "lands at t=120 s, stepping the box to ~10.5 kW DC. "
+                    "lands at t=120 s, stepping the box to ~9.7 kW DC "
+                    "at once and ~11 kW once the fans reach full speed. "
                     "The swing, not the peak, is the story: grid-facing "
                     "infrastructure must absorb megawatt-scale steps "
                     "when a cluster of these starts a job. Note the NIC "
                     "bank's steady ~240 W — plumbing that never idles."
                 ),
                 expert=(
-                    "~1 kW idle → ~10.5 kW at t=120. The step function "
+                    "~1.5 kW idle → ~11 kW from t=120. The step function "
                     "is the grid problem; NICs are a constant 240 W "
                     "floor term."
                 ),
@@ -157,18 +195,23 @@ GUIDED_SCENARIOS = [
                     "Training runs healthily for five minutes; then the "
                     "storage system starts delivering data at only a "
                     "third of the rate the GPUs can consume. Watch two "
-                    "numbers separate: power barely falls — a waiting "
-                    "GPU still burns most of its electricity — but the "
-                    "useful-output number collapses, and a counter "
-                    "starts adding up wasted GPU-hours. This is the "
+                    "numbers separate. Power falls by less than a "
+                    "third, because a waiting GPU still burns most of "
+                    "its electricity. The training throughput number "
+                    "falls by more than two thirds, and a counter "
+                    "starts adding up wasted GPU-hours. The Data feed "
+                    "slider on the right shows the live value next to "
+                    "its starting one. This is the "
                     "most expensive way to save money on storage."
                 ),
                 standard=(
-                    "At t=300 s the data-feed slider drops to 30%: "
-                    "effective utilization is capped by delivery, so "
-                    "tokens/s falls to less than a third while DC power "
-                    "drops only modestly (the idle floor plus hold "
-                    "power). The GPU-hours-wasted ledger accumulates "
+                    "At t=300 s a timed event drops the data feed to "
+                    "30%; the slider keeps its starting value and shows "
+                    "the live one beside it. Effective utilization is "
+                    "capped by delivery, so tokens/s falls by 70% while "
+                    "DC power drops about 28%, from 7.6 to 5.5 kW (the "
+                    "idle floor plus hold power). The GPU-hours-wasted "
+                    "ledger accumulates "
                     "the difference between demanded and delivered "
                     "utilization — the number a capacity planner should "
                     "be shown before trimming the storage budget. The "
@@ -176,7 +219,7 @@ GUIDED_SCENARIOS = [
                     "this slider."
                 ),
                 expert=(
-                    "feed 100→30 at t=300: tok/s ∝ feed, P falls ~20%. "
+                    "feed 100→30 at t=300: tok/s ∝ feed, P falls ~28%. "
                     "Wasted-GPU-hours ledger = ∫(demand − delivered). "
                     "Storage's bill, paid in compute."
                 ),
@@ -195,40 +238,54 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "This is the whole rack — seventy-two GPUs, the "
-                    "same count as nine of the air-cooled boxes — at "
-                    "full training load. Notice what is missing: fan "
-                    "noise. Nearly all the heat leaves in water, the "
-                    "pumps that move it draw far less than nine fan "
-                    "walls would, and the temperature rise of the "
-                    "water obeys simple arithmetic the instruments "
-                    "show live. Air cooling was never wrong; it just "
-                    "stops scaling around a kilowatt per chip. This "
-                    "rack is what comes after."
+                    "This is the whole rack at full training load: "
+                    "seventy-two GPUs, the same count as nine of the "
+                    "air-cooled XE9680 servers. Notice what has "
+                    "shrunk: the fans. Each drawer keeps a few small "
+                    "ones for leftover heat, but nearly all the heat "
+                    "leaves in water. Watch cooling overhead. It is "
+                    "the share of electricity spent on fans and pumps "
+                    "rather than on computing. For this rack it is "
+                    "about 1.4%. The A/B panel above the instruments "
+                    "runs one XE9680 with 1,000 W GPUs alongside, and "
+                    "its fans take about 15%. The water's temperature "
+                    "rise obeys simple arithmetic, but give it time: "
+                    "the return temperature needs several minutes to "
+                    "settle at about 12 °C above the supply. Air "
+                    "cooling was never wrong; it just stops scaling "
+                    "around a kilowatt per chip. This rack is what "
+                    "comes after."
                 ),
                 standard=(
-                    "The XE9712 at full load: ~120 kW DC, ~88% leaving "
-                    "in the liquid loop, ΔT = Q/(ṁ·cp) on display. "
-                    "Compare cooling overhead with the XE9680 run: nine "
-                    "fan walls at full bore versus one pump pair — the "
-                    "spec calls this the best cross-product lesson in "
-                    "the suite, and the overhead instrument is where it "
-                    "lands. The residual ~12% still heats the room; the "
-                    "IR7000's rear-door option exists for exactly that "
+                    "The XE9712 at full load: ~116 kW DC, ~88% leaving "
+                    "in the liquid loop, ΔT = Q/(ṁ·cp) on display. The "
+                    "return temperature lags (τ = 60 s), so the "
+                    "measured rise reaches the settled 12 °C after "
+                    "several minutes. This scenario opens the A/B "
+                    "panel against the XE9680 · B200: its sixteen fans "
+                    "pinned at full speed cost ~15% of IT power (the "
+                    "700 W H100 build, fans near two-thirds speed, "
+                    "costs ~5%), while the rack's pumps plus tray fans "
+                    "cost ~1.4% for 72 GPUs. That is nine XE9680s' "
+                    "worth of fan walls against one pump pair. The "
+                    "residual ~12% still heats the room; the IR7000's "
+                    "rear-door option exists for exactly that "
                     "remainder."
                 ),
                 expert=(
-                    "72 GPUs ≈ 9× XE9680. ~120 kW, 88% liquid, ΔT = "
-                    "Q/ṁcp live. Pump ~1.5 kW vs 9 fan walls — the "
-                    "overhead instrument is the lesson."
+                    "72 GPUs ≈ 9× XE9680. ~116 kW, 88% liquid, ΔT = "
+                    "Q/ṁcp (return lags, τ 60 s). Overhead ~1.4% "
+                    "(pump 0.75 kW + tray fans 0.8 kW) vs ~15% for "
+                    "the B200 box in the A/B read-out."
                 ),
             ),
         ],
-        question="Compare cooling overhead here with the XE9680 preset at full load — which is smaller, and by how much?",
+        question="Once both runs settle, read the cooling overhead row in the A/B panel: which machine spends the smaller share on cooling, and by what factor?",
         scenario=Scenario(
             config=XE9712_FULL, workload=TRAINING, environment=Environment(),
             duration_s=900,
         ),
+        compare_preset_id="xe9680-b200",
     ),
     GuidedScenario(
         id="populate",
@@ -248,13 +305,12 @@ GUIDED_SCENARIOS = [
                 ),
                 standard=(
                     "Eighteen trays against a 66 kW shelf: the shelf "
-                    "rule errors at once (≈ 124 kW of demand), and the "
+                    "rule errors at once (≈ 122 kW of demand), and the "
                     "run demonstrates the consequence — sustained "
                     "overcurrent trips the shelves mid-run. Fix it in "
                     "the build panel: fewer trays, or the 132/198 kW "
                     "shelf options. Then watch the manifold rule as "
-                    "tray count rises. The IR7000 section of the spec "
-                    "says it plainly: at rack scale the validation "
+                    "tray count rises. At rack scale the validation "
                     "rules are the product."
                 ),
                 expert=(
@@ -391,14 +447,14 @@ EXPLAINS = [
     Explain(
         id="starvation",
         title="Data starvation",
-        equation="util_eff = util_demand × min(1, feed);  tokens ∝ util_eff, power ⊅",
+        equation="util_eff = util_demand × min(1, feed);  tokens ∝ util_eff;  power falls far less",
         inputs=["data feed", "effective util", "tokens/s", "DC power", "wasted GPU-hours"],
         explanation=L(
             novice=(
                 "A graphics chip waiting for data is like an idling "
                 "truck: barely moving, still burning fuel. When the "
                 "storage system cannot keep up, output falls in "
-                "proportion — but power hardly falls at all, because "
+                "proportion, but power falls far less, because "
                 "staying ready is itself expensive. The wasted-hours "
                 "counter turns that gap into a number you can put in "
                 "a budget meeting."
@@ -438,12 +494,53 @@ EXPLAINS = [
                 "between best and worst seats is enough to stagger "
                 "the throttle order deterministically. The XE9680 "
                 "deliberately erases this: one baseboard, one zone, "
-                "shared fate — a simplification the spec footnotes."
+                "shared fate, which is a stated simplification."
             ),
             expert=(
                 "Σ preheat down the row → deterministic throttle "
                 "order. 9680 collapses the vector to one zone (stated "
                 "simplification); 9712's analog is loop position."
+            ),
+        ),
+    ),
+    Explain(
+        id="power-chain",
+        title="DC power, wall power, GPU power",
+        equation="P_dc = P_gpu + P_cpu + P_nic + P_base + P_fans + P_pumps;  P_wall = P_dc / η_psu",
+        inputs=["GPU power", "the other parts", "DC power", "PSU efficiency", "wall power"],
+        explanation=L(
+            novice=(
+                "Three power readings, and they are not the same "
+                "number. GPU power is what the graphics chips alone "
+                "draw — usually most of the total. DC power is what "
+                "every part inside draws added up: chips, memory, "
+                "network cards, fans and pumps. 'DC' means direct "
+                "current, the steady kind of electricity the parts "
+                "run on. Wall power is what the electricity meter "
+                "sees, and it is always the larger number, because "
+                "converting the building's alternating current into "
+                "direct current wastes a few percent as heat. In the "
+                "liquid rack the same job is done by a busbar — a "
+                "thick metal bar running down the back of the rack "
+                "that every tray clips onto instead of having its own "
+                "cord. Starve the GPUs and watch these three fall far "
+                "less than the tokens do."
+            ),
+            standard=(
+                "The power chain, inside out: GPU watts are the "
+                "largest single term; DC power is the sum the engine "
+                "asserts every tick (components must add up exactly); "
+                "wall power is DC divided by PSU efficiency — a "
+                "load-dependent curve for the air servers, a single "
+                "0.97 busbar-shelf point for the rack. The gap "
+                "between DC and wall is conversion loss, and it is "
+                "worst at low load, which is why an oversized PSU "
+                "bank costs money at idle."
+            ),
+            expert=(
+                "ΣP_components = P_dc, asserted per tick; P_ac = "
+                "P_dc/η(load). η curve for PSUs, 0.97 flat for the "
+                "busbar shelf. Conversion loss peaks at low load."
             ),
         ),
     ),
@@ -455,23 +552,26 @@ EXPLAINS = [
         explanation=L(
             novice=(
                 "Some of the electricity a machine draws does no "
-                "computing at all — it just moves the coolant, air or "
-                "water. This instrument shows that share. Sixteen "
-                "fans at full speed cost hundreds of watts; the "
-                "rack's pumps cost about as much while moving "
-                "seventy-two GPUs' heat. That ratio is most of the "
-                "argument for liquid."
+                "computing at all. It just moves the coolant, air or "
+                "water. This instrument shows that share. The "
+                "XE9680's sixteen fans at full speed draw about "
+                "1.4 kW to cool eight GPUs. The rack's pumps and "
+                "small drawer fans draw about 1.6 kW to cool "
+                "seventy-two. That ratio is most of the argument "
+                "for liquid. The wattages are estimates."
             ),
             standard=(
                 "Fan and pump watts over IT watts — a chassis-scale "
-                "PUE. The XE7745's wall at full bore runs ~5% "
-                "overhead; the XE9712's pumps run ~1% for 9× the "
-                "GPUs. The same ratio at facility scale is the PUE "
-                "number the IR7000 twin argues about."
+                "PUE. At full bore the XE7745's wall runs ~9% and "
+                "the B200-class XE9680's ~15%; the XE9712's pumps "
+                "plus tray fans run ~1.4% for 9× the GPUs. Fan "
+                "wattages are estimates. The same ratio at facility "
+                "scale is the PUE number the IR7000 twin argues "
+                "about."
             ),
             expert=(
-                "(fans + pumps)/IT: ~5% air at full bore vs ~1% "
-                "liquid at 9× density. Chassis-scale PUE."
+                "(fans + pumps)/IT: ~9–15% air at full bore vs "
+                "~1.4% liquid at 9× density. Chassis-scale PUE."
             ),
         ),
     ),

@@ -232,3 +232,71 @@ def test_rollback_log_agrees_with_the_token_counter():
         # The rewind happens at the tick's start; this tick's production
         # is then added back on top.
         assert at.tokens_total_b < before.tokens_total_b + at.tokens_per_s * 3600 / 1e9
+
+
+def test_starvation_cuts_tokens_far_more_than_power():
+    """A GPU waiting for data busy-waits: it is not dark. Under starvation
+    the token rate must fall much further than facility power — the
+    asymmetry the starved-cluster narration and PhysicsCompute both teach.
+    The narration quotes these numbers, so they are pinned here."""
+    starved = next(g for g in GUIDED_SCENARIOS if g.id == "starved-cluster")
+    trace, _, _ = run(starved.scenario)
+    before, after = trace[249], trace[300]
+    token_ratio = after.tokens_per_s / before.tokens_per_s
+    power_ratio = after.facility_mw / before.facility_mw
+    assert abs(after.gpu_idle_data_pct - 65.3) <= 0.5
+    assert abs(token_ratio - 0.35) <= 0.02, token_ratio
+    assert 0.70 <= power_ratio <= 0.85, power_ratio
+    assert power_ratio > 2 * token_ratio
+    assert abs(before.facility_mw - 0.90) <= 0.01 and abs(after.facility_mw - 0.69) <= 0.01
+    # The cost per token climbs for the rest of the run.
+    assert trace[-1].usd_per_mtok > before.usd_per_mtok * 1.15
+
+
+def test_a_fed_cluster_pays_no_stall_power():
+    """With data keeping up the stall term is exactly zero: GPU power is
+    the plain idle + (peak − idle) × utilization line."""
+    trace, _, _ = run(factory_scenario())
+    s = trace[430]
+    idle_w = 0.12 * 1200
+    expected = s.gpus_online * (idle_w + (1200 - idle_w) * s.gpu_util_pct / 100) / 1e6
+    assert abs(s.gpu_mw - expected) <= 2e-3
+
+
+def test_limiting_regions_name_the_real_bottleneck():
+    region_ids = {r.id for r in ANATOMY.regions}
+    starved = next(g for g in GUIDED_SCENARIOS if g.id == "starved-cluster")
+    warm = next(g for g in GUIDED_SCENARIOS if g.id == "warm-day")
+    healthy, _, _ = run(factory_scenario())
+    assert healthy[0].limiting_regions == [] and healthy[430].limiting_regions == []
+    assert healthy[0].region_status["resilience"] == 0, "no red block at hour zero"
+    t_s, _, _ = run(starved.scenario)
+    assert t_s[240].limiting_regions == [] and t_s[300].limiting_regions == ["data"]
+    t_w, _, _ = run(warm.scenario)
+    assert set(t_w[300].limiting_regions) == {"power", "cooling"}
+    for tr in (healthy, t_s, t_w):
+        for s in tr:
+            assert set(s.limiting_regions) <= region_ids
+
+
+def test_a_failure_restart_inside_a_capped_spell_logs_no_release():
+    """The restart hour dips under the ceiling on its own; logging 'cap
+    released' then 'capped' an hour apart reads as an error."""
+    warm = next(g for g in GUIDED_SCENARIOS if g.id == "warm-day")
+    _, log, _ = run(warm.scenario)
+    releases = [e.t_h for e in log if "cap released" in e.message]
+    caps = [e.t_h for e in log if "capped to shed load" in e.message]
+    assert releases == [350] and caps == [250]
+
+
+def test_checkpoint_narration_numbers():
+    """t_ckpt, cluster MTBF and the Young/Daly figure quoted in the
+    Goldilocks narration are the ones the validation panel computes."""
+    from app.validation import optimal_checkpoint_min
+
+    gold = next(g for g in GUIDED_SCENARIOS if g.id == "checkpoint-goldilocks")
+    assert abs(optimal_checkpoint_min(gold.scenario) - 29) <= 1
+    _, log, summary = run(gold.scenario)
+    assert abs(summary.tokens_total_b - 182.7) <= 0.1
+    quoted = [e.message for e in log if " B tokens" in e.message]
+    assert "2.39 B" in quoted[0] and "0.80 B" in quoted[-1]

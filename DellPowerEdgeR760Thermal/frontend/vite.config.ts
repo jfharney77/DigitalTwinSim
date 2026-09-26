@@ -16,6 +16,9 @@ export default defineConfig({
   resolve: { alias: { "@twinsim/twin-ui": twinUi } },
   server: {
     port: 5203,
+    // Fail loudly when 5203 is taken instead of sliding onto a
+    // neighbouring twin's registered port.
+    strictPort: true,
     proxy: {
       "/api": {
         target: process.env.API_TARGET ?? "http://localhost:8030",

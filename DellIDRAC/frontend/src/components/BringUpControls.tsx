@@ -1,4 +1,5 @@
 import { ControlPanel } from "@twinsim/twin-ui";
+import type { ScenarioId, ScenarioInfo } from "../types";
 
 /**
  * BringUpControls — the shared {@link ControlPanel} with this twin's own note.
@@ -16,7 +17,13 @@ export function BringUpControls({
   onPause,
   onStep,
   onReset,
+  scenario,
+  scenarios,
+  onScenario,
 }: {
+  scenario: ScenarioId;
+  scenarios: ScenarioInfo[];
+  onScenario: (id: ScenarioId) => void;
   speed: number;
   running: boolean;
   done: boolean;
@@ -27,7 +34,45 @@ export function BringUpControls({
   onStep: () => void;
   onReset: () => void;
 }) {
+  const info = scenarios.find((s) => s.id === scenario) ?? null;
+  const failure = scenario !== "bring-up";
   return (
+    <>
+    <div className="an-panel scenario-panel">
+      <h2>Scenario</h2>
+      <label className="field">
+        Trace to play
+        <select
+          aria-label="Scenario"
+          value={scenario}
+          onChange={(e) => onScenario(e.target.value as ScenarioId)}
+        >
+          {scenarios.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {info && <p className="mini scenario-summary">{info.summary}</p>}
+      {info && failure && (
+        <>
+          <details className="mini scenario-sources">
+            <summary>Sources and what is illustrative</summary>
+            <p className="scenario-summary">{info.basis}</p>
+            <ul>
+              {info.sources.map((src) => (
+                <li key={src.url}>
+                  <a href={src.url} target="_blank" rel="noreferrer">
+                    {src.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </>
+      )}
+    </div>
     <ControlPanel
       running={running}
       done={done}
@@ -42,9 +87,11 @@ export function BringUpControls({
         <>
           The sequence is a fixed trace computed by the backend; Run only plays
           it back. Step walks one event at a time — the longer real-world stage
-          (Lifecycle Controller init) dwells on screen longer.
+          ({failure ? "writing the image to flash" : "Lifecycle Controller init"})
+          dwells on screen longer.
         </>
       }
     />
+    </>
   );
 }

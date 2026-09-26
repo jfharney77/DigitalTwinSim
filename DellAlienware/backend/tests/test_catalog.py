@@ -91,3 +91,12 @@ def test_use_case_region_ids_resolve_in_every_anatomy():
                         f"{uc.id}/{step.title}: unknown region {rid!r} "
                         f"in anatomy {anatomy.id!r}"
                     )
+
+
+def test_usb_c_charging_only_where_dell_documents_it():
+    # The m18 R2 owner's manual lists no USB Power Delivery charging input
+    # (its Thunderbolt 4 ports are data/display); the 18 Area-51 manual lists
+    # USB PD charging as supported. Keep the USB-C adapter on the machine
+    # that can actually use it.
+    assert all(a.connector != "usbc" for a in PROFILES["m18-r2"].adapters)
+    assert any(a.connector == "usbc" for a in PROFILES["area51-18"].adapters)

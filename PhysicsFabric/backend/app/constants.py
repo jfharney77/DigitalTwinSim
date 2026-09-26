@@ -93,12 +93,32 @@ CONSTANTS: dict[str, Constant] = {
         estimated=True, blurb="Per-port pluggable optic power.",
     ),
     "optic_cpo_w": Constant(
-        value=6, unit="W/port", source="estimate — co-packaged optics fraction",
+        value=6, unit="W/port",
+        source=("estimate — co-packaged optics at a third of the pluggable; "
+                "Dell's SN6000 datasheet claims 5x better power efficiency for CPO models "
+                "(vendor claim, system-level)"),
         estimated=True, blurb="Per-port co-packaged optic power.",
     ),
     "campus_switch_base_w": Constant(
         value=60, unit="W", source="estimate — access-switch base draw",
         estimated=True, blurb="E3200 per-switch base power (before PoE delivery).",
+    ),
+    # --- PoE reference facts (Dell documentation) ---------------------------
+    "e3248p_poe_two_psu_w": Constant(
+        value=1440, unit="W",
+        source=("Dell N3200-ON/E3200-ON Installation Guide, PoE budget specifications — "
+                "E3248P-ON, two internal 1050 W AC PSUs: "
+                "https://www.dell.com/support/manuals/en-us/networking-n3200-series/"
+                "n3200-on_e3200-on_install_pub/poe-budget-specifications"),
+        estimated=False,
+        blurb="Rated PoE budget of an E3248P-ON on two PSUs. Reference only; the sim's budget is the selector.",
+    ),
+    "e3248p_poe_one_psu_w": Constant(
+        value=713, unit="W",
+        source=("Dell N3200-ON/E3200-ON Installation Guide, PoE budget specifications — "
+                "E3248P-ON, one internal PSU: 713 W low-line AC, 813 W high-line AC"),
+        estimated=False,
+        blurb="Rated PoE budget on one PSU (low-line AC) — about half, which is why the sim halves it.",
     ),
     # --- PoE (spec 03 device table) -----------------------------------------
     "poe_ap_w": Constant(

@@ -1,10 +1,9 @@
 import type { SimState } from "../types";
 
 // Strip charts on a shared time axis: heat moved, coolant supply,
-// silicon temperature, flow, and dew margin for the trailing window,
-// so cause-and-effect alignment is visible. Pure SVG — no chart library.
-
-const WINDOW_S = 600; // last 10 sim-minutes
+// silicon temperature, the IRC cap, banks online, and dew margin, from
+// t=0 to the cursor, so cause-and-effect alignment is visible and an
+// early event never scrolls off. Pure SVG — no chart library.
 
 function Path({
   points,
@@ -70,17 +69,18 @@ function Chart({
 export function StripCharts({
   trace,
   cursor,
+  capOff,
 }: {
   trace: SimState[];
   cursor: number;
+  capOff: boolean;
 }) {
-  const upto = trace.slice(0, cursor + 1);
-  const from = Math.max(0, upto.length - WINDOW_S);
-  const win = upto.slice(from);
+  const win = trace.slice(0, cursor + 1);
   const heat: [number, number][] = win.map((s) => [s.t, s.heatRemovedKw]);
   const supply: [number, number][] = win.map((s) => [s.t, s.secSupplyC]);
   const chip: [number, number][] = win.map((s) => [s.t, s.chipTempC]);
   const cap: [number, number][] = win.map((s) => [s.t, s.capPct]);
+  const banks: [number, number][] = win.map((s) => [s.t, s.groupsOnline]);
   const dew: [number, number][] = win.map((s) => [s.t, s.dewMarginC]);
   const cur = win[win.length - 1];
   const hMax = Math.max(100, ...heat.map(([, y]) => y)) * 1.1;
@@ -104,9 +104,14 @@ export function StripCharts({
         current={cur ? cur.chipTempC.toFixed(1) : "—"}
       />
       <Chart
-        title="IRC cap" unit="%" points={cap} color="#7fbf5a"
+        title="IRC cap" unit={capOff ? "" : "%"} points={cap} color="#7fbf5a"
         yMin={0} yMax={105}
-        current={cur ? cur.capPct.toFixed(0) : "—"}
+        current={capOff ? "off" : cur ? cur.capPct.toFixed(0) : "—"}
+      />
+      <Chart
+        title="banks online" unit="" points={banks} color="#b48ae0"
+        yMin={0} yMax={6.3}
+        current={cur ? `${cur.groupsOnline}/${cur.groupsPresent}` : "—"}
       />
       <Chart
         title="dew margin" unit="K" points={dew} color="#c8281e"
@@ -114,7 +119,7 @@ export function StripCharts({
         current={cur ? cur.dewMarginC.toFixed(1) : "—"}
       />
       <div className="mini">
-        Last {Math.min(WINDOW_S, win.length)} sim-seconds. Watch the order
+        From t+0 to t+{cur ? cur.t : 0} s, the whole run so far. Watch the order
         after any change: facility water first, coolant supply a minute
         behind it, silicon behind that, and the IRC cap last — the
         controller follows the sensors.

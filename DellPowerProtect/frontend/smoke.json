@@ -56,6 +56,65 @@
       }
     },
     {
+      "hash": "#scenario=cleaning-gc",
+      "name": "scenario-cleaning",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        "select[aria-label='Scenario']"
+      ],
+      "text": [
+        "Free space keeps shrinking",
+        "1 / 10",
+        "cleanable (estimate)",
+        "Eight weeks in"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#scenario=cleaning-gc&phase=alert",
+      "name": "scenario-cleaning-alert",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".region-failed",
+        ".an-alert"
+      ],
+      "text": [
+        "4 / 10",
+        "96% full",
+        "Space usage in Data Collection has exceeded"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=cleaning-gc&step=6",
+      "name": "scenario-cleaning-pinned",
+      "svg": true,
+      "visible": [
+        ".phase"
+      ],
+      "text": [
+        "7 / 10",
+        "Two references hold the missing 9 TB",
+        "held by Retention Lock"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
       "hash": "#anatomy",
       "name": "anatomy",
       "svg": true,

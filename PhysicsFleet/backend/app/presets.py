@@ -8,7 +8,10 @@ from .models import (
     Explain,
     FleetConfig,
     GuidedScenario,
+    GlossaryTerm,
+    Intro,
     Scenario,
+    ScenarioVariant,
     SimEvent,
     Workload,
     WorkloadPreset,
@@ -21,6 +24,7 @@ VXRAIL_8 = FleetConfig(product="vxrail", sites=1, nodes_per_site=8,
 VXRAIL_MANUAL = VXRAIL_8.model_copy(update={"ops_mode": "manual"})
 VXRAIL_3NODE = FleetConfig(product="vxrail", sites=1, nodes_per_site=3,
                            ops_mode="automated", ftt=1)
+VXRAIL_4NODE = VXRAIL_3NODE.model_copy(update={"nodes_per_site": 4})
 PRIVATE_2STACK = FleetConfig(product="privatecloud", sites=1, nodes_per_site=12,
                              ops_mode="automated", stacks=2, catalog=True)
 # Sized to serve its own spike: base 150 × (1 + 50% buffer) = 225 VMs =
@@ -46,6 +50,8 @@ CONFIG_PRESETS = [
                  blurb="Same cluster, artisanal ops — watch the ledger."),
     ConfigPreset(id="vxrail-3", name="VxRail ×3 (the trap)", config=VXRAIL_3NODE,
                  blurb="The minimum cluster, and why minimums exist."),
+    ConfigPreset(id="vxrail-4", name="VxRail ×4 (the spare)", config=VXRAIL_4NODE,
+                 blurb="One node past the minimum: somewhere to rebuild."),
     ConfigPreset(id="private", name="Private Cloud · 2 stacks", config=PRIVATE_2STACK,
                  blurb="Two hypervisors, one pane, one catalog."),
     ConfigPreset(id="apex", name="APEX · spiky demand", config=APEX_SPIKY,
@@ -118,38 +124,77 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "The smallest legal cluster: three nodes, "
-                    "surviving one failure. On day 20 a node dies. "
-                    "The workloads restart fine — but look at the "
-                    "exposure flag: with only two nodes left there is "
-                    "nowhere to rebuild the lost redundancy, so a "
-                    "second failure now means real loss, and the "
-                    "cluster stays in that state until the repair "
-                    "lands. A fourth node exists precisely to be the "
-                    "spare hotel room."
+                    "Three servers (nodes) is the smallest standard "
+                    "cluster. So that one server can die without "
+                    "losing anything, every piece of data is kept on "
+                    "two different servers, with a small tie-breaker "
+                    "record on a third. On day 20 one server dies. "
+                    "The programs it was running restart on the other "
+                    "two in about two minutes. The data is a "
+                    "different matter: some pieces are down to one "
+                    "good copy, and making the second copies again "
+                    "needs three healthy servers to spread them over. "
+                    "Only two are left. So the red exposure warning "
+                    "stays up for three days, until the broken server "
+                    "is repaired (three days is this model's "
+                    "estimate), and a second failure in that time "
+                    "would lose data. Now press 4 nodes in the table "
+                    "below. The failure is the same, but the fourth "
+                    "server gives the copies somewhere to go and the "
+                    "warning clears the next day — one day is this "
+                    "model's estimate for the rebuild, as three days "
+                    "is for the repair. The event log "
+                    "records the day the warning opened and the day "
+                    "it closed, and the exposure days instrument "
+                    "keeps the total."
                 ),
                 standard=(
-                    "3 nodes, FTT=1, a day-20 fault: HA restarts the "
-                    "VMs (minutes of downtime) but the exposure flag "
-                    "holds — no rebuild target, so protection is not "
-                    "restored, merely promised. The validation panel "
-                    "warned before the run started. Compare the "
-                    "4-node build: same fault, exposure closes as the "
-                    "rebuild lands. This is PhysicsStorage's "
-                    "exposure-window lesson wearing vSAN's badge."
+                    "3 nodes at FTT=1 (failures to tolerate: one), "
+                    "and a day-20 fault. HA restarts the VMs with "
+                    "about 2 minutes of downtime, but the exposure "
+                    "flag stays up for the whole 3-day repair window "
+                    "(an estimate): FTT=1 needs three hosts standing "
+                    "to re-protect the data, two are left, so there "
+                    "is no rebuild target and protection waits for "
+                    "the repair. The validation panel warned before "
+                    "the run started. Press 4 nodes in the table "
+                    "below: same fault, and exposure closes the next "
+                    "day as the rebuild lands on the spare host — "
+                    "that one day is an estimate too; a real vSAN "
+                    "resync depends on capacity, object count and the "
+                    "repair delay timer. The "
+                    "event log records the open and the close, and "
+                    "exposure days keeps the total. This is "
+                    "PhysicsStorage's exposure-window lesson wearing "
+                    "vSAN's badge."
                 ),
                 expert=(
-                    "N=3, FTT=1, fault → HA ok, rebuild target "
-                    "absent → exposure persists. N=4 closes it. Same "
-                    "window as storage, different substrate."
+                    "N=3, FTT=1: fault → HA ok, no rebuild target → "
+                    "exposure = repair window (3 d, est.). N=4: 1 d "
+                    "(est.). "
+                    "Log and exposure days carry both."
                 ),
             ),
         ],
-        question="How long did the exposure flag stay up, and what would have closed it?",
+        question=L(
+            novice=(
+                "How many days did the red exposure warning stay up "
+                "with three servers, and how many with four? What "
+                "ended it each time?"
+            ),
+            standard=(
+                "How many days did the exposure flag stay up on three "
+                "nodes, how many on four, and what closed it each time?"
+            ),
+        ),
         scenario=Scenario(
             config=VXRAIL_3NODE, workload=EDGE_WL, duration_d=60,
             events=[SimEvent(at_d=20, action="node-fault")],
         ),
+        variants=[
+            ScenarioVariant(label="3 nodes (as loaded)", config=VXRAIL_3NODE),
+            ScenarioVariant(label="4 nodes", config=VXRAIL_4NODE),
+        ],
     ),
     GuidedScenario(
         id="catalog-vs-artisanal",
@@ -157,36 +202,88 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "Two software stacks under one management roof, "
-                    "with a self-service catalog. Watch the "
-                    "admin-hours line as the estate runs: it stays "
-                    "near the automated floor even though there are "
-                    "two different platforms below, because one "
-                    "control plane operates both. The comparison to "
-                    "hold in mind: every catalog deployment is a "
-                    "quarter hour; every artisanal one is two days. "
-                    "The outcome is identical. The invoice is not."
+                    "A private cloud of twelve servers running two "
+                    "different software platforms (stacks), managed "
+                    "from one central console (the control plane). "
+                    "Two switches in the Build panel decide how much "
+                    "human work that takes. Stacks: a second platform "
+                    "means more to patch every month, but because one "
+                    "console patches both, the extra is about a "
+                    "quarter of the patching, not double it — twelve "
+                    "servers take about 2.4 hours to patch, so the "
+                    "second platform adds about 0.6 hours a month. In "
+                    "the table below that is the monthly figure going "
+                    "from 3.4 to 4.0 hours; the rest of those hours "
+                    "is the other work, which the second platform "
+                    "does not change. Catalog: this estate grows "
+                    "by about three new workloads a month. Taken from "
+                    "a self-service catalog (a menu of ready-made, "
+                    "tested builds) each one costs about a quarter of "
+                    "an hour of admin time. Built by hand each time, "
+                    "which is what artisanal means here, each one "
+                    "costs about sixteen hours, two working days. The "
+                    "table below runs all three builds over the same "
+                    "120 days. Read the admin-hours column, then "
+                    "press a row to load that build and watch the "
+                    "event log add up each month's deployments. Every "
+                    "hour figure is an estimate; the gaps are the "
+                    "lesson."
                 ),
                 standard=(
-                    "Stack pluralism priced: two clusters, two "
-                    "stacks, one admin-hours curve — the second stack "
-                    "does not double the ledger because the control "
-                    "plane is shared (the DellPrivateCloud twin's "
-                    "controlPlanes==1 invariant, as economics). "
-                    "Catalog deploys at 0.25 h vs 16 h artisanal is "
-                    "the other entry. 'Two stacks, one pane' and "
-                    "'catalog vs artisanal' are spec 04's own "
-                    "scenario names, run together."
+                    "Stack pluralism priced: twelve nodes, two "
+                    "stacks, one control plane. The second stack adds "
+                    "about 25% to each monthly patch wave instead of "
+                    "doubling it, because the shared control plane "
+                    "runs both: 12 nodes × 0.2 h is a 2.4 h wave for "
+                    "one stack, and the second adds 0.6 h. That is "
+                    "the table's monthly rate moving 3.4 → 4.0 h — "
+                    "the 25% is of the patch wave, not of the whole "
+                    "rate, and the rest of the rate is deploys and "
+                    "routine upkeep the second stack leaves alone. "
+                    "That is the DellPrivateCloud twin's "
+                    "single control plane, priced in hours; switch "
+                    "Ops mode to manual and the same second stack "
+                    "doubles the wave. The other entry is deployment: "
+                    "the estate grows by about three workloads a "
+                    "month, each charged 0.25 h from the catalog or "
+                    "16 h hand-built. The table below runs the loaded "
+                    "build, the one-stack build and the hand-built "
+                    "build over the same 120 days; press a row to "
+                    "load it, and the event log totals each month's "
+                    "deploys. All hour figures are estimates."
                 ),
                 expert=(
-                    "2 stacks ⇒ ~1× ops; catalog 0.25 vs 16 h. Two "
-                    "invoices, one outcome. The twin's invariant, "
-                    "priced."
+                    "Per workload deploy: 0.25 h from the catalog vs "
+                    "16 h hand-built, ~3 deploys/month. Second stack: "
+                    "+25% patch hours under one control plane (2.4 h "
+                    "wave → +0.6 h; monthly rate 3.4 → 4.0), +100% "
+                    "manual. Three builds tabulated below; estimates."
                 ),
             ),
         ],
-        question="How much did the second stack add to the monthly admin-hours rate?",
+        question=L(
+            novice=(
+                "Using the table: how many admin-hours a month did "
+                "the second platform add to the one-platform figure? "
+                "And how many hours did the same number of workloads "
+                "cost hand-built instead of from the catalog?"
+            ),
+            standard=(
+                "From the table: how much did the second stack add to "
+                "the monthly admin-hours rate, and what did the same "
+                "13 deploys cost hand-built rather than from the "
+                "catalog?"
+            ),
+        ),
         scenario=Scenario(config=PRIVATE_2STACK, workload=DENSE_WL, duration_d=120),
+        variants=[
+            ScenarioVariant(label="Two stacks · catalog (as loaded)",
+                            config=PRIVATE_2STACK),
+            ScenarioVariant(label="One stack · catalog",
+                            config=PRIVATE_2STACK.model_copy(update={"stacks": 1})),
+            ScenarioVariant(label="Two stacks · hand-built deploys",
+                            config=PRIVATE_2STACK.model_copy(update={"catalog": False})),
+        ],
     ),
     GuidedScenario(
         id="spiky-demand",
@@ -214,7 +311,10 @@ GUIDED_SCENARIOS = [
                     "both directions. The buffer slider prices its "
                     "own failure modes: outage minutes under it, "
                     "utilization-of-commitment above it. Rates are "
-                    "estimates; the crossover is the lesson."
+                    "estimates; the crossover is the lesson. The "
+                    "overage premium is the generic model — Dell "
+                    "states its APEX Infrastructure offer uses one "
+                    "rate with no overage fees."
                 ),
                 expert=(
                     "Spiky: asvc < capex per VM-h (peak-buying "
@@ -358,6 +458,99 @@ GUIDED_SCENARIOS = [
     ),
 ]
 
+# --- Page intro and instrument glossary ----------------------------------------
+
+INTRO = Intro(
+    body=L(
+        novice=(
+            "This page simulates a company's fleet of servers (nodes), "
+            "spread over one site or many, one day at a time. Things "
+            "keep happening to it: a software update arrives every "
+            "month, a server breaks now and then, and settings slowly "
+            "wander away from what they should be. Each of those takes "
+            "a person's working hours to deal with. The number to "
+            "watch is admin-hours: how many hours of human work the "
+            "fleet needs each month. Pick one of the five Dell "
+            "products, switch between doing the work by hand and "
+            "letting software do it, and watch that number change by "
+            "about ten times. Every hour figure is an estimate; the "
+            "size of the gap is the lesson."
+        ),
+        standard=(
+            "One fleet engine under five management styles: VxRail's "
+            "lifecycle bundle, Private Cloud's catalog, APEX's "
+            "consumption pricing, NativeEdge's zero-touch estates, and "
+            "Automation Studio's pipelines. The engine models sites "
+            "and nodes, N+1 spare capacity (one node more than the "
+            "load needs), a monthly wave of software updates, hardware "
+            "faults on a fixed wear schedule, and configuration drift. "
+            "The instrument to watch is the admin-hours ledger. "
+            "Automation moves it by about ten times, and the rest of "
+            "the app follows from that. One tick is one simulated day."
+        ),
+        expert=(
+            "Sites × nodes, N+1, monthly release wave, deterministic "
+            "wear faults, drift; five ops models. Ledger in "
+            "admin-hours; automation ≈ 10×. Tick = 1 day."
+        ),
+    ),
+    glossary=[
+        GlossaryTerm(
+            term="admin-hours / month",
+            gloss="Hours of human operations work over the last 30 days.",
+        ),
+        GlossaryTerm(
+            term="headroom",
+            gloss=(
+                "Spare capacity: the share of the healthy nodes' VM "
+                "slots that demand is not using."
+            ),
+        ),
+        GlossaryTerm(
+            term="FTT",
+            gloss=(
+                "Failures to tolerate, a vSAN storage setting. FTT=1 "
+                "(mirror) keeps two copies of the data plus a "
+                "tie-breaker record on three different nodes, so one "
+                "node can die without loss."
+            ),
+        ),
+        GlossaryTerm(
+            term="exposure",
+            gloss=(
+                "Everything is still running, but the data has lost "
+                "its spare copy, so one more failure would lose data. "
+                "Exposure days counts the days spent in that state."
+            ),
+        ),
+        GlossaryTerm(
+            term="version currency",
+            gloss=(
+                "The share of the fleet on the latest software. It "
+                "drops to 0% when an update is released and climbs "
+                "back as the patching hours are worked."
+            ),
+        ),
+        GlossaryTerm(
+            term="drift",
+            gloss=(
+                "A count of settings that have wandered from the "
+                "standard. It builds up on hand-managed nodes; "
+                "automation corrects it while the sites are connected."
+            ),
+        ),
+        GlossaryTerm(
+            term="faults · trucks",
+            gloss=(
+                "Hardware faults so far, and truck rolls: a technician "
+                "driving to a remote edge site. A datacenter node is "
+                "swapped on site inside the 3-day repair window "
+                "(an estimate), so a VxRail fault shows 0 trucks."
+            ),
+        ),
+    ],
+)
+
 # --- Explain-mode entries --------------------------------------------------
 
 EXPLAINS = [
@@ -457,8 +650,9 @@ EXPLAINS = [
         explanation=L(
             novice=(
                 "Renting compute has a retainer (the committed base, "
-                "paid regardless), a premium meter above it, and a "
-                "ceiling. Owning has a mortgage that ignores whether "
+                "paid regardless), a premium meter above it (the "
+                "generic shape; Dell says its own offer has no overage "
+                "fees), and a ceiling. Owning has a mortgage that ignores whether "
                 "anyone's home. Spiky demand favors renting — you "
                 "stop paying for the idle peak. Flat demand favors "
                 "owning. The shape of the curve, not the rate card, "
@@ -472,7 +666,11 @@ EXPLAINS = [
                 "capex; steady curves invert it; the buffer prices "
                 "outage-vs-air at its two ends. All rates are labeled "
                 "estimates — the crossover's existence, not its "
-                "coordinates, is the claim."
+                "coordinates, is the claim. The 1.5× overage is a "
+                "generic as-a-service shape: Dell states APEX "
+                "Infrastructure (Flex on Demand) charges buffer use at "
+                "the same single rate, with billing capped at 85% of "
+                "installed capacity on storage-metered offers."
             ),
             expert=(
                 "asvc/capex per VM-h, both accrued daily. Spiky → "

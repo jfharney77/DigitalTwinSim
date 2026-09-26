@@ -25,7 +25,7 @@
 
   <!-- metadata server, above the path -->
   <rect class="mds" x="150" y="18" width="200" height="34" rx="4"/>
-  <text class="lbl" x="162" y="34">Lightning metadata server</text>
+  <text class="lbl" x="162" y="34">Metadata server</text>
   <text class="sm"  x="162" y="47">answers once: "where are the stripes?"</text>
 
   <!-- clients -->
@@ -74,7 +74,7 @@
   <rect class="proto" x="310" y="262" width="140" height="26" rx="3"/>
   <text class="sm" x="24" y="279">FILE — PowerScale / Lightning</text>
   <text class="sm" x="172" y="279">OBJECT — ObjectScale</text>
-  <text class="sm" x="320" y="279">BLOCK — PowerFlex</text>
+  <text class="sm" x="320" y="279">BLOCK — PowerFlex (planned)</text>
 
   <text class="lbl" x="14" y="308">Dell Exascale Storage + Lightning File System — schematic, not to scale</text>
 </svg>

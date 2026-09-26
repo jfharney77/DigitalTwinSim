@@ -100,36 +100,45 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "Eight sleds sit idle, and two minutes in, one of them "
+                    "Eight sleds (the slide-in servers that fill the "
+                    "chassis's bays) sit idle, and two minutes in, sled 1 "
                     "goes to full power while the other seven do nothing. "
                     "Watch the fan speed and the fan wattage: they climb "
                     "for the whole chassis, because the fans belong to the "
                     "box, not to any sled, and they spin to keep the "
-                    "hottest one happy. The seven idle sleds did not "
-                    "change at all — check their power readouts — yet the "
-                    "chassis's cooling bill went up around them. That is "
-                    "what sharing infrastructure means: one busy neighbor, "
-                    "everyone's fans."
+                    "hottest one happy. Now read the per-sled power list "
+                    "in Instruments: sleds 2 to 8 show the same watts "
+                    "before and after, and only sled 1 climbed. Their "
+                    "temperatures on the map even drop a little, because "
+                    "they are getting extra air they never asked for. The "
+                    "chassis's cooling bill went up around them anyway. "
+                    "That is what sharing infrastructure means: one busy "
+                    "neighbor, everyone's fans."
                 ),
                 standard=(
                     "From all-idle, sled 1 goes to 100% at t=120 s while "
                     "sleds 2–8 stay idle. The shared controller targets "
                     "the hottest sled, so the whole nine-fan wall ramps — "
                     "and fan power (cubic in rpm) is billed to the "
-                    "chassis. Compare the per-sled power list before and "
-                    "after: seven entries unchanged, one climbing, and a "
-                    "fan-power line that rose for everyone. The pain is "
-                    "real and it is allocated to nobody — the classic "
-                    "shared-infrastructure tax."
+                    "chassis. Compare the per-sled power list in "
+                    "Instruments before and after: seven entries "
+                    "unchanged, one climbing, and a fan-power line that "
+                    "rose for everyone. The idle sleds' temperatures on "
+                    "the map fall a few degrees once the fans ramp — more "
+                    "air than they need, paid for by the chassis. The "
+                    "pain is real and it is allocated to nobody — the "
+                    "classic shared-infrastructure tax."
                 ),
                 expert=(
                     "Sled 1 → 100% at t=120, rest idle. Controller on "
                     "max(T): rpm and rpm³ watts are chassis-scoped. Seven "
-                    "sled powers flat, fan line up. The commons, taxed."
+                    "sled powers flat in the per-sled list, idle sled "
+                    "temps down on surplus air, fan line up. The commons, "
+                    "taxed."
                 ),
             ),
         ],
-        question="How many watts did the fan wall add, and which sled's power readout explains it?",
+        question="How many watts did the fan power line add after t=120 s, and which row of the per-sled power list explains it?",
         scenario=Scenario(
             config=EIGHT_COMPUTE, workload=IDLE, environment=Environment(),
             duration_s=600,
@@ -155,8 +164,8 @@ GUIDED_SCENARIOS = [
                     "whole electrical feed, not just one supply."
                 ),
                 standard=(
-                    "Six PSUs on grid redundancy, alternated across feeds "
-                    "A and B. At t=300 s feed A is lost — three PSUs go "
+                    "Six PSUs on grid redundancy: slots 1–3 on feed A, "
+                    "slots 4–6 on feed B. At t=300 s feed A is lost — three PSUs go "
                     "dark at once. The surviving trio's load fraction "
                     "jumps (watch the PSU load and efficiency readouts "
                     "move along the curve), and the chassis rides through. "
@@ -185,16 +194,18 @@ GUIDED_SCENARIOS = [
             L(
                 novice=(
                     "Same chassis, same feed failure — but this time the "
-                    "power policy is 'N+1', which keeps one spare supply "
-                    "in case a supply breaks. The catch: all the supplies "
-                    "share one wall feed. When that feed dies at five "
+                    "power policy is 'N+1' (Dell's menu calls it PSU "
+                    "redundancy), which keeps one spare supply in case a "
+                    "supply breaks. The catch, as wired here: all the "
+                    "supplies share one wall feed. When that feed dies at five "
                     "minutes, every supply dies with it, spare included, "
                     "and the chassis goes dark instantly. N+1 answered a "
                     "different question than the one this failure asked."
                 ),
                 standard=(
                     "The same feed-loss event against the N+1 preset: "
-                    "four PSUs, one spare, all on feed A. At t=300 s the "
+                    "four PSUs, one spare, all wired to feed A in this "
+                    "model (Dell's name for the policy is PSU redundancy). At t=300 s the "
                     "feed goes and the pool goes with it — the spare "
                     "covered a PSU failure, and this was not a PSU "
                     "failure. The log line says it plainly; the grid "
@@ -386,7 +397,8 @@ EXPLAINS = [
             standard=(
                 "Wall power is DC over efficiency at the pool's load "
                 "fraction — DC divided by (alive PSUs × 3000 W), read "
-                "off a Titanium-class curve. Feed losses and PSU kills "
+                "off a Platinum-class curve (the rating Dell lists for "
+                "these supplies; the curve itself is an estimate). Feed losses and PSU kills "
                 "change the denominator, so the same DC lands on a "
                 "different efficiency point. The gap between the DC and "
                 "AC readouts is the conversion loss, live."
@@ -417,7 +429,7 @@ EXPLAINS = [
                 "failure subtracted. N+1: capacity(N−1 PSUs) ≥ DC — "
                 "covered against one PSU. Grid: capacity(smaller feed's "
                 "PSUs) ≥ DC — covered against a whole AC feed, because "
-                "the pool alternates feeds. The two feed-loss scenarios "
+                "slots 1–3 and 4–6 sit on separate grids. The two feed-loss scenarios "
                 "run the same event against each policy; only the "
                 "subtraction differs, and so does the outcome."
             ),

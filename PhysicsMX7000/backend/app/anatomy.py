@@ -36,9 +36,11 @@ def _fan(i: int) -> ChassisRegion:
         id=f"fan-{i}", kind="cooling", label=f"Fan {i + 1}",
         x=2 + i * 10.7, y=44, w=9.7, h=7,
         description=(
-            "One of nine hot-swap chassis fans (four front, five rear on "
-            "the real machine — drawn as one shared wall here, because "
-            "that is what they are). The controller runs them to hold the "
+            "One of nine hot-swap chassis fans. On the real machine five "
+            "80 mm rear fans pull air through the sleds and four 60 mm "
+            "front fans cool the I/O and management modules; this model "
+            "simplifies them to one shared wall, because none of them "
+            "belongs to a sled. The controller runs them to hold the "
             "hottest sled at target, so one busy neighbor sets the speed "
             "— and the cubic power bill — for everyone. Click to kill "
             "this fan and watch the survivors ramp."
@@ -47,17 +49,20 @@ def _fan(i: int) -> ChassisRegion:
 
 
 def _psu(i: int) -> ChassisRegion:
-    feed = "A" if i % 2 == 0 else "B"
+    feed = "A" if i < 3 else "B"  # Dell: Grid A = PSUs 1–3, Grid B = PSUs 4–6
     return ChassisRegion(
         id=f"psu-{i}", kind="power", label=f"PSU {i + 1}·{feed}",
         x=2 + i * 16.2, y=53, w=15.2, h=8,
         description=(
-            f"One of up to six 3000 W supplies in the pooled budget. Under "
-            f"grid redundancy this slot hangs off AC feed {feed} — the "
-            "pool alternates feeds so losing a whole feed leaves half the "
-            "supplies alive. Under N+1 every PSU shares one feed, which "
-            "is exactly the difference the pooled-redundancy scenario "
-            "exists to show."
+            f"One of up to six 3000 W Platinum supplies in the pooled "
+            f"budget. Under grid redundancy this slot hangs off AC feed "
+            f"{feed} — slots 1–3 are Grid A and slots 4–6 are Grid B, and "
+            "supplies are added in the order 1, 4, 2, 5, 3, 6 so both "
+            "grids stay even and losing a whole feed leaves half the "
+            "supplies alive. Under N+1 (Dell's name for it is PSU "
+            "redundancy) this model puts every PSU on one feed, which is "
+            "exactly the difference the pooled-redundancy scenario exists "
+            "to show."
         ),
     )
 
@@ -112,9 +117,11 @@ ANATOMY = ChassisMap(
             "commons: one 100%-load sled sets the rpm, and the cubic fan "
             "power that follows, for seven innocent neighbors. The PSU "
             "pool is governed by policy rather than pairing — grid "
-            "redundancy alternates supplies across two AC feeds and "
-            "survives losing an entire feed; N+1 tolerates one supply "
-            "failing but puts the whole pool on one feed. Storage sleds "
+            "redundancy splits supplies across two AC feeds (slots 1–3 "
+            "on Grid A, 4–6 on Grid B) and survives losing an entire "
+            "feed; N+1 (Dell calls it PSU redundancy) tolerates one "
+            "supply failing, and in this model puts the whole pool on one "
+            "feed. Storage sleds "
             "are composable: an MX5016s has no workload of its own, its "
             "drive activity follows its owning compute sled, and "
             "reassignment is a timed event, not a recable. The model is "
@@ -127,15 +134,15 @@ ANATOMY = ChassisMap(
             "superlinear), slot airflow ṁ/8, first-order sled masses "
             "(τ 25 s compute / 180 s storage), P-controller on "
             "max(T_sled)−78, cubic fan law billed chassis-level; PSU pool "
-            "η(load) on a Titanium-class curve, feeds alternated under "
-            "grid policy, surviving-capacity check + overcurrent trip; "
+            "η(load) on a Platinum-class curve, slots 1–3/4–6 on feeds "
+            "A/B under grid policy, surviving-capacity check + overcurrent trip; "
             "storage sled draw keyed to owner's storage dial. Asserted: "
             "per-tick ΣP = DC, AC = DC/η; steady ΔT = DC/(ṁ·cp); grid "
             "survives a feed loss where N+1 goes dark."
         ),
         expert=(
             "Eight heat sources, one plant. Fan control on max(T)−target, "
-            "rpm³ billed to the chassis; PSU pool split by feed parity "
+            "rpm³ billed to the chassis; PSU pool split 1–3/4–6 by grid "
             "under grid; storage sleds slave to owners. ΣP=DC, AC=DC/η, "
             "ΔT=DC/ṁcp. Not CFD, on purpose."
         ),
@@ -163,21 +170,23 @@ ANATOMY = ChassisMap(
             ),
         ),
         ChassisRegion(
-            id="fabric-a", kind="fabric", label="Fabric A",
+            id="fabric-a", kind="fabric", label="Fabric A1",
             x=83, y=21, w=15, h=10,
             description=(
-                "Fabric A I/O module (MX9116n class). The MX7000's "
-                "no-midplane design means sleds mate directly to these "
-                "switches; in this power model the pair is a fixed load "
-                "riding the shared PSU pool."
+                "I/O module in slot A1 (MX9116n class). Fabrics A and B "
+                "have no midplane: sleds mate directly to these switches. "
+                "The real chassis has six I/O slots — A1/A2, B1/B2, and a "
+                "midplane-connected Fabric C pair for SAS or Fibre "
+                "Channel; this power model draws one redundant pair as a "
+                "fixed load riding the shared PSU pool."
             ),
         ),
         ChassisRegion(
-            id="fabric-b", kind="fabric", label="Fabric B",
+            id="fabric-b", kind="fabric", label="Fabric A2",
             x=83, y=32, w=15, h=10,
             description=(
-                "Fabric B I/O module — the redundant partner. Two fabrics, "
-                "two management modules, six PSUs, nine fans: everything "
+                "I/O module in slot A2 — the redundant partner of A1. Two "
+                "fabric modules, two management modules, six PSUs, nine fans: everything "
                 "shared comes in pools, and every pool has a policy."
             ),
         ),

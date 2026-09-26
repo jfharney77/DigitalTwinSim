@@ -22,7 +22,12 @@ def steady_facility_mw(scenario: Scenario) -> float:
     idle_w = C("gpu_idle_fraction") * peak_w
     demand = n * job.data_gbps_per_gpu
     data_util = min(1.0, cfg.data.storage_gbps / demand) if demand else 1.0
-    u = data_util * fabric_efficiency(cfg.fabric.type, cfg.fabric.oversubscription)
+    # Power follows demanded work: the starved share still burns most of
+    # its power (same arithmetic as the engine).
+    u = (
+        (data_util + (1.0 - data_util) * C("stall_power_fraction"))
+        * fabric_efficiency(cfg.fabric.type, cfg.fabric.oversubscription)
+    )
     gpu_mw = n * (idle_w + (peak_w - idle_w) * u) / 1e6
     fabric_mw = n * C("fabric_kw_per_gpu") / 1000.0
     storage_mw = cfg.data.storage_gbps * C("storage_w_per_gbps") / 1e6
@@ -105,18 +110,38 @@ def validate(scenario: Scenario) -> list[Validation]:
     # Rule 3 — checkpoint interval vs the Young/Daly optimum.
     opt = optimal_checkpoint_min(scenario)
     interval = cfg.resilience.checkpoint_interval_min
+    tick_min = 60.0  # the engine advances one hour per tick
     if opt > 0 and (interval > 5 * opt or interval < 0.2 * opt):
-        direction = (
-            "rare — every failure rolls back hours of work"
-            if interval > opt else
-            "frequent — the writes themselves tax every training hour"
+        below_tick = opt < interval <= tick_min
+        if interval <= opt:
+            direction = (
+                "too frequent — the writes themselves tax every training hour"
+            )
+        elif interval > tick_min:
+            direction = (
+                "too rare — a failure rolls back every hour since the last save"
+            )
+        else:
+            # Below the tick the rollback rounds away, so the honest
+            # reading is "no visible penalty", not "hours of work".
+            direction = (
+                "rarer than the formula likes, but this engine ticks in "
+                "whole hours, so a rollback shorter than an hour rounds "
+                "away and no penalty is visible here"
+            )
+        flat = (
+            " The optimum is broad and flat near the top: intervals "
+            f"between {opt:.0f} and 60 min score within noise of each "
+            "other in 'tokens produced', because the tick rounds "
+            "sub-hour rollback away."
+            if opt < tick_min and not below_tick else ""
         )
         out.append(Validation(
             rule_id="checkpoint", level="warning",
             message=(
                 f"Checkpoint interval {interval} min vs an optimum near "
-                f"{opt:.0f} min for this cluster's failure rate: too "
-                f"{direction}."
+                f"{opt:.0f} min for this cluster's failure rate: "
+                f"{direction}.{flat}"
             ),
             source="Young/Daly optimum I* = √(2·t_ckpt·MTBF) — estimate",
         ))

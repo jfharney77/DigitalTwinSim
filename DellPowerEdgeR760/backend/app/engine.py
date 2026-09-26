@@ -4,8 +4,15 @@
 server from the moment the AC cords are connected until the operating system
 is running. Same purity rule as the GPU app's engine: no FastAPI, no IO, no
 timers — the frontend owns the playback clock, and each ``PowerOnState`` is
-plain data the renderer consumes. ``cycle_cost`` marks the long stages
-(memory training, drive spin-up) so the UI dwells on them.
+plain data the renderer consumes. ``cycle_cost`` is how long the UI dwells
+on a step, and it is **derived from the step's own duration** (see
+``_dwell_ticks``) rather than hand-set, so playback can never linger longer
+on a short stage than on a long one — a reader watching Run and reading the
+"this step takes" counter sees one story, not two.
+
+``elapsed_seconds`` is stamped at the END of each step, so a step's duration
+is its stamp minus the previous step's (memory training: t+70 → t+180, the
+largest gap in the trace — pinned in ``tests/test_engine.py``).
 
 Timing (``elapsed_seconds``) and power draw are illustrative but plausible
 for a dual-socket 2U machine; per the project's scope guardrails, favor a
@@ -17,12 +24,80 @@ from __future__ import annotations
 from .leveling import L
 from .models import PowerOnState
 
+INTRO = L(
+    novice=(
+        "A server does not simply switch on. When you plug it in, a small "
+        "helper computer inside it (Dell calls it iDRAC) wakes up first, while "
+        "the server itself stays off. Only after that helper has looked the "
+        "machine over can the main server power up, test itself, get its "
+        "memory ready, find the devices plugged into it, and start its "
+        "operating system. Play the trace and watch each stage light up the "
+        "hardware it runs on."
+    ),
+    plain=(
+        "From wall power to a running operating system: a rack server never "
+        "goes straight from cold to booting. Standby power wakes a small "
+        "management computer (iDRAC) first. Only then can the main server, "
+        "the host, power on, run its self-test (POST), tune its memory, "
+        "discover its PCIe devices, and hand off to an operating system. Play "
+        "the trace and watch each stage light up the hardware it runs on."
+    ),
+    standard=(
+        "From AC to a running OS: a 2U server never goes straight from cold "
+        "to booting — standby power wakes a small management computer (iDRAC) "
+        "first, and only then can the host power on, train its memory, "
+        "enumerate PCIe, and hand off to an OS. Play the trace and watch each "
+        "stage light up the hardware it runs on."
+    ),
+    technical=(
+        "AC to a running OS. Standby brings up iDRAC before the host can "
+        "power on; the host then sequences rails, runs POST (memory training, "
+        "PCIe enumeration, storage init), and hands off to the OS. Play the "
+        "trace to see which hardware each stage touches."
+    ),
+    expert=(
+        "AC to OS: standby, iDRAC, host rails, POST (DDR5 training, PCIe "
+        "enumeration, storage init), boot hand-off. Each step lights the "
+        "hardware it touches."
+    ),
+)
+
 _FANS = [f"fan-{i}" for i in range(6)]
 _DIMMS = ["dimm-a1", "dimm-a2", "dimm-b1", "dimm-b2"]
 
 
+# Dwell ticks by step duration, in seconds. Weakly increasing, so the UI can
+# never linger longer on a short stage than on a long one; the top band is
+# reserved for memory training, the one stage that runs into the minutes.
+_DWELL_BANDS = ((5, 1), (18, 2), (45, 3), (75, 4), (100, 5))
+_MAX_DWELL = 6
+
+
+def _dwell_ticks(seconds: int) -> int:
+    """How many playback ticks a step of this length holds the screen."""
+    for limit, ticks in _DWELL_BANDS:
+        if seconds <= limit:
+            return ticks
+    return _MAX_DWELL
+
+
 def simulate() -> list[PowerOnState]:
-    """The R760's journey from AC plug-in to a running OS, as pure data."""
+    """The R760's journey from AC plug-in to a running OS, as pure data.
+
+    ``cycle_cost`` is filled in here from each step's duration, so dwell and
+    the on-screen clock agree by construction."""
+    states = _states()
+    previous = 0
+    out: list[PowerOnState] = []
+    for state in states:
+        ticks = _dwell_ticks(state.elapsed_seconds - previous)
+        previous = state.elapsed_seconds
+        out.append(state.model_copy(update={"cycle_cost": ticks}))
+    return out
+
+
+def _states() -> list[PowerOnState]:
+    """The steps themselves; ``cycle_cost`` is derived by ``simulate()``."""
     return [
         PowerOnState(
             step=0,
@@ -153,7 +228,6 @@ def simulate() -> list[PowerOnState]:
             power_watts=20,
             fan_percent=0,
             elapsed_seconds=10,
-            cycle_cost=3,
         ),
         PowerOnState(
             step=3,
@@ -170,7 +244,7 @@ def simulate() -> list[PowerOnState]:
                 ),
                 plain=(
                     "Before the host ever powers on, iDRAC walks the chassis over "
-                    "sideband buses — I2C and NC-SI, low-speed management links "
+                    "sideband buses — I2C and PMBus, low-speed management links "
                     "that work without the CPUs. It reads every DIMM's serial "
                     "number, queries the drive backplane, checks both PSUs' "
                     "capacity and firmware, and maps the thermal sensors it will "
@@ -178,20 +252,20 @@ def simulate() -> list[PowerOnState]:
                 ),
                 standard=(
                     "Before the host ever powers on, iDRAC walks the chassis "
-                    "over sideband buses (I2C and NC-SI — low-speed management "
+                    "over sideband buses (I2C and PMBus — low-speed management "
                     "links that work without the CPUs): it reads every DIMM's "
                     "serial number, queries the drive backplane, checks both "
                     "PSUs' capacity and firmware, and maps the thermal sensors "
                     "it will later use to drive the fans."
                 ),
                 technical=(
-                    "Pre-power inventory over sideband — I2C and NC-SI, functional "
+                    "Pre-power inventory over sideband — I2C/I3C and PMBus, functional "
                     "with the CPUs down. Per-DIMM serials, backplane enumeration, "
                     "PSU capacity and firmware, and the thermal sensor map that "
                     "will drive fan control."
                 ),
                 expert=(
-                    "Sideband inventory pre-power (I2C, NC-SI): DIMM serials, "
+                    "Sideband inventory pre-power (I2C/I3C, PMBus): DIMM serials, "
                     "backplane, PSU capacity/firmware, thermal sensor map."
                 ),
             ),
@@ -290,7 +364,6 @@ def simulate() -> list[PowerOnState]:
             power_watts=300,
             fan_percent=100,
             elapsed_seconds=63,
-            cycle_cost=2,
         ),
         PowerOnState(
             step=6,
@@ -347,13 +420,14 @@ def simulate() -> list[PowerOnState]:
             label="CPUs out of reset · UEFI starts",
             description=L(
                 novice=(
-                    "Reset is released and the first processor fetches its opening "
-                    "instructions from a small flash chip on the board — the "
-                    "firmware that replaced the classic BIOS. The self-test begins. "
-                    "There is no usable memory yet, so the firmware runs using the "
-                    "processor's own internal cache as temporary memory, which is "
-                    "as awkward as it sounds and is one reason this stage is "
-                    "fiddly."
+                    "The processors are allowed to start running. The first thing "
+                    "they run is a small start-up program stored on a chip on the "
+                    "main board. This start-up software is called UEFI, and its "
+                    "job is to get the hardware ready before any operating system "
+                    "exists. It begins by checking the machine piece by piece. "
+                    "Engineers call that check POST, short for power-on self-test, "
+                    "which is the name of this phase. The server's main memory is "
+                    "not usable yet, so preparing it is the next job."
                 ),
                 plain=(
                     "Reset is released and CPU 1 fetches its first instructions "
@@ -397,47 +471,52 @@ def simulate() -> list[PowerOnState]:
                     "timing and voltage on each electrical lane to find settings "
                     "that work reliably at these very high speeds. The margins are "
                     "far too fine to fix in advance, so the machine measures them "
-                    "itself. A fully populated server can sit here for minutes on "
-                    "its first start, apparently doing nothing at all. The results "
-                    "are saved, so later starts are much quicker."
+                    "itself. On the mid-range machine these numbers describe, that "
+                    "takes the ~110 seconds on the counter; a server with all 32 "
+                    "memory slots filled can sit here for minutes on its first "
+                    "start, apparently doing nothing at all. The results are "
+                    "saved, so later starts are much quicker."
                 ),
                 plain=(
                     "The longest POST stage. Each CPU's memory controller trains "
                     "every DIMM: sweeping signal timing and voltage per lane to "
                     "find reliable settings at 4800–5600 MT/s, because at those "
-                    "speeds the margins are too fine to hardcode. A fully loaded "
-                    "32-DIMM machine can sit here for minutes on first boot, "
-                    "apparently doing nothing. Results are cached, so later boots "
-                    "are much faster."
+                    "speeds the margins are too fine to hardcode. The ~110 s on "
+                    "the counter is the mid-range fill these numbers describe; a "
+                    "fully loaded 32-DIMM machine can sit here for minutes on "
+                    "first boot, apparently doing nothing. Results are cached, so "
+                    "later boots are much faster."
                 ),
                 standard=(
                     "The longest POST stage. Each CPU's memory controller "
                     "'trains' every DIMM: it sweeps signal timing and voltage "
                     "per lane to find reliable settings at 4800–5600 MT/s — "
-                    "at those speeds the margins are too fine to hardcode. A "
-                    "fully loaded 32-DIMM machine can sit here for minutes on "
-                    "first boot, apparently doing nothing. Results are cached, "
-                    "so later boots are much faster."
+                    "at those speeds the margins are too fine to hardcode. The "
+                    "~110 s on the counter is the mid-range fill these numbers "
+                    "describe; a fully loaded 32-DIMM machine can sit here for "
+                    "minutes on first boot, apparently doing nothing. Results "
+                    "are cached, so later boots are much faster."
                 ),
                 technical=(
                     "Max-dwell stage. Per-DIMM training: the memory controllers "
                     "sweep timing and voltage per lane to find reliable operating "
                     "points at 4800–5600 MT/s, since margins at those rates are "
-                    "board- and part-specific and cannot be hardcoded. A 32-DIMM "
-                    "configuration can take minutes on a cold first boot; results "
-                    "are cached for subsequent boots."
+                    "board- and part-specific and cannot be hardcoded. ~110 s at "
+                    "the mid-range fill on the counter; a 32-DIMM configuration "
+                    "can take minutes on a cold first boot. Results are cached "
+                    "for subsequent boots."
                 ),
                 expert=(
                     "Max dwell: per-lane DDR5 timing/voltage sweep at 4800–5600 "
-                    "MT/s. Margins are board-specific, not hardcodable. Minutes on "
-                    "first boot with 32 DIMMs; cached thereafter."
+                    "MT/s. Margins are board-specific, not hardcodable. ~110 s at "
+                    "the mid-range fill shown, minutes at 32 DIMMs; cached "
+                    "thereafter."
                 ),
             ),
             active_regions=_DIMMS + ["cpu1", "cpu2"],
             power_watts=260,
             fan_percent=50,
             elapsed_seconds=180,
-            cycle_cost=6,
         ),
         PowerOnState(
             step=9,
@@ -445,23 +524,24 @@ def simulate() -> list[PowerOnState]:
             label="PCIe enumeration",
             description=L(
                 novice=(
-                    "The firmware walks the expansion bus and discovers every "
-                    "device attached to it: cards in the expansion slots, the "
-                    "network card in its dedicated mezzanine, the storage "
-                    "controller by the drive backplane, and the boot module. Each "
-                    "device is assigned its own memory windows and interrupt lines "
-                    "— the address map that the operating system will simply "
-                    "inherit when it starts."
+                    "The start-up software now finds out what is plugged in. It "
+                    "checks every connector on the server's expansion bus, called "
+                    "PCIe, and makes a list: the add-in cards, the network card, "
+                    "the controller that runs the drives, and the small module the "
+                    "server starts from. Making that list is what 'enumeration' "
+                    "means. Each device gets its own address so the processors can "
+                    "reach it. The operating system will be handed this finished "
+                    "list later, so it does not have to search again."
                 ),
                 plain=(
-                    "The firmware walks the PCIe Gen5 fabric and discovers every "
+                    "The firmware walks the PCIe fabric (Gen4 and Gen5 links) and discovers every "
                     "device: cards on the risers, the OCP 3.0 network mezzanine, "
                     "the PERC RAID controller by the backplane, and the BOSS-N1 "
                     "boot module. Each is assigned memory windows and interrupts — "
                     "the address map the OS will inherit."
                 ),
                 standard=(
-                    "The firmware walks the PCIe Gen5 fabric and discovers "
+                    "The firmware walks the PCIe fabric (Gen4 and Gen5 links) and discovers "
                     "every device: cards on the risers, the OCP 3.0 network "
                     "mezzanine, the PERC RAID controller by the backplane, and "
                     "the BOSS-N1 boot module. Each device is assigned memory "
@@ -469,13 +549,13 @@ def simulate() -> list[PowerOnState]:
                     "inherit."
                 ),
                 technical=(
-                    "PCIe Gen5 enumeration across risers, the OCP 3.0 mezzanine, "
+                    "PCIe (Gen4/Gen5) enumeration across risers, the OCP 3.0 mezzanine, "
                     "the PERC controller, and the BOSS-N1 module. BAR allocation "
                     "and interrupt assignment produce the address map the OS "
                     "inherits wholesale."
                 ),
                 expert=(
-                    "PCIe Gen5 enumeration: risers, OCP 3.0 NIC, PERC, BOSS-N1. BAR "
+                    "PCIe Gen4/5 enumeration: risers, OCP 3.0 NIC, PERC, BOSS-N1. BAR "
                     "and interrupt allocation; the OS inherits the map."
                 ),
             ),
@@ -530,7 +610,6 @@ def simulate() -> list[PowerOnState]:
             power_watts=340,
             fan_percent=45,
             elapsed_seconds=215,
-            cycle_cost=3,
         ),
         PowerOnState(
             step=11,
@@ -538,7 +617,7 @@ def simulate() -> list[PowerOnState]:
             label="POST complete",
             description=L(
                 novice=(
-                    "The self-test passes: the logo appears on the console with the "
+                    "The power-on self-test, POST, passes: the logo appears on the console with the "
                     "prompt to enter setup, and the management controller records "
                     "the milestone. The temperature picture is now fully known, so "
                     "the fans settle from their initial roar to a managed thirty "
@@ -583,7 +662,8 @@ def simulate() -> list[PowerOnState]:
             label="UEFI boot manager",
             description=L(
                 novice=(
-                    "The firmware reads its configured boot order and hands control "
+                    "The start-up software, UEFI, reads its configured boot order "
+                    "(the list of places to look for an operating system) and hands control "
                     "to the boot device: a dedicated module holding two small "
                     "solid-state sticks mirrored in hardware. Booting from that "
                     "module keeps all twenty-four front drive bays free for actual "
@@ -627,12 +707,14 @@ def simulate() -> list[PowerOnState]:
             label="Operating system loads",
             description=L(
                 novice=(
-                    "The bootloader pulls the operating system or virtualization "
-                    "software off that mirror into memory. The kernel brings up "
-                    "both processors and all the tuned memory, then attaches "
-                    "drivers to the inventory the firmware handed over — storage "
-                    "volumes become disks, the network card gets its interfaces, "
-                    "any graphics processors attach to their drivers."
+                    "The operating system is copied from the mirrored boot module "
+                    "into main memory and starts running. It takes over both "
+                    "processors and all the memory that was tuned earlier. Then it "
+                    "works through the list of devices the start-up software made "
+                    "and switches each one on for real use: the drives show up as "
+                    "disks, and the network card gets a connection. From here the "
+                    "operating system runs the server, and the start-up software's "
+                    "job is over."
                 ),
                 plain=(
                     "The bootloader loads the operating system or hypervisor kernel "
@@ -667,7 +749,6 @@ def simulate() -> list[PowerOnState]:
             power_watts=310,
             fan_percent=32,
             elapsed_seconds=260,
-            cycle_cost=2,
         ),
         PowerOnState(
             step=14,

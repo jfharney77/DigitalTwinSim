@@ -89,7 +89,7 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "where it earns its keep."
                 ),
                 standard=(
-                    "CloudIQ, rebranded Dell AIOps (AI for IT operations), has no "
+                    "CloudIQ, renamed Dell AIOps (AI for IT operations) in 2025, has no "
                     "chassis: it is a cloud-native SaaS (software as a service), so "
                     "this map is an "
                     "architecture diagram that reads left to right. On the left is "
@@ -126,25 +126,30 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "Connect Gateway bundles it all up and sends it to Dell's "
                     "cloud over an encrypted connection. The key detail is the "
                     "direction. The gateway only ever calls out. Dell's cloud has "
-                    "no way to reach back into the company's network, and that is "
+                    "no way to open a connection into the company's network, and that is "
                     "why security teams accept it."
                 ),
                 standard=(
                     "The systems have already collected their telemetry: health, "
                     "capacity, performance counters, configuration and logs, "
-                    "through embedded SupportAssist or the OpenManage Enterprise "
-                    "plugin, or through the AIOps Collector, a read-only virtual "
-                    "machine on site. Now the Secure Connect Gateway batches it "
+                    "by one of three routes. Storage arrays and most servers use "
+                    "SupportAssist, the connectivity client built into the system "
+                    "itself. Servers managed as a fleet use the AIOps plugin for "
+                    "OpenManage Enterprise, Dell's server-management console. "
+                    "Switches and virtualization, which have no client of their "
+                    "own, use the AIOps Collector, a read-only virtual machine on "
+                    "site. Now the Secure Connect Gateway batches it "
                     "and opens an encrypted TLS (Transport Layer Security) "
                     "connection outbound to Dell's cloud on port 443. The link is "
-                    "one-directional: Dell's cloud can never reach back into your "
+                    "always opened from inside and the telemetry travels one way: "
+                    "Dell's cloud can never open a connection into your "
                     "network, which is what makes the model acceptable to "
                     "security teams."
                 ),
                 expert=(
                     "Collection done (embedded agents, read-only Collector VM). "
-                    "SCG batches and egresses TLS/443, outbound-only. No inbound "
-                    "path from cloud to estate."
+                    "SCG batches and egresses TLS/443, outbound-initiated. No "
+                    "inbound-initiated path from cloud to estate."
                 ),
             ),
             camera=frame("src-compute", "src-network", "gateway", pad=3.0),
@@ -318,7 +323,7 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "questions in ordinary language, explains what happened. Ask "
                     "it why the score dropped and it answers from two places at "
                     "once: Dell's support knowledge, which Dell puts at more than "
-                    "133,000 support resources, and the real current state of "
+                    "133,000 support articles and manuals, and the real current state of "
                     "this particular estate. Its answer names the pool, the likely "
                     "cause, and what to do about it. A number on a dashboard "
                     "turns into an instruction, and nobody had to open a support "
@@ -328,7 +333,7 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "The AIOps Assistant, a generative-AI assistant, puts the "
                     "finding in plain language. Asked why the score dropped, it "
                     "answers from both Dell's support knowledge (133,000+ "
-                    "resources, Dell's figure) and this environment's actual "
+                    "articles, Dell's figure) and this environment's actual "
                     "state, which Dell calls Infrastructure Context Awareness. "
                     "The answer names the pool, the likely cause and the "
                     "recommended remediation, turning a dashboard reading into a "
@@ -355,10 +360,16 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "alert go out, a ticket opens automatically in the company's "
                     "service-management system, and an automated process is "
                     "triggered, all through the connections that link this "
-                    "service to the tools teams already use. As the fixes begin, "
-                    "the health score recovers, to 88 in this illustrative run. "
-                    "It does not jump straight back to 100, and that is honest: "
-                    "repair takes time. Stepping back to the whole picture, the "
+                    "service to the tools teams already use. None of that fixes "
+                    "anything, and the health score is still 71. People then do "
+                    "the repair with their own tools. The score is worked out "
+                    "again only when a later batch of measurements arrives, about "
+                    "an hour on in this illustrative run, and it reads 88. That "
+                    "is why the whole path is lit again here: the later batch is "
+                    "a second trip through it, collected, sent, taken in and "
+                    "scored. The score is "
+                    "not back to 100, and that is honest: one of the three "
+                    "problems, the storage filling up, is still open. Stepping back to the whole picture, the "
                     "data travelled one way, from the machines on the left to "
                     "action on the right, and never the reverse."
                 ),
@@ -366,21 +377,33 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "The insight leaves CloudIQ: email and mobile alerts, a "
                     "ServiceNow ticket over the ITSM (IT service management) "
                     "integration, and a webhook driving an automation, all over "
-                    "the REST API. As remediation begins, the Health Score "
-                    "recovers above its low-water mark but not to 100, 88 in this "
-                    "illustrative run. The whole trip ran one way, from telemetry "
+                    "the REST API. A ticket does not move the score; it is still "
+                    "71. The team fixes the estate with its own tools, and the "
+                    "Health Score is recomputed from a later collection, about an "
+                    "hour on in this illustrative run: 88, above its low-water "
+                    "mark but not 100, because the capacity forecast is still "
+                    "open. The whole path lights again for it — that recovery is "
+                    "a second cycle, not a ticket. The whole trip ran one way, from telemetry "
                     "on the left to action on the right. The Cyber Detect twin "
                     "points here for getting its verdict to a person, and the "
                     "NativeEdge twin for the watching half of an edge estate."
                 ),
                 expert=(
                     "Egress: notification, ITSM ticket, webhook automation over "
-                    "REST. Score recovers to 88, illustrative, above low-water "
-                    "and below 100. One-way flow, end to end."
+                    "REST; score still 71. Remediation out of band; next "
+                    "post-fix collection (~1 h, illustrative) recomputes to 88, "
+                    "above low-water and below 100. One-way flow, end to end."
                 ),
             ),
             camera=whole_map(anatomy),
-            region_ids=["action"],
+            # The closing beat lights the whole path, not just the outbound
+            # edge: the recovery to 88 comes from a *later* collection, so the
+            # picture has to show a second cycle running rather than a ticket
+            # that fixed something. This is the one beat whose lit regions sit
+            # left of the previous beat's, and it is why the loop closes.
+            region_ids=[
+                *sources, "gateway", "ingest", "analytics", "insight", "action",
+            ],
             layer_reveal=_ENDS,
             trace_cursor=8,
             duration_ms=28_000,

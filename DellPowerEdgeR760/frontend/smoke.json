@@ -13,7 +13,7 @@
       "name": "poweron-phase-post",
       "svg": true,
       "visible": [".phase", ".poweron-desc"],
-      "text": ["8 / 15", "POST"],
+      "text": ["8 / 15", "POST", "elapsed at end of step", "this step takes"],
       "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 1 }
     },
     {

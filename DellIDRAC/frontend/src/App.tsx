@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import { fetchAnatomy, fetchBringUp, fetchTour } from "./api";
+import { fetchAnatomy, fetchBringUp, fetchScenarios, fetchTour } from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -10,7 +10,13 @@ import { BringUpControls } from "./components/BringUpControls";
 import { BringUpCounters } from "./components/BringUpCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
-import type { BringUpState, RegionKind, SubsystemMap } from "./types";
+import type {
+  BringUpState,
+  RegionKind,
+  ScenarioId,
+  ScenarioInfo,
+  SubsystemMap,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -24,6 +30,53 @@ function pageFromHash(): Page {
   if (h.startsWith("#tour")) return "tour";
   return "bringup";
 }
+
+// The sim page's hash is a small query string: #step=N, #phase=<name>,
+// #scenario=<id>, and any of them joined with "&"
+// (#scenario=firmware-update-rollback&phase=bootcheck). Other pages' hashes
+// (#anatomy/<id>, #tour/<id>) carry no "=" and parse to nothing here.
+function hashParams(): URLSearchParams {
+  const h = window.location.hash.slice(1);
+  return new URLSearchParams(h.includes("=") ? h : "");
+}
+
+const SCENARIO_IDS: ScenarioId[] = ["bring-up", "firmware-update-rollback"];
+const DEFAULT_SCENARIO: ScenarioId = "bring-up";
+
+function scenarioFromHash(): ScenarioId {
+  const want = hashParams().get("scenario") as ScenarioId | null;
+  return want && SCENARIO_IDS.includes(want) ? want : DEFAULT_SCENARIO;
+}
+
+function scenarioHash(id: ScenarioId): string {
+  return id === DEFAULT_SCENARIO ? "" : `scenario=${id}`;
+}
+
+const SCENARIO_HERO: Record<ScenarioId, { title: string; body: string }> = {
+  "bring-up": {
+    title: "What wakes up before the server does",
+    body:
+      "Plug in a PowerEdge and, seconds before the host can do anything, a " +
+      "small always-on computer boots inside it: iDRAC, the management " +
+      "controller. Standby power wakes its SoC, a Root of Trust verifies its " +
+      "firmware, embedded Linux comes up, and the management services — web " +
+      "console, Redfish, Lifecycle Controller, sensor monitoring — come " +
+      "online. Only then is the server reachable to be powered on. Play the " +
+      "trace and watch each stage light up the block it runs in.",
+  },
+  "firmware-update-rollback": {
+    title: "An update that fails, and a server that does not notice",
+    body:
+      "An administrator updates iDRAC's firmware while the host runs its " +
+      "workload. The package is signature-checked and written to the flash " +
+      "partition iDRAC is not running from. iDRAC restarts, the new image " +
+      "fails its boot check, and the bootloader goes back to the old " +
+      "partition by itself. Management is dark for about two minutes, an " +
+      "illustrative figure. The " +
+      "host never changes power state. Play the trace and watch which " +
+      "numbers move and which do not.",
+  },
+};
 
 const PAGE_HASH: Record<Page, string> = {
   bringup: "",
@@ -44,12 +97,14 @@ function tourStepFromHash(): string | null {
 // phase) — in which case playback starts at 0 as before.
 function initialStepFromHash(states: { phase: string }[]): number | null {
   if (states.length === 0) return null;
-  const h = window.location.hash;
-  const step = h.match(/#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
+  const params = hashParams();
+  const step = params.get("step");
+  if (step !== null && /^\d+$/.test(step)) {
+    return Math.min(Number(step), states.length - 1);
+  }
+  const phase = params.get("phase");
   if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
@@ -81,18 +136,23 @@ const KIND_LABEL: Record<RegionKind, string> = {
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
+  const [scenario, setScenario] = useState<ScenarioId>(scenarioFromHash);
+  const scenarioRef = useRef(scenario);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   useEffect(() => {
     // Only overwrite the hash for top-level switches; pages may append their
     // own deep-link segments (e.g. #anatomy/<blockId>).
     // The landing page has an empty hash, so check it explicitly: every hash
     // starts with "#", and a bare prefix test would keep #tour/<id> there.
-    const want = PAGE_HASH[page];
+    const want =
+      page === "bringup" ? scenarioHash(scenario) : PAGE_HASH[page];
     const h = window.location.hash;
     const onPage = want
       ? h.startsWith(`#${want}`)
       : !/^#(anatomy|components|usecases|tour)/.test(h);
     if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const [anatomy, setAnatomy] = useState<SubsystemMap | null>(null);
@@ -126,9 +186,48 @@ export function App() {
 
   // Follow hash changes made outside the nav (links, "Go deeper" buttons,
   // the back button, a pasted #step=/#phase= link).
+  // Switch traces. The cursor always resets; a #phase=/#step= in the hash is
+  // applied once the new trace has loaded (hashApplied is re-armed).
+  const switchScenario = useCallback(
+    (id: ScenarioId) => {
+      if (id === scenarioRef.current) return;
+      stop();
+      setCursor(0);
+      dwell.current = 0;
+      hashApplied.current = false;
+      scenarioRef.current = id;
+      setScenario(id);
+    },
+    [stop],
+  );
+
+  const chooseScenario = useCallback(
+    (id: ScenarioId) => {
+      switchScenario(id);
+      window.location.hash = scenarioHash(id);
+    },
+    [switchScenario],
+  );
+
+  // The guided tour narrates the bring-up trace and drives this cursor, so
+  // opening it puts the bring-up back.
+  useEffect(() => {
+    if (page === "tour") switchScenario(DEFAULT_SCENARIO);
+  }, [page, switchScenario]);
+
   useEffect(() => {
     const onHash = () => {
-      setPage(pageFromHash());
+      const nextPage = pageFromHash();
+      setPage(nextPage);
+      if (nextPage === "bringup") {
+        const wanted = scenarioFromHash();
+        if (wanted !== scenarioRef.current) {
+          // The trace on hand is the old scenario's; the fetch applies
+          // #phase=/#step= against the new one.
+          switchScenario(wanted);
+          return;
+        }
+      }
       const start = initialStepFromHash(traceRef.current);
       if (start !== null) {
         stop();
@@ -137,13 +236,21 @@ export function App() {
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-  }, [stop]);
+  }, [stop, switchScenario]);
+
+  useEffect(() => {
+    fetchScenarios()
+      .then(setScenarios)
+      .catch((e) => setError(String(e)));
+  }, [level]);
 
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchBringUp()])
+    let stale = false;
+    Promise.all([fetchAnatomy(), fetchBringUp(scenario)])
       .then(([an, bu]) => {
+        if (stale) return;
         setAnatomy(an);
         setTrace(bu.trace);
         traceRef.current = bu.trace;
@@ -153,8 +260,13 @@ export function App() {
           if (start !== null) setCursor(start);
         }
       })
-      .catch((e) => setError(String(e)));
-  }, [level]);
+      .catch((e) => {
+        if (!stale) setError(String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [level, scenario]);
 
   // The tour is fetched the first time its page opens, and again when the
   // reading level changes (its narration is leveled prose).
@@ -167,6 +279,13 @@ export function App() {
   }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
+  // Every step is stamped at its end, so a step's length is the difference
+  // from the stamp before it. The longest one is named on the counter, which
+  // is the evidence for "the longest stage" that the prose claims.
+  const stepSeconds = trace.map((s, i) =>
+    i === 0 ? 0 : s.elapsedSeconds - trace[i - 1].elapsedSeconds,
+  );
+  const longestSeconds = Math.max(0, ...stepSeconds);
   const done = cursor >= trace.length - 1 && trace.length > 0;
 
   const run = useCallback(() => {
@@ -332,16 +451,10 @@ export function App() {
       {page === "bringup" && (
         <>
           <div className="an-hero">
-            <h2>What wakes up before the server does</h2>
+            <h2>{SCENARIO_HERO[scenario].title}</h2>
             <p>
-              Plug in a PowerEdge and, seconds before the host can do anything,
-              a small always-on computer boots inside it: iDRAC, the management
-              controller. Standby power wakes its SoC, a Root of Trust verifies
-              its firmware, embedded Linux comes up, and the management
-              services — web console, Redfish, Lifecycle Controller, sensor
-              monitoring — come online. Only then is the server reachable to be
-              powered on. Play the trace and watch each stage light up the
-              block it runs in.
+              {scenarios.find((s) => s.id === scenario)?.intro ||
+                SCENARIO_HERO[scenario].body}
             </p>
             <button
               className="primary bringup-tour-link"
@@ -357,6 +470,8 @@ export function App() {
                 <BlockView
                   anatomy={anatomy}
                   active={new Set(state?.activeRegions ?? [])}
+                  failed={new Set(state?.failedRegions ?? [])}
+                  failedTag="B REJECTED"
                   selected={regionId}
                   onSelect={setRegionId}
                 />
@@ -367,7 +482,11 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step. Click
+                Highlighted blocks are the parts doing work at this step
+                {scenario === DEFAULT_SCENARIO
+                  ? ""
+                  : "; a red dashed block holds something that failed"}
+                . Click
                 a block to pin what it is; the full tour lives under Inside the
                 controller.
               </div>
@@ -376,6 +495,9 @@ export function App() {
 
           <aside className="controls">
             <BringUpControls
+              scenario={scenario}
+              scenarios={scenarios}
+              onScenario={chooseScenario}
               speed={speed}
               running={running}
               done={done}
@@ -390,6 +512,10 @@ export function App() {
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
+              stepSeconds={stepSeconds[cursor] ?? 0}
+              longest={
+                longestSeconds > 0 && stepSeconds[cursor] === longestSeconds
+              }
             />
             {selectedRegion && (
               <section className="an-panel">

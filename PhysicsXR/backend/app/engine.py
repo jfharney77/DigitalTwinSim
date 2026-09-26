@@ -152,6 +152,25 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     t_accel = env.inlet_c
     t_drive = env.inlet_c
 
+    if scenario.warm_start:
+        # Warm start: the sled has already been running this workload in
+        # this environment. Settle a cold run of the opening conditions
+        # (no events) and carry its end state in — fan speed, thermal
+        # masses, clamps; the turbo-boost window is long spent.
+        settled, _, _ = simulate(scenario.model_copy(update={
+            "warm_start": False, "events": [],
+            "duration_s": int(C("warm_start_settle_seconds")),
+        }))
+        end = settled[-1]
+        if end.powered_on:
+            rpm = end.fan_rpm_pct
+            t_cpu, t_accel, t_drive = (
+                end.cpu_temp_c, end.accel_temp_c, end.drive_temp_c
+            )
+            cpu_clamp = 1.0 - end.perf_lost_pct / 100.0
+            accel_clamp = 1.0 - end.accel_perf_lost_pct / 100.0
+            boost_left = 0.0
+
     trace: list[SimState] = []
     log: list[LogEntry] = []
     ei = 0
@@ -315,8 +334,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             m_b = m_dot * (1.0 - C("lane_a_share"))
             lane_a_out = front_out + (cpu_w + dimm_w) / (m_a * cp)
             lane_b_out = front_out + (accel_w + io_w) / (m_b * cp)
-            # Whole-box heat balance: everything electrical becomes heat.
-            exhaust = inlet_eff + dc / (m_dot * cp)
+            # Whole-box heat balance: everything electrical becomes heat
+            # (computed after the thermal masses below — a part that is
+            # still warming keeps some of its watts).
 
             # Component steady-states, approached with first-order lag.
             # The socket inhales at its lane's exit — in a short-depth
@@ -334,6 +354,21 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             t_cpu += (t_cpu_ss - t_cpu) * DT / C("cpu_tau")
             t_accel += (t_accel_ss - t_accel) * DT / C("accel_tau")
             t_drive += (t_drive_ss - t_drive) * DT / C("drive_tau")
+
+            # Heat the air carries out = DC minus what the two thermal
+            # masses are still absorbing. A first-order mass with
+            # C = τ/R_th stores (T_ss − T)/R_th watts while it warms and
+            # gives them back while it cools; settled, the term is zero
+            # and ΔT = DC/(ṁ·cp) exactly. Storage is capped at the
+            # part's own power, so air never leaves colder than it came.
+            stored = max(-cpu_w, min(cpu_w, (t_cpu_ss - t_cpu) / C("cpu_r_th")))
+            if n_accel:
+                stored += n_accel * max(
+                    -accel_w / n_accel,
+                    min(accel_w / n_accel,
+                        (t_accel_ss - t_accel) / C("accel_r_th")),
+                )
+            exhaust = inlet_eff + (dc - stored) / (m_dot * cp)
 
             # --- Fan controller (proportional) ----------------------------
             err = t_cpu - C("cpu_target_c")
@@ -360,6 +395,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 accel_clamp = max(0.1, accel_clamp - 0.10)
             elif accel_clamp < 1.0 and t_accel < C("accel_throttle_c") - 4:
                 accel_clamp = min(1.0, accel_clamp + 0.05)
+                if accel_clamp >= 1.0:
+                    log.append(LogEntry(t=t, severity="info",
+                                        message="Accelerator throttling released"))
 
             if t_cpu >= C("cpu_shutdown_c"):
                 overtemp_s += DT
@@ -447,6 +485,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             cpu_throttling=cpu_throttling,
             accel_throttling=accel_clamp < 1.0,
             perf_lost_pct=round(100 * (1 - cpu_clamp), 0),
+            accel_perf_lost_pct=round(100 * (1 - accel_clamp), 0),
             storage_perf_lost_pct=round(sto_lost, 0),
             region_temps=region_temps,
         ))

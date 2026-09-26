@@ -9,16 +9,19 @@ from __future__ import annotations
 from fastapi import HTTPException, Query
 
 from twinkit.api import Level, make_app
+from twinkit.labs import Lab, LabResult
 
 from .anatomy import MAPS
 from .constants import CONSTANTS, PSU_CURVE_SOURCE, PSU_EFFICIENCY_CURVE
 from .engine import simulate
+from .labs import LABS, LABS_BY_ID, grade_scenario
 from .media import MEDIA
 from .leveling import leveled, leveled_all
 from .models import (
     ConfigPreset,
     Explain,
     GuidedScenario,
+    Intro,
     Scenario,
     SimResponse,
     SimState,
@@ -29,6 +32,7 @@ from .presets import (
     CONFIG_PRESETS,
     EXPLAINS,
     GUIDED_SCENARIOS,
+    INTRO,
     TRAINING,
     WORKLOAD_PRESETS,
     XE9680_H100,
@@ -81,6 +85,11 @@ def get_scenarios(level: int = Level) -> list[GuidedScenario]:
     return leveled_all(GUIDED_SCENARIOS, level)
 
 
+@app.get("/api/intro", response_model=Intro)
+def get_intro(level: int = Level) -> Intro:
+    return leveled(INTRO, level)
+
+
 @app.get("/api/explain", response_model=list[Explain])
 def get_explain(level: int = Level) -> list[Explain]:
     return leveled_all(EXPLAINS, level)
@@ -115,3 +124,19 @@ def get_simulate() -> SimResponse:
     """Default scenario (XE9680 H100, fed training) — zero-click first
     paint and the GET liveness probe."""
     return _run(Scenario(config=XE9680_H100, workload=TRAINING))
+
+
+# --- Graded labs (docs/LAB_PATTERN.md) --------------------------------------
+# Reading-level resolution happens here and only here; app/labs.py is pure.
+# The reference solutions and gaming attempts are never served.
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(404, f"unknown lab {lab_id}")
+    return leveled(grade_scenario(lab_id, scenario), level)

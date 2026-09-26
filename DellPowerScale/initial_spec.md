@@ -127,14 +127,16 @@ security and immutability, management and AIOps.
 2. Genomics or research data with mixed protocol access to the same files —
    written by an instrument over SMB, read by a pipeline over NFS, published
    over S3.
-3. An AI training corpus, cross-referencing the Exascale twin: PowerScale
-   with the Lightning file system is the file tier of that rack, and this
-   twin explains the namespace underneath it.
+3. An AI training corpus, cross-referencing the Exascale twin: the Lightning
+   file system is that rack's Tier 0 scratch, and this twin explains the
+   namespace where the corpus lives between runs. (Corrected 2026-09: Lightning
+   is a separate file system, not built on OneFS — Blocks & Files, 16 Mar 2026.)
 
 ## Cross-references to keep intact
 
-- **DellExascale** — Lightning File System runs on OneFS; that twin covers
-  parallel throughput, this one covers the namespace beneath it. Both should
+- **DellExascale** — Lightning File System is a separate product from OneFS
+  (Dell: Tier 0 scratch beside PowerScale); that twin covers parallel
+  throughput, this one covers the namespace the corpus lives in. Both should
   name each other.
 - **DellPowerFlex** — the sibling refusal. PowerFlex removed the controller,
   OneFS removed the volume; both let a system's shape change while running.

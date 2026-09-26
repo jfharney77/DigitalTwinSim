@@ -261,3 +261,20 @@ def test_link_load_vector_matches_the_topology():
     assert all(v == 0.0 for v in dead), "the dead spine's links go slack"
     campus, _, _ = run(Scenario(config=CAMPUS, workload=CAMPUS_DAY, duration_s=30))
     assert len(campus[-1].link_load) == CAMPUS.leaves * 2
+
+
+def test_gray_failure_narration_matches_the_screen():
+    """The guided scenario quotes numbers; they must be the ones the
+    instruments show: FCT 0.7 -> 1.7 ms (x2.4), affected flows -35%,
+    fabric-wide about -4% at eight leaves."""
+    from app.presets import GUIDED_SCENARIOS
+
+    guided = next(g for g in GUIDED_SCENARIOS if g.id == "gray-failure")
+    trace, _, _ = run(guided.scenario)
+    before, after = trace[100], trace[400]
+    assert before.affected_flow_penalty_pct == 0
+    assert after.affected_flow_penalty_pct == 35
+    assert round(before.fct_ms, 1) == 0.7 and round(after.fct_ms, 1) == 1.7
+    assert 2.3 < after.fct_ms / before.fct_ms < 2.6
+    assert guided.scenario.config.leaves == 8
+    assert round(after.goodput_penalty_pct) == 4

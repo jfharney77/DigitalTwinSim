@@ -44,11 +44,33 @@ bottleneck moves to the controllers).
 
 ## What we don't model
 
-Caching beyond a flat controller overhead, snapshots, thin provisioning,
+Caching beyond a flat controller overhead, the ME5's auto-tiering and
+SSD read cache, ADAPT distributed RAID (Dell's faster-rebuild answer to
+the very window this sim dwells on), snapshots, thin provisioning,
 stripe geometry, SAS topology, multipathing, expansion shelves, and
 RAID 10's lucky second failures (the engine deliberately takes the
 unlucky mirror and logs that it did). Drive IOPS, rebuild rates, and the
 per-controller ceiling are estimates pending calibration against Dell's
-ME5 documentation — every constant carries units and a `source` field in
+ME5 documentation (checked 2026-09: the enclosure bay counts are the
+spec sheet's; the 640K IOPS array ceiling is Dell's launch claim as
+reported by TechTarget, and the spec sheet publishes throughput, not
+IOPS) — every constant carries units and a `source` field in
 `backend/app/constants.py`, and estimate-derived readouts are labeled in
 the UI. The ME5084 (5U84) sibling is mentioned, not modeled.
+
+## Graded labs
+
+Three labs (`#labs`, `#lab=<id>`) follow `docs/LAB_PATTERN.md`: a goal, the
+ordinary controls, and a pure grader (`backend/app/labs.py`, served by
+`GET /api/labs` and `POST /api/labs/{id}/grade`). On the static site the same
+module grades in the browser. Scores and the work measures (served kIOPS and
+served write kIOPS, averaged over every tick) are illustrative.
+
+| Lab | Difficulty | The lesson |
+|---|---|---|
+| `pay-the-write-tax` | 1 | RAID 6's ×6 saturates the spindles, RAID 10's ×2 passes on half the capacity, and RAID 5's ×4 fits just under the latency knee with nearly all of it. |
+| `close-the-window` | 2 | The rebuild window follows the size of one drive and the host load, not the RAID level; parity only changes what the window costs. |
+| `size-for-the-worst-day` | 3 | Only RAID 6 survives two overlapping failures, and the load that fits the healthy array saturates the degraded one: reads cost 2, the rebuild reserves 20%. |
+
+Reference solutions and the gaming attempts that must fail stay server-side
+and are pinned in `backend/tests/test_labs.py`.

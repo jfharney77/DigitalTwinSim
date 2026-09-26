@@ -48,8 +48,8 @@ def test_compute_and_storage_scale_independently():
     expansion, capacity doubles and the compute pool does not move. On a
     hyperconverged cluster — this repo's VxRail twin — the same need is met
     by adding nodes, and a node brings processors whether or not anyone
-    wanted them, which is why estates so routinely own a third more of one
-    resource than they will ever use."""
+    wanted them (once the drive bays are full), which is how estates come to
+    own a surplus of one resource."""
     trace = simulate()
     grow = next(i for i, s in enumerate(trace) if s.phase == "growstorage")
     before, after = trace[grow - 1], trace[grow]

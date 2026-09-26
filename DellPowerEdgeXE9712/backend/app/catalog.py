@@ -36,13 +36,16 @@ CATALOG: list[CatalogCategory] = [
                 name="XE9712 · NVIDIA GB200 NVL72",
                 summary="72 Blackwell GPUs + 36 Grace CPUs fused into one NVLink domain.",
                 details=(
-                    "The launch configuration. 18 compute trays each carry "
+                    "The launch configuration, announced at the OCP Global "
+                    "Summit in October 2024; that December Dell said CoreWeave "
+                    "would be the first customer to receive these racks. 18 "
+                    "compute trays each carry "
                     "two GB200 superchips (a superchip is one Grace CPU "
                     "joined to two Blackwell GPUs on a single board), and 9 "
                     "NVLink switch trays fuse all 72 GPUs into one domain "
-                    "with 13.5 TB of pooled HBM3e memory. NVIDIA's headline "
+                    "with up to 13.4 TB of pooled HBM3e memory. NVIDIA's headline "
                     "claim: up to 30× faster real-time inference on "
-                    "trillion-parameter models than the prior generation, "
+                    "trillion-parameter models than the same number of H100 GPUs, "
                     "because the model lives inside one rack-wide NVLink "
                     "domain instead of hopping between servers."
                 ),
@@ -53,8 +56,10 @@ CATALOG: list[CatalogCategory] = [
                 summary="The Blackwell Ultra refresh — more HBM, more inference throughput.",
                 details=(
                     "The same rack architecture rebuilt around GB300 "
-                    "(Blackwell Ultra) superchips: more HBM3e per GPU and "
-                    "roughly 1.5× the AI inference throughput of GB200 "
+                    "(Blackwell Ultra) superchips, the configuration Dell's "
+                    "current XE9712 spec sheet describes: 288 GB of HBM3e per "
+                    "GPU (about 20 TB per rack) and, by NVIDIA's figures, 1.5× "
+                    "the dense FP4 compute of the Blackwell GPUs in GB200 "
                     "NVL72, aimed at reasoning models that spend far more "
                     "compute per query at inference time. Because the rack, "
                     "busbar, liquid loop, and NVLink cartridge are the "
@@ -85,7 +90,9 @@ CATALOG: list[CatalogCategory] = [
                     "Grace CPUs, four Blackwell GPUs, LPDDR5X and HBM3e "
                     "memory, NVLink-C2C links between CPU and GPU, and "
                     "front-facing ConnectX/BlueField ports for the "
-                    "scale-out network. No fans, no power supplies — "
+                    "scale-out network, plus a few E1.S NVMe drives for local "
+                    "scratch. No power supplies and only small fans for the "
+                    "parts without cold plates — "
                     "coolant and DC power arrive from the rack. A tray "
                     "pulls out for service on blind-mate liquid "
                     "quick-disconnects without draining the loop."
@@ -174,7 +181,7 @@ CATALOG: list[CatalogCategory] = [
         options=[
             CatalogOption(
                 id="nvl-switchtray",
-                name="NVLink switch tray (NVSwitch, gen 5)",
+                name="NVLink switch tray (NVLink 5 Switch)",
                 summary="NVSwitch ASICs cross-connecting every GPU to every other GPU.",
                 details=(
                     "Each of the nine trays carries NVSwitch ASICs that "
@@ -189,13 +196,13 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="nvl-cartridge",
                 name="NVLink cable cartridge",
-                summary="The pre-built copper spine: 5,000+ cables, ~2 miles of wire.",
+                summary="The pre-built copper spine: 5,000+ cables, ~2 miles of wire (NVIDIA's figures).",
                 details=(
                     "At the back of the rack, a factory-built cartridge of "
                     "more than five thousand copper cables — on the order "
                     "of two miles of conductor — connects every compute "
-                    "tray to every switch tray. Copper instead of optics "
-                    "saves roughly 20 kW per rack in transceiver power and "
+                    "tray to every switch tray. By NVIDIA's account, copper "
+                    "instead of optics saves roughly 20 kW per rack in transceiver power and "
                     "removes thousands of failure-prone lasers; it is "
                     "possible only because the NVLink domain is kept inside "
                     "one physical rack. This cartridge is why the XE9712 "
@@ -280,8 +287,8 @@ CATALOG: list[CatalogCategory] = [
                     "coolant through the rack's manifolds and cold plates, "
                     "exchanging heat with the facility water loop through a "
                     "plate heat exchanger so the two liquids never mix. "
-                    "Dell's rack-mounted RCDU line delivers on the order of "
-                    "160 kW of cooling per rack. It leak-checks and primes "
+                    "Dell rates its PowerCool rack-mount CDU at up to "
+                    "160 kW of cooling capacity. It leak-checks and primes "
                     "the loop before the management plane allows GPU "
                     "power-on, and modulates pump speed against cold-plate "
                     "temperatures at steady state."
@@ -297,9 +304,9 @@ CATALOG: list[CatalogCategory] = [
                     "The enclosed rear-door heat exchanger captures that "
                     "remainder at the back of the rack and returns it to "
                     "the water loop, letting a dense AI row run in a room "
-                    "with ordinary air handling. Dell quotes up to 60% "
-                    "cooling-energy savings versus conventional room "
-                    "cooling."
+                    "with ordinary air handling. Dell claims it saves up to "
+                    "60% of the energy required for cooling compared with "
+                    "currently available solutions."
                 ),
             ),
         ],
@@ -320,15 +327,17 @@ CATALOG: list[CatalogCategory] = [
                 name="Power shelves + DC busbar",
                 summary="Hot-swap rectifier banks feeding a copper spine every tray clips onto.",
                 details=(
-                    "Power shelves hold banks of hot-swappable rectifiers "
+                    "Power shelves (33 kW each, six 5,500 W supplies, per "
+                    "Dell's spec sheet) hold banks of hot-swappable rectifiers "
                     "(redundant across separate facility feeds) that "
                     "convert AC to direct current and energize the busbar "
                     "running the height of the rack. Trays have no power "
                     "supplies of their own — they blind-mate onto the "
                     "busbar. Centralizing conversion cuts losses, and a "
                     "failed rectifier or even a lost feed derates the rack "
-                    "instead of dropping it. The same Open Compute-inspired "
-                    "design appears in Dell's IR7000 rack family."
+                    "instead of dropping it. Dell lists the XE9712's rack as the "
+                    "IR9048, a 19-inch, 48U rack with an Open Rack v3 busbar; "
+                    "the same busbar idea appears in the 21-inch IR7000 family."
                 ),
             ),
         ],
@@ -349,7 +358,8 @@ CATALOG: list[CatalogCategory] = [
                 name="BMC path + Dell OpenManage",
                 summary="Every tray's BMC reports to the rack switch; OME sees the fleet.",
                 details=(
-                    "Each tray carries a baseboard management controller — "
+                    "Each tray carries a baseboard management controller "
+                    "(OpenBMC on the base sled, with an iDRAC 10 variant) — "
                     "the same always-on service-processor role the iDRAC "
                     "twin explores — reachable through the rack management "
                     "switch even when trays are off. Dell OpenManage "
@@ -378,11 +388,11 @@ CATALOG: list[CatalogCategory] = [
         id="storage",
         name="External storage",
         blurb=(
-            "There are no data drives in the rack — training data, "
+            "The trays carry only a few NVMe drives for local scratch — training data, "
             "checkpoints, and models live on external storage reached over "
             "the scale-out fabric."
         ),
-        limits="Not in this rack — attaches over InfiniBand/Ethernet",
+        limits="Bulk storage is not in this rack — attaches over InfiniBand/Ethernet",
         region_ids=[],
         options=[
             CatalogOption(
@@ -448,8 +458,7 @@ CATALOG: list[CatalogCategory] = [
                     "sized designs — compute racks, Spectrum-X or "
                     "InfiniBand fabric, PowerScale storage, and the "
                     "software stack — with the integration tested before "
-                    "anything ships. Dell counts hundreds of updates to the "
-                    "program since 2024; the point is that an enterprise "
+                    "anything ships. The point is that an enterprise "
                     "buys an outcome (tokens per second, time to train) "
                     "rather than a parts list."
                 ),

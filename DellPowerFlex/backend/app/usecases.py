@@ -112,8 +112,8 @@ USE_CASES: list[UseCase] = [
             ),
         ],
         outcomes=[
-            Stat(label="Failover pause", value="None — there is nothing to fail over"),
-            Stat(label="Throughput during node loss", value="~90% of steady"),
+            Stat(label="Controller failover", value="None — there is no controller to fail over"),
+            Stat(label="Throughput during node loss", value="5/6 of steady (one node of six lost)"),
             Stat(label="Rebuild participants", value="Every surviving node"),
             Stat(label="Protection after rebuild", value="100%, on a smaller cluster"),
         ],
@@ -167,9 +167,11 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="protection", option_id="erasure-coding", qty=1,
                 rationale=(
-                    "Far less capacity overhead, and 5.0 Ultra keeps the "
-                    "many-to-many rebuild rather than trading it away for "
-                    "the saving."
+                    "Far less capacity overhead (Dell states up to 80 "
+                    "percent usable with 8+2, which needs eleven nodes), "
+                    "and PowerFlex 5.0 keeps the distributed rebuild rather "
+                    "than trading it away for the saving. It is a fresh "
+                    "deployment, not an upgrade from a mirrored pool."
                 ),
             ),
             UseCaseItem(

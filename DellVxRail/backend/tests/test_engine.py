@@ -61,6 +61,20 @@ def test_cluster_build_is_the_longest_stage():
     assert sum(1 for s in trace if s.cycle_cost == max_cost) == 1
 
 
+def test_the_clock_gives_the_build_the_time_the_caption_quotes():
+    """elapsed_seconds is when a stage begins, so a stage lasts until the next
+    step's reading. The captions quote Dell's 25 to 40 minutes for the build;
+    the clock on the same screen must agree, and the build must also be the
+    longest stage by the clock, not only by cycle_cost."""
+    trace = simulate()
+    spans = {
+        s.phase: nxt.elapsed_seconds - s.elapsed_seconds
+        for s, nxt in zip(trace, trace[1:])
+    }
+    assert 25 * 60 <= spans["cluster"] <= 40 * 60
+    assert spans["cluster"] == max(spans.values())
+
+
 def _node_suffixes(active):
     """Node suffixes (n1..n4) present among a set of active region ids."""
     return {rid.rsplit("-", 1)[1] for rid in active if rid.rsplit("-", 1)[1] in NODES}

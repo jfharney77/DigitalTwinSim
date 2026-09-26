@@ -1,18 +1,19 @@
 # DellPowerStoreElite — mixed-generation modernization digital twin
 
 The twenty-sixth component: **Dell PowerStore Elite**, announced at Dell
-Technologies World 2026 (May 19) and globally available from July 2026 — a
-3U appliance on Intel Xeon Scalable (up to 50% more cores than the
-3200T/5500 class), DDR5, a PCIe Gen 5 fabric, 40 low-profile E3 NVMe slots
+Technologies World 2026 (May 19) with global availability announced for
+July 2026 — a 3U appliance in three models (PowerStore 1500, 5500, 9500) on
+Intel Xeon Scalable (up to 50% more cores, Dell's comparison of the new
+5500 with the 3200T), DDR5, a PCIe Gen 5 fabric, 40 low-profile E3 NVMe slots
 (QLC/TLC), up to 5.8 PB effective behind a 6:1 data reduction guarantee,
 up to 40 front-end ports (64 Gb FC / 100 GbE), and a 200 Gb RDMA node
-interconnect.
+interconnect between the two controllers *inside* the chassis.
 
 **The one idea: modernization without migration.** Every prior storage twin
 here boots a box; this one refuses to. The trace is a *cluster join* — an
 existing prior-generation PowerStore serving the estate, the Elite waking
 beside it, mixed-generation clustering fusing them into one system, volumes
-rebalancing live over the RDMA mesh, cutover by multipathing, and the old
+rebalancing live over the cluster network, cutover by multipathing, and the old
 array repurposed rather than retired. The hero counter is
 **`downtimeSeconds`, which exists to be 0** on every step; its companions
 are `generationsInCluster` (1 → 2, exactly once, at the join) and
@@ -60,8 +61,9 @@ scripts/   start_backend.sh, start_frontend.sh, start_all.sh, stop_all.sh
 ## Geometry carries the lesson (backend/tests/test_anatomy.py)
 
 The map is deliberately **two appliances, not one**: the prior-generation
-2U array as the top band, the Elite 3U as the bottom band, and the 200 Gb
-RDMA interconnect drawn strictly between them.
+2U array as the top band, the Elite 3U as the bottom band, and the cluster
+network (Ethernet through the top-of-rack switches) drawn strictly between
+them.
 `test_the_generations_are_drawn_as_peers` pins both bands to the same width
 (neither is a satellite of the other) with the Elite's 40-slot E3 bay drawn
 larger than the prior 25-slot bay;
@@ -80,6 +82,21 @@ timings in the trace are illustrative, shaped by the vendor's claims (3x
 performance on a 70/30 mix, 6:1 guaranteed reduction, 5.8 PB effective per
 3U, reads up to 70% faster via Metadata Acceleration, up to 95% less
 manual effort) and labeled as the vendor's own where it matters.
+
+**2026-09 fact-check corrections.** (1) The 200 Gb RDMA "node interconnect"
+is intra-appliance — cable-free, midplane-routed, between an Elite's two
+controllers (100 Gb on the 1500; 2× 10 GbE in the prior generation) — per
+StorageReview's Gen 3 review. It is not the link between appliances, so the
+`cluster-mesh` region and `mesh` phase now model PowerStore's intra-cluster
+Ethernet network (Dell white paper H18157), with an illustrative speed; ids
+are unchanged. (2) Elite has no NVRAM drives: its write cache is
+software-defined persistent memory (battery-backed DDR5 vaulted to M.2); the
+`elite-nvram` region keeps its id and is relabeled. (3) The prior
+generation's fabric was PCIe Gen 3, not Gen 4. (4) Dell names the models
+PowerStore 1500/5500/9500; "+50% cores" is 5500 vs 3200T, 3x IOPS is 1500 vs
+1200T, 3x throughput and density are 9500 vs 9200T, and the 70% read figure
+was measured on a 500T running PowerStoreOS 5.0, which ships Metadata
+Acceleration to every PowerStore. (5) The 1500 opens 24 of 40 bays at launch.
 
 ## Relations to other twins
 

@@ -58,7 +58,7 @@ ANATOMY = ZeroTrustMap(
     vendor="Dell Technologies",
     form_factor="Turnkey sovereign on-premises private cloud",
     generation="US DoD Target Level zero-trust validation (April 2025)",
-    year=2026,
+    year=2025,
     width=MAP_W,
     height=MAP_H,
     overview=L(
@@ -93,7 +93,7 @@ ANATOMY = ZeroTrustMap(
             "against serious attack. What makes it worth a twin is the "
             "assumption it reverses. Security was traditionally built on a "
             "perimeter: check at the boundary, then treat everything behind it "
-            "as trustworthy. That fails the same way every time — whoever gets "
+            "as trustworthy. When that fails, it fails the same way — whoever gets "
             "in inherits everything the inside was allowed to do and moves "
             "sideways at leisure. Zero trust deletes the idea instead of "
             "reinforcing it. Every request is decided individually on "
@@ -116,7 +116,7 @@ ANATOMY = ZeroTrustMap(
             "assumption it inverts. Security has historically been built on a "
             "perimeter: verify at the boundary, then treat what is behind it "
             "as "
-            "trusted. That model fails the same way every time — an attacker "
+            "trusted. When that model fails, it fails the same way — an attacker "
             "who gets inside once inherits everything the inside was allowed "
             "to "
             "do, and moves sideways at leisure. Zero trust removes the concept "
@@ -135,9 +135,8 @@ ANATOMY = ZeroTrustMap(
             "validated in April 2025 as a sovereign on-premises deployment and "
             "tested under adversarial assessment. The point is the inverted "
             "assumption, not the feature list. Perimeter security verifies at "
-            "the boundary and trusts what is behind it, which fails "
-            "identically "
-            "every time: initial access confers everything the interior was "
+            "the boundary and trusts what is behind it, and its "
+            "recurring failure is the same: initial access confers everything the interior was "
             "permitted, and lateral movement follows. Zero trust removes the "
             "concept. Authorization is per-request across identity, device "
             "posture, network context, workload, and data sensitivity, with an "
@@ -170,7 +169,8 @@ ANATOMY = ZeroTrustMap(
             "credential buys an attacker far less than it does in a "
             "perimeter model, because it has to survive continuous "
             "re-examination alongside device posture and behaviour rather "
-            "than being presented once at a gate.",
+            "than being presented once at a gate. The DoD strategy's own "
+            "name for this pillar is User.",
         ),
         _pillar(
             "device", "device", "Device",
@@ -293,8 +293,12 @@ ANATOMY = ZeroTrustMap(
             url="https://www.dell.com/en-us/lp/dt/security-zero-trust",
         ),
         SourceLink(
-            label="Dell Technologies Project Fort Zero to transform security",
-            url="https://investors.delltechnologies.com/news-releases/news-release-details/dell-technologies-project-fort-zero-transform-security",
+            label="Dell Technologies Project Fort Zero to transform security (May 2023)",
+            url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2023~05~dell-technologies-project-fort-zero-to-transform-security.htm",
+        ),
+        SourceLink(
+            label="US DoD Zero Trust Strategy (pillars; Target and Advanced levels)",
+            url="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD-ZTStrategy.pdf",
         ),
     ],
 )

@@ -32,7 +32,7 @@ ANATOMY = ChassisMap(
     name="PowerEdge R760 · power & thermal model",
     vendor="Dell Technologies",
     form_factor="2U rack server — thermal-zone view",
-    generation="14th/15th-gen PowerEdge platform (4th/5th Gen Xeon Scalable)",
+    generation="16th-generation PowerEdge (4th/5th Gen Intel Xeon Scalable)",
     year=2023,
     width=100,
     height=46,
@@ -163,9 +163,11 @@ ANATOMY = ChassisMap(
             x=52, y=1, w=20, h=33,
             description=(
                 "The PCIe riser zone — lane B of the airflow split. Up to "
-                "two double-wide 300 W-class GPUs or six single-wide 75 W "
-                "accelerators live here; any double-wide GPU forces the "
-                "Gold fan kit and raises the fan floor to 30%, because "
+                "two double-wide GPUs (Dell's ceiling is 350 W each; this "
+                "model uses a 300 W-class card) or six single-wide 75 W "
+                "accelerators live here. Dell's thermal restriction "
+                "matrix allows GPU builds only with the Gold fan kit; "
+                "the 30% fan floor is this model's estimate, because "
                 "this lane gets less airflow than the CPU lane and a "
                 "300 W part in it has no margin for quiet fans."
             ),
@@ -196,8 +198,10 @@ ANATOMY = ChassisMap(
             x=88, y=1, w=11, h=14,
             description=(
                 "The first hot-swap PSU. Efficiency depends on load point "
-                "(~90% at 10% load, ~96% at 50%, ~94% flat out — Titanium "
-                "curve, approximated), so wall watts exceed DC watts by a "
+                "(~90% at 10% load, ~96% at 50%, ~91% flat out — the 80 PLUS "
+                "Titanium minimums; Dell's 800, 1400 and 2400 W supplies "
+                "are Platinum and run slightly lower), so wall watts "
+                "exceed DC watts by a "
                 "margin that changes with configuration. In 1+1 the pair "
                 "shares load at a lower, often more efficient point each; "
                 "kill one and watch the survivor's efficiency shift."
@@ -215,9 +219,88 @@ ANATOMY = ChassisMap(
             ),
         ),
     ],
+    limitations=L(
+        novice=(
+            "What this model leaves out, in plain words. It does not work "
+            "out how the air actually swirls and eddies inside the box — "
+            "it treats the air as moving straight from front to back. It "
+            "does not model the fine-grained tricks a processor uses to "
+            "shave its own power core by core. It ignores the small "
+            "losses in the circuitry that feeds the processors, and it "
+            "ignores humidity, which barely affects cooling at these "
+            "temperatures. It has no noise figure: fan speed is used as a "
+            "stand-in for how loud the server is. Two fan simplifications "
+            "matter if you are planning for real spare-fan cover: airflow "
+            "here is simply added up across the running fans, so five "
+            "fans spinning a fifth faster restore exactly the airflow six "
+            "were moving, and a stopped fan is treated as a sealed hole "
+            "rather than a gap air can leak back through. A real machine "
+            "recovers less than this, so treat the cost of losing a fan "
+            "as the optimistic case. The processors' power here depends "
+            "only on how busy they are, never on how hot they are, "
+            "although hot silicon really does leak a little more power — "
+            "that is a deliberate choice so the fan story can be read on "
+            "its own. Heat lost inside the power supplies leaves through "
+            "their own rear vents, outside the front-to-back path drawn "
+            "here. Most numbers are estimates waiting to be checked "
+            "against Dell's published documents; every one carries a "
+            "source tag in the backend's constants table."
+        ),
+        plain=(
+            "What we do not model: airflow detail inside the chassis (no "
+            "CFD — air goes front to back), per-core power management, "
+            "losses in the voltage regulators, humidity (not a factor at "
+            "these temperatures), and noise, for which fan speed is the "
+            "stand-in. Two fan simplifications matter for redundancy "
+            "planning: airflow adds linearly across the running fans, "
+            "with no fan curve against the chassis's own resistance, and "
+            "a dead fan is sealed rather than a backflow path — so "
+            "survivors recover more airflow here than on real hardware. "
+            "CPU power depends on utilization only, never on die "
+            "temperature, so temperature-driven leakage is absent; that "
+            "keeps the fan-overhead lesson clean but understates the wall "
+            "power of a hot-aisle excursion. PSU conversion loss vents "
+            "rearward, outside the front-to-back path. Most constants are "
+            "estimates pending calibration against Dell's published "
+            "documentation — every one carries a source tag in the "
+            "backend's constants table."
+        ),
+        standard=(
+            "What we don't model: CFD, per-core DVFS, VR losses, humidity "
+            "(listed non-factor), acoustics beyond rpm as proxy. Airflow "
+            "superposes linearly across live fans — no fan curve against a "
+            "system impedance, and a dead rotor is sealed rather than a "
+            "bypass path — so survivors recover more flow here than on "
+            "real hardware, and the cost of an N+1 fan loss reads "
+            "optimistic. CPU power is a function of utilization and TDP "
+            "only: there is no temperature-dependent leakage term, which "
+            "keeps the fan-overhead reading clean and understates wall "
+            "power in a hot-aisle excursion. PSU conversion loss is vented "
+            "by the PSUs' own airflow, outside the front-to-back path. "
+            "Most constants are estimates pending calibration against "
+            "Dell's published documentation — every one carries a source "
+            "tag in the backend's constants table."
+        ),
+        expert=(
+            "Not modelled: CFD, per-core DVFS, VR loss, humidity, "
+            "acoustics (rpm proxy). Linear airflow superposition — no "
+            "fan/system curve, no dead-rotor bypass: N+1 loss reads "
+            "optimistic. P_cpu(util, TDP) only — no T-dependent leakage. "
+            "PSU loss vented rear, outside the zone chain. Most constants "
+            "estimated; sources in the constants table."
+        ),
+    ),
     sources=[
         {"label": "Dell PowerEdge R760 Technical Guide",
          "url": "https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-r760-technical-guide.pdf"},
+        {"label": "Dell PowerEdge R760 spec sheet (PSUs, fans, GPU and drive options)",
+         "url": "https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-r760-spec-sheet.pdf"},
+        {"label": "Dell R760 Installation and Service Manual — environmental specifications (ASHRAE classes, altitude de-rating)",
+         "url": "https://www.dell.com/support/manuals/en-us/poweredge-r760/per760_ism_pub/environmental-specifications?guid=guid-11193b30-1caa-4e7b-900f-bc79a66398ad&lang=en-us"},
+        {"label": "Dell R760 Installation and Service Manual — thermal restriction matrix (heatsinks, fan kits, GPU rules)",
+         "url": "https://www.dell.com/support/manuals/en-us/poweredge-r760/per760_ism_pub/thermal-restriction-matrix?guid=guid-3fe6e7bc-1d2c-4b91-a8ec-dff2e88e1168&lang=en-us"},
+        {"label": "80 PLUS program details (Titanium and Platinum efficiency thresholds)",
+         "url": "https://www.clearesult.com/80plus/program-details"},
         {"label": "Simulator spec (this repo)",
          "url": "../DellPowerEdgeR760/r760-interactive-simulator-spec.md"},
         {"label": "ASHRAE thermal guidelines (A2 envelope)",

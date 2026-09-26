@@ -12,12 +12,18 @@ Five personalities, each pinned by tests:
 - **VxRail** — the lifecycle bundle: rolling updates under N+1 with
   zero outage minutes vs manual mode's sawtooth version currency;
   the 3-node trap opens an exposure window a fourth node would close.
-- **Private Cloud** — two stacks under one control plane ≈ one ops
-  bill; catalog (0.25 h) vs artisanal (16 h) deploys.
+- **Private Cloud** — a second stack adds ~25% to the patch wave under
+  one control plane (100% under manual ops); every whole VM of growth is
+  a workload deploy charged to the ledger at the catalog (0.25 h) or
+  hand-built (16 h) rate. All estimates. Guided scenarios may carry
+  `variants`, which the UI runs side by side in a table by the diagram.
 - **APEX** — pure Archetype F: as-a-service (base + 1.5× overage) vs
   ownership that must buy the demand peak. Spiky demand flips the
   $/VM-hour ranking to as-a-service; steady flips it back — both
   directions asserted. The buffer prices outage-vs-air.
+  The 1.5× overage is a generic consumption model, not Dell's rate
+  card: Dell states APEX Infrastructure (Flex on Demand) bills
+  committed plus metered buffer at a single rate with no overage fees.
 - **NativeEdge / Distributed Private Cloud** — 0.5 h zero-touch vs
   8 h site visits (the 500-store bill ≈ 15×); single-node faults are
   truck-roll days, 2-node HA makes them failovers; WAN outages mean

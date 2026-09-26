@@ -1,0 +1,175 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "compute": {
+            "racks": 8,
+            "gpusPerRack": 72,
+            "gpuPeakW": 1200
+          },
+          "fabric": {
+            "type": "quantum-ib",
+            "oversubscription": 1.0
+          },
+          "data": {
+            "storageGbps": 1200
+          },
+          "facility": {
+            "mwBudget": 1.2,
+            "cooling": "liquid"
+          },
+          "resilience": {
+            "checkpointIntervalMin": 60,
+            "restartMin": 15,
+            "gpuMtbfH": 50000
+          },
+          "costs": {
+            "usdPerKwh": 0.08,
+            "capexMusdPerRack": 3.0,
+            "amortizationYears": 4.0
+          }
+        },
+        "job": {
+          "tokensPerGpuS": 200,
+          "dataGbpsPerGpu": 1.5,
+          "stateGbPerGpu": 10,
+          "rampH": 24
+        },
+        "durationH": 480,
+        "events": []
+      },
+      {
+        "config": {
+          "compute": {
+            "racks": 16,
+            "gpusPerRack": 72,
+            "gpuPeakW": 1200
+          },
+          "fabric": {
+            "type": "quantum-ib",
+            "oversubscription": 1.0
+          },
+          "data": {
+            "storageGbps": 1728.0
+          },
+          "facility": {
+            "mwBudget": 2.5,
+            "cooling": "liquid"
+          },
+          "resilience": {
+            "checkpointIntervalMin": 60,
+            "restartMin": 15,
+            "gpuMtbfH": 50000
+          },
+          "costs": {
+            "usdPerKwh": 0.08,
+            "capexMusdPerRack": 3.0,
+            "amortizationYears": 4.0
+          }
+        },
+        "job": {
+          "tokensPerGpuS": 200,
+          "dataGbpsPerGpu": 1.5,
+          "stateGbPerGpu": 10,
+          "rampH": 24
+        },
+        "durationH": 720,
+        "events": [
+          {
+            "atH": 300,
+            "action": "degrade-storage",
+            "value": 50.0
+          }
+        ]
+      },
+      {
+        "config": {
+          "compute": {
+            "racks": 16,
+            "gpusPerRack": 72,
+            "gpuPeakW": 1200
+          },
+          "fabric": {
+            "type": "quantum-ib",
+            "oversubscription": 1.0
+          },
+          "data": {
+            "storageGbps": 1728.0
+          },
+          "facility": {
+            "mwBudget": 1.0,
+            "cooling": "liquid"
+          },
+          "resilience": {
+            "checkpointIntervalMin": 60,
+            "restartMin": 15,
+            "gpuMtbfH": 50000
+          },
+          "costs": {
+            "usdPerKwh": 0.08,
+            "capexMusdPerRack": 3.0,
+            "amortizationYears": 4.0
+          }
+        },
+        "job": {
+          "tokensPerGpuS": 200,
+          "dataGbpsPerGpu": 1.5,
+          "stateGbPerGpu": 10,
+          "rampH": 24
+        },
+        "durationH": 720,
+        "events": [
+          {
+            "atH": 250,
+            "action": "warm-day",
+            "value": 0.2
+          },
+          {
+            "atH": 450,
+            "action": "end-warm-day",
+            "value": null
+          }
+        ]
+      },
+      {
+        "config": {
+          "compute": {
+            "racks": 16,
+            "gpusPerRack": 72,
+            "gpuPeakW": 1200
+          },
+          "fabric": {
+            "type": "quantum-ib",
+            "oversubscription": 1.0
+          },
+          "data": {
+            "storageGbps": 1728.0
+          },
+          "facility": {
+            "mwBudget": 1.8,
+            "cooling": "liquid"
+          },
+          "resilience": {
+            "checkpointIntervalMin": 5,
+            "restartMin": 15,
+            "gpuMtbfH": 50000
+          },
+          "costs": {
+            "usdPerKwh": 0.08,
+            "capexMusdPerRack": 3.0,
+            "amortizationYears": 4.0
+          }
+        },
+        "job": {
+          "tokensPerGpuS": 200,
+          "dataGbpsPerGpu": 1.5,
+          "stateGbPerGpu": 400.0,
+          "rampH": 24
+        },
+        "durationH": 720,
+        "events": []
+      }
+    ]
+  }
+}

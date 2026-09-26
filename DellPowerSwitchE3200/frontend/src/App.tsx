@@ -309,8 +309,10 @@ export function App() {
             <p>
               A switch does not go straight from cold to moving packets. It
               boots like a small computer first: standby power, then the CPU,
-              then ONIE — the open-networking bootloader — hands off to a
-              network OS (SmartFabric OS10 or Enterprise SONiC), which programs
+              then the boot loader — where ONIE, the open-networking
+              installer, runs on a factory-fresh unit and is bypassed once a
+              network OS is installed — starts that network OS (SmartFabric
+              OS10 or Enterprise SONiC), which programs
               the switching ASIC, brings the ports up, delivers PoE to the
               devices hanging off them, and only then forwards at line rate.
               Play the trace and watch each stage light up the hardware it runs

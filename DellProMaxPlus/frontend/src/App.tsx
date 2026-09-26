@@ -173,6 +173,15 @@ export function App() {
     setCursor((c) => Math.min(c + 1, trace.length - 1));
   }, [trace, stop]);
 
+  // The trace is fully materialised, so walking back is a cursor decrement.
+  // Comparing a step with the one before it should not mean replaying from
+  // the start — the last two steps differ by one number, and that is the
+  // whole point of the offline step.
+  const stepBack = useCallback(() => {
+    stop();
+    setCursor((c) => Math.max(c - 1, 0));
+  }, [stop]);
+
   const reset = useCallback(() => {
     stop();
     setCursor(0);
@@ -302,6 +311,29 @@ export function App() {
         <>
           <div className="an-hero">
             <h2>The weights never move</h2>
+            {level <= 2 ? (
+              <p>
+                Most AI hardware is about moving data quickly. The card
+                inside this laptop does the opposite: it moves the model
+                once and then never again. The card is a discrete NPU, a
+                separate chip built only to run AI models, and it has 64 GB
+                of memory of its own. A very large language model is
+                prepared for the card ahead of time, copied into that
+                memory across the one connector between laptop and card
+                (called PCIe), and from then on it stays put. Play the
+                sequence and watch the PCIe traffic counter: it jumps while
+                the model loads and reads zero for every step where the
+                model is answering. The last step unplugs the network, and
+                nothing happens.
+              </p>
+            ) : level >= 4 ? (
+              <p>
+                Discrete NPU, 64 GB card-local memory. A 109B-parameter
+                model is compiled ahead of time, crosses PCIe once, and
+                stays resident. Link traffic is nonzero during load only;
+                the final step pulls the network and no counter moves.
+              </p>
+            ) : (
             <p>
               Every other accelerator in this repo is a story about
               transfer. The XE9712 fuses 72 GPUs so gradients can cross
@@ -316,6 +348,7 @@ export function App() {
               zero for every step of actual inference. The last step is
               disconnecting the network, and nothing happens.
             </p>
+            )}
             <button
               className="primary inference-tour-link"
               onClick={() => setPage("tour")}
@@ -341,15 +374,44 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Two moments are worth pausing on. At <em>load</em>, the
-                dashed path lights up and 61 GB crosses the boundary — the
-                slowest thing the machine will do all day, and a cost paid
-                once per model rather than once per prompt. At{" "}
-                <em>decode</em>, notice what has gone dark: the CPU, the
-                system memory, the SSD. The whole computation is on one side
-                of the line. Click a block to pin what it is; the full tour
-                lives under Inside the machine.
+                {level <= 2 ? (
+                  <>
+                    Highlighted blocks are the parts doing work at this
+                    step. Two moments are worth pausing on. At{" "}
+                    <em>load</em>, the dashed path lights up and the 61 GB
+                    model crosses from the laptop side to the card: the
+                    slowest thing the machine will do all day, and a cost
+                    paid once per model, not once per question. At{" "}
+                    <em>decode</em>, when the answer is being written,
+                    notice what has gone dark: the main processor, its
+                    memory and the drive. All the work is on the card's
+                    side of the line. Click a block to pin what it is; the
+                    full parts list lives under Inside the machine, and the
+                    narrated walk-through is under Guided tour.
+                  </>
+                ) : level >= 4 ? (
+                  <>
+                    Lit blocks are active at this step. The dashed weights
+                    path is heavy during <em>load</em> only; from{" "}
+                    <em>decode</em> on, no host region is lit. Click a block
+                    to pin it; parts list under Inside the machine,
+                    narration under Guided tour.
+                  </>
+                ) : (
+                  <>
+                    Highlighted blocks are the parts doing work at this
+                    step. Two moments are worth pausing on. At{" "}
+                    <em>load</em>, the dashed path lights up and 61 GB
+                    crosses the boundary — the slowest thing the machine
+                    will do all day, and a cost paid once per model rather
+                    than once per prompt. At <em>decode</em>, notice what
+                    has gone dark: the CPU, the system memory, the SSD. The
+                    whole computation is on one side of the line. Click a
+                    block to pin what it is; the full parts list lives under
+                    Inside the machine, and the narrated walk-through is
+                    under Guided tour.
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -364,6 +426,8 @@ export function App() {
               onRun={run}
               onPause={stop}
               onStep={step}
+              onStepBack={stepBack}
+              canStepBack={cursor > 0}
               onReset={reset}
             />
             <InferenceCounters

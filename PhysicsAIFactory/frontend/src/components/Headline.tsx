@@ -1,3 +1,4 @@
+import { useLevel } from "../level";
 import type { Explain, SimState, Summary } from "../types";
 
 // The six headline instruments — the whole point of the capstone: one
@@ -10,16 +11,35 @@ function fmtTokens(v: number): string {
   return v.toFixed(0);
 }
 
-function substituted(id: string, s: SimState): string {
+// Dollars at $k resolution below a million, so the early hours can be
+// told apart (the engine carries $M to three decimals).
+function fmtUsd(m: number): string {
+  return m < 1 ? `$${(m * 1000).toFixed(0)} k` : `$${m.toFixed(2)} M`;
+}
+
+function substituted(id: string, s: SimState, summary?: Summary | null): string {
   switch (id) {
     case "tokens-per-s":
       return `${fmtTokens(s.tokensPerS)} tok/s = ${s.gpusOnline} × rate × ${(s.gpuUtilPct / 100).toFixed(2)}`;
     case "idle-data":
+      if (s.storageDemandGbps <= 0)
+        return `no demand yet: the GPUs ask for data only once training starts (${s.storageSupplyGbps.toFixed(0)} GB/s available)`;
       return `${s.gpuIdleDataPct.toFixed(0)}% = (1 − min(1, ${s.storageSupplyGbps.toFixed(0)} ÷ ${s.storageDemandGbps.toFixed(0)} GB/s)) × 100`;
     case "facility-mw":
       return `${s.facilityMw.toFixed(2)} MW = ${s.itMw.toFixed(2)} IT × PUE ${s.pue.toFixed(2)} (budget ${s.mwBudget.toFixed(2)})`;
+    case "pue":
+      return s.itMw > 0
+        ? `${s.pue.toFixed(2)} = ${s.facilityMw.toFixed(2)} MW facility ÷ ${s.itMw.toFixed(2)} MW IT`
+        : `${s.pue.toFixed(2)} (nothing is drawing power yet)`;
     case "usd-per-mtok":
-      return `$${s.usdPerMtok.toFixed(2)}/Mtok = $${s.costUsdM.toFixed(1)} M ÷ ${s.tokensTotalB.toFixed(1)} B tokens`;
+      if (s.tokensTotalB <= 0) return `${fmtUsd(s.costUsdM)} charged so far, no tokens yet`;
+      return `$${s.usdPerMtok.toFixed(2)}/Mtok = ${fmtUsd(s.costUsdM)} ÷ ${s.tokensTotalB.toFixed(1)} B tokens`;
+    case "ttft": {
+      const t = summary?.timeToFirstTokenH ?? -1;
+      if (t < 0) return "no training token in this run yet";
+      if (t < 96) return `${t} h in total · now at hour ${s.tH}`;
+      return `${t} h = 72 h procure + ${t - 96} h install + 24 h bring-up · now at hour ${s.tH}`;
+    }
     default:
       return "";
   }
@@ -69,6 +89,7 @@ export function Headline({
   explainOn: boolean;
 }) {
   const s = state;
+  const level = useLevel();
   const ex = (id: string) =>
     explainOn && s ? explains.find((e) => e.id === id) ?? null : null;
   const ttft = summary?.timeToFirstTokenH ?? -1;
@@ -80,7 +101,7 @@ export function Headline({
       <Tile
         label="tokens / second"
         value={s ? fmtTokens(s.tokensPerS) : "—"}
-        sub={s ? `${s.tokensTotalB.toFixed(1)} B total · ${s.gpusOnline.toLocaleString()} GPUs` : undefined}
+        sub={s ? `${s.tokensTotalB.toFixed(1)} B so far, at this hour · ${s.gpusOnline.toLocaleString()} GPUs` : undefined}
         explain={ex("tokens-per-s")}
         live={s ? substituted("tokens-per-s", s) : undefined}
       />
@@ -109,19 +130,31 @@ export function Headline({
       <Tile
         label="PUE"
         value={s ? s.pue.toFixed(2) : "—"}
-        sub={s ? `${s.itMw.toFixed(2)} MW IT` : undefined}
+        sub={s ? `building ÷ IT power · ${s.itMw.toFixed(2)} MW IT` : undefined}
+        explain={ex("pue")}
+        live={s ? substituted("pue", s) : undefined}
       />
       <Tile
         label="$ / million tokens"
         value={s && s.usdPerMtok > 0 ? `$${s.usdPerMtok.toFixed(2)}` : "—"}
-        sub={s ? `$${s.costUsdM.toFixed(1)} M spent` : undefined}
+        sub={
+          s
+            ? `${fmtUsd(s.costUsdM)} charged so far · ${
+                level <= 2
+                  ? "hardware spread over its life + energy"
+                  : "amortized hardware + energy"
+              } · illustrative`
+            : undefined
+        }
         explain={ex("usd-per-mtok")}
         live={s ? substituted("usd-per-mtok", s) : undefined}
       />
       <Tile
-        label="time to first token"
+        label="time to first training token"
         value={ttftText}
         sub={s ? `phase: ${s.phase}` : undefined}
+        explain={ex("ttft")}
+        live={s ? substituted("ttft", s, summary) : undefined}
       />
     </div>
   );

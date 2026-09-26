@@ -65,8 +65,8 @@ SUSTAINED_GPU = UseCase(
                 "This laptop will live on the adapter, so set 'Primarily "
                 "AC Use' in Dell Power Manager / MyDell: the pack holds "
                 "below 100% and ages slower. Before travel, switch back — "
-                "ExpressCharge reaches about 80% in an hour with the lid "
-                "closed, and ExpressCharge Boost does 0→35% in roughly "
+                "Dell rates ExpressCharge at about 80% in an hour with the "
+                "computer off, and ExpressCharge Boost at 0→35% in roughly "
                 "20 minutes."
             ),
             region_ids=["battery", "charger"],
@@ -206,8 +206,8 @@ NOT_CHARGING = UseCase(
             title="Run the pre-boot diagnostics",
             body=(
                 "F12 at the Alienware logo → Diagnostics runs ePSA, which "
-                "exercises the adapter, the battery (M-BIST, the battery's "
-                "built-in self test), and the board below the OS — so a "
+                "exercises the adapter, the battery, and the board below "
+                "the OS — so a "
                 "clean pass points the finger at software, and a failure "
                 "gives Dell support the exact error to dispatch parts "
                 "against. If the machine took a deep discharge on a weak "

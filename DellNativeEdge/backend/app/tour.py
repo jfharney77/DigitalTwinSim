@@ -82,28 +82,32 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "This map is one company's edge estate: small computers that "
                     "live out where the work happens, at a shop, a factory line, an "
                     "electrical substation, a garage at a race track. On the left "
-                    "are four sites, drawn identical on purpose, because an estate "
-                    "is one building block repeated. None of these places has "
-                    "anyone from IT. A sealed crate has just arrived at each one, "
-                    "holding a computer exactly as Dell's factory built it, with "
+                    "is one of those sites, with the four devices it is about to "
+                    "receive, drawn identical on purpose, because an estate is one "
+                    "building block repeated hundreds of times. The site has "
+                    "nobody from IT. A sealed crate has just arrived, holding four "
+                    "computers exactly as Dell's factory built them, each with "
                     "its identity built in and nothing set up for this site. Watch "
                     "the operator actions counter, which counts things a person "
-                    "has to do. It reads zero now."
+                    "at the site has to do. It reads zero now."
                 ),
                 standard=(
                     "This is Dell NativeEdge, edge operations software, drawn as a "
                     "map: the estate on the left, the control side on the right. "
-                    "Four identical edge sites stand for hundreds, a branch, a "
-                    "factory line, a substation, a trackside garage, and none of "
-                    "them has IT staff. A sealed crate has arrived at each, holding "
-                    "an edge device exactly as Dell's factory built it: signed "
+                    "The four identical devices on the left are one site's "
+                    "delivery, and the site stands for hundreds like it: a branch, "
+                    "a factory line, a substation, a trackside garage, none with "
+                    "IT staff. A sealed crate has arrived, holding four edge "
+                    "devices exactly as Dell's factory built them: signed "
                     "firmware, an identity burned in at manufacture, nothing "
-                    "configured for this site. Operator actions reads zero."
+                    "configured for this site. Operator actions, the count of "
+                    "on-site human acts, reads zero."
                 ),
                 expert=(
-                    "NativeEdge estate map: four identical sites left, control "
-                    "plane right. Crated devices, factory identity, signed "
-                    "firmware, unconfigured. No site IT. operatorActions = 0."
+                    "NativeEdge map: one site's four identical devices left, "
+                    "control plane right. Crated, TPM-held Device Attestation Key "
+                    "(DAK), signed firmware, unconfigured. No site IT. On-site "
+                    "acts: zero."
                 ),
             ),
             camera=whole_map(anatomy),
@@ -119,10 +123,14 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                 novice=(
                     "This is the most important moment in the tour. Someone at the "
                     "site, a shop manager whose job is not computers, follows a "
-                    "one-line instruction: plug in the power lead and the network "
-                    "cable. The operator actions counter goes from zero to one, and "
-                    "that is the last time it ever moves, because this is the last "
-                    "thing any person does in the whole story. Nobody connects a "
+                    "one-line instruction: plug each of the four devices into "
+                    "power and the network. The operator actions counter goes from "
+                    "zero to one. It counts that one visit, not the number of "
+                    "cables, and bringing the site up never moves it again, because "
+                    "this is the last thing anyone at the site has to do. People "
+                    "at head office did their part earlier, once for every site: "
+                    "they loaded Dell's digital receipts for these devices and "
+                    "wrote the plan for what the site runs. Nobody connects a "
                     "laptop, types a password or logs in. Instead the device starts "
                     "up and reaches out across the wide-area network, the WAN, "
                     "toward the central Orchestrator, the software that runs the "
@@ -132,10 +140,13 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "that is the only version that works at hundreds of sites."
                 ),
                 standard=(
-                    "The whole idea in one step. Someone on site plugs in power "
-                    "and the network cable, and the operator-actions counter ticks from "
-                    "zero to one. It never moves again: this is the last thing any "
-                    "human does. The device boots the firmware Dell signed, finds "
+                    "The whole idea in one step. Someone on site plugs the four "
+                    "devices into power and the network, and the "
+                    "operator-actions counter ticks from "
+                    "zero to one. That visit is one on-site act, and onboarding "
+                    "never adds another. The human effort moved to the centre, "
+                    "done once for the estate: ownership vouchers loaded into the "
+                    "Orchestrator, the blueprint authored. Each device boots the firmware Dell signed, finds "
                     "the WAN (wide-area network), and reaches out to the "
                     "Orchestrator. Nothing is pushed at it, no laptop is attached, "
                     "nobody logs in locally. The device asks to be claimed instead "
@@ -143,10 +154,10 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "survives multiplication by hundreds of sites."
                 ),
                 expert=(
-                    "The only human action: power + network cable; "
-                    "operatorActions 0 -> 1, frozen thereafter. Device boots "
-                    "signed firmware, dials out to the Orchestrator. No local "
-                    "login, no push."
+                    "The only on-site act: power and network to four devices, "
+                    "counted once. Vouchers and blueprint are central, prior, "
+                    "uncounted. Each device boots its signed factory OS and dials "
+                    "out under FDO (FIDO Device Onboard). No local login, no push."
                 ),
             ),
             camera=frame(*_ENDPOINTS, "network", pad=2.0),
@@ -183,9 +194,10 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "machine joining politely."
                 ),
                 expert=(
-                    "Attestation, max cycleCost: factory identity plus measured "
-                    "boot chain verified against manufacture. Nothing delivered "
-                    "before trust. Cf. iDRAC root of trust."
+                    "Attestation, the longest stage: TPM-signed measured boot "
+                    "checked against Dell's signed references, ownership voucher "
+                    "chain checked to manufacture. Nothing delivered before the "
+                    "verdict. Cf. iDRAC root of trust."
                 ),
             ),
             # Close on the gate: the WAN the proof travels over, the
@@ -209,8 +221,8 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "big block in the middle, now claims the devices into the "
                     "estate. They appear on its list, tied to this site. The "
                     "endpoints online counter jumps from zero to four in one step, "
-                    "because a whole site is claimed together, not one box at a "
-                    "time. Notice two things. The Orchestrator is not in that "
+                    "because a site's devices are claimed together, not one box at "
+                    "a time. Notice two things. The Orchestrator is not in that "
                     "count, because it does the claiming and is never claimed. And "
                     "operator actions still reads one: the machines did this "
                     "between themselves."
@@ -220,20 +232,20 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "the end and never revoked. The NativeEdge Orchestrator, the "
                     "biggest block because one control plane is the product, "
                     "claims the devices into inventory, bound to this site. "
-                    "Endpoints online snaps from zero to four in one step: a site "
-                    "is claimed as a set. The Orchestrator is not in that count, "
+                    "Endpoints online snaps from zero to four in one step: a site's "
+                    "devices are claimed as a set. The Orchestrator is not in that count, "
                     "since it is the claimer and never the claimed, and operator "
                     "actions still reads one."
                 ),
                 expert=(
-                    "Trust established, monotone. Orchestrator claims the site; "
-                    "endpointsOnline 0 -> 4 atomically, Orchestrator excluded. "
-                    "operatorActions still 1."
+                    "Trust established, never revoked. The voucher-named owner "
+                    "claims the site's four devices in one step: online 0 to 4, "
+                    "Orchestrator never counted. On-site acts still one."
                 ),
             ),
-            # The whole map: the four sites being counted and the Orchestrator
+            # The whole map: the four devices being counted and the Orchestrator
             # counting them both run nearly the map's full height, so any
-            # tighter box sliced the sites through their names.
+            # tighter box sliced the devices through their names.
             camera=whole_map(anatomy),
             region_ids=[*_ENDPOINTS, "network", "identity", "orchestrator"],
             layer_reveal=_GATE,
@@ -366,8 +378,8 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "twin picks up the story. Read the counters one last time: "
                     "four endpoints online, trust never taken back, and operator "
                     "actions exactly one. In this illustrative timeline it took "
-                    "about thirteen minutes, and a shop manager plugged in two "
-                    "cables and went back to work."
+                    "about thirteen minutes, and a shop manager plugged in four "
+                    "devices and went back to work."
                 ),
                 standard=(
                     "Managed: the whole platform is lit, because managed means the "
@@ -375,13 +387,13 @@ def build_tour(anatomy: PlatformMap) -> Tour:
                     "endpoint, the FortZero twin's argument at the edge; telemetry "
                     "streams to observability, where the CloudIQ twin takes over. "
                     "Four endpoints online, trust never revoked, operator actions "
-                    "exactly one, about thirteen minutes on this illustrative "
+                    "exactly one on-site act, about thirteen minutes on this illustrative "
                     "timeline. The Dell Pro Max Plus twin is one endpoint this "
                     "estate could hold."
                 ),
                 expert=(
                     "Managed: full platform lit. Zero Trust enforced, telemetry to "
-                    "observability. 4 online, trust held, operatorActions = 1, "
+                    "observability. Four online, trust held, one on-site act, "
                     "~13 min (illustrative)."
                 ),
             ),

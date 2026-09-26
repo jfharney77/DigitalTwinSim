@@ -49,6 +49,40 @@ def validate(scenario: Scenario) -> list[Validation]:
             source="physics_specs/07",
         ))
 
+    # Rule 2b — the workload names an engine this build does not carry.
+    # The engine falls back (NPU → GPU → CPU) and the readouts keep their
+    # labels, so without this the reader records a CPU result as an NPU
+    # one. Warn, don't block: the fallback run is still a valid run.
+    all_workloads = [scenario.workload] + [
+        e.workload for e in scenario.events
+        if e.action == "set-workload" and e.workload is not None
+    ]
+    missing: list[str] = []
+    if any(w.inference and w.npu_pct > 0 for w in all_workloads) and not cfg.npu:
+        missing.append("NPU")
+    if any(w.inference and w.gpu_pct > 0 for w in all_workloads) and cfg.gpu_tgp_w <= 0:
+        missing.append("GPU")
+    if missing:
+        named = " and no ".join(missing)
+        out.append(Validation(
+            rule_id="engine-fitted", level="warning",
+            message=(
+                f"This build has no {named}, so an inference workload that "
+                "asks for it runs on the next engine down (NPU → GPU → "
+                "CPU). The tokens/s and tokens/joule readouts then describe "
+                "that engine, not the one the workload is named after — the "
+                "instrument says which. Fit the card in the build panel to "
+                "compare engines."
+            ),
+            source="engine.py fallback order (physics_specs/07)",
+        ))
+    else:
+        out.append(Validation(
+            rule_id="engine-fitted", level="ok",
+            message="Every selected workload's engine is fitted to this build.",
+            source="physics_specs/07",
+        ))
+
     # Rule 3 — undersized charger: warn, then let the sim demonstrate it.
     if laptop:
         full_draw = (
@@ -84,15 +118,36 @@ def validate(scenario: Scenario) -> list[Validation]:
     if laptop:
         budget = thermal_budget_w(cfg, Environment(perf_mode="balanced"))
         demand = cfg.cpu_pl1_w + cfg.gpu_tgp_w + (C("npu_max_w") if cfg.npu else 0)
-        if demand > budget:
+        # An inference run loads one engine at a time, so the combined
+        # limit cannot bind; warning about it there is noise.
+        workloads = [scenario.workload] + [
+            e.workload for e in scenario.events
+            if e.action == "set-workload" and e.workload is not None
+        ]
+        one_engine_at_a_time = all(w.inference for w in workloads)
+        if demand > budget and one_engine_at_a_time:
+            out.append(Validation(
+                rule_id="budget", level="ok",
+                message=(
+                    f"This build's CPU and GPU flat out together would ask "
+                    f"for ≈ {demand:.0f} W of cooling against the ≈ "
+                    f"{budget:.0f} W the chassis can shed. An inference "
+                    "run loads one engine at a time, so that limit does "
+                    "not come into play here."
+                ),
+                source="estimate — shared heat-pipe budget, spec 07",
+            ))
+        elif demand > budget:
             out.append(Validation(
                 rule_id="budget", level="warning",
                 message=(
-                    f"Combined sustained demand ≈ {demand:.0f} W exceeds "
-                    f"the chassis' ≈ {budget:.0f} W dissipation budget: "
-                    "max CPU and max GPU at once is not a thing this "
-                    "chassis can do. The allocator will favor the GPU "
-                    "and clip the CPU — watch the two bars fight."
+                    f"CPU and GPU flat out together ask for ≈ {demand:.0f} W "
+                    f"of cooling; the chassis can shed ≈ {budget:.0f} W "
+                    "(its shared thermal budget). Under a workload that "
+                    "loads both, the machine gives the GPU what it asks "
+                    "for and cuts the CPU's power to fit. Watch the CPU "
+                    "and GPU watts when the limit state reads "
+                    "budget-limited."
                 ),
                 source="estimate — shared heat-pipe budget, spec 07",
             ))

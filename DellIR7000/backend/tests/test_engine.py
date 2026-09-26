@@ -100,3 +100,15 @@ def test_bays_heat_in_lockstep():
             assert lit == {f"coldplate-{b}" for b in BAYS}, (
                 f"step {state.step}: bays {lit} lit without their twins"
             )
+
+
+def test_flow_tracks_load_so_the_loop_rise_holds_steady():
+    """The prose says the CDU speeds its pumps to hold the supply-return
+    temperature difference steady. Both heat paths reject into the one rack
+    loop, so that claim means load / flow is constant once load exists: a
+    reader dividing the two numbers on the panel must get the same answer
+    (within 2%) on every loaded step."""
+    trace = simulate()
+    ratios = [s.it_load_watts / s.flow_lpm for s in trace if s.it_load_watts]
+    assert len(ratios) >= 3
+    assert max(ratios) / min(ratios) < 1.02, ratios

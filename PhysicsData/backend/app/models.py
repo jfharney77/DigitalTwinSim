@@ -110,7 +110,8 @@ class SimState(CamelModel):
     # Pipeline.
     stage_rates_tbh: dict[str, float]
     stage_backlogs_tb: dict[str, float]
-    bottleneck: str
+    bottleneck: str          # slowest stage (argmin of the rates)
+    limiter: str             # what set this tick's throughput: a stage, or 'arrival'
     throughput_tbh: float
     freshness_lag_h: float
     gpu_idle_due_to_data_pct: float

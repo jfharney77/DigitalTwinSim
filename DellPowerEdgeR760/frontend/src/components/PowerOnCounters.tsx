@@ -1,4 +1,5 @@
 import { MetricReadout } from "@twinsim/twin-ui";
+import { useLevel } from "../level";
 import type { PowerOnState, PowerPhase } from "../types";
 
 const PHASE_LABEL: Record<PowerPhase, string> = {
@@ -9,6 +10,13 @@ const PHASE_LABEL: Record<PowerPhase, string> = {
   post: "POST",
   boot: "boot device",
   os: "operating system",
+};
+
+// Every other phase reads as plain English already; POST is the one bare
+// acronym, so a reader at levels 1–2 gets it spelled out. The trace prose is
+// leveled on the backend, but this label is the frontend's own string.
+const PHASE_LABEL_NOVICE: Partial<Record<PowerPhase, string>> = {
+  post: "start-up checks (POST)",
 };
 
 /**
@@ -22,15 +30,27 @@ export function PowerOnCounters({
   state,
   stepIndex,
   stepCount,
+  previousElapsedSeconds,
+  longest,
 }: {
   state: PowerOnState | null;
   stepIndex: number;
   stepCount: number;
+  /** The previous step's stamp; stamps mark the END of a step. */
+  previousElapsedSeconds: number;
+  /** True on the single longest step of the trace — labelled, as iDRAC's is. */
+  longest: boolean;
 }) {
+  const level = useLevel();
+  const took = state ? state.elapsedSeconds - previousElapsedSeconds : 0;
+  const phaseLabel = state
+    ? (level <= 2 ? PHASE_LABEL_NOVICE[state.phase] : undefined) ??
+      PHASE_LABEL[state.phase]
+    : "—";
   return (
     <MetricReadout
       metrics={[
-        { label: "phase", value: state ? PHASE_LABEL[state.phase] : "—" },
+        { label: "phase", value: phaseLabel },
         {
           label: "step",
           value: stepCount > 0 ? `${stepIndex + 1} / ${stepCount}` : "—",
@@ -38,7 +58,11 @@ export function PowerOnCounters({
         { label: "power draw", value: state ? `${state.powerWatts} W` : "0 W" },
         { label: "fan speed", value: state ? `${state.fanPercent}%` : "0%" },
         {
-          label: "elapsed (typical)",
+          label: "this step takes (typical)",
+          value: `${took} s${longest ? " · the longest step" : ""}`,
+        },
+        {
+          label: "elapsed at end of step",
           value: state ? `t+${state.elapsedSeconds}s` : "t+0s",
         },
       ]}
@@ -46,7 +70,10 @@ export function PowerOnCounters({
         <>
           Watts and timings are typical values for a mid-range dual-socket
           configuration, meant to show shape and order of magnitude — not a
-          measurement of your box.
+          measurement of your box. The clock is read when a step finishes, so
+          a step's duration is its stamp minus the one before. Run lingers
+          longer on the longer steps, ranked by that duration rather than
+          scaled to it.
         </>
       }
     />

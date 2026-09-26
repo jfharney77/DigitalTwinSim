@@ -324,20 +324,49 @@ export function App() {
         <>
           <div className="an-hero">
             <h2>There is no controller</h2>
-            <p>
-              PowerStore and PowerMax, both twinned elsewhere in this repo,
-              are built around controllers that every byte passes through —
-              and most of their engineering goes into making that
-              centrality survivable. PowerFlex removes the centre instead.
-              Servers contribute local drives, volumes are chopped into
-              chunks scattered across all of them, and clients read
-              straight from the nodes holding what they want. Play the
-              trace to the failure step and watch what a lost server
-              actually costs: a dip proportional to the missing hardware,
-              no failover pause, and a rebuild in which <em>every</em>
-              {" "}surviving node reconstructs a sliver at once. Recovery
-              gets faster as the pool grows.
-            </p>
+            {level <= 2 ? (
+              <p>
+                Most shared storage is built around controllers: special
+                computers that every piece of data has to pass through.
+                PowerStore and PowerMax, shown elsewhere in this collection,
+                work that way, and much of their engineering goes into
+                surviving a controller failure by switching work to a
+                partner, called a failover, which applications feel as a
+                pause. PowerFlex removes the centre instead. Ordinary
+                servers contribute their own drives, the data is cut into
+                small pieces called chunks and spread across all of them,
+                and the computers using the storage read straight from the
+                servers holding what they want. Play the trace to the
+                failure step and watch what a lost server costs: speed falls
+                by that server's share, one sixth, nothing switches over to
+                a partner, and <em>every</em> surviving server rebuilds a
+                small part of what was lost at the same time. Recovery gets
+                faster as the pool grows.
+              </p>
+            ) : level >= 4 ? (
+              <p>
+                No controller tier. Chunks are mirrored across every node
+                and clients address the nodes directly. A node loss costs
+                1/n of throughput with no controller failover, and the
+                rebuild is many-to-many across <em>every</em> survivor, so
+                rebuild time falls as the pool grows.
+              </p>
+            ) : (
+              <p>
+                PowerStore and PowerMax, both twinned elsewhere here, are
+                built around controllers that every byte passes through,
+                and most of their engineering goes into making that
+                centrality survivable. PowerFlex removes the centre instead.
+                Servers contribute local drives, volumes are chopped into
+                chunks scattered across all of them, and clients read
+                straight from the nodes holding what they want. Play the
+                trace to the failure step and watch what a lost server
+                costs: a dip of one sixth, the missing node's share, no
+                controller failover, and a rebuild in which <em>every</em>
+                {" "}surviving node reconstructs a sliver at once. Recovery
+                gets faster as the pool grows.
+              </p>
+            )}
             <button
               className="primary pool-tour-link"
               onClick={() => setPage("tour")}
@@ -363,15 +392,43 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Two moments repay a pause. At <em>steady I/O</em>, notice
-                the metadata manager is dark — it handed out the chunk map
-                and stepped out of the way, so no request passes through
-                it. At <em>rebuild</em>, a second mesh appears: every
-                surviving node linked to every other, each reconstructing a
-                fifth of what was lost. In a controller array that mesh
-                would be a single line. Click a block to pin what it is;
-                the full tour lives under Inside the pool.
+                {level <= 2 ? (
+                  <>
+                    Highlighted blocks are the parts doing work at this
+                    step. Two moments repay a pause. At <em>steady I/O</em>
+                    {" "}(I/O is input/output: clients reading and writing),
+                    the metadata manager is dark. It gave each client the
+                    chunk map, the list of which server holds which piece,
+                    and stepped out of the way, so no request passes through
+                    it. At <em>rebuild</em>, a web of lines appears between
+                    the servers: every survivor linked to every other, each
+                    rebuilding a fifth of what was lost. In a controller
+                    array, storage built around one pair of controllers, all
+                    of that repair traffic would run through the one pair.
+                    Click a block to pin what it is; the full tour lives
+                    under Inside the pool.
+                  </>
+                ) : level >= 4 ? (
+                  <>
+                    Lit blocks are active at this step. The metadata manager
+                    is dark at <em>steady I/O</em>; the node-to-node mesh
+                    appears only during <em>rebuild</em>. Click a block to
+                    pin it.
+                  </>
+                ) : (
+                  <>
+                    Highlighted blocks are the parts doing work at this
+                    step. Two moments repay a pause. At <em>steady I/O</em>,
+                    notice the metadata manager is dark: it handed out the
+                    chunk map and stepped out of the way, so no request
+                    passes through it. At <em>rebuild</em>, a second mesh
+                    appears: every surviving node linked to every other,
+                    each reconstructing a fifth of what was lost. In a
+                    controller array all of that traffic would run through
+                    one controller pair. Click a block to pin what it is;
+                    the full tour lives under Inside the pool.
+                  </>
+                )}
               </div>
             </div>
           </div>

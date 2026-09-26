@@ -142,7 +142,7 @@ def test_carbon_closure():
 
 def test_monitor_use_share_beats_laptop_use_share():
     """The embodied-carbon surprise: at desk duty the monitor's use-phase
-    share materially exceeds a business laptop's ~20%."""
+    share materially exceeds a business laptop's ~12% (Latitude E7440 PCF)."""
     _, _, summary = run(Scenario(config=EDGE, lifecycle=Lifecycle()))
     assert summary.carbon.use_pct > C("laptop_use_pct")
 

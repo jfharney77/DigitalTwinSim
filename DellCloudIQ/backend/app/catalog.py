@@ -45,7 +45,8 @@ CATALOG: list[CatalogCategory] = [
                 summary="PowerEdge servers and VxRail hyperconverged clusters.",
                 details=(
                     "PowerEdge telemetry is collected through the OpenManage "
-                    "Enterprise (OME) CloudIQ plugin — OME already inventories "
+                    "Enterprise (OME) AIOps plugin, formerly the CloudIQ "
+                    "plugin — OME already inventories "
                     "and manages the servers, and the plugin forwards the "
                     "signals CloudIQ needs. VxRail reports cluster health "
                     "directly. Bringing servers into the same pane is what "
@@ -59,9 +60,9 @@ CATALOG: list[CatalogCategory] = [
                 summary="PowerSwitch switches and Connectrix SAN directors.",
                 details=(
                     "Collected through the on-site AIOps Collector — a small "
-                    "read-only virtual machine that reaches switches over a "
-                    "non-privileged REST API and Connectrix/VMware through "
-                    "their APIs. Network health in the same tool means a path "
+                    "read-only virtual machine that reaches switches and "
+                    "Connectrix with a non-privileged account and VMware "
+                    "vCenter with read-only privileges. Network health in the same tool means a path "
                     "problem and a storage problem can be seen together instead "
                     "of in two consoles."
                 ),
@@ -95,11 +96,12 @@ CATALOG: list[CatalogCategory] = [
         id="connectivity",
         name="Connectivity",
         blurb=(
-            "How telemetry leaves your data center. Every path is outbound and "
-            "one-way to Dell's cloud — nothing installs on a desktop, and the "
-            "cloud cannot reach back into your network."
+            "How telemetry leaves your data center. Every connection is opened "
+            "outbound from your side and AIOps telemetry travels one way to "
+            "Dell's cloud — nothing installs on a desktop, and the cloud cannot "
+            "open a connection into your network."
         ),
-        limits="Outbound TLS only; one-directional by design",
+        limits="Outbound-initiated TLS only; telemetry is one-way",
         region_ids=["gateway"],
         options=[
             CatalogOption(
@@ -107,12 +109,16 @@ CATALOG: list[CatalogCategory] = [
                 name="Secure Connect Gateway (SCG)",
                 summary="Dell's support-connectivity gateway — the usual front door.",
                 details=(
-                    "A hardened appliance or virtual gateway that batches "
+                    "Connectivity software — delivered as a virtual appliance, "
+                    "a standalone application, or a container — that batches "
                     "telemetry from many systems and opens a single encrypted "
-                    "(TLS) outbound connection to Dell on port 443. The "
-                    "successor to Secure Remote Services (SRS); it also carries "
-                    "SupportAssist automated support cases. One gateway serves "
-                    "a whole site."
+                    "(mutual TLS) outbound connection to Dell on port 443. The "
+                    "successor to SupportAssist Enterprise and Secure Remote "
+                    "Services (SRS); it also carries automated support cases "
+                    "and, if you allow it, Dell remote-support sessions over "
+                    "the same outbound tunnel, auditable and restrictable "
+                    "with Dell's Policy Manager. One gateway can serve a whole "
+                    "site."
                 ),
             ),
             CatalogOption(
@@ -282,20 +288,25 @@ CATALOG: list[CatalogCategory] = [
                     "CloudIQ compares each system's configuration to a set of "
                     "security evaluation criteria — encryption enabled, secure "
                     "protocols, hardening settings — and raises an alert when a "
-                    "system drifts out of compliance. Dell claims automating "
+                    "system drifts out of compliance, alongside Dell security "
+                    "advisories that apply to it. Dell claims automating "
                     "these checks across 1,000 systems takes about three "
-                    "minutes versus days by hand."
+                    "minutes versus days by hand (a Dell white paper on "
+                    "PowerEdge; actual results vary)."
                 ),
             ),
             CatalogOption(
                 id="cyber-ransomware",
-                name="Ransomware & threat indicators",
-                summary="Watches for signals consistent with ransomware and active threats.",
+                name="Ransomware incident detection",
+                summary="Watches telemetry for signals consistent with a ransomware incident.",
                 details=(
                     "Beyond static configuration, the cybersecurity engine "
-                    "looks for behavioral risk indicators — patterns "
-                    "consistent with ransomware activity — and surfaces them "
-                    "as high-priority findings. It is a last line inside the "
+                    "looks for behavioral risk indicators — patterns in "
+                    "storage telemetry consistent with ransomware activity — "
+                    "and surfaces them as high-priority findings. Dell's "
+                    "support documentation lists the capability as generally "
+                    "available for PowerMax, with other platforms following; "
+                    "coverage depends on the system. It is a last line inside the "
                     "infrastructure layer, complementing, not replacing, "
                     "endpoint and network security."
                 ),
@@ -335,7 +346,7 @@ CATALOG: list[CatalogCategory] = [
             "language and get an answer grounded in both Dell's knowledge and "
             "your systems' real state."
         ),
-        limits="Trained on 133,000+ Dell knowledge resources",
+        limits="Dell's figure: trained on 133,000+ Knowledge Base articles and manuals",
         region_ids=["assistant"],
         options=[
             CatalogOption(
@@ -355,7 +366,7 @@ CATALOG: list[CatalogCategory] = [
                 name="Infrastructure Context Awareness",
                 summary="Answers are grounded in your connected environment's actual state.",
                 details=(
-                    "The 2025 enhancement that makes the assistant more than a "
+                    "The enhancement Dell announced in October 2025 that makes the assistant more than a "
                     "documentation search: it can reason over your systems' "
                     "current health scores, analytics, and alerts, so a "
                     "question about 'my PowerStore in the DR site' is answered "
@@ -419,7 +430,7 @@ CATALOG: list[CatalogCategory] = [
             "nothing extra — it is included with the support agreements most "
             "Dell infrastructure already carries."
         ),
-        limits="Included with ProSupport, ProSupport Plus, ProSupport One",
+        limits="Included with ProSupport, ProSupport Plus (Infrastructure), ProSupport One for Data Center",
         region_ids=["insight"],
         options=[
             CatalogOption(
@@ -427,8 +438,9 @@ CATALOG: list[CatalogCategory] = [
                 name="Included with ProSupport & above",
                 summary="No separate purchase — bundled with the support contract.",
                 details=(
-                    "CloudIQ / Dell AIOps is included at no additional cost "
-                    "with ProSupport, ProSupport Plus, and ProSupport One "
+                    "Dell states that CloudIQ / Dell AIOps is included at no "
+                    "additional cost with ProSupport and ProSupport Plus for "
+                    "Infrastructure and ProSupport One for Data Center "
                     "service agreements. You sign in with the Dell Support "
                     "Account tied to those contracts; there is no license to "
                     "buy and nothing to size."

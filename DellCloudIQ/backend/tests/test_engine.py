@@ -81,3 +81,28 @@ def test_telemetry_flows_one_way():
     first_transmit = next(i for i, s in enumerate(trace) if s.phase == "transmit")
     first_surface = next(i for i, s in enumerate(trace) if s.phase == "surface")
     assert first_transmit < first_surface
+
+
+def test_the_score_recovers_at_a_later_collection_not_at_the_ticket():
+    """A notification is not a fix. The recovery sits a realistic collection
+    interval after the recommendation (illustrative, but never seconds), and
+    the step says in words that the score is still at its low when it fires."""
+    trace = simulate()
+    low = min(s.health_score for s in trace)
+    final, before = trace[-1], trace[-2]
+    assert before.health_score == low
+    assert final.elapsed_seconds - before.elapsed_seconds >= 15 * 60
+    assert final.data_points > before.data_points, "no later collection arrived"
+    assert str(low) in final.description and str(final.health_score) in final.description
+    assert "collection" in final.description
+
+
+def test_the_recovery_step_shows_the_second_cycle_it_describes():
+    """The step's words say a later collection recomputed the score, so the
+    diagram has to light that collection: sources, gateway, ingest and the ML
+    engine, not only the outbound edge. A reader who trusts the picture over
+    the paragraph must reach the same answer."""
+    final = simulate()[-1]
+    lit = set(final.active_regions)
+    assert {"gateway", "ingest", "analytics", "action"} <= lit
+    assert any(r.startswith("src-") for r in lit), "nothing is collecting"

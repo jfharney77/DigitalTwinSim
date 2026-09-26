@@ -32,8 +32,8 @@ CONSTANTS: dict[str, Constant] = {
         estimated=True, blurb="Front-end 8K IOPS ceiling per PowerStore appliance.",
     ),
     "iops_per_unit_powermax_k": Constant(
-        value=900, unit="thousand IOPS", source="estimate — brick-class ceiling",
-        estimated=True, blurb="Per-brick IOPS ceiling, PowerMax.",
+        value=900, unit="thousand IOPS", source="estimate — node-pair-class ceiling",
+        estimated=True, blurb="Per-node-pair IOPS ceiling, PowerMax 2500/8500.",
     ),
     "iops_per_node_scaleout_k": Constant(
         value=80, unit="thousand IOPS", source="estimate", estimated=True,
@@ -117,7 +117,14 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "rebuild_gbps_per_node_powerflex": Constant(
         value=2.0, unit="GB/s per surviving node",
-        source="estimate — every node rebuilds a slice at once", estimated=True,
+        source=(
+            "estimate — every node rebuilds a slice at once; Dell's "
+            "published PowerFlex rebuild tests show time falling as nodes "
+            "are added but state no GB/s figure (https://infohub."
+            "delltechnologies.com/en-us/p/grace-under-pressure-powerflex-"
+            "rebuild-superpowers/)"
+        ),
+        estimated=True,
         blurb="PowerFlex's massively parallel rebuild rate per node.",
     ),
     "rebuild_latency_penalty": Constant(
@@ -126,8 +133,14 @@ CONSTANTS: dict[str, Constant] = {
     ),
     # --- Replication --------------------------------------------------------
     "srdf_ms_per_km": Constant(
-        value=0.01, unit="ms/km one-way",
-        source="speed of light in fiber ≈ 200 km/ms — physics", estimated=False,
+        value=0.005, unit="ms/km one-way",
+        source=(
+            "speed of light in fiber ≈ 200 km/ms → ~5 µs/km one way, "
+            "~1 ms round trip per 100 km — physics (ITU-T G.652 group "
+            "index ≈ 1.47; https://www.m2optics.com/blog/bid/70587/"
+            "calculating-optical-fiber-latency)"
+        ),
+        estimated=False,
         blurb="One-way light latency per km of fiber (×2 for the round trip).",
     ),
     "async_link_gbs": Constant(

@@ -55,6 +55,21 @@
       "visible": [".scenario-narration", ".scenario-list button.active:text-is('The mountain site')"],
       "text": ["Altitude 2500 m"],
       "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [".lab-panel", ".lab-list button"],
+      "text": ["Six months of dust, one hot afternoon", "Ride the sag on a 7 A breaker", "The worst afternoon at the cell site"]
+    },
+    {
+      "hash": "#lab=dust-and-heat",
+      "name": "lab-dust-and-heat",
+      "svg": true,
+      "visible": [".lab-goal", ".lab-run", ".lab-list button.active"],
+      "text": ["Run and grade", "No grade yet"],
+      "play": { "click": ".lab-run", "watch": ".lab-results", "times": 1 }
     }
   ]
 }

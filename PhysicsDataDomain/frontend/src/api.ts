@@ -1,3 +1,4 @@
+import { apiFetch } from "@twinsim/twin-ui";
 import { getLevel } from "./level";
 import type {
   Appliance,
@@ -18,37 +19,37 @@ function url(path: string): string {
 }
 
 export async function fetchAnatomy(): Promise<PipelineMap> {
-  const r = await fetch(url("/anatomy"));
+  const r = await apiFetch(url("/anatomy"));
   if (!r.ok) throw new Error(`anatomy ${r.status}`);
   return r.json();
 }
 
 export async function fetchAppliances(): Promise<Appliance[]> {
-  const r = await fetch(`${BASE}/appliances`);
+  const r = await apiFetch(`${BASE}/appliances`);
   if (!r.ok) throw new Error(`appliances ${r.status}`);
   return r.json();
 }
 
 export async function fetchDatasetPresets(): Promise<DatasetPreset[]> {
-  const r = await fetch(`${BASE}/presets/datasets`);
+  const r = await apiFetch(`${BASE}/presets/datasets`);
   if (!r.ok) throw new Error(`presets ${r.status}`);
   return r.json();
 }
 
 export async function fetchScenarios(): Promise<GuidedScenario[]> {
-  const r = await fetch(url("/scenarios"));
+  const r = await apiFetch(url("/scenarios"));
   if (!r.ok) throw new Error(`scenarios ${r.status}`);
   return r.json();
 }
 
 export async function fetchExplain(): Promise<Explain[]> {
-  const r = await fetch(url("/explain"));
+  const r = await apiFetch(url("/explain"));
   if (!r.ok) throw new Error(`explain ${r.status}`);
   return r.json();
 }
 
 export async function simulate(scenario: Scenario): Promise<SimResponse> {
-  const r = await fetch(`${BASE}/simulate`, {
+  const r = await apiFetch(`${BASE}/simulate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(scenario),

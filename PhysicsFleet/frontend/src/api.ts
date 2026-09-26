@@ -1,8 +1,10 @@
+import { apiFetch } from "@twinsim/twin-ui";
 import { getLevel } from "./level";
 import type {
   ConfigPreset,
   Explain,
   GuidedScenario,
+  Intro,
   FleetMap,
   Scenario,
   SimResponse,
@@ -16,37 +18,43 @@ function url(path: string, extra = ""): string {
 }
 
 export async function fetchAnatomy(product: string): Promise<FleetMap> {
-  const r = await fetch(url("/anatomy", `&product=${product}`));
+  const r = await apiFetch(url("/anatomy", `&product=${product}`));
   if (!r.ok) throw new Error(`anatomy ${r.status}`);
   return r.json();
 }
 
 export async function fetchConfigPresets(): Promise<ConfigPreset[]> {
-  const r = await fetch(`${BASE}/presets/configs`);
+  const r = await apiFetch(`${BASE}/presets/configs`);
   if (!r.ok) throw new Error(`presets ${r.status}`);
   return r.json();
 }
 
 export async function fetchWorkloadPresets(): Promise<WorkloadPreset[]> {
-  const r = await fetch(`${BASE}/presets/workloads`);
+  const r = await apiFetch(`${BASE}/presets/workloads`);
   if (!r.ok) throw new Error(`presets ${r.status}`);
   return r.json();
 }
 
 export async function fetchScenarios(): Promise<GuidedScenario[]> {
-  const r = await fetch(url("/scenarios"));
+  const r = await apiFetch(url("/scenarios"));
   if (!r.ok) throw new Error(`scenarios ${r.status}`);
   return r.json();
 }
 
+export async function fetchIntro(): Promise<Intro> {
+  const r = await apiFetch(url("/intro"));
+  if (!r.ok) throw new Error(`intro ${r.status}`);
+  return r.json();
+}
+
 export async function fetchExplain(): Promise<Explain[]> {
-  const r = await fetch(url("/explain"));
+  const r = await apiFetch(url("/explain"));
   if (!r.ok) throw new Error(`explain ${r.status}`);
   return r.json();
 }
 
 export async function simulate(scenario: Scenario): Promise<SimResponse> {
-  const r = await fetch(`${BASE}/simulate`, {
+  const r = await apiFetch(`${BASE}/simulate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(scenario),
@@ -68,7 +76,7 @@ export interface ProductMediaWire {
 }
 
 export async function fetchMedia(): Promise<Record<string, ProductMediaWire>> {
-  const r = await fetch(`${BASE}/media`);
+  const r = await apiFetch(`${BASE}/media`);
   if (!r.ok) throw new Error(`media ${r.status}`);
   return r.json();
 }

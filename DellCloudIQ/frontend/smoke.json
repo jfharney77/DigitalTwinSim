@@ -31,6 +31,43 @@
       ]
     },
     {
+      "hash": "#scenario=connected-no-data",
+      "name": "scenario-connected-no-data",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".scenario-picker"
+      ],
+      "text": [
+        "Connected, but no data arrives",
+        "minutes without data",
+        "no data"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#scenario=connected-no-data&phase=stale",
+      "name": "scenario-connected-no-data-stale",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".region-failed",
+        ".link-break"
+      ],
+      "text": [
+        "The portal lists the array as not sending data",
+        "listed: not sending data",
+        "What this failure is based on",
+        "upload refused at the company proxy"
+      ]
+    },
+    {
       "hash": "#architecture",
       "name": "architecture",
       "svg": true,

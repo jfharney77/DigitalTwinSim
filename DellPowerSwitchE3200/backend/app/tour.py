@@ -90,7 +90,7 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                 ),
                 expert=(
                     "E3200-ON, 1RU, top-down, front left: 48 RJ45 (24 SFP on the "
-                    "E3224F), 4 SFP+/SFP28, console/OOB. Rear: 2 PSUs, 4 fans, 2x 100G "
+                    "E3224F), 4 SFP+/SFP28, console/OOB. Rear: 2 PSUs, 3 fans, 2x 100G "
                     "QSFP28. AC off."
                 ),
             ),
@@ -143,29 +143,33 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             title="ONIE, the open part of E3200-ON",
             script=L(
                 novice=(
-                    "The computer now runs a small starter program called ONIE, "
-                    "the Open Network Install Environment. This is what the ON "
+                    "The computer now reaches its boot loader, the home of a "
+                    "small installer program called ONIE, the Open Network "
+                    "Install Environment. This is what the ON "
                     "in the name means: Open Networking. Many switches come with "
                     "one fixed operating system from the company that made them. "
-                    "This one boots ONIE first, and ONIE either starts the "
-                    "operating system already installed, or, on a brand-new "
-                    "switch, downloads one and installs it. So the same hardware "
-                    "can run different software."
+                    "This one ships with ONIE instead. On a brand-new switch, "
+                    "ONIE runs, downloads an operating system and installs it. "
+                    "After that, every start-up skips ONIE and goes straight to "
+                    "the installed system. So the same hardware can run "
+                    "different software."
                 ),
                 standard=(
-                    "The CPU runs ONIE, the Open Network Install Environment, "
-                    "and this is what the '-ON' (Open Networking) in the name "
-                    "means. Instead of a fixed vendor OS, the switch boots a "
-                    "small open installer that either launches the network OS "
-                    "already in flash or, on a factory-fresh unit, fetches and "
-                    "installs one over the network. It is the disaggregation "
+                    "The CPU reaches the boot loader, where ONIE, the Open "
+                    "Network Install Environment, lives, and this is what the "
+                    "'-ON' (Open Networking) in the name means. Instead of a "
+                    "fixed vendor OS, the switch ships with a small open "
+                    "installer. On a factory-fresh unit ONIE runs and fetches and "
+                    "installs a network OS over the network; once one is in "
+                    "flash, later boots bypass ONIE and start it directly. It is "
+                    "the disaggregation "
                     "layer that lets the same silicon run different operating "
                     "systems."
                 ),
                 expert=(
-                    "ONIE: open installer/bootloader. Launches the installed NOS "
-                    "or fetches one on a fresh unit. Hardware and OS "
-                    "disaggregated."
+                    "ONIE: open install environment. Fetches a NOS on a fresh "
+                    "unit; bypassed by GRUB once one is resident. Hardware and "
+                    "OS disaggregated."
                 ),
             ),
             camera=frame("cpu", pad=3.0),
@@ -179,7 +183,7 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             title="OS10 or SONiC",
             script=L(
                 novice=(
-                    "ONIE hands over to the switch's real operating system, "
+                    "The boot loader hands over to the switch's real operating system, "
                     "called the network operating system or NOS. Which one "
                     "depends on the model: Dell SmartFabric OS10 on the fiber "
                     "model, Enterprise SONiC on the two copper models. Both are "
@@ -191,7 +195,7 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "here for that reason."
                 ),
                 standard=(
-                    "ONIE hands off to the installed network operating system "
+                    "The boot loader starts the installed network operating system "
                     "(NOS): SmartFabric OS10 on the E3224F, Enterprise SONiC on "
                     "the E3248 models. A full Linux control plane boots, kernel "
                     "then switching stack and databases. It is the longest stage "

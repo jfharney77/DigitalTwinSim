@@ -213,14 +213,15 @@ def build_tour(anatomy: ServerAnatomy) -> Tour:
                     "HBM, at 900 GB/s per GPU on H100 and H200 boards. Its "
                     "placement is the traffic hierarchy drawn in space: GPUs on "
                     "its left, the eight scale-out network cards (NICs) at the "
-                    "rear on its right. It is "
-                    "the same part the XE9712 rack fills nine switch trays "
-                    "with; here it is a strip of chips on one board."
+                    "rear on its right. The "
+                    "XE9712 rack gives the same role to nine switch trays, "
+                    "built on a newer generation of the switch chip; here "
+                    "it is a strip of chips on one board."
                 ),
                 expert=(
                     "NVSwitch strip: all-to-all NVLink, 900 GB/s/GPU (H100/H200). Sits "
-                    "between the GPU field and the NICs. XE9712 puts the same "
-                    "silicon in nine trays."
+                    "between the GPU field and the NICs. XE9712 moves the same "
+                    "role, a generation newer, into nine switch trays."
                 ),
             ),
             # The upper half around the strip; the lower half mirrors it.
@@ -350,35 +351,53 @@ def build_tour(anatomy: ServerAnatomy) -> Tour:
         ),
         TourStep(
             id="one-nic-per-gpu",
-            title="One NIC per GPU, after the fuse",
+            title=L(
+                standard="One NIC per GPU, past the wall",
+                novice="One network card (NIC) per GPU, leading outside",
+            ),
             script=L(
                 novice=(
-                    "Only now does the box reach outward. At the back, eight "
-                    "network cards come online, one for each GPU, and connect "
-                    "to the switch at the top of the rack. Each GPU gets its "
+                    "Now the box reaches outward. At the back, eight network "
+                    "cards, called NICs, come online, one for each GPU, and "
+                    "connect to the switch at the top of the rack. That "
+                    "switch is the edge of the fabric, meaning the "
+                    "data-center network that joins thousands of servers. "
+                    "Each GPU gets its "
                     "own private road out, so it never waits in line behind "
-                    "the other seven. Remote GPUs can read and write its memory "
-                    "without bothering the host computer, a trick called RDMA, "
-                    "short for remote direct memory access. So inside the box, "
-                    "GPUs talk over NVLink; beyond it, they talk over Ethernet. "
-                    "Compare the XE9712 rack twin, which stretches NVLink "
-                    "across 72 GPUs; here, the SN6000 twin's network carries "
-                    "everything past eight."
+                    "the other seven. Watch the NICs-up counter climb to "
+                    "eight. That road out is much narrower than the wiring "
+                    "inside the box — leaving the box always costs speed, "
+                    "which is why the eight GPUs in here are joined so "
+                    "tightly in the first place. The tour shows this after "
+                    "the fuse to keep inside and outside apart; on a real "
+                    "server neither waits for the other. So inside the box, "
+                    "the GPUs talk over NVLink; beyond it, they talk over "
+                    "Ethernet, the same kind of networking the rest of the "
+                    "building uses."
                 ),
                 standard=(
-                    "Only after the fuse does the box reach outward. Eight "
+                    "Now the box reaches outward. Eight "
                     "ConnectX-class NICs, one dedicated to each GPU, train "
                     "400 GbE links to the leaf switch, and the NICs-up counter "
                     "reaches eight. Each GPU has a private on-ramp: remote GPUs "
                     "do RDMA (remote direct memory access) into its memory "
                     "without the host CPU and without queueing behind seven "
-                    "siblings. NVLink inside the box, Ethernet beyond it. The "
+                    "siblings. NVLink inside the box, Ethernet beyond it, and "
+                    "the units change with it: NVLink's 900 GB/s (H100 and "
+                    "H200 boards) is bytes, "
+                    "both directions summed, while 400 Gb/s is bits, about "
+                    "50 GB/s each way. Past the wall a GPU has roughly one "
+                    "ninth of what it has inside. The trace places this beat "
+                    "after the fuse to show that hierarchy, not because one "
+                    "gates the other; real NIC links train when the host "
+                    "loads their drivers. The "
                     "XE9712 moves that wall out to a 72-GPU rack; here the "
                     "SN6000 twin's fabric takes over at the sheet metal."
                 ),
                 expert=(
-                    "Fabric: 8 NICs, 1:1 with GPUs, 400 GbE each, RDMA. Only "
-                    "after the fuse. NVLink in-chassis, Ethernet out. Contrast "
+                    "Fabric: 8 NICs, 1:1 with GPUs, 400 GbE each, RDMA. "
+                    "100 GB/s bidir out vs 900 in (H100/H200), ~9:1. Order after the fuse "
+                    "is illustrative. NVLink in-chassis, Ethernet out. Contrast "
                     "XE9712's 72-GPU domain; SN6000 carries scale-out."
                 ),
             ),

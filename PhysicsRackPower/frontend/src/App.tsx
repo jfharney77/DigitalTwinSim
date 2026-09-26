@@ -7,11 +7,14 @@ import {
   simulate,
 } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { PhaseMeters } from "./components/PhaseMeters";
 import { RackView } from "./components/RackView";
 import { StripCharts } from "./components/StripCharts";
 import { UpsPanel } from "./components/UpsPanel";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -96,9 +99,17 @@ export function App() {
   const level = useLevel();
 
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   // Prose-bearing content refetches on level change.
@@ -110,6 +121,10 @@ export function App() {
         setExplains(ex);
       })
       .catch((e) => setError(String(e)));
+  }, [level]);
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
   }, [level]);
 
   useEffect(() => {
@@ -221,6 +236,49 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses. The
+  // start carries the lab's timed events (the outage, the surge).
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setEnvironment(lab.start.environment);
+    setEvents(lab.start.events);
+    setDurationS(lab.start.durationS);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const reset = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -242,6 +300,15 @@ export function App() {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -259,15 +326,38 @@ export function App() {
 
       <div className="an-hero">
         <h2>Three phases, one breaker rule, and a battery that fades</h2>
+        {anatomy?.overview ? (
+          <p className="overview-lead">{anatomy.overview}</p>
+        ) : (
+          <p>
+            Eight servers share three power feeds, each behind its own
+            breaker, with a battery-backed UPS (uninterruptible power
+            supply) underneath.
+          </p>
+        )}
         <p>
-          The power layer under every rack: assign servers to phase feeds
-          and balance them, respect the 80% continuous-load rule or watch a
-          breaker enforce it, and fail the utility to learn whether the UPS
-          front panel's runtime promise survives contact with a battery
-          that has quietly aged. Every constant is sourced or honestly
-          marked as an estimate.
+          PDU stands for power distribution unit, the metered power strip
+          the servers plug into. UPS stands for uninterruptible power
+          supply, the battery unit beneath them. Wattages and timings are
+          illustrative; every constant is sourced or marked as an estimate.
         </p>
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         {/* Left — build panel + guided scenarios */}
@@ -373,8 +463,9 @@ export function App() {
             </div>
           </div>
           <div className="mini footnote">
-            What we don't model: inrush and transfer-time gaps (the ~4 ms a
-            line-interactive UPS takes to switch), harmonics and true
+            What we don't model: inrush and transfer-time gaps (the few milliseconds a
+            line-interactive UPS takes to switch — APC quotes 6 ms typical,
+            10 ms maximum), harmonics and true
             three-phase vector math, PDU metering electronics (~5 W),
             battery internal resistance under load, and depth-of-discharge
             limits. Fade rates and trip curves are estimates — every

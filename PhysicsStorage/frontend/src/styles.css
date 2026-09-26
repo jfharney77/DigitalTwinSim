@@ -588,6 +588,8 @@ select:hover {
 .scenario-narration { margin-top: 8px; line-height: 1.5; }
 .scenario-narration p { margin: 0 0 6px; }
 .scenario-question { font-weight: 600; color: var(--accent, #0672cb); }
+.scenario-card { margin-bottom: 12px; }
+.hero-product { margin-top: 8px; }
 .flow-slow line { stroke-dashoffset: 0; animation: flowdash 3s linear infinite; }
 .flow-mid line { animation: flowdash 1.5s linear infinite; }
 .flow-fast line { animation: flowdash 0.6s linear infinite; }

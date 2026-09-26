@@ -9,7 +9,9 @@ a map of where a model's weights actually sit.
 The drawing is organized around one boundary. Everything on the left is the
 host: the CPU, system DRAM, and the NVMe SSD where the compiled model file
 lives at rest. Everything on the right is the inference card: two AI-100
-NPUs and the 64 GB of dedicated AI memory they read from. Between them, a
+NPUs and the 64 GB of dedicated AI memory they read from (physically two
+32 GB LPDDR4x banks, one per NPU; drawn as one block because a large model
+is sharded across both). Between them, a
 single narrow PCIe strip.
 
 The geometry is the lesson, so ``tests/test_anatomy.py`` pins it: every
@@ -42,13 +44,16 @@ _NPU_DESC = (
     "One of the two Qualcomm AI-100 inference processors on the card. Each "
     "is built for one job — running a trained network forward — and its "
     "internal design says so: separate tensor, vector, and scalar units per "
-    "AI core, with the tensor unit doing the heavy matrix work. Across the "
-    "card there are 32 AI cores and roughly 450 TOPS (trillions of 8-bit "
+    "AI core, with the tensor unit doing the heavy matrix work. Each NPU "
+    "has 16 AI cores and its own 32 GB bank of LPDDR4x memory, and the host "
+    "sees the two as separate devices. Across the card that is 32 AI cores "
+    "and, as widely reported, roughly 450 TOPS (trillions of 8-bit "
     "operations per second). The comparison that matters is not against a "
-    "datacenter GPU but against the integrated NPU already in a modern "
-    "laptop CPU, which offers something like 50 TOPS and, more decisively, "
-    "no memory of its own. This is why 'discrete' is the word in the "
-    "product name: the accelerator brought its own memory with it."
+    "datacenter GPU but against the integrated NPU in the host processor: "
+    "Intel rates the one in this machine's Core Ultra 200HX at 13 TOPS, "
+    "and, more decisively, it has no memory of its own. This is why "
+    "'discrete' is the word in the product name: the accelerator brought "
+    "its own memory with it."
 )
 
 
@@ -58,7 +63,7 @@ ANATOMY = DeviceAnatomy(
     vendor="Dell Technologies + Qualcomm",
     form_factor="16-inch mobile workstation with Qualcomm AI 100 PC Inference Card",
     generation="First mobile workstation with an enterprise-grade discrete NPU",
-    year=2026,
+    year=2025,
     width=100,
     height=54,
     overview=L(
@@ -146,7 +151,27 @@ ANATOMY = DeviceAnatomy(
         DeviceRegion(
             id="cpu", kind="host", label="Host CPU",
             x=2, y=4, w=36, h=11,
-            description=(
+            description=L(
+                novice=(
+                    "The laptop's main processor — the chip that runs the "
+                    "operating system and everything you normally open. Here "
+                    "it does the setting-up: it opens the model file, tells "
+                    "the accelerator card what to do, and hands over your "
+                    "question. Then, surprisingly, it mostly waits. On the "
+                    "way in it chops your text into the small pieces the "
+                    "model reads, and on the way out it turns the model's "
+                    "answer back into words, but the thinking itself all "
+                    "happens on the other side of the narrow strip in the "
+                    "middle of the picture. That idleness is deliberate. It "
+                    "means the laptop stays responsive for ordinary work "
+                    "while a very large model is running, which is not true "
+                    "of a laptop that borrows its graphics chip to do the "
+                    "same job. The processor also has a small AI chip built "
+                    "into it, which is still useful for little always-on "
+                    "jobs like blurring your background on a video call — "
+                    "but not for a model this size."
+                ),
+                standard=(
                 "The host processor. It does the setup work — opening the "
                 "model container, programming the card, handing over the "
                 "prompt — and then, strikingly, very little. During "
@@ -159,12 +184,35 @@ ANATOMY = DeviceAnatomy(
                 "borrows its GPU for inference. Its own integrated NPU is "
                 "still there and still useful, but for small always-on "
                 "tasks — background blur, transcription — not for this."
+                ),
             ),
         ),
         DeviceRegion(
-            id="dram", kind="memory", label="System memory (LPDDR5X)",
+            id="dram", kind="memory",
+            label=L(
+                novice="System memory (the laptop's own working memory)",
+                standard="System memory (DDR5 CAMM2)",
+            ),
             x=2, y=17, w=36, h=10,
-            description=(
+            description=L(
+                novice=(
+                    "The laptop's ordinary working memory — the scratch space "
+                    "the processor keeps whatever it is busy with in. It sits "
+                    "on the laptop's side of the narrow strip. The label calls "
+                    "it DDR5 CAMM2, which is just the type of memory module "
+                    "Dell fits here; the name matters to whoever orders spare "
+                    "parts, not to this story. What matters is who it belongs "
+                    "to: everyone. On a laptop with no accelerator card, a "
+                    "large model would have to live in this shared space, "
+                    "competing with the operating system and every open "
+                    "application, and it could only be as large as the memory "
+                    "someone happened to buy. The card having its own memory "
+                    "removes that argument: the model is not queuing behind "
+                    "your web browser. While the model is answering, this "
+                    "block is quiet — it holds your question, the answer being "
+                    "written, and some housekeeping, and nothing more."
+                ),
+                standard=(
                 "System DRAM, on the host side of the boundary. On a laptop "
                 "without a discrete NPU this is where a large model would "
                 "have to live, shared with the operating system and every "
@@ -175,12 +223,33 @@ ANATOMY = DeviceAnatomy(
                 "with the browser. During inference this region is quiet, "
                 "holding only the prompt, the generated text, and the "
                 "runtime's bookkeeping."
+                ),
             ),
         ),
         DeviceRegion(
-            id="ssd", kind="storage", label="NVMe SSD — model library at rest",
+            id="ssd", kind="storage",
+            label=L(
+                novice="Solid-state drive — where the model files are kept",
+                standard="NVMe SSD — model library at rest",
+            ),
             x=2, y=29, w=36, h=10,
-            description=(
+            description=L(
+                novice=(
+                    "The laptop's drive, where model files sit when nothing is "
+                    "running. A file here is not a plain bag of the numbers a "
+                    "model learned. It has already been translated for this "
+                    "exact card: the work divided up across the card's 32 "
+                    "processing cores, the numbers compressed so they take "
+                    "less room. Several models can sit side by side, and "
+                    "swapping to another one means copying it across, not "
+                    "translating it again. This is the only point in the "
+                    "model's life where its sheer size is a problem — 61 "
+                    "gigabytes has to travel across the strip, once. After "
+                    "that the drive has nothing to do with answering "
+                    "questions, which is why it goes dark for the rest of the "
+                    "sequence."
+                ),
+                standard=(
                 "Where compiled models live between runs. A model here is "
                 "not a checkpoint of raw weights but a container built for "
                 "this specific hardware — the graph already partitioned "
@@ -191,12 +260,33 @@ ANATOMY = DeviceAnatomy(
                 "throughput problem: 61 GB has to move across the bus once. "
                 "Afterwards the SSD is irrelevant to inference, which is "
                 "why it goes dark for the rest of the trace."
+                ),
             ),
         ),
         DeviceRegion(
             id="pcie", kind="link", label="PCIe",
             x=43, y=4, w=8, h=35,
-            description=(
+            description=L(
+                novice=(
+                    "The narrow strip in the middle: the one connection "
+                    "between the laptop and the accelerator card. PCIe is its "
+                    "name, short for Peripheral Component Interconnect "
+                    "Express, and it is the standard way an add-in card plugs "
+                    "into a computer. It is also this whole diagram's subject. "
+                    "People expect a connection like this to be the weak "
+                    "link, because work has to be shipped across it and "
+                    "results shipped back, over and over. That is true when "
+                    "data keeps moving. It is not true here, because what "
+                    "crosses is the model, not the work. The model makes the "
+                    "trip once, while loading, and then stays put. Afterwards "
+                    "the only things crossing are your question going right "
+                    "and words coming back left, which is a few kilobytes "
+                    "against 61 gigabytes. Watch the link counter while the "
+                    "sequence plays: it is busy during loading and reads zero "
+                    "for every step where the model is actually answering. "
+                    "The strip is drawn narrow on purpose."
+                ),
+                standard=(
                 "The boundary — and this twin's whole subject. Conventional "
                 "wisdom about discrete accelerators is that the bus is the "
                 "bottleneck: every batch has to be shipped across, results "
@@ -209,6 +299,7 @@ ANATOMY = DeviceAnatomy(
                 "against 61 gigabytes. Watch the link counter during the "
                 "trace: it peaks during load and reads zero for every step "
                 "of actual inference. The strip is drawn narrow on purpose."
+                ),
             ),
         ),
         DeviceRegion(
@@ -222,17 +313,52 @@ ANATOMY = DeviceAnatomy(
             description=_NPU_DESC,
         ),
         DeviceRegion(
-            id="aimem", kind="aimemory", label="64 GB dedicated AI memory (LPDDR4x)",
+            id="aimem", kind="aimemory",
+            label=L(
+                novice="64 GB of memory belonging to the card alone",
+                standard="64 GB dedicated AI memory (LPDDR4x)",
+            ),
             x=56, y=19, w=42, h=20,
-            description=(
+            description=L(
+                novice=(
+                    "The reason this machine can do what it does, and drawn "
+                    "large because it deserves to be. Sixty-four gigabytes of "
+                    "memory that belongs to the card and to nothing else, "
+                    "holding the model's learned numbers from the moment it "
+                    "loads until you close it. The label calls it LPDDR4x, "
+                    "which is the type of memory chip used; the name matters "
+                    "to the people who build the card, not to this story. "
+                    "Physically it is two 32-gigabyte banks, one wired to each "
+                    "of the two AI chips, drawn as a single block because a "
+                    "model this large is split across both. Dell says the card "
+                    "can hold a model of roughly 120 billion parameters when "
+                    "the numbers are squeezed down to four bits each. By that "
+                    "arithmetic a 109-billion-parameter model takes about 61 "
+                    "gigabytes, this twin's illustrative figure — it fits, "
+                    "with a little room left for the notes the model keeps as "
+                    "a conversation gets longer. One distinction is worth "
+                    "keeping straight: the numbers are stored squeezed, but "
+                    "the arithmetic is done at fuller precision. Compressing "
+                    "what you store and computing carefully are separate "
+                    "decisions, and only the first is what makes the model "
+                    "fit. Producing each word means reading nearly all of "
+                    "this memory, so the speed of answering is set by how "
+                    "fast this block can be read, not by how fast the chips "
+                    "next door can calculate."
+                ),
+                standard=(
                 "The reason this machine can do what it does, drawn large "
                 "because it deserves to be. Sixty-four gigabytes of memory "
                 "belonging to the card and to nothing else, holding the "
-                "model's weights from load until the process ends. A "
-                "109-billion-parameter model with weights quantized to "
-                "roughly four bits per parameter occupies about 61 GB — it "
-                "fits, with room for the KV cache that grows as the "
-                "conversation gets longer. Note the distinction the "
+                "model's weights from load until the process ends. "
+                "Physically it is two 32 GB banks, one wired to each NPU; "
+                "it is drawn as one block because a model this large is "
+                "split across both. Dell's product brief puts the ceiling "
+                "at about 120 billion parameters with four-bit (MXINT4) "
+                "weights. By that arithmetic a 109-billion-parameter model "
+                "occupies about 61 GB (this twin's illustrative figure) — "
+                "it fits, with a little room for the KV cache that grows "
+                "as the conversation gets longer. Note the distinction the "
                 "specifications invite you to blur: the weights are stored "
                 "quantized, while the arithmetic runs at FP16 (16-bit "
                 "floating point). Compressing what you store and computing "
@@ -243,6 +369,7 @@ ANATOMY = DeviceAnatomy(
                 "rather than by the 450 TOPS next door — the same "
                 "memory-bound regime this repo's GPU twin's roofline "
                 "analysis names."
+                ),
             ),
         ),
         DeviceRegion(
@@ -286,24 +413,29 @@ ANATOMY = DeviceAnatomy(
                 "The power path feeding the card, modelled in detail by "
                 "this repo's Alienware twin: an adapter negotiating its "
                 "capability with the embedded controller, a system power "
-                "budget divided between CPU, GPU, and now a third claimant, "
+                "budget divided between the CPU and the inference card, "
                 "and a battery that can supplement the adapter under peak "
-                "demand. The card's appetite is modest by accelerator "
-                "standards — tens of watts, not hundreds — which is exactly "
-                "what makes it possible in a 16-inch chassis at all. On "
-                "battery alone the model still runs; it simply runs at a "
-                "lower sustained wattage."
+                "demand. The card takes the slot and the power budget a "
+                "discrete GPU would otherwise have — the machine is "
+                "ordered with one or the other, not both. Its appetite is "
+                "modest by accelerator standards — a reported 75 W "
+                "envelope, against well over 100 W for a high-end laptop "
+                "GPU — which is what makes it possible in a 16-inch "
+                "chassis at all. Behaviour on battery is not documented by "
+                "Dell; this twin assumes the model still runs at a lower "
+                "sustained wattage."
             ),
         ),
     ],
     stats=[
         Stat(label="Accelerator", value="Qualcomm AI 100 PC Inference Card"),
         Stat(label="NPUs", value="2 × AI-100 — 32 AI cores"),
-        Stat(label="AI memory", value="64 GB LPDDR4x, dedicated to the card"),
-        Stat(label="Compute", value="~450 TOPS (INT8); FP16 arithmetic"),
-        Stat(label="Model size", value="Up to ~120 billion parameters, on-device"),
-        Stat(label="Demonstrated", value="109B-parameter Llama 4, no network"),
-        Stat(label="Operating systems", value="Linux now; Windows from early 2026"),
+        Stat(label="AI memory", value="64 GB LPDDR4x on the card (2 × 32 GB, one bank per NPU)"),
+        Stat(label="Compute", value="~450 TOPS INT8 (reported); FP16 arithmetic"),
+        Stat(label="Model size", value="Up to ~120 billion parameters with MXINT4 weights (Dell)"),
+        Stat(label="Demonstrated", value="109B-parameter Llama 4 Scout, no network (DTW 2025)"),
+        Stat(label="Card power", value="75 W envelope (reported); takes the place of a discrete GPU"),
+        Stat(label="Operating systems", value="Ubuntu 24.04 LTS since November 2025; Windows 11 announced for 2026"),
         Stat(label="Form factor", value="16-inch mobile workstation"),
     ],
     photo=NPU_ILLO,
@@ -321,11 +453,27 @@ ANATOMY = DeviceAnatomy(
             url="https://www.dell.com/en-us/shop/dell-laptops/dell-pro-max-16-plus-laptop/spd/dell-pro-max-mb16250-laptop",
         ),
         SourceLink(
+            label="StorageReview — Dell Pro Max 16 Plus with Qualcomm AIC100 review (2 × 32 GB, ~450 TOPS, replaces the GPU)",
+            url="https://www.storagereview.com/review/dell-pro-max-16-plus-with-qualcomm-aic100-review-excellent-workstation-experimental-accelerator",
+        ),
+        SourceLink(
+            label="Laptop Mag — Dell's new laptop ditches the GPU for a discrete NPU (75 W, Llama 4 demo)",
+            url="https://www.laptopmag.com/laptops/dells-new-laptop-ditches-gpu-for-npu",
+        ),
+        SourceLink(
+            label="Phoronix — shipping on Ubuntu 24.04 ahead of Windows 11 (20 November 2025)",
+            url="https://www.phoronix.com/news/Dell-Pro-Max-With-Qualcomm-NPU",
+        ),
+        SourceLink(
+            label="Intel — Core Ultra 9 285HX specifications (13 TOPS integrated NPU)",
+            url="https://www.intel.com/content/www/us/en/products/sku/242297/intel-core-ultra-9-processor-285hx-36m-cache-up-to-5-50-ghz/specifications.html",
+        ),
+        SourceLink(
             label="Qualcomm Cloud AI SDK — architecture",
             url="https://quic.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Architecture/",
         ),
         SourceLink(
-            label="Serving LLMs on Cloud AI 100 vs NVIDIA GPUs (arXiv 2507.00418)",
+            label="Serving LLMs on Cloud AI 100 Ultra vs NVIDIA GPUs (arXiv 2507.00418)",
             url="https://arxiv.org/abs/2507.00418",
         ),
     ],

@@ -124,6 +124,10 @@ class PowerOnState(CamelModel):
 
 class PowerOnResponse(CamelModel):
     trace: list[PowerOnState]
+    # The Power-on page's landing prose, leveled like every other block of
+    # text in the app (authored in ``anatomy.py``).
+    intro_title: str = ""
+    intro: str = ""
 
 
 class CatalogOption(CamelModel):

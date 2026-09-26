@@ -56,7 +56,10 @@ def _findings(cfg: ServerConfig, **env) -> dict[str, str]:
 def test_high_tdp_without_hp_heatsink_is_an_error():
     cfg = ServerConfig(cpu_tdp_w=250, heatsink="standard")
     assert _findings(cfg)["heatsink"] == "error"
-    cfg = ServerConfig(cpu_tdp_w=205, heatsink="standard")
+    # Dell's thermal restriction matrix rates the standard heatsink to 165 W.
+    cfg = ServerConfig(cpu_tdp_w=185, heatsink="standard")
+    assert _findings(cfg)["heatsink"] == "error"
+    cfg = ServerConfig(cpu_tdp_w=150, heatsink="standard")
     assert _findings(cfg)["heatsink"] == "ok"
 
 
@@ -169,3 +172,16 @@ def test_explain_entries_cover_the_required_readouts():
     for e in EXPLAINS:
         assert e.equation.strip() and e.explanation.strip(), e.id
         assert len(e.inputs) >= 3, f"{e.id}: causal chain too short"
+
+
+def test_inlet_past_a2_allowable_warns_even_when_an_event_sets_it():
+    from app.models import SimEvent
+    from app.presets import BALANCED, DATABASE, GUIDED_SCENARIOS
+
+    g = next(g for g in GUIDED_SCENARIOS if g.id == "fan-feedback")
+    levels = {v.rule_id: v for v in validate(g.scenario)}
+    assert levels["inlet-allowable"].level == "warning"
+    assert "timed event" in levels["inlet-allowable"].message
+    cool = Scenario(config=BALANCED, workload=DATABASE,
+                    events=[SimEvent(at_s=10, action="set-inlet", value=35)])
+    assert "inlet-allowable" not in {v.rule_id for v in validate(cool)}

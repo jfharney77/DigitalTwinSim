@@ -88,7 +88,8 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "drives. Right now only four are racked, and they are not "
                     "yet joined to each other; nodes five and six arrive later "
                     "in the story. Notice what is missing: nobody is about "
-                    "to divide the space into fixed chunks called volumes."
+                    "to divide the space into walled-off sections called "
+                    "volumes."
                 ),
                 standard=(
                     "This is Dell PowerScale, scale-out network-attached "
@@ -283,10 +284,10 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "Months pass in one step, and the shared space climbs "
                     "past 80% full. On most file storage this is where the "
                     "trouble starts. Not because everything is full, but "
-                    "because one fixed chunk, one volume, is nearly full "
-                    "while another sits half empty, and fixing that means "
+                    "because one walled-off section, one volume, is nearly "
+                    "full while another sits half empty, and fixing that means "
                     "copying data around during planned downtime. Here there "
-                    "are no chunks. The whole cluster fills evenly, so the "
+                    "are no volumes. The whole cluster fills evenly, so the "
                     "only choice coming is a simple one: add hardware. The "
                     "migrations counter still reads zero."
                 ),
@@ -412,10 +413,12 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "their full share of the work. Add up what growing cost: "
                     "no volume was created, no data was moved by hand, and "
                     "nobody had to reconnect anything. The PowerFlex twin in "
-                    "this collection does the same trick for block storage "
-                    "by removing the controller. The Exascale twin builds "
-                    "fast parallel file access on top of this namespace, and "
-                    "CloudIQ watches the cluster's health."
+                    "this collection does the same trick for block storage, "
+                    "the raw disk-like kind that databases use, by removing "
+                    "the controller. The Exascale twin covers Dell's separate "
+                    "Lightning file system, a faster, temporary work area "
+                    "that sits beside a cluster like this one, and CloudIQ "
+                    "watches the cluster's health."
                 ),
                 standard=(
                     "Reassembled at larger scale. Six nodes serve the one "
@@ -423,9 +426,11 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "expansion cost no provisioned volume, no hand migration "
                     "and no client remount. The PowerFlex twin next door is "
                     "the sibling refusal, deleting the controller from block "
-                    "storage where OneFS deleted the volume. Exascale's "
-                    "Lightning file system runs on OneFS, and CloudIQ is "
-                    "where this cluster's telemetry goes."
+                    "storage where OneFS deleted the volume. The Exascale "
+                    "twin's Lightning file system is a separate product, not "
+                    "OneFS: Dell positions it as the scratch tier beside "
+                    "PowerScale, which serves the rest of the data's life. "
+                    "CloudIQ is where this cluster's telemetry goes."
                 ),
                 expert=(
                     "Six nodes, one namespace, balanced. Sibling refusals: "

@@ -304,17 +304,22 @@ def simulate(
     emit(
         phase="handshake",
         stage_id="s3-psid-handshake",
-        label="PSID handshake"
+        label=L(
+            standard="PSID handshake",
+            novice="Reading the adapter's name tag (Dell calls it PSID)",
+        )
         if adapter.connector == "barrel"
         else "USB-PD contract",
         description=L(
             novice=(
                 "Through that centre pin, the controller reads the adapter's "
-                "identity — a tiny memory chip inside the brick, powered by the "
-                "data line itself, holding the adapter's family, wattage, voltage "
-                "and current, with a checksum to catch corruption. Reading it is "
-                "slow by the standards of silicon, which is why the BIOS screen "
-                "takes a moment before its 'AC Adapter' line fills in."
+                "name tag. Dell calls it the PSID, short for power supply ID. It "
+                "is a tiny memory chip inside the brick, powered by the data "
+                "wire itself, holding the adapter's family, wattage, voltage "
+                "and current, plus a check number that lets the laptop tell "
+                "whether it read the tag correctly. Reading it is slow by "
+                "computer standards, which is why the laptop's setup screen "
+                "(the BIOS) takes a moment before its 'AC Adapter' line fills in."
                 if adapter.connector == "barrel"
                 else "The laptop and the charger negotiate a contract using USB "
                 "Power Delivery: the charger advertises the voltage and current "
@@ -378,21 +383,46 @@ def simulate(
 
     # ---- budget: S4 + S5 ------------------------------------------------
     if recognized:
-        budget_desc = (
+        budget_std = (
             f"The CRC checks out: the EC now knows it has a genuine "
             f"{adapter.watts:g} W supply and sets the platform's power "
             "budget accordingly — full charge rate and full CPU/GPU limits "
             "are on the table. BIOS Setup would show this adapter by name "
             "under 'AC Adapter'."
         )
+        budget_novice = (
+            "The check number matches, so the controller now knows it has a "
+            f"genuine {adapter.watts:g} watt adapter, and it plans the "
+            "laptop's power around that figure: the battery may charge at "
+            "full speed, and the processor and graphics chip may draw their "
+            "full limits. The laptop's setup screen (the BIOS) would show "
+            "this adapter by name on its 'AC Adapter' line."
+        )
         if budget < profile.cpu_max_w + profile.gpu_tgp_w + profile.idle_w:
-            budget_desc += (
+            budget_std += (
                 " The budget is real but modest for this silicon: if CPU "
                 "and GPU both hit their limits at once, demand will exceed "
                 "the adapter and the battery will have to supplement."
             )
+            budget_novice += (
+                " That figure is genuine but small for this machine: if the "
+                "processor and graphics chip both run flat out at once, they "
+                "will ask for more than the adapter can give, and the "
+                "battery will have to make up the difference."
+            )
     else:
-        budget_desc = (
+        budget_novice = (
+            "The laptop cannot read the name tag. Perhaps the thin centre "
+            "pin is bent, or the brick is a replacement with no tag chip "
+            "inside. The laptop's setup screen (the BIOS) lists the adapter "
+            "as 'Unknown'. The controller still accepts power from it, but "
+            "it will not trust the wattage printed on the label: it "
+            "switches battery charging off, and it holds the processor and "
+            "graphics chip to about "
+            f"{THROTTLED_CPU_W + THROTTLED_GPU_W:g} watts between them. "
+            "Power it cannot check is power it will not plan around."
+        )
+        budget_std = (
             "The ID read fails — a damaged center pin or a brick with no "
             "PSID chip. BIOS reports the adapter as 'Unknown'. The EC will "
             "take current from the rail but refuses to trust its rating: "
@@ -403,8 +433,11 @@ def simulate(
     emit(
         phase="budget",
         stage_id="s4-power-budget",
-        label="EC sets the power budget",
-        description=budget_desc,
+        label=L(
+            standard="EC sets the power budget",
+            novice="The controller sets the power budget",
+        ),
+        description=L(standard=budget_std, novice=budget_novice),
         active=["ec", "charger"],
         system_w=EC_STANDBY_W,
     )
@@ -601,7 +634,7 @@ def simulate(
                         f"The main part of the charge: the charger holds a steady "
                         f"{cc_w:.0f} watts into the battery while the cell voltage climbs. "
                         "This is the fast-charge regime — roughly 80% in an hour with the "
-                        "lid closed, and 0 to 35% in about twenty minutes — and it is the "
+                        "computer off, and 0 to 35% in about twenty minutes — and it is the "
                         "part where you actually see the battery percentage moving."
                         if profile.battery.express_charge
                         else f"The main part of the charge, at a steady {cc_w:.0f} watts "
@@ -610,7 +643,7 @@ def simulate(
                     plain=(
                         f"The main part of the charge: a constant ~{cc_w:.0f} W flows into "
                         "the pack while cell voltage rises. This is the ExpressCharge "
-                        "regime — around 80% in an hour with the lid closed, and 0 to 35% "
+                        "regime — around 80% in an hour with the computer off, and 0 to 35% "
                         "in roughly twenty minutes — and it is the stretch where the "
                         "battery percentage visibly moves."
                         if profile.battery.express_charge
@@ -621,7 +654,7 @@ def simulate(
                         f"The bulk of the charge: the charger holds a constant "
                         f"~{cc_w:.0f} W into the pack while cell voltage rises. "
                         "This is the ExpressCharge regime — roughly 80% in an "
-                        "hour with the lid closed, 0→35% in about 20 minutes — "
+                        "hour with the computer off, 0→35% in about 20 minutes — "
                         "and it is where the battery percentage visibly climbs."
                         if profile.battery.express_charge
                         else f"The bulk of the charge at a steady ~{cc_w:.0f} W "
@@ -629,7 +662,7 @@ def simulate(
                     ),
                     technical=(
                         f"Constant-current bulk phase at ~{cc_w:.0f} W while cell voltage "
-                        "rises. ExpressCharge regime — ~80% in an hour lid-closed, 0→35% "
+                        "rises. ExpressCharge regime — ~80% in an hour powered off, 0→35% "
                         "in ~20 minutes — and the segment where indicated percentage moves "
                         "fastest."
                         if profile.battery.express_charge
@@ -637,7 +670,7 @@ def simulate(
                         "voltage rises."
                     ),
                     expert=(
-                        f"CC bulk at ~{cc_w:.0f} W. ExpressCharge: ~80% in 1 h lid-closed, "
+                        f"CC bulk at ~{cc_w:.0f} W. ExpressCharge: ~80% in 1 h powered off, "
                         "0→35% in ~20 min."
                         if profile.battery.express_charge
                         else f"CC bulk at ~{cc_w:.0f} W."
@@ -905,8 +938,27 @@ def simulate(
     if scenario.workload == "idle":
         ramp_desc = (
             "Desktop idle: single-digit CPU watts, GPU parked. Nearly all "
-            "of the adapter's budget is free, so any remaining charge "
-            "deficit is being made up in the background."
+            "of the adapter's budget is free"
+            + (
+                ", so any remaining charge deficit is being made up in the "
+                "background."
+                if recognized
+                else ", but the adapter is still 'Unknown', so charging "
+                "stays disabled regardless."
+            )
+        )
+        ramp_novice = (
+            "The laptop sits at the desktop doing very little: the "
+            "processor draws only a few watts and the graphics chip is "
+            "resting."
+            + (
+                " Almost all of the adapter's power is spare, so if the "
+                "battery still needs topping up, that happens quietly in "
+                "the background."
+                if recognized
+                else " The adapter is still 'Unknown', so battery charging "
+                "stays switched off even with this much power to spare."
+            )
         )
     else:
         ramp_desc = (
@@ -919,12 +971,28 @@ def simulate(
                 else "; the fans follow the heat up their curve."
             )
         )
+        ramp_novice = (
+            "The program starts, and the processor and graphics chip speed "
+            "up. The faster they run, the more power they draw and the more "
+            "heat they make. "
+            + (
+                f"The '{mode}' cooling setting would let them climb a long "
+                "way, but the 'Unknown' adapter has already set a much "
+                "lower ceiling: about "
+                f"{THROTTLED_CPU_W + THROTTLED_GPU_W:g} watts between them, "
+                "a fraction of what these chips can use. Watch the CPU and "
+                "GPU watt readouts stop well short of their usual figures."
+                if not recognized
+                else f"They climb toward the limits the '{mode}' cooling "
+                "setting allows, and the fans spin faster as the heat rises."
+            )
+        )
     ramp = run_state(cpu_full * 0.5, gpu_full * 0.5)
     emit(
         phase="load",
         stage_id="s8-load-ramp",
         label="Workload ramps",
-        description=ramp_desc,
+        description=L(standard=ramp_desc, novice=ramp_novice),
         active=load_regions,
         **ramp,
     )
@@ -940,6 +1008,17 @@ def simulate(
             "up to ~5% per hour under sustained load. Below ~20% charge, "
             "hybrid power disables and the system throttles to protect "
             "the pack."
+        )
+        peak_novice = (
+            f"Everything running flat out asks for {peak['system_w']:.0f} "
+            f"watts, more than the {budget:.0f} watts the adapter can give. "
+            "Rather than slow the chips down, the laptop lets the battery "
+            "supply the difference alongside the wall socket. Dell calls "
+            "this hybrid power, and it is intended behaviour. Windows shows "
+            "the battery slowly draining even though the laptop is plugged "
+            "in, by up to about 5% an hour under a long heavy load. Below "
+            "about 20% charge the laptop stops doing this and slows the "
+            "chips down instead, to protect the battery."
         )
         peak_active = load_regions + ["battery", "charger"]
     else:
@@ -961,12 +1040,33 @@ def simulate(
             "of its performance, exactly as the KBs describe for an "
             "unidentified supply."
         )
+        peak_novice = (
+            "This is the most the laptop will ask for with this program and "
+            f"cooling setting: {peak['cpu_w']:.0f} watts for the processor, "
+            f"{peak['gpu_w']:.0f} watts for the graphics chip and "
+            f"{rest_w:.0f} watts for everything else, such as the screen and "
+            f"storage. That fits inside the adapter's {budget:.0f} watt "
+            "budget"
+            + (
+                ", so the battery never has to help, and the power left "
+                "over keeps charging it."
+                if peak["charge_w"] > 0
+                else ". The battery is left alone."
+            )
+            if recognized
+            else "This is as hard as the laptop will work on an 'Unknown' "
+            "adapter. The CPU and GPU watt readouts sit far below what "
+            "those chips can use. The laptop runs, but at a fraction "
+            "of its normal speed, and the battery still is not charging. "
+            "Dell's own support articles describe exactly this behaviour "
+            "for an adapter the laptop cannot identify."
+        )
         peak_active = load_regions
     emit(
         phase="load",
         stage_id=peak_stage,
         label=peak_label,
-        description=peak_desc,
+        description=L(standard=peak_desc, novice=peak_novice),
         active=peak_active,
         cycle_cost=3,
         **peak,
@@ -981,12 +1081,29 @@ def simulate(
             "runs; for a multi-day job, the fix is adapter headroom (the "
             "360 W brick), not settings."
         )
+        steady_novice = (
+            "Heat and power have settled, with the battery still making up "
+            "the gap between what the laptop wants and what the adapter "
+            "can give. On long runs the battery level drifts down and "
+            "levels off a little below full, because the laptop does not "
+            "start recharging until the level falls below about 94%. For a "
+            "job that runs for days, the fix is a bigger adapter (the 360 "
+            "watt brick), not a change of settings."
+        )
     elif not recognized:
         steady_desc = (
             "Steady state under the 'Unknown'-adapter caps: cool, quiet, "
             "and slow, with charging still disabled. The cure is a brick "
             "the EC can identify — swap the adapter or cable and the PSID "
             "handshake restores the full budget on the next plug-in."
+        )
+        steady_novice = (
+            "The laptop has settled into running on the 'Unknown' adapter's "
+            "low ceiling: cool, quiet and slow, with battery charging still "
+            "switched off. No setting fixes this. The cure is an adapter "
+            "the controller can identify: swap the brick or its cable, and "
+            "the next time you plug in, the name-tag read succeeds and the "
+            "full power budget comes back."
         )
     else:
         steady_desc = (
@@ -997,11 +1114,20 @@ def simulate(
             "class of machine — the thermal control circuit trims a few "
             "hundred MHz at the limit, by design."
         )
+        steady_novice = (
+            "Heat and power have settled: the fans hold the speed the "
+            f"'{mode}' cooling setting calls for, the processor and "
+            "graphics chip hold their power limits, and the adapter covers "
+            "everything with room to spare. Processor temperatures close "
+            "to 100 °C under load are normal for this kind of laptop. At "
+            "that point the chip slows itself very slightly to stay safe, "
+            "which is how it was designed to behave."
+        )
     emit(
         phase="steady",
         stage_id="s10-steady",
         label="Steady state",
-        description=steady_desc,
+        description=L(standard=steady_desc, novice=steady_novice),
         active=load_regions + (["battery"] if steady["hybrid"] else []),
         cycle_cost=2,
         **steady,

@@ -20,7 +20,7 @@ function PhotoCard({ photo, small }: { photo: Photo; small?: boolean }) {
 
 const KIND_LABEL: Record<RegionKind, string> = {
   storage: "NVMe drive bay",
-  nvram: "NVRAM write cache",
+  nvram: "Persistent write cache",
   cpu: "node CPU",
   memory: "node DIMMs",
   io: "I/O modules & ports",

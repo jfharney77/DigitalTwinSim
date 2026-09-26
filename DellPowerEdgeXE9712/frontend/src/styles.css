@@ -647,3 +647,12 @@ select:hover {
   width: min(100%, calc(62vh * var(--tour-aspect, 1)));
   margin: 0 auto;
 }
+
+/* --- Failure scenario (coolant fault) --- */
+.app.dell .stat.stat-fault span:last-child {
+  color: var(--dell-error);
+  font-weight: 600;
+}
+.app.dell .scenario-summary a {
+  color: var(--dell-blue);
+}

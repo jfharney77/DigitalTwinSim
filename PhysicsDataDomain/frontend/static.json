@@ -1,0 +1,13 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "appliance": "dd9910",
+        "dataset": { "fullTb": 50, "dailyChangePct": 1, "entropyPct": 30 },
+        "schedule": { "retentionDays": 30 },
+        "durationDays": 90,
+        "events": []
+      }
+    ]
+  }
+}

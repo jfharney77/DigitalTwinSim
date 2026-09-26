@@ -40,4 +40,46 @@ all three can run at once.
 - **Use cases** (`#usecases`) — VMware storage consolidation, database
   consolidation, edge block + file, each with a resolvable build sheet.
 
+## Failure scenario: node A fails
+
+The sim page has a scenario picker. `#scenario=node-loss-failover` plays a
+second pure trace (`backend/app/failover.py`) that starts from a serving
+array, not from AC, and composes with the other deep links
+(`#scenario=node-loss-failover&phase=degraded`). It is served by the same
+endpoint, `GET /api/poweron?scenario=node-loss-failover`; `GET /api/scenarios`
+lists the traces. With no `scenario` the power-on response is byte-identical
+to before, and `tests/test_failover.py` pins that.
+
+Phases: `online → fault → failover → degraded → rejoin → resync → rebalance →
+restored`. Node A stops; hosts retry on their active/non-optimized paths to
+node B (ALUA for SCSI, ANA for NVMe-oF); node B takes over node A's resources
+and serves every volume at roughly double its load; node A reboots (the
+longest stage), rejoins over the interconnect, catches up, and block volumes
+fail back by themselves.
+
+What the tests assert because the failure happened:
+
+- **Zero acknowledged writes lost**, on every step. The hero counter exists to
+  be zero, and the failure is checked to be real (all of node A's compute and
+  ports down, one node serving) so the zero means something.
+- **Writes stay mirrored while single-node.** The write cache is a mirrored
+  pair of NVRAM drives in the shared, dual-ported front bay, not memory inside
+  a node. Node B still commits every write to two devices before it
+  acknowledges, with no fallback to write-through, and each BBU powers one
+  drive of every pair, so vaulting on AC loss is still covered. This is the
+  1000-through-9200 design; the PowerStore 500 has no NVRAM drives (it caches
+  writes in node DRAM and vaults to the M.2 boot module) and the trace does
+  not model it. The scenario's `basis` and the degraded step say so.
+- **I/O never stops**: a bounded dip at the fault, back to the full rate
+  before the degraded phase, paid for in node B's headroom.
+- **Rejoin precedes rebalance**: node A is a member again and caught up
+  strictly before any volume moves back.
+
+Behaviour follows Dell's white papers H18157 (Clustering and High
+Availability) and H18149 (Introduction to the Platform), cited in the scenario
+data. Every second, watt and percentage is illustrative: Dell publishes no
+block failover time. The `resync` step is this twin's reading of the public
+documents, and its prose says so. Down regions are drawn in the shared error
+colour with a dashed outline. The guided tour stays on the power-on trace.
+
 See `initial_spec.md` for architecture, data models, and invariants.

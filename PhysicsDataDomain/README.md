@@ -60,14 +60,39 @@ and the playback clock lives in the frontend.
 No real hashing, chunk boundaries, or container layout — chunk novelty is
 computed **analytically** from change rate, entropy, and encryption state
 (an approximation of chunk liveness, not a hash-level simulation). No
-replication, Cloud Tier, restore paths, MTrees, or Retention Lock. GC is
+replication, Cloud Tier, restore paths, MTrees, or Retention Lock. The
+"appliance ingest time" instrument is novel-data arithmetic on the appliance
+side only: the clients' read-and-fingerprint time over every logical byte
+(DD Boost moves that cost, it does not delete it) is not modelled, so it is
+a lower bound on a real backup window. Files ransomware has encrypted stop
+churning (nobody can edit them), which is why daily novel data falls after
+an attack halts. The capacity notice (`Summary.capacityNoticeDay`, a log
+line, and the trend strip under the capacity chart) is this simulator's own
+rule: physical more than 20% above a straight line fitted to the 10 days
+before the first disturbance; both numbers are labeled estimates. GC is
 instantaneous at generation expiry (real cleaning is scheduled and
 throttled). The distinction the model does keep honest: *static*
 high-entropy data still dedupes across generations (it just won't
 compress); only session-keyed encryption defeats deduplication itself.
 
-Appliance capacities follow the Data Domain family data-sheet classes the
-`DellPowerProtect` twin carries; index RAM, chunk size, the compression
+Appliance usable capacities are the maxima in Dell's PowerProtect Data
+Domain family spec sheet (DD3410 40 TB, DD9910 2.1 PB, all-flash DD9910F
+1.1 PB; checked September 2026); base ingest, index RAM, chunk size, the compression
 curve, and the knee slope are estimates — every constant in
 `backend/app/constants.py` carries units and a `source` field, and
 estimates say so.
+
+## Graded labs
+
+Three labs follow `docs/LAB_PATTERN.md` (`backend/app/labs.py`, `#labs` /
+`#lab=<id>` in the UI; `GET /api/labs`, `POST /api/labs/{id}/grade`). Delivered
+work is `protectedTbMean`: logical TB under protection averaged over every day
+of the run, store-full days counting zero. It is an illustrative proxy. Every
+constraint is a criterion measured from the trace, and grading also runs
+in the browser on the static build.
+
+| Lab | Difficulty | Lesson |
+|---|---|---|
+| `branch-box-memory` | 1 | On the DD3410 the fingerprint index outgrows its RAM long before the disks reach 85%, so RAM sets the longest retention. |
+| `encrypted-tenant` | 2 | Under host-side encryption, stored data is retention × full size and the index sets ingest, so the box with more index RAM beats the faster one. |
+| `late-alarm` | 3 | Heavy honest churn dilutes slow ransomware, the entropy alarm fires about 52 days late, and retention has to outlast that dwell time. |

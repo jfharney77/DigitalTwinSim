@@ -645,3 +645,19 @@ select:hover {
   width: min(100%, calc(58vh * 105 / 67));
   margin: 0 auto;
 }
+
+/* Failure scenario: the quarantined-count row and the sources note. */
+.app.dell .stat.stat-failed span:last-child {
+  color: var(--dell-error);
+  font-weight: 500;
+}
+.app.dell .scenario-note {
+  margin-top: 10px;
+}
+.app.dell .scenario-note p {
+  margin: 0 0 4px;
+}
+.app.dell .scenario-note summary {
+  cursor: pointer;
+  margin-bottom: 4px;
+}

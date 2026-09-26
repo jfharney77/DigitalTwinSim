@@ -90,7 +90,7 @@ ANATOMY = FabricAnatomy(
     id="sn6000",
     name="PowerSwitch SN6000 leaf/spine AI fabric",
     vendor="Dell Technologies + NVIDIA",
-    form_factor="Leaf/spine Ethernet fabric — 1.6 Tb/s ports, Spectrum-6",
+    form_factor="Leaf/spine Ethernet fabric — 800 Gb/s ports, Spectrum-6",
     generation="Dell AI Factory with NVIDIA (Spectrum-X)",
     year=2026,
     width=100,
@@ -112,7 +112,7 @@ ANATOMY = FabricAnatomy(
             "still reads zero."
         ),
         plain=(
-            "The SN6000 uses NVIDIA Spectrum-6 silicon — 1.6 Tb/s ports, up to "
+            "The SN6000 uses NVIDIA Spectrum-6 silicon — 800 Gb/s ports, up to "
             "409.6 Tb/s of switching capacity — and the subject here is not one "
             "switch but the leaf/spine fabric several of them form. Every leaf "
             "connects to every spine, so any two GPU racks are always the same "
@@ -126,10 +126,11 @@ ANATOMY = FabricAnatomy(
         ),
         standard=(
             "The Dell PowerSwitch SN6000 series is built on NVIDIA Spectrum-6 "
-            "silicon: 1.6 Tb/s ports, up to 409.6 Tb/s of switching capacity, "
-            "up to 2,048 breakout connections, with liquid cooling and "
-            "co-packaged optics options, optimized for NVIDIA Spectrum-X "
-            "Ethernet. This twin draws not one switch but the fabric they form. "
+            "silicon: 800 Gb/s ports (two per 1.6 Tb/s cage on pluggable models), "
+            "102.4 Tb/s per chip and up to 409.6 Tb/s of switching capacity "
+            "and 2,048 breakout connections in the four-chip SN6800, with "
+            "liquid cooling and co-packaged optics options, optimized for "
+            "NVIDIA Spectrum-X Ethernet. This twin draws not one switch but the fabric they form. "
             "The topology is leaf/spine — every leaf connected to every spine — "
             "because a collective operation finishes only when its slowest "
             "participant does, so uniform path length between any two endpoints "
@@ -143,20 +144,21 @@ ANATOMY = FabricAnatomy(
             "stylized mental model; a real cluster has far more of everything."
         ),
         technical=(
-            "Spectrum-6: 1.6 Tb/s ports, up to 409.6 Tb/s switching capacity, "
-            "2,048 breakout connections, liquid cooling and co-packaged optics "
+            "Spectrum-6: 800 Gb/s ports (8x 200G PAM4), 102.4 Tb/s per ASIC, "
+            "up to 409.6 Tb/s and 2,048 breakouts in the 4-ASIC SN6800, liquid cooling and co-packaged optics "
             "options, Spectrum-X Ethernet. The subject is the leaf/spine "
             "fabric, not the switch — full leaf-to-spine mesh gives uniform "
             "two-hop reachability, which matters because a collective completes "
-            "at the rate of its slowest participant. Asserted: zero drops on "
+            "at the rate of its slowest participant. Pinned by this twin's "
+            "tests: zero drops on "
             "every step; the congestion step drives the busiest link ≥95%, so "
             "losslessness is proven under stress rather than at idle; adaptive "
             "routing relieves without losing work — 98%@24 Tb/s → 71%@31 Tb/s; "
             "link training holds max dwell."
         ),
         expert=(
-            "Spectrum-6 leaf/spine: 1.6 Tb/s ports, 409.6 Tb/s capacity, "
-            "uniform two-hop reachability. Zero drops asserted on every step, "
+            "Spectrum-6 leaf/spine: 800G ports, up to 409.6 Tb/s capacity, "
+            "uniform two-hop reachability. Zero drops on every step (test-pinned), "
             "with the congestion step forced ≥95% so losslessness is proven "
             "under stress. Adaptive routing: 98%@24 Tb/s → 71%@31 Tb/s — hot "
             "link cooler, aggregate not reduced. Link training holds max dwell."
@@ -169,7 +171,7 @@ ANATOMY = FabricAnatomy(
             id="optics", kind="optics", label="Optics — pluggable or co-packaged",
             x=6, y=12, w=88, h=7,
             description=(
-                "The optics layer between leaves and spines. At 1.6 Tb/s "
+                "The optics layer between leaves and spines. At 800 Gb/s "
                 "per port the transceivers become a serious share of the "
                 "fabric's power draw and failure rate, which is why the "
                 "SN6000 offers co-packaged optics (CPO): the optical engine "
@@ -204,8 +206,8 @@ ANATOMY = FabricAnatomy(
             id="cooling", kind="cooling", label="Liquid cooling",
             x=34, y=52, w=30, h=8,
             description=(
-                "Liquid cooling for the switch silicon. Spectrum-6 at "
-                "409.6 Tb/s is dense enough that the SN6000 offers the same "
+                "Liquid cooling for the switch silicon. Spectrum-6 at up to "
+                "409.6 Tb/s per system is dense enough that the SN6000 offers the same "
                 "cold-plate treatment the GPUs get, served by the same "
                 "facility loop this repo's IR7000 twin models. It is a "
                 "useful reminder that in an AI factory the network is not a "
@@ -231,12 +233,12 @@ ANATOMY = FabricAnatomy(
     ],
     stats=[
         Stat(label="Silicon", value="NVIDIA Spectrum-6"),
-        Stat(label="Port speed", value="1.6 Tb/s"),
-        Stat(label="Switching capacity", value="Up to 409.6 Tb/s"),
-        Stat(label="Breakout connections", value="Up to 2,048 per system"),
+        Stat(label="Port speed", value="800 Gb/s (1.6 Tb/s per twin-port cage)"),
+        Stat(label="Switching capacity", value="102.4 Tb/s per ASIC; up to 409.6 Tb/s (SN6800-LD)"),
+        Stat(label="Breakout connections", value="Up to 2,048 at 200 Gb/s (SN6800-LD)"),
         Stat(label="Topology", value="Leaf/spine — any endpoint pair, two hops"),
         Stat(label="Lossless", value="ECN + PFC + adaptive routing; zero drops"),
-        Stat(label="Options", value="Liquid cooling · co-packaged optics"),
+        Stat(label="Options", value="Liquid or air cooling · co-packaged or pluggable optics"),
         Stat(label="Availability", value="Globally available from July 2026"),
     ],
     photo=FABRIC_ILLO,

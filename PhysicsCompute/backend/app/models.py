@@ -44,10 +44,10 @@ class Constant(CamelModel):
 Product = Literal["xe7745", "xe9680", "xe9712"]
 
 CPU_TDP_TIERS = [250, 300, 350, 400, 500]
-PCIE_GPU_TDP = [300, 450, 600]           # XE7745 tiers (verify — spec 01)
+PCIE_GPU_TDP = [300, 450, 600]           # XE7745: double-wide cards up to 600 W (Dell spec sheet)
 SXM_GPU_TDP = [700, 1000]                # XE9680: H100-class / B200-class
-PSU_7745_W = [2400, 2800]
-SHELF_KW = [66, 132, 198]                # IR7000 power-shelf capacity options
+PSU_7745_W = [2900, 3200]                # one 3200 W Titanium PSU: 2900 W on 200–220 V input
+SHELF_KW = [66, 132, 198]                # 2, 4 or 6 of Dell's 33 kW power shelves
 
 
 class SystemConfig(CamelModel):
@@ -238,6 +238,14 @@ class GuidedScenario(CamelModel):
     narration: list[str]
     question: str
     scenario: Scenario
+    # Config preset the A/B panel opens against, when the question needs one.
+    compare_preset_id: str | None = None
+
+
+class Intro(CamelModel):
+    """The simulator page's opening paragraph, leveled like the rest."""
+    title: str
+    text: str
 
 
 class Explain(CamelModel):

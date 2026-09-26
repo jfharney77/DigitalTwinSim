@@ -40,9 +40,10 @@ USE_CASES: list[UseCase] = [
                 "step. Spectrum-X congestion control and adaptive routing "
                 "handle the incast that collectives produce, and SuperNIC "
                 "adapters implement the endpoint half so senders actually "
-                "respond to congestion signals. In-network reduction sums "
-                "gradients inside the switches, cutting both traffic volume "
-                "and synchronization rounds."
+                "respond to congestion signals. The collective library is "
+                "tuned to the topology, because on Ethernet the reduction "
+                "arithmetic stays on the GPUs: in-network reduction (SHARP) "
+                "is an InfiniBand and NVLink feature."
             ),
             (
                 "Job placement is designed with the fabric, not after it: "
@@ -56,7 +57,7 @@ USE_CASES: list[UseCase] = [
         config=[
             UseCaseItem(
                 category_id="switch", option_id="sw-sn6000", qty=10,
-                rationale="Eight leaves plus two spines: Spectrum-6 at 1.6 Tb/s per port.",
+                rationale="Eight leaves plus two spines: Spectrum-6 at 800 Gb/s per port.",
             ),
             UseCaseItem(
                 category_id="topology", option_id="topo-nonblocking", qty=1,
@@ -74,12 +75,12 @@ USE_CASES: list[UseCase] = [
                 rationale="Endpoints must honor congestion signals or the fabric is not lossless.",
             ),
             UseCaseItem(
-                category_id="collective", option_id="col-sharp", qty=1,
-                rationale="Summing gradients in the switches cuts traffic and sync rounds.",
+                category_id="collective", option_id="col-libs", qty=1,
+                rationale="Topology-aware collectives keep the chattiest ranks inside a rack.",
             ),
             UseCaseItem(
                 category_id="optics", option_id="opt-cpo", qty=1,
-                rationale="At 1.6 Tb/s, co-packaged optics save real power and failure surface.",
+                rationale="At 800 Gb/s per port, co-packaged optics save real power and failure surface.",
             ),
             UseCaseItem(
                 category_id="services", option_id="svc-validated", qty=1,

@@ -35,9 +35,10 @@ def _regions() -> list[MapRegion]:
             x=34, y=1, w=14, h=16,
             description=(
                 "The usual bottleneck: cleaning and transforming. The "
-                "GPU-processing toggle multiplies its rate ~6× (Dell's "
-                "claim, labeled) — and moves the bottleneck rather "
-                "than removing it."
+                "GPU-processing toggle multiplies its rate ~6× (an "
+                "estimate: Dell accelerates this Spark stage with NVIDIA "
+                "RAPIDS but publishes no figure for it) — and moves the "
+                "bottleneck rather than removing it."
             ),
         ),
         MapRegion(
@@ -67,17 +68,21 @@ def _regions() -> list[MapRegion]:
             x=2, y=21, w=46, h=10,
             description=(
                 "Long-context sessions spill their KV cache to fast "
-                "shared storage: ~4× the concurrent sessions for a "
-                "~12% per-token tax. The most 2026-current concept in "
-                "the suite, kept deliberately simple."
+                "shared storage (NVIDIA's CMX context memory storage "
+                "is the class): ~4× the concurrent sessions for a "
+                "~12% per-token tax, both illustrative. The most "
+                "2026-current concept in the suite, kept deliberately "
+                "simple."
             ),
         ),
         MapRegion(
             id="analytics", kind="analytics", label="Analytics engine",
             x=52, y=21, w=46, h=10,
             description=(
-                "The Starburst-powered SQL layer; the GPU toggle is a "
-                "~6×-class scan speedup (labeled a claim to verify)."
+                "The Starburst-powered SQL layer (Dell's Data Analytics "
+                "Engine, built on Trino). The GPU toggle applies Dell's "
+                "own claim: up to 6× faster queries on NVIDIA Blackwell "
+                "GPUs — an upper bound, used here as a flat multiplier."
             ),
         ),
         MapRegion(
@@ -110,7 +115,7 @@ def _regions() -> list[MapRegion]:
             ),
         ),
         MapRegion(
-            id="console", kind="console", label="CloudIQ / APEX AIOps console",
+            id="console", kind="console", label="Dell AIOps console (formerly CloudIQ)",
             x=2, y=51, w=96, h=8,
             description=(
                 "The health scores, the feed, the forecasts — opinions "
@@ -136,6 +141,19 @@ def _map(map_id: str, name: str, gen: str, overview: str) -> DataMap:
         sources=[
             {"label": "physics_specs/06-data-and-observability.md (this repo)",
              "url": "../physics_specs/06-data-and-observability.md"},
+            {"label": "Dell press release, 18 May 2026 — AI Data Platform, "
+                      "up to 6x faster queries on Blackwell GPUs",
+             "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-closes-the-gap-between-ai-ambition-and-ai-outcomes.htm"},
+            {"label": "Dell blog — two years of Dell and Starburst "
+                      "(Trino analytics, Spark/RAPIDS processing)",
+             "url": "https://www.dell.com/en-us/blog/two-years-in-how-dell-and-starburst-are-removing-the-data-bottleneck-for-enterprise-ai/"},
+            {"label": "Dell blog — KV-cache offload to PowerScale, "
+                      "ObjectScale and Lightning",
+             "url": "https://www.dell.com/en-us/blog/dell-and-nvidia-expand-the-horizons-of-ai-inference/"},
+            {"label": "NVIDIA CMX context memory storage platform",
+             "url": "https://www.nvidia.com/en-us/data-center/ai-storage/cmx/"},
+            {"label": "Dell AIOps (formerly CloudIQ) product page",
+             "url": "https://www.dell.com/en-us/shop/dell-aiops/sl/aiops"},
         ],
     )
 
@@ -156,19 +174,25 @@ AIDATAPLATFORM = _map(
             "exists to keep that number at zero. The middle row "
             "holds two clever tricks: spilling AI conversation "
             "memory to shared storage so four times as many long "
-            "chats fit, and a query engine that scans six times "
-            "faster with GPU help."
+            "chats fit, and a query engine that Dell says scans up "
+            "to six times faster with GPU help."
         ),
         standard=(
-            "Theory of constraints as a sim: throughput = min(stage "
-            "rates), backlog piles up ahead of the bottleneck (the "
-            "map names it), freshness lag = backlog ÷ throughput, "
-            "and the fix-stage event moves the constraint instead of "
-            "removing it. GPU-idle-due-to-data is the north star — "
-            "PhysicsCompute's feed slider and PhysicsStorage's "
-            "Exascale gauge, unified. The KV-offload toggle trades a "
-            "~12% token tax for ~4× long-context sessions; the "
-            "analytics toggle is the labeled 6×-class claim."
+            "The top row is one dataset's journey: ingest, process, "
+            "index, serve. Throughput is the smallest of the arrival "
+            "rate and the four stage rates. Backlog piles up ahead of "
+            "whichever stage is full, freshness lag is backlog ÷ "
+            "throughput, and speeding a stage up moves the constraint "
+            "instead of removing it. The number everything else serves "
+            "is GPU idle due to data: the share of their read demand "
+            "the GPUs do not receive (the same quantity as "
+            "PhysicsCompute's data-feed slider and PhysicsStorage's "
+            "Exascale gauge). The middle row holds two separate "
+            "toggles. KV offload spills inference sessions' working "
+            "memory (the KV cache) to shared storage, about 4× the "
+            "long-context sessions for about a 12% per-token delay, "
+            "both estimates. GPU analytics applies Dell's up-to-6× "
+            "query claim, labeled as a vendor figure."
         ),
         expert=(
             "min(stages); backlog pre-constraint; lag = Q/X; fixes "
@@ -181,8 +205,8 @@ AIDATAPLATFORM = _map(
 
 CLOUDIQ = _map(
     "cloudiq",
-    "CloudIQ / APEX AIOps · the meta-instrument",
-    "APEX AIOps (CloudIQ name kept visible)",
+    "Dell AIOps (formerly CloudIQ) · the meta-instrument",
+    "Dell AIOps (formerly CloudIQ, then APEX AIOps)",
     L(
         novice=(
             "This product is a dashboard, so the simulator is a "

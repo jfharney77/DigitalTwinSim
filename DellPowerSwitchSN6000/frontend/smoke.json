@@ -27,12 +27,15 @@
       "svg": true,
       "visible": [
         ".phase",
-        ".poweron-desc"
+        ".poweron-desc",
+        ".hot-link"
       ],
       "text": [
         "7 / 9",
-        "incast — buffers filling",
-        "saturated"
+        "congestion — buffers filling",
+        "saturated",
+        "PFC pauses",
+        "40 /s"
       ],
       "play": {
         "click": "button:text-is('Step')",
@@ -56,6 +59,66 @@
         "watch": ".phase",
         "times": 1
       }
+    },
+    {
+      "hash": "#scenario=gray-link",
+      "name": "fabric-scenario-gray-link",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".scenario-picker"
+      ],
+      "text": [
+        "1 / 9",
+        "all-reduce time",
+        "120 ms",
+        "uplinks reporting up",
+        "8 / 8",
+        "none identified"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#scenario=gray-link&phase=telemetry",
+      "name": "fabric-scenario-gray-link-telemetry",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".sick-link"
+      ],
+      "text": [
+        "5 / 9",
+        "205 ms",
+        "leaf 2 to spine 1",
+        "UP · ERRING",
+        "dropped packets"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=gray-link&phase=drain",
+      "name": "fabric-scenario-gray-link-drain",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".sick-link"
+      ],
+      "text": [
+        "7 / 9",
+        "134 ms",
+        "7 / 8",
+        "SHUT DOWN",
+        "shut down by operator"
+      ]
     },
     {
       "hash": "#anatomy",
@@ -154,11 +217,14 @@
       "svg": true,
       "visible": [
         ".tour-caption",
-        ".tour-step-current"
+        ".tour-step-current",
+        ".tour-counters"
       ],
       "text": [
-        "Incast — many senders, one receiver",
-        "dropped-packet counter stays at zero"
+        "Congestion — many senders converge",
+        "dropped-packet counter stays at zero",
+        "Busiest link",
+        "98%"
       ],
       "play": {
         "click": "button:text-is('Previous')",

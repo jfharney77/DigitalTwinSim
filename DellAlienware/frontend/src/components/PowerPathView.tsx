@@ -38,11 +38,19 @@ function Flow({
   );
 }
 
+// Failed wins over active: a part that is stopping the charge is drawn in the
+// error colour with a dashed edge, whether or not it is also doing work.
+function blockClass(on: boolean, bad: boolean): string {
+  if (bad) return "pp-block region-failed";
+  return on ? "pp-block pp-active" : "pp-block";
+}
+
 // A named block on the schematic. Lights up while its region id is in the
 // current state's activeRegions.
 function Block({
   id,
   active,
+  failed,
   x,
   y,
   w,
@@ -52,6 +60,7 @@ function Block({
 }: {
   id: string;
   active: Set<string>;
+  failed?: Set<string>;
   x: number;
   y: number;
   w: number;
@@ -60,8 +69,9 @@ function Block({
   sub?: string;
 }) {
   const on = active.has(id);
+  const bad = failed?.has(id) ?? false;
   return (
-    <g className={on ? "pp-block pp-active" : "pp-block"}>
+    <g className={blockClass(on, bad)}>
       <rect x={x} y={y} width={w} height={h} rx={0.8} />
       <text x={x + w / 2} y={y + h / 2 + (sub ? -0.4 : 0.7)} textAnchor="middle">
         {label}
@@ -120,6 +130,7 @@ function Fan({
 
 export function PowerPathView({ state }: { state: PowerState | null }) {
   const active = new Set(state?.activeRegions ?? []);
+  const failed = new Set(state?.failedRegions ?? []);
   const acOn = (state?.acW ?? 0) > 0;
   const chargeOn = (state?.chargeW ?? 0) > 0;
   const hybridOn = (state?.batteryW ?? 0) > 0;
@@ -184,7 +195,7 @@ export function PowerPathView({ state }: { state: PowerState | null }) {
         </text>
 
         {/* DC-in jack */}
-        <Block id="dc-in" active={active} x={31} y={22} w={6} h={6} label="DC-in" />
+        <Block id="dc-in" active={active} failed={failed} x={31} y={22} w={6} h={6} label="DC-in" />
 
         {/* DC-in → charger */}
         <Flow d="M 37 25 L 41 25" on={acOn} color="var(--flow-ac)" />
@@ -250,7 +261,7 @@ export function PowerPathView({ state }: { state: PowerState | null }) {
         </text>
 
         {/* Battery pack with fill bar */}
-        <g className={active.has("battery") ? "pp-block pp-active" : "pp-block"}>
+        <g className={blockClass(active.has("battery"), failed.has("battery"))}>
           <rect x={35} y={43} width={33} height={13} rx={1} />
           <rect x={36.5} y={49} width={30} height={5} rx={0.6} className="pp-batt-well" />
           <rect
@@ -274,6 +285,7 @@ export function PowerPathView({ state }: { state: PowerState | null }) {
             battery · {Math.round(batteryPct)}%
           </text>
           <text x={66.5} y={46.8} textAnchor="end" className="pp-sub">
+            {state?.packTempC !== undefined ? `${state.packTempC} °C · ` : ""}
             {state?.chargeStage ?? "idle"}
           </text>
         </g>

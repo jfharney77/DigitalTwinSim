@@ -68,10 +68,15 @@ sets your supply temperature).
 
 ## Honesty
 
-The C7000 (4U, 19-inch, 220+ kW class, Vera Rubin NVL72), PowerRack,
-and the IRC were announced at Dell Technologies World in May 2026 and
-ship from Q3 2026 — public detail is press-release depth. The one
-sourced figure is the 220 kW capacity class; nearly every physics
+The C7000 (4U, 19-inch, "more than 220 kW", facility water up to
+40 °C, built for Vera Rubin NVL72) and PowerRack were announced at Dell
+Technologies World in May 2026. Dell gave Q3 2026 for C7000 general
+availability; PowerRack for compute was available at announcement, with
+networking in September 2026 and storage in 2H 2026. The IRC is older —
+announced November 2025, available December 2025 — and received a new
+release at the same event. Public detail is press-release depth. The
+sourced figures are the 220 kW capacity class and the 40 °C inlet
+limit, both Dell's own claims; nearly every physics
 constant (UA, pump curves, cold-plate resistance, time constants,
 trip thresholds) is an **estimate and labeled so** in
 `backend/app/constants.py`, each with units and a source field, served
@@ -79,6 +84,24 @@ over `/api/constants` so the UI can badge estimate-derived readouts.
 
 **What we don't model:** NTU heat-exchanger integration, pump heat into
 the coolant, filter fouling, glycol aging, water-side economizer
-dynamics, leak events (the IRC's headline feature is leak detection in
-seconds — a story about sensing, not thermodynamics), and CFD anywhere.
+dynamics, leak events (Dell's headline IRC claim is leak detection and
+response in seconds — a story about sensing, not thermodynamics), and CFD anywhere.
 Correct relationships and orders of magnitude, not a P&ID.
+
+## Graded labs
+
+Three labs (`#labs`, `#lab=<id>`) follow `docs/LAB_PATTERN.md`: a goal, the
+ordinary controls, the pure engine, and a pure grader (`backend/app/labs.py`,
+shared scoring in `twinkit/labs.py`). Work is `workRateKw` — banks online ×
+40 kW × utilization × the IRC cap, averaged over the run; illustrative, zero at
+idle, zero for a tripped bank. Every constraint is measured from the trace.
+
+| Lab | Difficulty | The lesson |
+|---|---|---|
+| `full-rack-lean-pumps` | 1 | Flow clears the cap, and the cube law prices it: 355 L/min does what 400 does for 5.1 kW instead of 7.3. |
+| `ride-the-chiller-trip` | 2 | Coordinated capping pays only while the water is warm; a static derate pays all run, and panic trips banks. |
+| `pump-down-warm-day` | 3 | The spare pump makes it possible, the lower setpoint makes it affordable, and spreading load over six banks buys back the silicon margin. |
+
+Reference solutions and named gaming attempts stay server-side and are pinned
+in `backend/tests/test_labs.py`. On the hosted static site grading runs in the
+browser through the same Pyodide dispatcher as `POST /api/simulate`.

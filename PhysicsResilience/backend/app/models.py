@@ -135,6 +135,14 @@ class SimState(CamelModel):
     restoring: bool
     restore_progress_pct: float
     rto_hours: float                  # live estimate (or actual once done)
+    # The RTO's two terms, kept apart: deciding, then moving bytes.
+    decision_hours: float = 0.0
+    transfer_hours: float = 0.0
+    restore_stage: Literal["", "deciding", "moving"] = ""
+    restore_failed: bool = False      # a restore was tried and nothing intact was left
+    rpo_realised_h: float = -1.0      # clean-copy age when the restore was ordered; -1 = none yet
+    outage_hours: float = 0.0         # incident onset → recovery (live, then frozen)
+    peak_blast_gb: float = 0.0        # the most data ever corrupt; survives the restore
     recovered: bool
     failed_restores: int
     # Fort Zero.

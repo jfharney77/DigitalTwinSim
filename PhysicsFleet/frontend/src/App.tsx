@@ -5,6 +5,7 @@ import {
   fetchAnatomy,
   fetchConfigPresets,
   fetchExplain,
+  fetchIntro,
   fetchScenarios,
   fetchWorkloadPresets,
   simulate,
@@ -13,9 +14,13 @@ import { BuildPanel } from "./components/BuildPanel";
 import { ProductGallery } from "./components/ProductGallery";
 import { FleetView } from "./components/FleetView";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
+import { ScenarioVariants } from "./components/ScenarioVariants";
 import { StripCharts } from "./components/StripCharts";
 import { Timeline, bandsWhere } from "./components/Timeline";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -23,6 +28,7 @@ import type {
   FleetConfig,
   FleetMap,
   GuidedScenario,
+  Intro,
   Scenario,
   SimEvent,
   SimResponse,
@@ -69,6 +75,7 @@ export function App() {
   const [workloadPresets, setWorkloadPresets] = useState<WorkloadPreset[]>([]);
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
+  const [intro, setIntro] = useState<Intro | null>(null);
   const [explainOn, setExplainOn] = useState(false);
   // Held by id so a reading-level refetch swaps in the re-levelled narration.
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
@@ -86,11 +93,25 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
 
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
+
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+    fetchIntro().then(setIntro).catch((e) => setError(String(e)));
+  }, [level]);
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -183,6 +204,48 @@ return () => {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEvents(lab.start.events);
+    setDurationD(lab.start.durationD);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const coldStart = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -214,6 +277,15 @@ return () => {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -225,17 +297,24 @@ return () => {
 
       <div className="an-hero">
         <h2>Every click has a price, and it's paid in hours</h2>
-        <p>
-          One fleet engine — sites, nodes, N+1 math, monthly release
-          waves, deterministic wear faults, drift — under five management
-          philosophies: VxRail's lifecycle bundle, Private Cloud's
-          catalog, APEX's consumption economics, NativeEdge's zero-touch
-          estates, and Automation Studio's pipelines. The teaching
-          instrument is the admin-hours ledger; automation moves its
-          needle by an order of magnitude, and everything else in this
-          app is a corollary. Tick = one sim-day.
-        </p>
+        <p>{intro?.body ?? ""}</p>
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         <div className="thermal-col">
@@ -273,18 +352,30 @@ return () => {
                 </button>
               ))}
             </div>
-            {activeScenario && (
-              <div className="mini scenario-narration">
-                {activeScenario.narration.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-                <p className="scenario-question">? {activeScenario.question}</p>
-              </div>
-            )}
           </div>
         </div>
 
         <div className="thermal-col thermal-center">
+          {activeScenario && (
+            <div className="an-panel scenario-brief">
+              <h2>{activeScenario.title}</h2>
+              <div className="mini scenario-narration">
+                {activeScenario.narration.map((p, i) => (
+                  <p key={i}>{p}</p>
+                ))}
+                <ScenarioVariants
+                  guided={activeScenario}
+                  current={config}
+                  onLoad={(c) => {
+                    setConfig(c);
+                    setCursor(0);
+                    setRunning(true);
+                  }}
+                />
+                <p className="scenario-question">? {activeScenario.question}</p>
+              </div>
+            </div>
+          )}
           <div className="an-card">
             {error && <div className="mini an-error">{error}</div>}
             {anatomy && (
@@ -420,6 +511,8 @@ return () => {
             explains={explains}
             explainOn={explainOn}
             product={config.product}
+            glossary={intro?.glossary ?? []}
+            glossaryOpen={level <= 3}
           />
           <StripCharts trace={trace} cursor={cursor} product={config.product} />
         </div>

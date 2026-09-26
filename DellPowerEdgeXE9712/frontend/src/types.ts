@@ -62,7 +62,17 @@ export type PowerOnPhase =
   | "gpuinit"
   | "fabric"
   | "fused"
-  | "ready";
+  | "ready"
+  // coolant-fault scenario only
+  | "flowfault"
+  | "isolate"
+  | "repair"
+  | "reverify"
+  | "leak"
+  | "traydown"
+  | "held";
+
+export type ScenarioId = "nominal" | "coolant-fault";
 
 export interface PowerOnState {
   step: number;
@@ -74,10 +84,25 @@ export interface PowerOnState {
   gpusInDomain: number;
   elapsedSeconds: number;
   cycleCost: number;
+  // Cooling-interlock telemetry (additive).
+  failedRegions: string[];
+  branchesVerified: number;
+  gpusPowered: number;
+  gpuTempC: number;
 }
 
 export interface PowerOnResponse {
   trace: PowerOnState[];
+  scenario: ScenarioId;
+}
+
+export interface ScenarioInfo {
+  id: ScenarioId;
+  name: string;
+  summary: string;
+  hero: string;
+  keyPhases: string[];
+  sources: SourceLink[];
 }
 
 export interface CatalogOption {

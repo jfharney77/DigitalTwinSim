@@ -92,6 +92,12 @@ export interface SimState {
   fanRpmPct: number;
   aliveFans: number;
   airflowCfm: number;
+  // Mass flow behind the CFM figure, and the heat the air carries this
+  // tick (equals dcPowerW once temperatures settle).
+  massFlowKgps: number;
+  airHeatW: number;
+  cpuUtilPct: number;
+  cpuBoosting: boolean;
   inletEffectiveC: number;
   cpuTempC: number;
   gpuTempC: number;
@@ -153,6 +159,8 @@ export interface ChassisMap {
   height: number;
   regions: ThermalRegion[];
   overview: string;
+  // The honesty note — served leveled like every other block of prose.
+  limitations: string;
   sources: { label: string; url: string }[];
 }
 

@@ -11,8 +11,11 @@ side ("I/O to PSU" airflow).
 Geometry is stylized and representative of the series (the PoE-heavy 48-port
 layout); the three models differ mainly in the front-panel port bank and the
 PSU wattage, both called out in the catalog. Per the project's scope
-guardrails: favor a correct mental model over exact mm placement. All figures
-are from the Dell PowerSwitch E3200-ON spec sheet (August 2024, v1.9).
+guardrails: favor a correct mental model over exact mm placement. Figures are
+from the Dell PowerSwitch E3200-ON spec sheet (August 2024, v1.9); the fan
+count (three pluggable modules) and the PoE budget ceilings are from the
+N3200-ON/E3200-ON Installation Guide; the series dates from 2022 (ESG First
+Look, December 2022).
 """
 
 from __future__ import annotations
@@ -36,8 +39,8 @@ ANATOMY = ChassisAnatomy(
     name="PowerSwitch E3200-ON",
     vendor="Dell Technologies",
     form_factor="1RU open-networking edge switch",
-    generation="E3200-ON Series (2024)",
-    year=2024,
+    generation="E3200-ON Series (introduced 2022)",
+    year=2022,
     width=100,
     height=48,
     overview=L(
@@ -46,9 +49,10 @@ ANATOMY = ChassisAnatomy(
             "building talk to each other. Historically you bought the switch "
             "and its software as one inseparable product from one company. This "
             "one is different: the hardware and the operating system are "
-            "separate purchases, and the switch boots through a small standard "
+            "separate purchases, and the switch ships with a small standard "
             "program whose only job is to go and fetch whichever network "
-            "operating system you chose. Watch where the power actually goes, "
+            "operating system you chose. (Once that system is installed, later "
+            "start-ups go straight to it.) Watch where the power actually goes, "
             "too. Most of the electricity this switch draws is not consumed by "
             "the switch at all — it is sent back out of the front ports to "
             "power the telephones, cameras, and wireless access points plugged "
@@ -58,9 +62,10 @@ ANATOMY = ChassisAnatomy(
         plain=(
             "A 1RU open-networking campus switch booting from mains power to "
             "line-rate forwarding. The distinctive path is the '-ON' part: "
-            "hardware initialisation, then ONIE — a standard bootloader whose "
-            "job is to install and launch a network operating system chosen "
-            "independently of the switch vendor — then the switching silicon is "
+            "hardware initialisation, then ONIE — a standard install environment "
+            "whose job is to fetch and install a network operating system "
+            "chosen independently of the switch vendor, and which later boots "
+            "bypass once that OS is in flash — then the switching silicon is "
             "programmed and the ports come up. The network OS boot is the "
             "longest stage. Note where the wattage goes: most of it leaves "
             "through the front ports as Power over Ethernet for phones, "
@@ -79,15 +84,15 @@ ANATOMY = ChassisAnatomy(
             "and the E3248PXE-ON (48× 1/2.5/5/10GbE Multigigabit copper with 90W "
             "PoE, runs Enterprise SONiC). All three add four SFP+/SFP28 uplinks up "
             "front and two 100GbE QSFP28 uplinks at the rear, dual hot-swap 80 "
-            "PLUS Platinum power supplies, and variable-speed fans. 'ON' means "
-            "Open Networking: the hardware boots ONIE and runs a disaggregated "
-            "network OS, so the switch silicon and the software are chosen "
-            "separately. This floorplan is the PoE-heavy 48-port layout, top-down "
+            "PLUS Platinum power supplies, and three variable-speed fan modules. "
+            "'ON' means Open Networking: the hardware ships with ONIE, the "
+            "open installer that loads a disaggregated network OS, so the "
+            "switch silicon and the software are chosen separately. This floorplan is the PoE-heavy 48-port layout, top-down "
             "with the lid off: ports on the left, power and uplinks on the right."
         ),
         technical=(
-            "1RU open-networking L3 campus switch: power-on → ONIE → "
-            "disaggregated NOS (SmartFabric OS10 or Enterprise SONiC) → ASIC "
+            "1RU open-networking L3 campus switch: power-on → boot loader/ONIE "
+            "(ONIE runs only when no NOS is installed) → disaggregated NOS (SmartFabric OS10 or Enterprise SONiC) → ASIC "
             "programming → ports and PoE → line rate. NOS boot holds the max "
             "dwell. Data rate is zero through every boot phase and ramps only "
             "at forwarding. PoE delivery is the power peak and the engine "
@@ -96,7 +101,8 @@ ANATOMY = ChassisAnatomy(
             "the 48-port PoE layout."
         ),
         expert=(
-            "1RU open-networking L3 switch: ONIE → disaggregated NOS → ASIC → "
+            "1RU open-networking L3 switch: GRUB/ONIE (install only) → "
+            "disaggregated NOS → ASIC → "
             "ports/PoE → line rate. NOS boot holds max dwell; data rate zero "
             "until forwarding. PoE step is the asserted power peak — the budget "
             "leaves the front panel rather than being consumed."
@@ -115,8 +121,10 @@ ANATOMY = ChassisAnatomy(
                 "Multigigabit ports that auto-sense 1/2.5/5/10GbE "
                 "(E3248PXE). Each copper port pairs a PHY (the analog "
                 "transceiver that puts bits on the wire) with the switching "
-                "ASIC. Auto-negotiation, auto-MDI/MDIX and per-port "
-                "Energy-Efficient Ethernet live here."
+                "ASIC. Auto-negotiation and auto-MDI/MDIX live here. Per-port "
+                "Energy-Efficient Ethernet is on the spec sheet too, but Dell "
+                "notes Enterprise SONiC does not support it, so on the 48-port "
+                "models it is hardware waiting for software."
             ),
         ),
         ChassisRegion(
@@ -202,9 +210,10 @@ ANATOMY = ChassisAnatomy(
                 id=f"fan-{i}",
                 kind="cooling",
                 label=f"Fan {i + 1}",
-                x=58, y=1 + i * 11, w=14, h=11,
+                x=58, y=1 + i * 15, w=14, h=14,
                 description=(
-                    "One of the redundant, variable-speed fan modules. They "
+                    "One of three pluggable, variable-speed fan modules (the "
+                    "count is from Dell's installation guide). They "
                     "pull air front-to-rear — intake at the port (I/O) side, "
                     "exhaust past the power supplies ('I/O to PSU' airflow) — "
                     "and spin only as fast as the sensed temperature and port "
@@ -213,7 +222,7 @@ ANATOMY = ChassisAnatomy(
                     "fan is a field-replaceable module."
                 ),
             )
-            for i in range(4)
+            for i in range(3)
         ],
         ChassisRegion(
             id="psu-1",
@@ -240,8 +249,11 @@ ANATOMY = ChassisAnatomy(
                 "or DC (add two 550W DC supplies for DC redundancy). Optional "
                 "external MPS-1S / MPS-3S power shelves add still more supplies "
                 "to extend the PoE budget on the E3248P and E3248PXE beyond "
-                "what fits internally — the way you power a full row of 90W "
-                "Wi-Fi access points."
+                "what fits internally. Dell's installation guide puts the "
+                "ceiling at 1440W of PoE on the E3248P and 4800W on the "
+                "E3248PXE, and the second figure is reachable only with an "
+                "MPS-3S shelf — the way you power a full row of 90W Wi-Fi "
+                "access points."
             ),
         ),
         ChassisRegion(
@@ -253,9 +265,11 @@ ANATOMY = ChassisAnatomy(
                 "Two high-capacity 100GbE QSFP28 uplink ports on the rear of "
                 "the chassis — the 'built-in rear high capacity ports' that let "
                 "an edge switch hand off to the core or spine without "
-                "consuming the front cages. QSFP28 also breaks out to 4× 25GbE "
-                "with the right cable. These are the fat pipes out of the "
-                "closet."
+                "consuming the front cages. Under both OS10 and Enterprise "
+                "SONiC, Dell documents them as Ethernet ports running at 100GbE "
+                "or 40GbE (stacking over them is an OS6 feature of the sibling "
+                "N3200 line, not available here). These are the fat pipes out "
+                "of the closet."
             ),
         ),
     ],
@@ -267,6 +281,8 @@ ANATOMY = ChassisAnatomy(
         Stat(label="Forwarding rate", value="733 / 800 / 2167 Mpps (by model)"),
         Stat(label="PoE", value="802.3at 30W or 802.3bt 90W (48-port models)"),
         Stat(label="Power", value="Dual hot-swap 80 PLUS Platinum PSU"),
+        Stat(label="Cooling", value="3 pluggable fan modules · I/O-to-PSU airflow"),
+        Stat(label="Max PoE budget", value="1440 W (E3248P) / 4800 W (E3248PXE, with MPS-3S)"),
         Stat(label="Network OS", value="SmartFabric OS10 or Enterprise SONiC (ONIE)"),
     ],
     sources=[
@@ -279,6 +295,26 @@ ANATOMY = ChassisAnatomy(
             url="https://www.dell.com/en-us/shop/ipovw/networking-e3200-series",
         ),
         SourceLink(
+            label="N3200-ON/E3200-ON Installation Guide: fans (three pluggable modules)",
+            url="https://www.dell.com/support/manuals/en-us/networking-n3200-series/n3200-on_e3200-on_install_pub/fans?guid=guid-ecdc9695-c620-401a-9c6b-42bf3aa83bda&lang=en-us",
+        ),
+        SourceLink(
+            label="N3200-ON/E3200-ON Installation Guide: PoE budget specifications",
+            url="https://www.dell.com/support/manuals/en-us/networking-n3200-series/n3200-on_e3200-on_install_pub/poe-budget-specifications?guid=guid-20cfc11e-210e-4984-85ad-82e8110525d1&lang=en-us",
+        ),
+        SourceLink(
+            label="N3248/E3248 2x100G port support in OS6, OS10 and Enterprise SONiC (Dell KB)",
+            url="https://www.dell.com/support/kbdoc/en-us/000207542/dell-networking-n3248-2x100g-port-in-dell-sonic",
+        ),
+        SourceLink(
+            label="ESG First Look: Dell PowerSwitch E3200-ON Series (PDF, Dec 2022)",
+            url="https://www.delltechnologies.com/asset/en-us/products/networking/industry-market/dell-powerswitch-e3200-on-series-esg-first-look.pdf",
+        ),
+        SourceLink(
+            label="ONIE overview: first boot vs subsequent boots (Open Compute Project)",
+            url="https://opencomputeproject.github.io/onie/overview/index.html",
+        ),
+        SourceLink(
             label="OS10: installing a new image with ONIE (Dell KB)",
             url="https://www.dell.com/support/kbdoc/en-us/000199005/dell-emc-networking-os10-install-via-onie-install-fresh-install",
         ),
@@ -287,7 +323,7 @@ ANATOMY = ChassisAnatomy(
             url="https://www.dell.com/support/kbdoc/en-us/000263481/dell-networking-enterprise-sonic-getting-started-and-basics-guide",
         ),
         SourceLink(
-            label="Dell EMC Networking ONIE Technology Guide (PDF)",
+            label="Dell EMC Networking ONIE Technology Guide (PDF, Sept 2019)",
             url="https://infohub.delltechnologies.com/static/media/client/7phukh/57ae5efd-8700-40e4-a268-37a88b6763fc.pdf",
         ),
     ],

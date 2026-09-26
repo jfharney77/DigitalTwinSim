@@ -19,7 +19,10 @@ def _fan(i: int) -> ThermalRegion:
         id=f"fan-{i}", kind="cooling", label=f"Fan {i + 1}",
         x=13, y=0.5 + i * 11.5, w=6, h=11.0,
         description=(
-            "One of four fan modules in the sled's fan wall. Fan power "
+            "One of four fans in the sled — the count Dell lists for "
+            "the 1U XR8610t (the 2U XR8620t carries up to eight, and "
+            "on the real sleds they are cabled, not hot-swappable). "
+            "Fan power "
             "rises with the cube of speed — and everything upstream of "
             "this wall (the filter, the dust on it) decides how much "
             "speed a given airflow costs. Click to kill this fan and "
@@ -34,7 +37,7 @@ ANATOMY = ChassisMap(
     vendor="Dell Technologies",
     form_factor="short-depth edge sled — thermal-zone view",
     generation="XR8000 sled-based / XR4000 stackable class",
-    year=2023,
+    year=2023,  # XR8000 announced Feb 2023; XR4000 Oct 2022
     width=100,
     height=46,
     overview=L(
@@ -62,14 +65,17 @@ ANATOMY = ChassisMap(
             "engine as the R760 thermal twin — power balance every tick, "
             "exhaust = inlet + Q/(ṁ·cp) — with the environment unlocked: "
             "−25…65 °C ambient, filter fouling in sim-months, vibration "
-            "classes, and a feed that browns out."
+            "classes, and a feed that browns out. The layout is a "
+            "teaching composite: Dell's real XR8000 keeps its PSUs "
+            "and optional filter bezel in the shared chassis and "
+            "takes M.2 flash only."
         ),
         standard=(
             "This is the R760Thermal engine moved to hostile ground — an "
             "XR8000-class short-depth sled whose spec sheet fences a "
             "world the R760 never sees: −5…55 °C rated ambient (−20…65 °C "
             "on select extended configs, versus a data hall's 35 °C "
-            "ceiling), NEBS-class dust and vibration, a single-phase "
+            "ceiling), NEBS Level 3 shock and vibration, a single-phase "
             "site feed with nothing between it and the weather. Air "
             "flows front (left) to rear through the one region a "
             "data-hall map never draws: the dust filter, whose fouling "
@@ -79,8 +85,13 @@ ANATOMY = ChassisMap(
             "familiar on purpose: DIMMs and the single socket in lane A, "
             "the inference accelerators in lane B, PSUs at the rear, "
             "every electrical watt becoming heat the airflow must carry "
-            "(exhaust = inlet + Q/(ṁ·cp)). Every constant carries a "
-            "source tag; the envelope bounds are Dell's documented "
+            "(exhaust = inlet + Q/(ṁ·cp)). The map is a teaching "
+            "composite, not one Dell sled: on the real XR8000 the dust "
+            "filter is an optional chassis bezel (or the cabinet's "
+            "job), the PSUs belong to the chassis and serve up to four "
+            "sleds, and storage is M.2 flash only. Every constant "
+            "carries a source tag; the envelope bounds, the 205 W CPU "
+            "ceiling, and the altitude derating are Dell's documented "
             "numbers, the fouling and vibration rates are labeled "
             "estimates."
         ),
@@ -93,14 +104,18 @@ ANATOMY = ChassisMap(
             "accel−80). Feed model: V sags per event; I = AC/V against "
             "a per-PSU input limit; deep sag < 60% drops out. Asserted: "
             "per-tick power balance, heat balance, envelope acceptance "
-            "tests. Envelope bounds documented (−5…55 / −20…65 select); "
-            "rates estimated."
+            "tests. Documented: envelope bounds (−5…55 / −20…65 on the "
+            "XR8620t, CPUs ≤195 W), 205 W max TDP, derate 1 °C per "
+            "80 m (58 m extended) above 900 m. Composite map: real "
+            "PSUs and filter bezel are chassis-level, storage M.2 "
+            "only. Rates estimated."
         ),
         expert=(
             "R760Thermal engine, hostile inputs. Fouling ↑ resistance → "
             "rpm³ tax; I = P/V brownout trip; HDD vibe derate. ΣP = DC; "
             "exhaust = inlet + DC/(ṁcp). −5…55 documented, −20…65 "
-            "select; rates estimated. Not CFD."
+            "select (XR8620t, ≤195 W); composite map; rates "
+            "estimated. Not CFD."
         ),
     ),
     regions=[
@@ -109,7 +124,10 @@ ANATOMY = ChassisMap(
             x=0.5, y=0.5, w=4, h=45,
             description=(
                 "The dust filter — the region a data-center chassis map "
-                "never draws, and the star of this one. Every month of "
+                "never draws, and the star of this one. On Dell's XR "
+                "line it is an optional filtered bezel (chassis-level "
+                "on the XR8000r; without one, Dell's guide asks the "
+                "cabinet to do the filtering). Every month of "
                 "site dust raises the airflow resistance behind it, so "
                 "the same fan speed moves less air and the controller "
                 "answers with more speed, at the cubic power price. "
@@ -121,9 +139,11 @@ ANATOMY = ChassisMap(
             id="backplane", kind="storage", label="Drives",
             x=5.5, y=0.5, w=6.5, h=45,
             description=(
-                "The short front bay — a handful of drives, not the "
-                "R760's wall of 24. The configuration choice that "
-                "matters out here is spinning versus solid-state: a "
+                "A short storage bay — a handful of drives, not the "
+                "R760's wall of 24. Dell's XR8000 and XR4000 sleds "
+                "take M.2 flash only, and the rack-form XR5610 and "
+                "XR7620 list 2.5-inch SSDs; the spinning-drive option "
+                "here is a thought experiment that shows why. A "
                 "vibrating site taxes an HDD's throughput (watch the "
                 "storage-performance instrument) and leaves an SSD "
                 "untouched. Drive temperature moves slowly (τ ≈ 300 s)."
@@ -134,18 +154,21 @@ ANATOMY = ChassisMap(
             id="dimm-a", kind="memory", label="DIMM bank A",
             x=21, y=1, w=26, h=8,
             description=(
-                "Half of the socket's DDR5 DIMMs. Each draws ~1.5 W idle "
-                "to ~4 W at full memory bandwidth. A short-depth sled "
-                "offers fewer slots than a rack server — capacity is one "
-                "of the prices of the form factor."
+                "Half of the socket's DIMMs. Each draws ~1.5 W idle to "
+                "~4 W at full memory bandwidth (estimates). A "
+                "short-depth sled offers fewer slots than a rack "
+                "server — eight DDR5 slots on an XR8000 sled, four "
+                "DDR4 slots on an XR4000 sled — and capacity is one of "
+                "the prices of the form factor."
             ),
         ),
         ThermalRegion(
             id="cpu1", kind="cpu", label="CPU",
             x=25, y=11, w=18, h=14,
             description=(
-                "The single socket — Xeon Scalable in an XR8000 sled, "
-                "Xeon D in an XR4000 node. Power follows utilization "
+                "The single socket — 4th or 5th Gen Xeon Scalable in an "
+                "XR8000 sled (205 W at most), Xeon D in an XR4000 "
+                "sled. Power follows utilization "
                 "nonlinearly (P = idle + (TDP−idle)·util^1.4), boosts "
                 "briefly at full load, and throttles in 10% steps above "
                 "98 °C. The same die that idles happily at −15 °C in "
@@ -166,7 +189,9 @@ ANATOMY = ChassisMap(
             id="accel-riser", kind="accel", label="Accelerators",
             x=51, y=1, w=20, h=26,
             description=(
-                "Up to two single-wide 75 W inference accelerators — the "
+                "Up to two single-wide 75 W inference accelerators, the "
+                "slot-powered class an NVIDIA L4 sits in (Dell lists "
+                "up to three L4s on the 2U XR8620t sled) — the "
                 "reason many of these sleds exist (video analytics at "
                 "the site, RAN acceleration at the cell). Lane B of the "
                 "airflow split; their presence raises the idle fan floor."
@@ -201,26 +226,32 @@ ANATOMY = ChassisMap(
                 "input: a single-phase site feed with no UPS ahead of "
                 "it. When the feed sags, constant power means rising "
                 "current (I = P/V) — a brownout the sled idles through "
-                "can trip it at full load. Efficiency follows the "
-                "Titanium-class curve."
+                "can trip it at full load. Efficiency follows a "
+                "Titanium-class curve (an approximation). On the real "
+                "XR8000 the two PSUs sit in the chassis, serviced "
+                "from the front, and feed up to four sleds; this map "
+                "gives one sled its own pair."
             ),
         ),
         ThermalRegion(
             id="psu-b", kind="power", label="PSU 2",
             x=88, y=17, w=11, h=14,
             description=(
-                "The second PSU, when the site affords one. Many edge "
+                "The second PSU, when the site affords one. Some edge "
                 "deployments run a single feed and a single supply — "
                 "which is why the brownout scenarios here default to a "
-                "1+0 build. Conversion loss vents through the PSUs' own "
+                "1+0 build, though Dell's XR8000 guide requires dual "
+                "PSUs for its NEBS ratings. Conversion loss vents through the PSUs' own "
                 "rear airflow, outside the front-to-back path."
             ),
         ),
     ],
     sources=[
-        {"label": "Dell PowerEdge XR series spec sheet (rugged ratings)",
+        {"label": "Dell PowerEdge XR-Series spec sheet, Jan 2026 (rated envelopes, DIMM slots, fans, PSUs, filter bezel)",
          "url": "https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-xr-rugged-spec-sheet.pdf"},
-        {"label": "Dell PowerEdge XR8000 Technical Guide",
+        {"label": "Dell PowerEdge XR8000 spec sheet (−20…65 °C with Heater Manager, certain configurations)",
+         "url": "https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-xr8000-spec-sheet.pdf"},
+        {"label": "Dell PowerEdge XR8000 Technical Guide (205 W max TDP, thermal restrictions, altitude derating, Heater Manager)",
          "url": "https://www.delltechnologies.com/asset/nl-nl/products/servers/technical-support/poweredge-xr8000-technical-guide.pdf"},
         {"label": "Dell Info Hub — XR8000 thermal design",
          "url": "https://infohub.delltechnologies.com/en-us/p/understanding-thermal-design-and-capabilities-for-the-poweredge-xr8000-server/"},

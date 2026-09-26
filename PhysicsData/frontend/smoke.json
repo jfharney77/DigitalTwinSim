@@ -136,6 +136,38 @@
         "watch": ".playback-row button.primary",
         "times": 1
       }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "A detector that is quiet and quick",
+        "The forecast answers last week's question"
+      ]
+    },
+    {
+      "hash": "#lab=quiet-and-quick",
+      "name": "lab-quiet-and-quick",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

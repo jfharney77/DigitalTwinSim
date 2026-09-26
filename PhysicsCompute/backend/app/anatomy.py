@@ -15,7 +15,7 @@ XE7745 = SystemMap(
     name="PowerEdge XE7745 · air-cooled PCIe GPU density",
     vendor="Dell Technologies",
     form_factor="4U rack server — top-down thermal view",
-    generation="PCIe Gen5 GPU platform",
+    generation="PCIe Gen5 GPU platform, dual AMD EPYC 9005",
     year=2024,
     width=100,
     height=52,
@@ -56,13 +56,15 @@ XE7745 = SystemMap(
         SystemRegion(
             id="nvme", kind="storage", label="NVMe bay",
             x=0.5, y=0.5, w=6, h=51,
-            description="Front NVMe bay — first heat into the airstream.",
+            description="Front bay of up to eight E3.S NVMe drives — first heat into the airstream.",
         ),
         SystemRegion(
             id="fanwall", kind="cooling", label="Fan wall ×16",
             x=8, y=0.5, w=7, h=51,
             description=(
-                "Sixteen high-static-pressure fans. Power goes with the "
+                "Sixteen hot-swap fan modules, drawn as one wall — Dell's "
+                "spec sheet lists twelve at the front and four dual-fan "
+                "modules on the mid tray. Power goes with the "
                 "cube of speed: the difference between 60% and 100% rpm "
                 "is the difference between tens and hundreds of watts of "
                 "pure overhead."
@@ -71,7 +73,7 @@ XE7745 = SystemMap(
         SystemRegion(
             id="cpu1", kind="cpu", label="CPU 1",
             x=18, y=3, w=13, h=20,
-            description="First Xeon socket — feeds the GPUs, preheats their air.",
+            description="First AMD EPYC 9005 socket — feeds the GPUs, preheats their air.",
         ),
         SystemRegion(
             id="cpu2", kind="cpu", label="CPU 2",
@@ -81,7 +83,7 @@ XE7745 = SystemMap(
         SystemRegion(
             id="dimm", kind="memory", label="DIMMs",
             x=33, y=3, w=6, h=46,
-            description="Memory banks between CPUs and the GPU field.",
+            description="Twenty-four DDR5 DIMM slots between the CPUs and the GPU field.",
         ),
         *[
             SystemRegion(
@@ -115,12 +117,18 @@ XE7745 = SystemMap(
         SystemRegion(
             id="psu", kind="power", label="PSU bank",
             x=91, y=29, w=8, h=20,
-            description="N+N PSU bank, 2400–2800 W class per supply.",
+            description=(
+                "Eight hot-swap 3200 W Titanium supplies (2900 W each on "
+                "200–220 V input). The model budgets four of them, the "
+                "half a 4+4 redundant bank can count on."
+            ),
         ),
     ],
     sources=[
         {"label": "physics_specs/01-gpu-compute-and-management.md (this repo)",
          "url": "../physics_specs/01-gpu-compute-and-management.md"},
+        {"label": "Dell PowerEdge XE7745 spec sheet (July 2025) — dual AMD EPYC 9005, 8× 600 W double-wide GPUs, 24 DIMMs, 3200 W Titanium PSUs, 12 front + 4 mid-tray fan modules",
+         "url": "https://www.delltechnologies.com/asset/en-in/products/servers/technical-support/poweredge-xe7745-spec-sheet.pdf"},
     ],
 )
 
@@ -165,7 +173,7 @@ XE9680 = SystemMap(
         expert=(
             "8× SXM on one thermal zone — collective throttle, stated "
             "simplification. data_feed caps eff-util: P ≈ high, tok/s ∝ "
-            "feed; wasted-GPU-hours ledger. Idle ~1 kW → ~10.5 kW. "
+            "feed; wasted-GPU-hours ledger. Idle ~1.5 kW → ~11 kW. "
             "Per-GPU 400G NICs ≈ 240 W of 'plumbing'."
         ),
     ),
@@ -173,17 +181,48 @@ XE9680 = SystemMap(
         SystemRegion(
             id="nvme", kind="storage", label="NVMe bay",
             x=0.5, y=0.5, w=6, h=51,
-            description="Front NVMe — local scratch for a machine fed over the fabric.",
+            description=L(
+                novice=(
+                    "A row of fast solid-state drives at the front of "
+                    "the machine. They hold working copies of whatever "
+                    "the GPUs are chewing on right now; the training "
+                    "data itself lives on storage elsewhere in the "
+                    "building and arrives over the network."
+                ),
+                standard=(
+                    "Front NVMe — local scratch for a machine fed over "
+                    "the fabric."
+                ),
+            ),
         ),
         SystemRegion(
             id="fanwall", kind="cooling", label="Fan wall ×16",
             x=8, y=0.5, w=7, h=51,
-            description="Six rack units of static pressure. Air is this machine's coolant, and its ceiling.",
+            description=L(
+                novice=(
+                    "Sixteen fans, drawn here as one wall. They have to "
+                    "push air through a machine six rack units tall and "
+                    "packed solid, which takes far more force than "
+                    "moving air across an open desk. Six of the fans sit "
+                    "in the middle of the chassis for the processors and "
+                    "ten sit at the back for the graphics chips. Air is "
+                    "the only thing cooling this machine, so how much "
+                    "air the fans can move is also the limit on how much "
+                    "heat it may make."
+                ),
+                standard=(
+                    "Six rack units of static pressure, drawn as one "
+                    "wall: the real chassis splits its sixteen fans into "
+                    "six on the mid tray for the host and ten at the "
+                    "rear for the GPUs. Air is this machine's coolant, "
+                    "and its ceiling."
+                ),
+            ),
         ),
         SystemRegion(
             id="cpu", kind="cpu", label="Host CPUs",
             x=18, y=3, w=12, h=30,
-            description="Two Xeons that exist to feed eight GPUs — the host is staff, not talent.",
+            description="Two Xeon Scalable processors that exist to feed eight GPUs — the host is staff, not talent.",
         ),
         SystemRegion(
             id="dimm", kind="memory", label="DIMMs",
@@ -193,26 +232,61 @@ XE9680 = SystemMap(
         SystemRegion(
             id="hgx", kind="gpu", label="HGX baseboard ×8 SXM",
             x=34, y=3, w=42, h=46,
-            description=(
-                "The HGX board: eight SXM GPUs drawn as the single "
-                "thermal zone the model treats them as. NVLink makes "
-                "them one computer; the shared cold-air budget makes "
-                "them one thermal fate — when this zone crosses the "
-                "throttle line, all eight step down together."
+            description=L(
+                novice=(
+                    "The HGX board — NVIDIA's eight-GPU carrier board — "
+                    "holding eight graphics chips in the bolted-down "
+                    "socket style called SXM, which lets each chip draw "
+                    "far more power than a plug-in card could. They are "
+                    "drawn as one block because this model treats them "
+                    "as one hot object: they share the board and they "
+                    "share the cold air, so when the block gets too hot "
+                    "all eight slow down together."
+                ),
+                standard=(
+                    "The HGX board: eight SXM GPUs drawn as the single "
+                    "thermal zone the model treats them as. NVLink makes "
+                    "them one computer; the shared cold-air budget makes "
+                    "them one thermal fate — when this zone crosses the "
+                    "throttle line, all eight step down together."
+                ),
             ),
         ),
         SystemRegion(
             id="nvswitch", kind="nvswitch", label="NVSwitch",
             x=78, y=3, w=6, h=46,
-            description="The NVSwitch spine at the board's edge — in-box traffic never touches the NICs.",
+            description=L(
+                novice=(
+                    "The switch that lets the eight graphics chips read "
+                    "each other's memory directly, inside the box. "
+                    "Because this path exists, work passed between the "
+                    "eight of them never goes out through the network "
+                    "cards at the back — it stays on the board, which is "
+                    "much faster."
+                ),
+                standard=(
+                    "The NVSwitch spine at the board's edge — in-box "
+                    "traffic never touches the NICs."
+                ),
+            ),
         ),
         SystemRegion(
             id="nic", kind="network", label="NICs ×8",
             x=86, y=3, w=6, h=46,
-            description=(
-                "One 400G-class NIC per GPU (~30 W each — a NIC bank "
-                "that outdraws a desktop PC). Scale past the chassis "
-                "wall is their job, and the fabric app's story."
+            description=L(
+                novice=(
+                    "Eight network cards, one for each graphics chip, "
+                    "each carrying 400 gigabits per second. They draw "
+                    "about 30 W apiece — the eight of them together use "
+                    "more electricity than a desktop PC, and they do no "
+                    "computing at all. Their job starts where the box "
+                    "ends: talking to the other machines in the cluster."
+                ),
+                standard=(
+                    "One 400G-class NIC per GPU (~30 W each — a NIC bank "
+                    "that outdraws a desktop PC). Scale past the chassis "
+                    "wall is their job, and the fabric app's story."
+                ),
             ),
         ),
         SystemRegion(
@@ -223,12 +297,29 @@ XE9680 = SystemMap(
         SystemRegion(
             id="psu", kind="power", label="PSUs ×6",
             x=94, y=19, w=5, h=30,
-            description="Six PSUs sharing an 11 kW-class load.",
+            description=L(
+                novice=(
+                    "Six power supplies, each rated 2800 W, sharing a "
+                    "load that reaches about eleven kilowatts — roughly "
+                    "what five electric kettles draw, in one server. "
+                    "They convert the building's alternating-current "
+                    "electricity into the direct current the parts run "
+                    "on. 'Titanium' is not a material here: it is the "
+                    "top efficiency grade, meaning very little of the "
+                    "electricity is lost as heat in the conversion."
+                ),
+                standard=(
+                    "Six 2800 W Titanium PSUs sharing an 11 kW-class "
+                    "load."
+                ),
+            ),
         ),
     ],
     sources=[
         {"label": "physics_specs/01-gpu-compute-and-management.md (this repo)",
          "url": "../physics_specs/01-gpu-compute-and-management.md"},
+        {"label": "Dell PowerEdge XE9680 Installation and Service Manual — two Xeon Scalable sockets, 32 DIMMs, six PSUs, six mid-tray + ten rear fans, HGX 8-GPU boards",
+         "url": "https://www.dell.com/support/manuals/en-us/poweredge-xe9680/xe9680_ism_pub/dell-poweredge-xe9680-system-configurations-and-features?guid=guid-219a12b6-5232-49fe-9506-ac2aed25ac30&lang=en-us"},
         {"label": "DellPowerEdgeXE9680 twin — the same machine's power-on story",
          "url": "http://localhost:5201/"},
     ],
@@ -240,8 +331,8 @@ XE9712 = SystemMap(
     name="PowerEdge XE9712 in IR7000 · liquid-cooled rack",
     vendor="Dell Technologies",
     form_factor="Rack-scale system — front elevation",
-    generation="GB200 NVL72-class, IR7000 rack",
-    year=2025,
+    generation="GB200 NVL72-class (GB300 from 2026), IR7000 rack",
+    year=2024,
     width=100,
     height=88,
     overview=L(
@@ -255,10 +346,12 @@ XE9712 = SystemMap(
             "warmer than it arrived. The arithmetic is honest — heat "
             "picked up equals flow times temperature rise — and the "
             "simulator enforces it exactly. About a tenth of the heat "
-            "still escapes into the room as air. Fans and their noise "
-            "are simply gone; in their place are quieter questions "
-            "about pumps, water temperature, and what happens when "
-            "either falters."
+            "still escapes into the room as air, carried by a few "
+            "small fans in each drawer. The map does not draw them, "
+            "but their electricity is counted as an estimate. The "
+            "big fan walls are gone; in their place are quieter "
+            "questions about pumps, water temperature, and what "
+            "happens when either falters."
         ),
         standard=(
             "The XE9712 drawn inside its IR7000 rack, front elevation: "
@@ -272,7 +365,7 @@ XE9712 = SystemMap(
             "Trays nearer the return run warmer than supply-side trays; "
             "pump degradation, CDU supply excursions, and per-tray "
             "restrictions are the failure dials. The IR7000's own "
-            "product — budget validation (tray power vs shelf capacity, "
+            "product — budget validation (tray power vs 33 kW-shelf capacity, "
             "coolant demand vs manifold, weight advisory) — gates the "
             "build panel."
         ),
@@ -281,7 +374,9 @@ XE9712 = SystemMap(
             "air = DC exact, ~12% residual air; ΔT = Q/(ṁ·cp_water); "
             "return-side trays hottest; coolant-return throttle at 65, "
             "trip at 75 °C. IR7000 rules: Στray ≤ shelf, Σcoolant ≤ "
-            "manifold, weight advisory. No fans anywhere in the story."
+            "manifold, weight advisory. Sled fans (8 dual-rotor each) "
+            "handle the residual air: not drawn, charged at a flat "
+            "~6 W per 100 W of air-side heat (estimate)."
         ),
     ),
     regions=[
@@ -305,7 +400,7 @@ XE9712 = SystemMap(
             x=2, y=11, w=76, h=12,
             description=(
                 "Compute trays nearest the coolant supply: 2 CPUs + 4 "
-                "GPUs each, cold plates on everything hot. These run "
+                "GPUs in each 1U sled, cold plates on everything hot. These run "
                 "coolest — position matters in a liquid loop too, just "
                 "milder than in air."
             ),
@@ -373,6 +468,12 @@ XE9712 = SystemMap(
     sources=[
         {"label": "physics_specs/01-gpu-compute-and-management.md (this repo)",
          "url": "../physics_specs/01-gpu-compute-and-management.md"},
+        {"label": "Dell PowerEdge XE9712 spec sheet (April 2026) — 2 Grace + 4 GPUs per 1U sled, 33 kW power shelves on an ORv3 busbar, eight dual-rotor fans per sled, 30 kg sled, 1,590 kg cabinet wet weight",
+         "url": "https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-xe9712-spec-sheet.pdf"},
+        {"label": "NVIDIA technical blog — GB200 NVL72: 18 compute trays, nine NVLink switch trays",
+         "url": "https://developer.nvidia.com/blog/nvidia-gb200-nvl72-delivers-trillion-parameter-llm-training-and-real-time-inference/"},
+        {"label": "Dell press release, December 2024 — first XE9712 racks ship in IR7000 racks",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2024~12~dell-cw-customer-announce.htm"},
         {"label": "DellPowerEdgeXE9712 twin — the same rack's power-on story",
          "url": "http://localhost:5181/"},
         {"label": "DellIR7000 twin — the cooling loop as its own subject",

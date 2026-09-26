@@ -79,7 +79,7 @@ def simulate() -> list[NamespaceState]:
                     'for tens of millions of photos. Right now they are separate '
                     'machines that are not yet working together. On most file '
                     'storage systems, this is the moment someone would sit down and'
-                    ' divide the space into fixed chunks called volumes, guessing '
+                    ' divide the space into walled-off sections called volumes, guessing '
                     'how big each one needs to be for years ahead. Here nobody does'
                     ' that, and nobody ever will. The cluster will offer exactly '
                     'one shared file system, from the first step to the last.'
@@ -113,12 +113,13 @@ def simulate() -> list[NamespaceState]:
                     'clustered. The step a conventional NAS would perform next, '
                     'provisioning volumes or aggregates against a capacity '
                     'forecast, is absent from this trace by design. The namespace '
-                    'count is 1 here and is invariant through the final step.'
+                    'count is 1 from the moment the cluster forms and is invariant '
+                    'through the final step.'
                 ),
                 expert=(
                     'Four unjoined nodes, ~400 TB raw. No volume or aggregate '
                     'provisioning follows — none exists in OneFS. Namespace count: '
-                    '1, invariant for the trace.'
+                    '1 from formation, invariant for the trace.'
                 ),
             ),
             active_regions=[],
@@ -327,11 +328,11 @@ def simulate() -> list[NamespaceState]:
                     'Imagine months passing in one step: data pours in, and the '
                     'shared space climbs past 80% full. On most file storage, this '
                     'is where trouble starts. The problem is not that the whole '
-                    'system is full — it is that one of the fixed chunks, one '
-                    'volume, is full, while another sits half empty. Fixing that '
-                    'means copying data from one chunk to another, planning a time '
+                    'system is full — it is that one of the walled-off sections, one'
+                    ' volume, is full, while another sits half empty. Fixing that '
+                    'means copying data from one volume to another, planning a time '
                     'when nobody can use it, and asking the people who own the data'
-                    ' for permission. Here there are no chunks to get stuck in. The'
+                    ' for permission. Here there are no volumes to get stuck in. The'
                     ' whole cluster fills up evenly, and the only choice coming up '
                     'is an easy one: buy more hardware. Look at the migrations '
                     'counter — it still reads zero, and it will stay at zero.'
@@ -351,7 +352,7 @@ def simulate() -> list[NamespaceState]:
                     "Months compressed into a step: data pours in and the one "
                     "namespace climbs past 80% used. On a conventional NAS "
                     "this is where the pathology starts — not because the "
-                    "system is full, but because some *volume* is. One "
+                    "system is full, but because some volume is. One "
                     "container hits 95% while another sits half empty, and "
                     "fixing that means a migration, a maintenance window, and "
                     "a negotiation with whoever owns the data. Here there is "
@@ -401,7 +402,7 @@ def simulate() -> list[NamespaceState]:
                     'system simply grew bigger — nobody created a second one next '
                     'to it. Nothing had to be set up, nothing had to be divided, '
                     'and no data has moved yet. On other file storage, this moment '
-                    'would mean a planning project: deciding how big the new chunks'
+                    'would mean a planning project: deciding how big the new volumes'
                     ' should be, what data should move into them, and when the '
                     'system could be taken offline. Here it is just a purchase and '
                     'two cables.'
@@ -422,7 +423,7 @@ def simulate() -> list[NamespaceState]:
                     "Watch the counters do the whole argument: capacity jumps "
                     "from 400 TB to 600 TB, used falls from 81% to 54% — and "
                     "namespaces stays at one, because the existing file system "
-                    "*became larger* rather than gaining a sibling. Nothing "
+                    "became larger rather than gaining a sibling. Nothing "
                     "was provisioned, nothing was carved, and no data moved "
                     "yet. On a conventional NAS this moment is a planning "
                     "exercise: size the new volumes, decide what migrates "
@@ -468,7 +469,7 @@ def simulate() -> list[NamespaceState]:
                     ' the whole story: copying part of everything onto new machines'
                     ' really does take time. That time is the price of never having'
                     ' to do a big planned move later. The work other systems spread'
-                    ' over years of shuffling data between chunks happens here, '
+                    ' over years of shuffling data between volumes happens here, '
                     'once, quietly. And it really is quiet: people can still open, '
                     'save, and read their files the whole time, through any node, '
                     'using the same folder paths as before. Nobody outside the '
@@ -539,14 +540,18 @@ def simulate() -> list[NamespaceState]:
                     ' the one file system, the data is spread evenly across all of '
                     'them, and the two new nodes do their full share of the work of'
                     ' reading, writing, and protecting data. Count up what growing '
-                    'the system cost the people running it: no new chunk of storage'
+                    'the system cost the people running it: no new volume'
                     " was set up, nobody moved data by hand, nobody's computer had "
                     'to reconnect, and no planning meeting had to be booked for '
                     'next quarter. Another twin in this collection, DellPowerFlex, '
                     'shows what block storage gains by getting rid of the '
                     'controller box. This twin makes the same kind of move for file'
                     ' storage: OneFS got rid of the volume, and this step shows '
-                    'what growing looks like without one.'
+                    'what growing looks like without one. One number did move: the '
+                    'used share went from 54% to 57%. That is not the tidy-up '
+                    'eating space. People kept saving new files the whole time the '
+                    'data was being spread out, and those new files are the three '
+                    'extra points.'
                 ),
                 plain=(
                     'Steady state at the larger size. Six nodes serve the one file '
@@ -558,6 +563,9 @@ def simulate() -> list[NamespaceState]:
                     ' this repo, shows what block storage gains by removing the '
                     'controller. This twin makes the same refusal for file storage:'
                     ' OneFS removed the volume, and this step is growth without it.'
+                    ' Used has risen from 54% to 57% since the join. Clients kept '
+                    'writing during the rebalance, and that new data is the '
+                    'difference. Rebalancing moves data and consumes no capacity.'
                 ),
                 standard=(
                     "Steady state at larger scale. Six nodes now serve the "
@@ -571,7 +579,10 @@ def simulate() -> list[NamespaceState]:
                     "block storage gains by deleting the controller. This "
                     "twin is the same refusal aimed at file storage: OneFS "
                     "deleted the volume, and this step is what growth looks "
-                    "like without it."
+                    "like without it. Used reads 57%, up from 54% at the join: "
+                    "clients kept writing throughout the rebalance, and that "
+                    "ingest is the whole difference. Restriping relocates data "
+                    "and consumes no capacity of its own."
                 ),
                 technical=(
                     'Steady state at six nodes. Stripes are balanced cluster-wide '
@@ -580,12 +591,13 @@ def simulate() -> list[NamespaceState]:
                     ' provisioned, zero manual migrations, zero client remounts, no'
                     ' capacity-planning cycle. DellPowerFlex is the block-storage '
                     'counterpart (the controller removed); this twin removes the '
-                    'volume for file storage.'
+                    'volume for file storage. Used 54% to 57% is client ingest '
+                    'during the restripe, not rebalance overhead.'
                 ),
                 expert=(
                     'Balanced at six nodes. Zero provisioning, migration, or '
                     'remount. Counterpart: DellPowerFlex (no controller) — here, no'
-                    ' volume.'
+                    ' volume. Used 54% to 57%: ingest during restripe.'
                 ),
             ),
             active_regions=[

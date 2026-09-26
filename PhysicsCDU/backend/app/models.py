@@ -124,6 +124,10 @@ class SimState(CamelModel):
     sec_return_c: float
     sec_flow_lpm: float
     approach_c: float
+    # Where the lagged supply is heading: the steady-state value the
+    # approach equation gives for the current heat and flow. Explain mode
+    # shows it beside the live reading, which only matches once settled.
+    sec_supply_steady_c: float
     pump_speed_pct: float
     pumps_alive: int
     pump_power_kw: float
@@ -136,6 +140,10 @@ class SimState(CamelModel):
     cap_pct: float
     capping: bool
     chip_temp_c: float
+    # Where the lagged silicon reading is heading, given the current supply.
+    chip_steady_c: float
+    # Heat carried since t=0, the running total behind Summary.delivered_kwh.
+    delivered_kwh: float
     # Condensation guard.
     dew_margin_c: float
     floor_active: bool
@@ -222,6 +230,9 @@ class GuidedScenario(CamelModel):
     title: str
     narration: list[str]
     question: str
+    # The worked answer, revealed on request. Every number in it is read
+    # off this scenario's own trace and pinned in tests/test_model_data.py.
+    answer: str = ""
     scenario: Scenario
 
 

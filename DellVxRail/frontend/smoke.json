@@ -56,6 +56,48 @@
       }
     },
     {
+      "hash": "#scenario=node-add-mismatch",
+      "name": "scenario-node-add",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".scenario-select",
+        ".scenario-note a"
+      ],
+      "text": [
+        "Four nodes serving virtual machines",
+        "1 / 11",
+        "mismatched nodes in vSAN",
+        "CPU · Node 5"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 3
+      }
+    },
+    {
+      "hash": "#scenario=node-add-mismatch&phase=refused",
+      "name": "scenario-node-add-refused",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".region-failed",
+        ".stat-failed"
+      ],
+      "text": [
+        "5 / 11",
+        "Refused: node 7.0.370, cluster 8.0.300",
+        "120 TB"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
       "hash": "#anatomy",
       "name": "anatomy",
       "svg": true,

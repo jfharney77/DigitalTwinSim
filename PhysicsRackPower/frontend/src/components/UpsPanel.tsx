@@ -4,8 +4,12 @@ import type { Explain, SimState, Summary } from "../types";
 // the front panel believes) beside actual runtime (what the faded
 // battery can deliver), with the gap badged whenever they disagree.
 
-function fmtMin(m: number): string {
-  if (m >= 9999) return "∞";
+// The engine caps runtime at 9999 min when there is no load to divide by.
+// An exhausted pack reads 0.0 min (never "infinite" on a dead battery); a
+// charged pack with nothing drawing from it has no runtime to quote.
+function fmtMin(m: number, s: SimState): string {
+  if (!s.rackPowered || s.batteryWhRemaining <= 0) return "0.0 min";
+  if (m >= 9999) return "— (no load)";
   return `${m.toFixed(1)} min`;
 }
 
@@ -49,7 +53,7 @@ export function UpsPanel({
   return (
     <div className="an-panel">
       <h2>UPS &amp; battery</h2>
-      {s && !s.utilityOn && (
+      {s && !s.utilityOn && s.rackPowered && (
         <div className="mini rule-error">
           ■ ON BATTERY — utility is down
         </div>
@@ -65,7 +69,7 @@ export function UpsPanel({
         <div className="runtime-box">
           <div className="mini">predicted (front panel)</div>
           <div className="runtime-num">
-            {s ? fmtMin(s.predictedRuntimeMin) : "—"}
+            {s ? fmtMin(s.predictedRuntimeMin, s) : "—"}
           </div>
           <div className="mini">
             {s?.selfTested ? "corrected by self-test" : "from nameplate Wh"}
@@ -74,7 +78,7 @@ export function UpsPanel({
         <div className="runtime-box">
           <div className="mini">actual (faded battery)</div>
           <div className="runtime-num">
-            {s ? fmtMin(s.actualRuntimeMin) : "—"}
+            {s ? fmtMin(s.actualRuntimeMin, s) : "—"}
           </div>
           <div className="mini">
             {summary
@@ -93,7 +97,7 @@ export function UpsPanel({
         id="runtime"
         live={
           s
-            ? `${fmtMin(s.actualRuntimeMin)} = ${s.batteryWhRemaining.toFixed(0)} Wh × 0.93 ÷ ${s.pduInputW.toFixed(0)} W`
+            ? `${fmtMin(s.actualRuntimeMin, s)} = ${s.batteryWhRemaining.toFixed(0)} Wh × 0.93 ÷ ${s.pduInputW.toFixed(0)} W`
             : ""
         }
       />
@@ -124,7 +128,7 @@ export function UpsPanel({
         <span>{s ? `${s.batteryOutputW.toFixed(0)} W` : "—"}</span>
       </div>
       <div className="stat">
-        <span>inverter loss</span>
+        <span>{s && !s.utilityOn ? "inverter loss" : "pass-through loss"}</span>
         <span>{s ? `${s.inverterLossW.toFixed(0)} W` : "—"}</span>
       </div>
       <div className="btnrow">

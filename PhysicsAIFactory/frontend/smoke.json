@@ -4,41 +4,127 @@
       "hash": "",
       "name": "dashboard",
       "svg": true,
-      "visible": [".headline-grid .headline-tile", ".scenario-list button", ".playback-row input[type=range]"],
-      "text": ["tokens / second", "GPU idle — waiting for data", "Size the factory", "Training job", "Guided scenarios", "Run summary", "Strip charts — shared time axis", "Explore the pieces"],
-      "play": { "click": "button:text-is('×24 h')", "watch": "header .sub", "times": 2 }
+      "visible": [
+        ".headline-grid .headline-tile",
+        ".scenario-list button",
+        ".scrub-field input[type=range]"
+      ],
+      "text": [
+        "tokens / second",
+        "GPU idle — waiting for data",
+        "Size the factory",
+        "Training job",
+        "Guided scenarios",
+        "Run summary",
+        "Strip charts — shared time axis",
+        "Explore the pieces"
+      ],
+      "play": {
+        "click": "button:text-is('×24 h')",
+        "watch": "header .sub",
+        "times": 2
+      }
     },
     {
       "hash": "#scenario=stand-up",
       "name": "scenario-stand-up",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["Stand up an AI factory", "Colossus"],
-      "play": { "click": "button:text-is('Explain mode')", "watch": ".headline-grid", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "Stand up an AI factory",
+        "Colossus"
+      ],
+      "play": {
+        "click": "button:text-is('Explain mode')",
+        "watch": ".headline-grid",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=starved-cluster",
       "name": "scenario-starved-cluster",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["The starved cluster"],
-      "play": { "click": ".scenario-list button:text-is('Checkpoint Goldilocks')", "watch": ".scenario-narration", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "The starved cluster"
+      ],
+      "play": {
+        "click": ".scenario-list button:text-is('Checkpoint Goldilocks')",
+        "watch": ".scenario-narration",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=checkpoint-goldilocks",
       "name": "scenario-checkpoint-goldilocks",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["Checkpoint Goldilocks"],
-      "play": { "click": "button:text-is('Pause')", "watch": ".playback-row button.primary", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "Checkpoint Goldilocks"
+      ],
+      "play": {
+        "click": "button:text-is('Pause')",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=warm-day",
       "name": "scenario-warm-day",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["Warm day at 90% of budget"],
-      "play": { "click": "button:text-is('Reset')", "watch": ".an-panel:has(.scenario-list)", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "Warm day at 90% of budget"
+      ],
+      "play": {
+        "click": "button:text-is('Reset')",
+        "watch": ".an-panel:has(.scenario-list)",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Feed the cluster on its worst day",
+        "Checkpoint the giant"
+      ]
+    },
+    {
+      "hash": "#lab=feed-the-worst-day",
+      "name": "lab-feed-the-worst-day",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

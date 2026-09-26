@@ -1,7 +1,7 @@
 # DellPowerProtect — data-protection digital twin (twelfth component)
 
 A digital twin of **Dell PowerProtect Data Domain** (the purpose-built
-backup appliance, all-flash as of September 2025) and **PowerProtect Cyber
+backup appliance, with an all-flash DD9910F model announced in May 2025) and **PowerProtect Cyber
 Recovery** — the air-gapped vault architecture with Retention Lock
 immutability and CyberSense machine-learning integrity analytics.
 
@@ -51,6 +51,51 @@ Frontend build: `cd frontend && npm run build`
   before the attack.
 - CyberSense's scan is the single longest stage (max `cycleCost`); recovery
   is driven from the vault side.
+
+## Failure scenario: free space keeps shrinking
+
+`/#scenario=cleaning-gc` (or the Scenario picker on the simulator page) plays
+a second pure trace, `backend/app/cleaning.py`, served by
+`GET /api/lifecycle?scenario=cleaning-gc`. `GET /api/scenarios` lists both
+traces; without the parameter the endpoint returns the happy path,
+byte-identical to before. The deep link composes with the cursor links:
+`#scenario=cleaning-gc&phase=alert`, `#scenario=cleaning-gc&step=6`.
+
+The story is the one behind a recurring Data Domain support question. Backups
+expire by retention and used space does not move, because expiry only
+removes files from the namespace. The physical segments come back when the
+cleaning (garbage collection) cycle runs, weekly by default. The appliance
+passes 95% and raises its space alert; the clean then returns 12 TB where
+the "Cleanable" estimate said 21, because a lagging replication context
+and a snapshot nobody expired still reference the deleted files. A further
+3 TB was never in the estimate: copies under Retention Lock whose delete
+the appliance refused, so the catalog calls them expired and the appliance
+does not. The recovery action is the real one: let replication catch up,
+expire the stale snapshot, clean again (the two cleans together return the
+21 TB first estimated). The locked copies wait out their date.
+
+Phase order: `steady→expire→ingest→alert→clean→pinned→release→reclean→settled`.
+Invariants (`backend/tests/test_cleaning_scenario.py`):
+
+- The capacity ledger closes on every step:
+  `stored = live + reclaimable + held(replication) + held(snapshot) + held(lock)`.
+- **Expiry alone never frees space**, and **stored falls only during a clean
+  phase**, by exactly what was reclaimable.
+- **Locked data is never reclaimed before its lock ends**; releasing a hold
+  moves terabytes to reclaimable without freeing any.
+- The first clean returns less than the estimate, and the shortfall equals
+  what replication and the snapshot still referenced. Locked files are never
+  counted as cleanable: their delete was refused.
+- A full appliance loses no stored backup, and the air gap keeps its
+  discipline throughout.
+- The copy-forward pass is the longest stage.
+
+The hero counter is terabytes reclaimed against the cleanable estimate.
+The over-threshold appliance is drawn in the error colour. The alert wording,
+the default schedule and the pinning behaviours are sourced from Dell KB
+articles carried in the scenario data; terabytes, hours, lock days and the
+95% alert threshold are illustrative (Dell's documented example threshold is
+90%).
 
 This twin closes a loop the PowerMax twin opened — its cyber-resiliency
 vault use case is, concretely, this architecture. Capacities, ratios, and

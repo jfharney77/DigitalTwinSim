@@ -588,6 +588,11 @@ label.field.cfg-row { display: flex; flex-direction: row; align-items: center; g
 .scenario-list button.active { outline: 2px solid var(--accent, #0672cb); }
 .scenario-narration { margin-top: 8px; line-height: 1.5; }
 .scenario-narration p { margin: 0 0 6px; }
+.before-after { margin-top: 8px; }
+.before-after table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.before-after th, .before-after td { text-align: right; padding: 2px 4px; font-weight: 400; }
+.before-after th { opacity: 0.7; }
+.before-after td:first-child, .before-after th:first-child { text-align: left; }
 .scenario-question { font-weight: 600; color: var(--accent, #0672cb); }
 .flow-slow line { stroke-dashoffset: 0; animation: flowdash 3s linear infinite; }
 .flow-mid line { animation: flowdash 1.5s linear infinite; }

@@ -96,6 +96,8 @@ class PowerOnState(CamelModel):
 
 
 class PowerOnResponse(CamelModel):
+    # The page's opening paragraph, leveled like the trace prose.
+    intro: str = ""
     trace: list[PowerOnState]
 
 

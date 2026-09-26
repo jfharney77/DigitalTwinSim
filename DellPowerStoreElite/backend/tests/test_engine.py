@@ -118,7 +118,7 @@ def test_effective_capacity_only_grows_and_jumps_at_the_join():
 
 
 def test_the_mesh_carries_the_migration():
-    """The RDMA interconnect lights first in the mesh phase — never
+    """The cluster network lights first in the mesh phase — never
     before — and is active on every rebalance step: all cross-generation
     data movement rides it."""
     trace = simulate()

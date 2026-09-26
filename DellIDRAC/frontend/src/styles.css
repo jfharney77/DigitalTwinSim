@@ -606,3 +606,31 @@ select:hover {
 .app.dell .tour-page {
   grid-row: 2 / -1;
 }
+
+/* --- Failure scenario (firmware update that rolls back) ------------------- */
+.app.dell .scenario-panel select {
+  width: 100%;
+  margin-top: 4px;
+}
+.app.dell .scenario-summary {
+  margin: 8px 0 0;
+}
+.app.dell .scenario-sources {
+  margin-top: 8px;
+}
+.app.dell .scenario-sources ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+}
+.app.dell .scenario-sources li {
+  margin-bottom: 4px;
+}
+.app.dell .stat span.stat-bad:last-child {
+  color: var(--dell-error);
+  font-weight: 500;
+}
+.app.dell .log-entry {
+  margin-top: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--dell-ink, inherit);
+}

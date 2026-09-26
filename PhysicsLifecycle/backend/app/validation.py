@@ -47,7 +47,7 @@ def validate(scenario: Scenario) -> list[Validation]:
                     "fleet dark. Extended-temp (XR-class) exists for "
                     "exactly this."
                 ),
-                source="spec 08 — site environment; XR envelope to verify",
+                source="spec 08 — site environment; XR8000 −5 to 55 °C per Dell (Feb 2023 press release); standard ceiling is an estimate",
             ))
         # Rule 3 — no spares means updates hurt.
         if not cfg.spare_capacity:

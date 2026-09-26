@@ -142,7 +142,7 @@ ANATOMY = RackMap(
             "label": "Dell rack power lineup — APC NetShelter Rack PDU "
                      "Advanced (switched, metered-by-outlet; 1- and "
                      "3-phase), sold on dell.com",
-            "url": "https://www.dell.com/en-us/shop/power-cooling-data-center-infrastructure",
+            "url": "https://www.dell.com/en-us/shop/apc-netshelter-rack-pdu-advanced-switched-metered-outlet-3phase-11kw-400v-16a-or-115kw-415v-20a-48-outlets-iec309/apd/ac021009/pc-accessories",
         },
         {
             "label": "NEC 80% continuous-load rule (210.19/210.20) — the "
@@ -150,9 +150,16 @@ ANATOMY = RackMap(
             "url": "https://www.nfpa.org/codes-and-standards/nfpa-70-standard-development/70",
         },
         {
-            "label": "IEEE 1188 / IEEE 535 — VRLA maintenance and "
-                     "qualification practice behind the aging rule of thumb",
-            "url": "https://standards.ieee.org/ieee/1188/3841/",
+            "label": "IEEE 1188 — recommended practice for VRLA "
+                     "maintenance, testing, and replacement (the 80% "
+                     "capacity replacement line)",
+            "url": "https://standards.ieee.org/ieee/1188/1800/",
+        },
+        {
+            "label": "Schneider Electric/APC — expected VRLA UPS battery "
+                     "life (3–5 years) and the temperature rule of thumb "
+                     "(life halves per +8 °C; modeled here as +10 °C)",
+            "url": "https://www.se.com/us/en/faqs/FA158934/",
         },
     ],
 )

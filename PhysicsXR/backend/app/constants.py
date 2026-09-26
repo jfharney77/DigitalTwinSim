@@ -4,10 +4,12 @@
 from Dell's published documentation cite it; everything else says
 ``estimate`` and the UI badges readouts that derive from estimates. The
 XR-specific facts that are *documented* — the −5…55 °C standard envelope,
-the −20…65 °C extended envelope on select XR8000 configurations, NEBS
-Level 3 — are cited to the Dell XR spec sheet and XR8000 technical guide
-verified at build time (2026-08). Fouling rates, vibration derates, and
-the brownout electrical limits are estimates and say so.
+the −20…65 °C extended envelope on select XR8000 configurations (the 2U
+XR8620t sled, CPUs to 195 W, dual PSUs, Heater Manager for cold starts),
+the 205 W platform CPU maximum, the four-fan 1U sled, the 900 m altitude
+derating knee — are cited to the Dell XR-Series spec sheet (Jan 2026) and
+the XR8000 Technical Guide, re-verified 2026-09. Fouling rates, vibration
+derates, and the brownout electrical limits are estimates and say so.
 """
 
 from __future__ import annotations
@@ -100,8 +102,11 @@ CONSTANTS: dict[str, Constant] = {
     # --- Accelerators ------------------------------------------------------
     "accel_sw_tdp": Constant(
         value=75, unit="W",
-        source="75 W single-wide accelerator class (no aux power)", estimated=False,
-        blurb="Single-wide edge-inference accelerator TDP class modeled.",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide — 75 W delivered per PCIe slot without auxiliary "
+               "power; Dell lists up to 3× NVIDIA L4 (70 W class) on the "
+               "XR8620t", estimated=False,
+        blurb="Single-wide edge-inference accelerator TDP class modeled "
+              "(the slot-powered 75 W class an NVIDIA L4 sits in).",
     ),
     "accel_idle_fraction": Constant(
         value=0.10, unit="fraction of TDP", source="estimate", estimated=True,
@@ -132,8 +137,10 @@ CONSTANTS: dict[str, Constant] = {
     # --- Fans ------------------------------------------------------------
     "fan_count": Constant(
         value=4, unit="fans",
-        source="estimate — short-depth sled fan wall", estimated=True,
-        blurb="Fan-wall population modeled for the sled.",
+        source="Dell PowerEdge XR-Series spec sheet (Jan 2026, Rev. A01) — up to 4 cabled cooling fans in the 1U XR8610t "
+               "sled (up to 8 in the 2U XR8620t)", estimated=False,
+        blurb="Fan population modeled: the 1U XR8610t sled's four. On the "
+              "real sleds the fans are cabled, not hot-swappable.",
     ),
     "fan_pmax_w": Constant(
         value=18, unit="W", source="estimate", estimated=True,
@@ -206,35 +213,44 @@ CONSTANTS: dict[str, Constant] = {
     # --- Rated envelopes (the documented facts) ---------------------------
     "xr_standard_min_c": Constant(
         value=-5, unit="°C",
-        source="Dell PowerEdge XR spec sheet — XR series rated −5…55 °C",
+        source="Dell PowerEdge XR-Series spec sheet (Jan 2026, Rev. A01) — operates from −5 °C to 55 °C; XR8000 Technical Guide — NEBS3 class −5…55 °C",
         estimated=False,
         blurb="Lower bound of the standard rugged operating envelope.",
     ),
     "xr_standard_max_c": Constant(
         value=55, unit="°C",
-        source="Dell PowerEdge XR spec sheet — XR series rated −5…55 °C",
+        source="Dell PowerEdge XR-Series spec sheet (Jan 2026, Rev. A01) — operates from −5 °C to 55 °C; XR8000 Technical Guide — NEBS3 class −5…55 °C",
         estimated=False,
         blurb="Upper bound of the standard rugged operating envelope "
               "(a data-hall server's A2 envelope tops out at 35 °C).",
     ),
     "xr_extended_min_c": Constant(
         value=-20, unit="°C",
-        source="Dell XR8000 Technical Guide — −20…65 °C on select configs",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide — XR8620t extended range −20…65 °C (GR-3108 Class 1 / NEBS3-H), subject to restrictions",
         estimated=False,
         blurb="Lower bound of the extended envelope, select XR8000 configs.",
     ),
     "xr_extended_max_c": Constant(
         value=65, unit="°C",
-        source="Dell XR8000 Technical Guide — −20…65 °C on select configs",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide — XR8620t extended range −20…65 °C (GR-3108 Class 1 / NEBS3-H), subject to restrictions",
         estimated=False,
         blurb="Upper bound of the extended envelope, select XR8000 configs.",
     ),
     "extended_max_tdp_w": Constant(
-        value=225, unit="W",
-        source="estimate — extended envelope is select (reduced) configs; "
-               "the exact matrix is Dell's thermal restriction table",
-        estimated=True,
-        blurb="Largest CPU tier this model allows in the extended envelope.",
+        value=195, unit="W",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide, XR8620t thermal restriction table — the 205 W "
+               "Xeon Gold 6433N is not supported at 65 °C; the 195 W 6423N "
+               "and below are",
+        estimated=False,
+        blurb="Largest CPU TDP Dell supports in the 65 °C classes. This "
+              "model's tiers step 185 → 205 W, so 185 W is the largest "
+              "tier that qualifies.",
+    ),
+    "xr8000_max_tdp_w": Constant(
+        value=205, unit="W",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide — maximum processor TDP 205 W",
+        estimated=False,
+        blurb="Largest CPU TDP the XR8000 sleds take at all.",
     ),
     "inlet_shutdown_c": Constant(
         value=70, unit="°C", source="estimate — beyond even the extended class",
@@ -242,10 +258,35 @@ CONSTANTS: dict[str, Constant] = {
         blurb="Effective inlet temperature that forces emergency power-off.",
     ),
     "derate_start_m": Constant(
-        value=950, unit="m",
-        source="Dell derating note — supported ambient decreases ~1 °C per 300 m above 950 m",
+        value=900, unit="m",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide, environmental specifications — maximum temperature "
+               "derates above 900 m (2,953 ft) in every class",
         estimated=False,
         blurb="Altitude above which supported ambient derates.",
+    ),
+    "derate_m_per_c_standard": Constant(
+        value=80, unit="m per °C",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide — NEBS3 class (−5…55 °C): maximum temperature reduced "
+               "1 °C per 80 m above 900 m",
+        estimated=False,
+        blurb="Altitude gained per 1 °C of supported ambient lost, standard "
+              "rugged envelope. (The 35 °C ASHRAE A2 class derates a "
+              "gentler 1 °C per 300 m — the hotter the rating, the steeper "
+              "the derate.)",
+    ),
+    "derate_m_per_c_extended": Constant(
+        value=58, unit="m per °C",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide — NEBS3-H / GR-3108 Class 1+ (to 65 °C): maximum "
+               "temperature reduced 1 °C per 58 m above 900 m",
+        estimated=False,
+        blurb="Altitude gained per 1 °C of supported ambient lost, extended "
+              "envelope.",
+    ),
+    "max_operational_altitude_m": Constant(
+        value=3050, unit="m",
+        source="Dell PowerEdge XR8000r/XR8610t/XR8620t Technical Guide — maximum operational altitude 3,050 m",
+        estimated=False,
+        blurb="Highest rated operating altitude (the slider stops at 3,000 m).",
     ),
     # --- PSU & the feed ----------------------------------------------------
     "psu_input_nominal_v": Constant(
@@ -253,7 +294,11 @@ CONSTANTS: dict[str, Constant] = {
         source="estimate — single-phase site feed modeled at 120 V nominal",
         estimated=True,
         blurb="Nominal feed voltage. Cell sites are single-phase (or −48 V DC); "
-              "there is no data-hall UPS ahead of this box.",
+              "there is no data-hall UPS ahead of this box. Dell's XR8000 "
+              "AC options are 1400 W (100–240 V, derated to 1050 W at "
+              "100–120 V) and 1800 W (200–240 V only); its 800 W and "
+              "1100 W units are −48 V DC. The model keeps one AC feed and "
+              "treats the PSU sizes as classes.",
     ),
     "psu_input_margin": Constant(
         value=1.05, unit="× rated input current",
@@ -281,6 +326,12 @@ CONSTANTS: dict[str, Constant] = {
         value=30, unit="s", source="estimate", estimated=True,
         blurb="How long DC overcurrent must persist before the trip.",
     ),
+    "warm_start_settle_seconds": Constant(
+        value=600, unit="s", source="estimate — a modelling choice, 30 silicon time constants",
+        estimated=True,
+        blurb="How long a warm-start run has already been carrying its "
+              "opening workload before the trace begins.",
+    ),
     "shutdown_sustain_seconds": Constant(
         value=5, unit="s", source="estimate", estimated=True,
         blurb="How long critical CPU overtemp must persist before power-off.",
@@ -288,7 +339,8 @@ CONSTANTS: dict[str, Constant] = {
 }
 
 # PSU efficiency curve: (load fraction of active capacity, efficiency).
-# Titanium-class approximation; linear interpolation between points, flat
+# Titanium-class approximation (an estimate — Dell's 1800 W XR unit is
+# Titanium, its 1400 W AC unit Platinum); linear interpolation between points, flat
 # beyond the ends.
 PSU_EFFICIENCY_CURVE: list[tuple[float, float]] = [
     (0.0, 0.85),

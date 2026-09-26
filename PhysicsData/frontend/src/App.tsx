@@ -12,9 +12,12 @@ import { BuildPanel } from "./components/BuildPanel";
 import { ProductGallery } from "./components/ProductGallery";
 import { DataView } from "./components/DataView";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
 import { Timeline, bandsWhere } from "./components/Timeline";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -81,11 +84,23 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+  }, [level]);
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -172,6 +187,48 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEvents(lab.start.events);
+    setDurationH(lab.start.durationH);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const coldStart = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -205,6 +262,15 @@ export function App() {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -218,18 +284,34 @@ export function App() {
 
       <div className="an-hero">
         <h2>The dataset's journey, and the console that watches it</h2>
-        <p>
-          Two halves of one loop: the AI Data Platform pipeline — where
-          throughput is min(stage rates), the bottleneck merely relocates
-          when you fix it, and the KV-cache offload trades a 12% token
-          tax for 4× the long conversations — and the CloudIQ/AIOps
-          console, whose anomaly knob is graded against planted ground
-          truth and whose capacity forecast is honestly wrong for exactly
-          one window after every change. The GPU-idle gauge closes the
-          loop with PhysicsCompute; the gray failure pays off
-          PhysicsFabric's silent link.
-        </p>
+        {anatomy?.overview ? (
+          <p className="overview-lead">{anatomy.overview}</p>
+        ) : (
+          <p>
+            A data pipeline moves only as fast as its slowest stage, and
+            speeding that stage up hands the limit to something else.
+            This simulator runs that pipeline and scores it on one
+            number: how long the expensive computers sit idle waiting
+            for data.
+          </p>
+        )}
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         <div className="thermal-col">
@@ -331,8 +413,8 @@ export function App() {
             </div>
           </div>
           <div className="mini footnote">
-            The 6×-class GPU claims are labeled to verify against Dell's
-            materials. Companions: DellCloudIQ (:5180) narrates the
+            The analytics ×6 is Dell's "up to 6x" claim for Blackwell GPUs
+            (May 2026); the processing ×6 is an estimate. Companions: DellCloudIQ (:5180) narrates the
             telemetry-to-insight pipeline; PhysicsCompute's data-feed
             slider and PhysicsStorage's Exascale gauge are this app's
             neighbors on both sides. Dashboards are the data layer a

@@ -14,9 +14,13 @@ house style of the Alienware energy identity and the IR7000 heat balance:
   DC total, and wall AC equals DC ÷ efficiency at the load point. The fan
   feedback loop — fans heat the box they cool — is therefore an asserted
   fact, not a UI claim.
-* **Heat balance**: all DC power becomes heat, and the exhaust
-  temperature is inlet + Q ÷ (ṁ·cp) — the IR7000 twin's identity, seen
-  from inside one server. (PSU conversion loss, AC − DC, is vented by the
+* **Heat balance**: all DC power becomes heat, and at steady state the
+  exhaust temperature is inlet + DC ÷ (ṁ·cp) — the IR7000 twin's
+  identity, seen from inside one server. During a transient the air
+  carries only the heat the parts have released: a cold heatsink soaks
+  up watts before it passes them on, so ``air_heat_w`` lags
+  ``dc_power_w`` and the exhaust can never be hotter than the silicon
+  heating it. (PSU conversion loss, AC − DC, is vented by the
   PSUs' own rear airflow and deliberately kept outside the front-to-back
   path — the spec's §5.1 simplification, stated honestly.)
 
@@ -28,6 +32,7 @@ relationships and orders of magnitude, not CFD.
 from __future__ import annotations
 
 from .constants import PSU_EFFICIENCY_CURVE, value as C
+from .leveling import L
 from .models import (
     Environment,
     LogEntry,
@@ -125,6 +130,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     cpu_clamp = 1.0
     gpu_clamp = 1.0
     boost_left = C("cpu_boost_seconds")
+    boosting = False
+    board_rel = 0.0  # heat the unmetered parts are releasing, W
     overtemp_s = 0
     overcurrent_s = 0
     exhaust_prev = env.inlet_c
@@ -199,10 +206,40 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         if powered_on:
             # --- Powers -------------------------------------------------
             cpu_util = wl.cpu_pct / 100.0
+            was_boosting = boosting
             boosting = boost_left > 0 and cpu_util >= 0.999
             cpu_w = _cpu_power(cfg, cpu_util, boosting, cpu_clamp)
             if boosting:
                 boost_left -= DT
+            elif was_boosting and boost_left <= 0:
+                # Logged on the tick CPU power actually steps down, so the
+                # entry lines up with the drop the reader sees.
+                log.append(LogEntry(
+                    t=t, severity="info",
+                    message=L(
+                        novice=(
+                            "The short sprint is over: the processors "
+                            "drop back to the steady power they are "
+                            "designed to run at all day. This is not the "
+                            "processors slowing down to protect "
+                            "themselves from heat — that is called "
+                            "throttling, and it would show up as a red "
+                            "banner in the instruments."
+                        ),
+                        plain=(
+                            "Turbo boost window ended: CPU power settles "
+                            "to the steady power the part is rated for "
+                            "(its TDP). This is not throttling — a "
+                            "throttle raises a red banner in the "
+                            "instruments."
+                        ),
+                        standard=(
+                            "Turbo boost window ended: CPU power settles "
+                            "to its rated TDP (this is not throttling)"
+                        ),
+                        expert="Boost window expired; P_cpu → rated TDP (not a throttle).",
+                    ),
+                ))
             gpu_w = _gpu_power(cfg, wl.gpu_pct / 100.0, gpu_clamp)
             dimm_w = cfg.dimms * (
                 C("dimm_idle_w")
@@ -250,8 +287,10 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             m_b = m_dot * (1.0 - C("lane_a_share"))
             lane_a_out = front_out + (cpu_w + dimm_w) / (m_a * cp)
             lane_b_out = front_out + (gpu_w + io_w) / (m_b * cp)
-            # Whole-box heat balance: everything electrical becomes heat.
-            exhaust = inlet_eff + dc / (m_dot * cp)
+            # These zone temperatures assume every watt reaches the air at
+            # once. They are the targets the thermal masses chase below;
+            # the air temperatures the instruments report come after the
+            # masses have moved, from the heat actually released.
 
             # Component steady-states, approached with first-order lag.
             cpu_air = (front_out + lane_a_out) / 2.0
@@ -273,6 +312,35 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             t_gpu += (t_gpu_ss - t_gpu) * DT / C("gpu_tau")
             t_drive += (t_drive_ss - t_drive) * DT / C("drive_tau")
 
+            # --- Heat the air actually receives ---------------------------
+            # A thermal mass that is still warming keeps part of its watts.
+            # With C = tau / R, the heat stored per second is
+            # (T_ss - T) / R, so the heat released is P minus that; it
+            # equals P once the part has settled, which is what keeps the
+            # steady-state identity exhaust = inlet + DC / (m_dot * cp).
+            # A cooling part releases more than it draws. The remaining
+            # parts (DIMMs, cards, planar, fan motors) have no temperature
+            # readout of their own, so they share one first-order lag with
+            # the silicon time constant: their released heat chases their
+            # power instead of matching it from the first tick.
+            cpu_rel = max(0.0, cpu_w - cfg.sockets * (t_cpu_ss - t_cpu) / r_cpu_eff)
+            gpu_rel = (
+                max(0.0, gpu_w - n_gpu * (t_gpu_ss - t_gpu) / C("gpu_r_th"))
+                if n_gpu else 0.0
+            )
+            drive_rise_ss = t_drive_ss - inlet_eff
+            drive_rel = drive_w * max(0.0, min(
+                1.5, (t_drive - inlet_eff) / drive_rise_ss
+            ))
+            board_w = dimm_w + io_w + plat_w + fan_w
+            board_rel += (board_w - board_rel) * DT / C("cpu_tau")
+            air_heat = cpu_rel + gpu_rel + drive_rel + board_rel
+            front_out = inlet_eff + drive_rel / (m_dot * cp)
+            lane_b_out = front_out + (
+                gpu_rel + io_w * board_rel / max(board_w, 1e-9)
+            ) / (m_b * cp)
+            exhaust = inlet_eff + air_heat / (m_dot * cp)
+
             # --- Fan controller (proportional, spec §5.3) ----------------
             err = t_cpu - C("cpu_target_c")
             if n_gpu:
@@ -284,13 +352,37 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             if t_cpu > C("cpu_throttle_c"):
                 cpu_clamp = max(0.1, cpu_clamp - 0.10)
                 if not was_throttling:
-                    log.append(LogEntry(t=t, severity="warning",
-                                        message="CPU throttling engaged"))
+                    log.append(LogEntry(t=t, severity="warning", message=L(
+                        novice=(
+                            "The processors are too hot, so the server is "
+                            "deliberately slowing them down to keep them "
+                            "safe. Work gets done more slowly until they "
+                            "cool. This is throttling."
+                        ),
+                        plain=(
+                            "CPU throttling engaged — the processors are "
+                            "at their temperature limit and are being cut "
+                            "back to stay there."
+                        ),
+                        standard="CPU throttling engaged",
+                        expert="CPU throttle: clamp stepping down.",
+                    )))
             elif cpu_clamp < 1.0 and t_cpu < C("cpu_throttle_c") - 4:
                 cpu_clamp = min(1.0, cpu_clamp + 0.05)
                 if cpu_clamp >= 1.0:
-                    log.append(LogEntry(t=t, severity="info",
-                                        message="CPU throttling released"))
+                    log.append(LogEntry(t=t, severity="info", message=L(
+                        novice=(
+                            "The processors have cooled enough, so the "
+                            "server has stopped slowing them down. They "
+                            "are back to full speed."
+                        ),
+                        plain=(
+                            "CPU throttling released — the processors "
+                            "have cooled and are back to full power."
+                        ),
+                        standard="CPU throttling released",
+                        expert="CPU throttle cleared; clamp = 1.0.",
+                    )))
             if n_gpu and t_gpu > C("gpu_throttle_c"):
                 if gpu_clamp >= 1.0:
                     log.append(LogEntry(t=t, severity="warning",
@@ -326,6 +418,10 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             eff = 0.0
             load_frac = 0.0
             cfm = 0.0
+            m_dot = 0.0
+            air_heat = 0.0
+            board_rel = 0.0
+            boosting = False
             front_out = lane_b_out = inlet_eff
             exhaust = inlet_eff
             t_cpu += (inlet_eff - t_cpu) * DT / C("cpu_tau")
@@ -346,11 +442,12 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             "backplane": round(t_drive, 1),
             **{f"fan-{i}": round(inlet_eff if i in dead_fans else fan_air, 1)
                for i in range(int(C("fan_count")))},
-            "dimm-a": round(t_cpu - 25 if powered_on else inlet_eff, 1),
+            # DIMMs sit in the CPU lane; never colder than the air reaching them.
+            "dimm-a": round(max(front_out, t_cpu - 25) if powered_on else inlet_eff, 1),
             "cpu1": round(t_cpu, 1),
             "cpu2": round(t_cpu if cfg.sockets == 2 else inlet_eff, 1),
             "dimm-b": round(
-                (t_cpu - 25 if cfg.sockets == 2 else inlet_eff)
+                (max(front_out, t_cpu - 25) if cfg.sockets == 2 else inlet_eff)
                 if powered_on else inlet_eff, 1,
             ),
             "gpu-riser": round(t_gpu, 1),
@@ -378,6 +475,10 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             fan_rpm_pct=round(rpm, 1),
             alive_fans=alive_fans,
             airflow_cfm=round(cfm, 1),
+            mass_flow_kgps=round(m_dot if powered_on else 0.0, 5),
+            air_heat_w=round(air_heat, 1),
+            cpu_util_pct=float(wl.cpu_pct),
+            cpu_boosting=bool(powered_on and boosting),
             inlet_effective_c=round(inlet_eff, 2),
             cpu_temp_c=round(t_cpu, 2),
             gpu_temp_c=round(t_gpu, 2),

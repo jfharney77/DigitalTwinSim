@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LabPanel } from "./components/LabPanel";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import {
   fetchMedia,
   type ProductMediaWire,
@@ -44,6 +47,40 @@ const DEFAULT_WORKLOAD: Workload = {
 
 const SPEEDS = [1, 6, 24];
 
+// The page intro in three registers, picked by the header's reading level.
+// The product paragraph under it is the backend's leveled overview.
+function introFor(level: number): string {
+  if (level <= 2)
+    return (
+      "This page is a storage system you can break. Pick a product, set " +
+      "how hard it is being used, then press the buttons under Faults & " +
+      "events to fail a drive or a controller. Three things are worth " +
+      "watching: response time climbing steeply as the system nears its " +
+      "limit, how much of the raw disk space you can really use, and how " +
+      "long a repair (a rebuild) takes after a drive dies. One step of the " +
+      "clock is one hour. The numbers show the shape of the behavior; they " +
+      "are not measurements."
+    );
+  if (level >= 5)
+    return (
+      "One engine, six personalities: M/M/1-style 1/(1−ρ) knee, raw → " +
+      "usable → effective ladder, rebuild rate fixed vs ∝ peers, sync/async " +
+      "replication, Exascale pool mix scored by GPU idle. 1 h tick. " +
+      "Illustrative constants."
+    );
+  return (
+    "A shared storage engine, parameterized into six Dell platforms. It " +
+    "models the 1/(1−ρ) queueing knee (latency rising steeply as " +
+    "utilization ρ nears 100%), the raw → usable → effective capacity " +
+    "ladder, and rebuild races: PowerStore's controller pair, PowerMax's " +
+    "blip-not-outage and speed-of-light replication tax, PowerScale's " +
+    "rebuilds that get faster as it grows, ObjectScale's write-once (WORM) " +
+    "buckets, PowerFlex where the network is the array, and the Exascale " +
+    "meta-sim scored by its GPU-idle gauge. One sim-tick is one hour; " +
+    "capacity stories run for sim-months. Numbers are illustrative."
+  );
+}
+
 // Deep link to a guided scenario: /#scenario=<id> (ids from
 // GET /api/scenarios: find-the-knee, controller-failover, snapshot-bill,
 // sync-distance, async-rpo, scale-out-rebuild, network-is-the-array,
@@ -58,6 +95,21 @@ function scenarioIdFromHash(): string | null {
 function writeHash(hash: string) {
   const url = window.location.pathname + window.location.search + hash;
   window.history.replaceState(null, "", url);
+}
+
+// Plain words for a scheduled fault, so the panel can say what is already
+// planted rather than leaving the learner to infer it from the log.
+const FAULT_WORDS: Record<string, string> = {
+  "fail-drive": "a drive failure",
+  "fail-controller": "a controller failure",
+  "fail-node": "a node failure",
+  "add-nodes": "nodes added",
+  "write-burst": "a write burst",
+  "attempt-delete": "a delete attempt",
+};
+
+function faultPhrase(e: SimEvent): string {
+  return `${FAULT_WORDS[e.action] ?? e.action} at h+${e.atH}`;
 }
 
 export function App() {
@@ -88,10 +140,21 @@ export function App() {
   const [xray, setXray] = useState<"schematic" | "hybrid" | "photo">("schematic");
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+  }, [level]);
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   useEffect(() => {
@@ -147,9 +210,19 @@ return () => {
     return () => clearInterval(id);
   }, [running, speed, trace.length]);
 
+  // A fault injected near the end of the run extends the run, so the
+  // consequence (a rebuild completing, say) is always on the trace.
+  const TAIL_H = 24;
+  const MAX_DURATION_H = 2160;
   const nowEvent = (e: Omit<SimEvent, "atH">) => {
-    setEvents((evs) => [...evs, { atH: state?.tH ?? 0, ...e }]);
+    const atH = state?.tH ?? 0;
+    setEvents((evs) => [...evs, { atH, ...e }]);
+    if (atH + TAIL_H > durationH && durationH < MAX_DURATION_H) {
+      setDurationH(Math.min(MAX_DURATION_H, atH + TAIL_H));
+      setRunning(true);
+    }
   };
+  const runIsFull = (state?.tH ?? 0) >= MAX_DURATION_H;
 
   const applyGuided = useCallback((g: GuidedScenario) => {
     setActiveScenarioId(g.id);
@@ -182,9 +255,57 @@ return () => {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEvents(lab.start.events);
+    setDurationH(lab.start.durationH);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
+  // Reset rewinds. Inside a guided scenario it reloads that scenario, planted
+  // faults included, so the narration still describes what plays; outside
+  // one it clears the faults the learner injected.
   const coldStart = () => {
+    if (activeScenario) {
+      applyGuided(activeScenario);
+      return;
+    }
     setEvents([]);
-    setActiveScenario(null);
     setCursor(0);
     setRunning(true);
   };
@@ -217,6 +338,15 @@ return () => {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -228,18 +358,25 @@ return () => {
 
       <div className="an-hero">
         <h2>One knee, six architectures</h2>
-        <p>
-          A shared storage engine — the 1/(1−ρ) queueing knee, the raw →
-          usable → effective capacity ladder, rebuild races and their
-          exposure windows — parameterized into six Dell platforms:
-          PowerStore's controller pair, PowerMax's blip-not-outage and
-          speed-of-light replication tax, PowerScale's rebuilds that get
-          faster as it grows, ObjectScale's WORM buckets, PowerFlex where
-          the network is the array, and the Exascale meta-sim whose only
-          real score is the GPU-idle gauge. One sim-tick = one hour;
-          capacity stories run for sim-months.
-        </p>
+        <p>{introFor(level)}</p>
+        {anatomy && <p className="hero-product">{anatomy.overview}</p>}
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         <div className="thermal-col">
@@ -255,10 +392,10 @@ return () => {
             presets={configPresets}
             validations={result?.validations ?? []}
             onChange={(c) => setConfig(c)}
-            onPreset={(p) => {
-              setConfig(p.config);
-              setActiveScenario(null);
-            }}
+            // Several scenarios ask the learner to swap the preset and compare,
+            // so the scenario card and its planted events stay; Reset restores
+            // the scenario's own build.
+            onPreset={(p) => setConfig(p.config)}
           />
           <div className="an-panel">
             <h2>Guided scenarios</h2>
@@ -273,18 +410,32 @@ return () => {
                 </button>
               ))}
             </div>
-            {activeScenario && (
-              <div className="mini scenario-narration">
-                {activeScenario.narration.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-                <p className="scenario-question">? {activeScenario.question}</p>
-              </div>
-            )}
           </div>
         </div>
 
         <div className="thermal-col thermal-center">
+          {activeScenario && (
+            <div className="an-panel scenario-card">
+              <h2>{activeScenario.title}</h2>
+              <div className="mini scenario-narration">
+                {activeScenario.narration.map((p, i) => (
+                  <p key={i}>{p}</p>
+                ))}
+                <p className="scenario-question">{activeScenario.question}</p>
+              </div>
+              <div className="btnrow">
+                <button onClick={coldStart}>Replay scenario</button>
+                <button
+                  onClick={() => {
+                    setActiveScenario(null);
+                    setEvents([]);
+                  }}
+                >
+                  Leave scenario
+                </button>
+              </div>
+            </div>
+          )}
           <div className="an-card">
             {error && <div className="mini an-error">{error}</div>}
             {anatomy && (<>
@@ -430,6 +581,29 @@ return () => {
           </div>
           <div className="an-panel">
             <h2>Faults &amp; events</h2>
+            {runIsFull && (
+              <div className="mini">
+                The run is at its 90-day limit. Press Reset to inject more faults.
+              </div>
+            )}
+            {events.length > 0 && (
+              <div className="mini">
+                Already scheduled: {events.map(faultPhrase).join(", ")}. A preset
+                swap keeps these, so the same fault replays on the new build —
+                no button press needed. Clear them if you would rather break
+                something yourself.
+                <div className="btnrow" style={{ marginTop: 6 }}>
+                  <button
+                    onClick={() => {
+                      setEvents([]);
+                      setCursor(0);
+                    }}
+                  >
+                    Clear scheduled faults
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="btnrow">
               <button onClick={() => nowEvent({ action: "fail-drive" })}>
                 Fail a drive

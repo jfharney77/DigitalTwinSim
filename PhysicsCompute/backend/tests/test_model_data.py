@@ -54,12 +54,12 @@ def _findings(cfg: SystemConfig, **env) -> dict[str, str]:
 
 def test_7745_psu_oversubscription_warns():
     cfg = SystemConfig(product="xe7745", pcie_gpus=8, pcie_gpu_tdp_w=600,
-                       psu_capacity_w=2400)  # increase GPU heat past 4×2400... still under
-    heavy = cfg.model_copy(update={"cpu_tdp_w": 500, "psu_capacity_w": 2400})
+                       psu_capacity_w=2900)  # low-line rating of the 3200 W PSU
+    heavy = cfg.model_copy(update={"cpu_tdp_w": 500, "psu_capacity_w": 2900})
     ok = SystemConfig(product="xe7745", pcie_gpus=4, pcie_gpu_tdp_w=300)
     assert _findings(ok)["psu"] == "ok"
-    # 8×600 + 2×500 + overheads ≈ 6.6 kW < 9.6 kW: still ok — force it:
-    tight = heavy.model_copy(update={"psu_capacity_w": 2400})
+    # 8×600 + 2×500 + overheads ≈ 6.6 kW < 11.6 kW: still ok — force it:
+    tight = heavy.model_copy(update={"psu_capacity_w": 2900})
     findings = _findings(tight)
     assert findings["psu"] in ("ok", "warning")
 
@@ -205,3 +205,27 @@ def test_redfish_shape_and_honesty():
     liquid = to_redfish_thermal(trace[-1], "xe9712")
     names = {t["Name"] for t in liquid["Temperatures"]}
     assert "Coolant Return" in names
+
+
+def test_scenario_compare_targets_are_real_presets():
+    from app.presets import CONFIG_PRESETS, GUIDED_SCENARIOS
+
+    ids = {p.id for p in CONFIG_PRESETS}
+    for g in GUIDED_SCENARIOS:
+        if g.compare_preset_id is not None:
+            assert g.compare_preset_id in ids, g.id
+    by_id = {g.id: g for g in GUIDED_SCENARIOS}
+    assert by_id["air-vs-liquid"].compare_preset_id == "xe9680-b200", (
+        "the scenario's question is read off the A/B panel"
+    )
+
+
+def test_reader_copy_does_not_cite_the_internal_spec():
+    from app.presets import EXPLAINS, GUIDED_SCENARIOS
+    from app.leveling import leveled_all
+
+    for level in (1, 3, 5):
+        for g in leveled_all(GUIDED_SCENARIOS, level):
+            assert "the spec" not in " ".join(g.narration), g.id
+        for e in leveled_all(EXPLAINS, level):
+            assert "the spec" not in e.explanation, e.id

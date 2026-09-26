@@ -25,7 +25,7 @@ CATALOG: list[CatalogCategory] = [
             "isolated vault — the choice that sets how early an answer is "
             "possible."
         ),
-        limits="Cyber Detect for PowerStore (Q3 2026) and PowerMax (2H 2026)",
+        limits="Cyber Detect for Storage: PowerStore (Q3 2026), PowerMax (planned 2H 2026); Cyber Detect for PowerProtect in the vault",
         region_ids=["array"],
         options=[
             CatalogOption(
@@ -63,7 +63,13 @@ CATALOG: list[CatalogCategory] = [
                     "primary-side analysis, by however long the backup "
                     "window is, which in practice means the difference "
                     "between discovering something in hours and "
-                    "discovering it the next day."
+                    "discovering it the next day. Dell's two announced "
+                    "offerings are Cyber Detect for Storage (array "
+                    "snapshots) and Cyber Detect for PowerProtect (inside "
+                    "the Cyber Recovery vault); scanning on a production "
+                    "backup appliance outside a vault is shown here as an "
+                    "illustrative middle position, not a Dell product "
+                    "name."
                 ),
             ),
             CatalogOption(
@@ -82,7 +88,8 @@ CATALOG: list[CatalogCategory] = [
                     "detection before attacking the data. This repo's "
                     "PowerProtect twin models this environment in full, "
                     "including the CyberSense scan that is the same "
-                    "content-analysis technology applied vault-side. Best "
+                    "content-analysis technology applied vault-side, which "
+                    "Dell now sells as Cyber Detect for PowerProtect. Best "
                     "practice is both: early answers on the array, "
                     "authoritative ones in the vault."
                 ),
@@ -96,7 +103,7 @@ CATALOG: list[CatalogCategory] = [
             "What the analysis actually looks at — and why the answer is "
             "'the data itself'."
         ),
-        limits="Byte-level content analysis; 99.99% accuracy (Dell figure)",
+        limits="Byte-level content analysis; 99.99% accuracy (vendor claim, ESG report commissioned by Index Engines, 2024)",
         region_ids=["inspect"],
         options=[
             CatalogOption(
@@ -164,14 +171,14 @@ CATALOG: list[CatalogCategory] = [
             "What turns raw content into a judgement, and how it was "
             "taught."
         ),
-        limits="Trained across thousands of ransomware variants",
+        limits="Trained on 7,500+ ransomware variants (Dell figure)",
         region_ids=["classifier", "models"],
         options=[
             CatalogOption(
                 id="variant-corpus",
                 name="Variant corpus training",
                 summary=(
-                    "Thousands of ransomware families, analysed for what "
+                    "Thousands of ransomware variants, analysed for what "
                     "their damage looks like from the inside."
                 ),
                 details=(
@@ -190,7 +197,7 @@ CATALOG: list[CatalogCategory] = [
                 id="accuracy",
                 name="Accuracy and error budget",
                 summary=(
-                    "99.99% — but the two error types are not equally "
+                    "99.99% by Dell's figure — but the two error types are not equally "
                     "expensive."
                 ),
                 details=(
@@ -360,7 +367,7 @@ CATALOG: list[CatalogCategory] = [
             "Which systems the analysis reaches, and what happens to the "
             "ones it does not."
         ),
-        limits="PowerStore, PowerMax, Data Domain, PowerScale",
+        limits="Announced: PowerStore, PowerMax (planned 2H 2026), PowerProtect Cyber Recovery vault. File and object: illustrative",
         region_ids=["array"],
         options=[
             CatalogOption(
@@ -393,7 +400,11 @@ CATALOG: list[CatalogCategory] = [
                     "least closely watched. It is also where content "
                     "analysis works most naturally, since documents and "
                     "images have well-understood internal structure that "
-                    "either parses or does not."
+                    "either parses or does not. Dell has not announced "
+                    "Cyber Detect for PowerScale as of September 2026; "
+                    "unstructured data reaches the analysis today through "
+                    "backups scanned in the PowerProtect Cyber Recovery "
+                    "vault. This option is illustrative."
                 ),
             ),
             CatalogOption(

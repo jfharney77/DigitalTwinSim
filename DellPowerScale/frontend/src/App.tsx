@@ -286,9 +286,13 @@ export function App() {
                   {state && (
                     <p className="tour-trace">
                       Namespace trace: <strong>{state.label}</strong> · t+
-                      {state.elapsedSeconds}s (illustrative) · namespaces{" "}
-                      {state.namespaces} · migrations required{" "}
-                      {state.migrationsRequired}
+                      {state.elapsedSeconds}s (illustrative)
+                      {/* Before the cluster forms there is no file system to
+                          count, and the word namespace has not been introduced
+                          yet, so the hero counters wait for the first node. */}
+                      {state.nodes === 0
+                        ? " · cluster not formed yet"
+                        : ` · shared file systems (namespaces) ${state.namespaces} · data moves needed (migrations) ${state.migrationsRequired}`}
                     </p>
                   )}
                   {selectedRegion && (
@@ -308,23 +312,48 @@ export function App() {
         <>
           <div className="an-hero">
             <h2>There are no volumes</h2>
-            <p>
-              Conventional NAS makes you carve capacity into fixed volumes
-              before you know what you will need — and then reality
-              diverges from the guess, this volume runs at 95% while that
-              one sits empty, and moving capacity between them means a
-              migration and a maintenance window. OneFS declines to
-              partition. One file system spans every node in the cluster;
-              clients reach the same files over NFS, SMB, S3, and HDFS;
-              and growing the system means adding a node, at which point
-              the one namespace simply gets larger while data
-              redistributes in the background. The PowerFlex twin next
-              door removed the controller; this one removes the volume —
-              the same refusal, aimed at a different bottleneck. The
-              Exascale twin covers the parallel throughput built above
-              this namespace; this twin explains the namespace beneath
-              it.
-            </p>
+            {level <= 2 ? (
+              <p>
+                NAS means network-attached storage: shared folders that many
+                computers reach over the network. On most NAS systems someone
+                has to divide the space into walled-off sections called
+                volumes before anyone knows how much each will need. The
+                guess turns out wrong, one volume ends up nearly full while
+                another sits empty, and fixing it means a migration (copying
+                data from one volume to another) during a maintenance window
+                (a planned time when people cannot use the system).
+                PowerScale runs software called OneFS that never divides the
+                space. One file system covers every storage computer, or
+                node, in the group. People reach the same files whether
+                their computer speaks NFS, SMB, S3, or HDFS, four common
+                ways of asking for files. Growing means adding a node: the
+                one shared space, called the namespace, gets bigger while
+                data spreads onto the new node in the background. The
+                PowerFlex twin makes a similar move for the disk-like
+                storage databases use. The Exascale twin covers Lightning, a
+                separate, faster file system used as a temporary work area
+                beside a cluster like this one.
+              </p>
+            ) : (
+              <p>
+                Conventional network-attached storage (NAS) makes you carve
+                capacity into fixed volumes before you know what you will
+                need. Reality then diverges from the guess, this volume runs
+                at 95% while that one sits empty, and moving capacity
+                between them means a migration and a maintenance window.
+                OneFS, the operating system every PowerScale node runs,
+                declines to partition. One file system spans every node in
+                the cluster; clients reach the same files over NFS, SMB, S3,
+                and HDFS; and growing the system means adding a node, at
+                which point the one namespace gets larger while data
+                redistributes in the background. The PowerFlex twin next
+                door removed the controller; this one removes the volume,
+                the same refusal aimed at a different bottleneck. The
+                Exascale twin's Lightning file system is a separate product,
+                not OneFS: Dell positions it as the scratch tier beside
+                PowerScale, which serves the rest of the data's life.
+              </p>
+            )}
             <button
               className="primary namespace-tour-link"
               onClick={() => setPage("tour")}
@@ -350,15 +379,32 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                The step that repays a pause is <em>addnode</em>: capacity
-                jumps, used percent falls, and the namespace count in the
-                telemetry panel does not move — the single band spanning
-                the node row just gets two more nodes under it. A
-                conventional NAS trace would need steps this one refuses
-                to have: provision a volume, watch it fill, migrate. Click
-                a block to pin what it is; the full tour lives under
-                Inside the cluster.
+                {level <= 2 ? (
+                  <>
+                    Lit blocks are the parts working at this step. The step
+                    worth pausing on is <em>addnode</em>, where two more
+                    nodes join. Total space jumps, the used share falls,
+                    and the count of namespaces (shared file systems) in
+                    the telemetry panel stays at 1. The long band across
+                    the node row now has two more nodes under it. Most NAS
+                    systems would need extra steps here: create a volume,
+                    watch it fill, move data out of it. This trace has none
+                    of them. Click a block to see what it is. The full
+                    guide to the parts is under Inside the cluster.
+                  </>
+                ) : (
+                  <>
+                    Highlighted blocks are the parts doing work at this
+                    step. The step that repays a pause is <em>addnode</em>:
+                    capacity jumps, used percent falls, and the namespace
+                    count in the telemetry panel does not move. The single
+                    band spanning the node row gets two more nodes under
+                    it. A conventional NAS trace would need steps this one
+                    refuses to have: provision a volume, watch it fill,
+                    migrate. Click a block to pin what it is; the full tour
+                    lives under Inside the cluster.
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -379,6 +425,7 @@ export function App() {
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
+              level={level}
             />
             {selectedRegion && (
               <section className="an-panel">

@@ -8,6 +8,7 @@ export function ThermalControls({
   onPause,
   onStep,
   onReset,
+  note,
 }: {
   speed: number;
   running: boolean;
@@ -18,6 +19,7 @@ export function ThermalControls({
   onPause: () => void;
   onStep: () => void;
   onReset: () => void;
+  note?: string;
 }) {
   return (
     <div className="an-panel">
@@ -50,10 +52,8 @@ export function ThermalControls({
         {phaseLabel}
       </div>
       <div className="mini" style={{ marginTop: 8 }}>
-        The commissioning sequence is a fixed trace computed by the backend;
-        Run only plays it back. Step walks one event at a time — the long
-        real-world stage (per-branch leak and flow verification) dwells on
-        screen longer.
+        {note ??
+          "The commissioning sequence is fixed; Run only plays it back. Step walks one event at a time."}
       </div>
     </div>
   );

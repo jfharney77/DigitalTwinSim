@@ -1,4 +1,9 @@
+import type { ScenarioInfo } from "../types";
+
 export function FirstRunControls({
+  scenario,
+  scenarios,
+  onScenario,
   speed,
   running,
   done,
@@ -9,6 +14,9 @@ export function FirstRunControls({
   onStep,
   onReset,
 }: {
+  scenario: string;
+  scenarios: ScenarioInfo[];
+  onScenario: (id: string) => void;
   speed: number;
   running: boolean;
   done: boolean;
@@ -19,9 +27,33 @@ export function FirstRunControls({
   onStep: () => void;
   onReset: () => void;
 }) {
+  const current = scenarios.find((s) => s.id === scenario);
+  const isFailure = current?.kind === "failure";
   return (
     <div className="an-panel">
       <h2>Playback</h2>
+      {scenarios.length > 0 && (
+        <label className="field" style={{ marginBottom: 10 }}>
+          Scenario
+          <select
+            className="scenario-select"
+            value={current ? scenario : ""}
+            onChange={(e) => onScenario(e.target.value)}
+          >
+            {!current && <option value="">Unknown scenario</option>}
+            {scenarios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {current && (
+        <div className="mini scenario-summary" style={{ marginBottom: 10 }}>
+          {current.summary}
+        </div>
+      )}
       <div className="btnrow">
         {running ? (
           <button className="primary" onClick={onPause}>
@@ -50,10 +82,9 @@ export function FirstRunControls({
         {phaseLabel}
       </div>
       <div className="mini" style={{ marginTop: 8 }}>
-        The first-run sequence is a fixed trace computed by the backend; Run
-        only plays it back. Step walks one event at a time — longer real-world
-        stages (ESXi boot, the VxRail Manager cluster build) dwell on screen
-        longer.
+        {isFailure
+          ? "The node add is a fixed trace computed by the backend; Run only plays it back. Step walks one event at a time, and the longer real-world stages (the re-image, the vSAN rebalance) dwell on screen longer."
+          : "The first-run sequence is a fixed trace computed by the backend; Run only plays it back. Step walks one event at a time — longer real-world stages (ESXi boot, the VxRail Manager cluster build) dwell on screen longer."}
       </div>
     </div>
   );

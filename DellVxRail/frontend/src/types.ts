@@ -65,9 +65,22 @@ export type BringUpPhase =
   | "vsan"
   | "online";
 
+// Day-2 phases of the node-add-mismatch scenario (backend/app/nodeadd.py).
+export type NodeAddPhase =
+  | "serving"
+  | "racked"
+  | "found"
+  | "check"
+  | "refused"
+  | "reimage"
+  | "recheck"
+  | "join"
+  | "rebalance"
+  | "expanded";
+
 export interface FirstRunState {
   step: number;
-  phase: BringUpPhase;
+  phase: BringUpPhase | NodeAddPhase;
   label: string;
   description: string;
   activeRegions: string[];
@@ -75,6 +88,25 @@ export interface FirstRunState {
   progressPercent: number;
   elapsedSeconds: number;
   cycleCost: number;
+  // Scenario-only fields: absent from the first-run trace (the backend
+  // serializes with exclude_none), present on every node-add step.
+  failedRegions?: string[];
+  vsanNodes?: number;
+  mismatchedNodesInVsan?: number;
+  datastoreTb?: number;
+  vmsRunning?: number;
+  clusterVersion?: string;
+  nodeVersion?: string;
+}
+
+export interface ScenarioInfo {
+  id: string;
+  title: string;
+  kind: "happy" | "failure";
+  summary: string;
+  hero: string;
+  phases: string[];
+  sources: SourceLink[];
 }
 
 export interface FirstRunResponse {

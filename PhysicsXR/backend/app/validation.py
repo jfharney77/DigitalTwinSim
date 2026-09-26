@@ -44,16 +44,18 @@ def validate(scenario: Scenario) -> list[Validation]:
                 f"{cfg.cpu_tdp_w} W is not a CPU tier the "
                 f"{cfg.platform.upper()} takes — this platform's tiers are "
                 f"{', '.join(str(t) for t in tiers)} W. The XR8000's sleds "
-                "carry single-socket Xeon Scalable; the XR4000's nodes "
-                "carry Xeon D."
+                "carry one Xeon Scalable processor, 205 W at most; the "
+                "XR4000's sleds carry one Xeon D."
             ),
-            source="Dell XR8000/XR4000 technical guides (modeled tiers)",
+            source="Dell XR8000 Technical Guide (125–205 W SKUs, 205 W "
+                   "maximum); XR4000 wattage classes are modeled",
         ))
     else:
         out.append(Validation(
             rule_id="cpu-tier", level="ok",
             message="CPU tier is available on this platform.",
-            source="Dell XR8000/XR4000 technical guides (modeled tiers)",
+            source="Dell XR8000 Technical Guide (125–205 W SKUs, 205 W "
+                   "maximum); XR4000 wattage classes are modeled",
         ))
 
     # Rule 2 — the extended envelope is select configs only.
@@ -63,10 +65,16 @@ def validate(scenario: Scenario) -> list[Validation]:
             problems.append("only the XR8000 offers it")
         if cfg.cpu_tdp_w > C("extended_max_tdp_w"):
             problems.append(
-                f"CPU tiers above {C('extended_max_tdp_w'):.0f} W are excluded"
+                f"Dell's restriction table excludes CPUs above "
+                f"{C('extended_max_tdp_w'):.0f} W at 65 °C"
             )
+        if cfg.psu_count < 2:
+            problems.append("dual PSUs are required at 55 °C and above")
         if cfg.drive_type == "hdd":
-            problems.append("spinning drives are not rated for it")
+            problems.append(
+                "spinning drives are not rated for it (a modeled "
+                "exclusion: the real sleds take M.2 flash only)"
+            )
         if problems:
             out.append(Validation(
                 rule_id="extended-envelope", level="error",
@@ -75,14 +83,21 @@ def validate(scenario: Scenario) -> list[Validation]:
                     "rating, and this build breaks it: "
                     + "; ".join(problems) + "."
                 ),
-                source="Dell XR8000 Technical Guide — extended range on "
-                       "select configurations (exclusions modeled, estimate)",
+                source="Dell XR8000 Technical Guide, XR8620t thermal "
+                       "restrictions — 2U sled only, CPUs to 195 W, dual "
+                       "extended-temperature PSUs, Heater Manager for "
+                       "cold starts below +5 °C",
             ))
         else:
             out.append(Validation(
                 rule_id="extended-envelope", level="ok",
-                message="This build qualifies for the −20…65 °C extended envelope.",
-                source="Dell XR8000 Technical Guide",
+                message=(
+                    "This build qualifies for the −20…65 °C extended "
+                    "envelope. On the real product that means the 2U "
+                    "XR8620t sled with the Heater Manager option, which "
+                    "warms the board to +5 °C before a cold start."
+                ),
+                source="Dell XR8000 Technical Guide, XR8620t thermal restrictions",
             ))
 
     # Rule 3 — ambient vs the rated envelope (warn; the sim shows why).
@@ -101,13 +116,13 @@ def validate(scenario: Scenario) -> list[Validation]:
                 "for — but this is exactly the territory the rating exists "
                 "to fence off."
             ),
-            source="Dell PowerEdge XR spec sheet — rated envelopes",
+            source="Dell PowerEdge XR-Series spec sheet (Jan 2026) — rated envelopes",
         ))
     else:
         out.append(Validation(
             rule_id="envelope", level="ok",
             message=f"Ambient sits inside the {envelope} rating.",
-            source="Dell PowerEdge XR spec sheet — rated envelopes",
+            source="Dell PowerEdge XR-Series spec sheet (Jan 2026) — rated envelopes",
         ))
 
     # Rule 4 — spinning drives at a vibrating site.
@@ -133,9 +148,9 @@ def validate(scenario: Scenario) -> list[Validation]:
         out.append(Validation(
             rule_id="filter", level="warning",
             message=(
-                f"{env.filter_months:g} months of heavy dust: the filter "
-                "is carrying a real airflow penalty. The next hot day, the "
-                "fans will pay for it — or fail to."
+                f"The run starts with {env.filter_months:g} months of "
+                "heavy dust in the filter, a real airflow penalty. The "
+                "next hot day, the fans will pay for it — or fail to."
             ),
             source="estimate — fouling model; service intervals are the fix",
         ))
@@ -167,16 +182,29 @@ def validate(scenario: Scenario) -> list[Validation]:
     # Rule 7 — altitude derating advisory.
     if env.altitude_m >= C("derate_start_m"):
         above = env.altitude_m - C("derate_start_m")
+        per_c = (
+            C("derate_m_per_c_extended") if cfg.thermal_config == "extended"
+            else C("derate_m_per_c_standard")
+        )
+        derated_max = hi - above / per_c
+        over = env.inlet_c > derated_max
         out.append(Validation(
             rule_id="altitude", level="warning",
             message=(
-                f"At {env.altitude_m} m, supported ambient decreases about "
-                f"{above / 300:.1f} °C (≈1 °C per 300 m above "
-                f"{C('derate_start_m'):.0f} m), and thinner air moves less "
-                "heat per CFM. Mountain cell sites stack this on top of "
-                "everything else."
+                f"At {env.altitude_m} m, the rated maximum falls about "
+                f"{above / per_c:.0f} °C, to roughly {derated_max:.0f} °C "
+                f"(1 °C per {per_c:.0f} m above "
+                f"{C('derate_start_m'):.0f} m in this envelope class), and "
+                "thinner air moves less heat per CFM. "
+                + (
+                    f"{env.inlet_c:g} °C ambient is above that derated "
+                    "limit. "
+                    if over else ""
+                )
+                + "Mountain cell sites stack this on top of everything else."
             ),
-            source="Dell altitude derating note",
+            source="Dell XR8000 Technical Guide — operational altitude "
+                   "de-rating, NEBS3 and NEBS3-H classes",
         ))
 
     return out

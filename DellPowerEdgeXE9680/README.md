@@ -1,9 +1,10 @@
 # DellPowerEdgeXE9680 — 8-GPU HGX server digital twin
 
 Same architecture as the other twins in this repo, applied to the **Dell
-PowerEdge XE9680** — Dell's flagship 8-GPU server, and the machine xAI's
-Colossus supercluster was first built from (8-GPU HGX servers, 64 GPUs per
-liquid-cooled rack, ~1,500 racks, 100,000 GPUs running in 122 days).
+PowerEdge XE9680** — Dell's flagship 8-GPU server, and the class of machine
+xAI's Colossus supercluster was first built from (as reported: 8-GPU HGX
+servers from Dell and Supermicro, 64 GPUs per liquid-cooled rack, ~1,500
+racks, 100,000 GPUs built out in 122 days).
 
 The one idea: **NVLink stops at the chassis wall.** Inside the box, an
 NVSwitch complex on the HGX baseboard fuses the eight SXM GPUs into a single

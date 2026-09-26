@@ -17,21 +17,28 @@ CATALOG: list[CatalogCategory] = [
         id="model",
         name="Appliance model",
         blurb=(
-            "Three Elite models share the same 3U, 40-slot chassis and the "
-            "same software; they differ in processor cores, memory, and how "
-            "far they scale."
+            "Three Elite models — Dell names them PowerStore 1500, 5500 and "
+            "9500 — share the same 3U chassis and the same software; they "
+            "differ in processor cores, memory, and how many bays are open. "
+            "Per-model figures below are from StorageReview's hands-on "
+            "review."
         ),
         limits="1 model per appliance · up to 4 appliances per cluster",
         region_ids=["elite-cpu-a", "elite-cpu-b", "elite-bay"],
         options=[
             CatalogOption(
                 id="elite-1500",
-                name="PowerStore Elite 1500",
+                name="PowerStore 1500 (Elite)",
                 summary="The entry point to the Elite platform.",
                 details=(
-                    "The smallest Elite. Same 3U chassis, same E3 NVMe bay, "
-                    "same PowerStoreOS and data services as its bigger "
-                    "siblings — fewer cores and less DRAM per node. Because "
+                    "The smallest Elite, and the successor to the 1200T. "
+                    "Same 3U chassis, same PowerStoreOS and data services "
+                    "as its bigger siblings, with one processor per node "
+                    "(48 cores in all), 512 GB of memory, 24 drive bays "
+                    "open at launch and a 100 Gb node interconnect; a later "
+                    "controller swap is reported to unlock all 40 bays. "
+                    "Dell's 3x IOPS claim compares this model with the "
+                    "1200T. Because "
                     "clustering is mixed-generation and mixed-model, a 1500 "
                     "bought today can later share a cluster with a larger "
                     "Elite, or with the prior-generation array it arrived to "
@@ -40,22 +47,25 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="elite-5500",
-                name="PowerStore Elite 5500",
+                name="PowerStore 5500 (Elite)",
                 summary="The midrange workhorse of the line.",
                 details=(
-                    "The volume model: the core-count and memory step where "
-                    "the 3x-performance comparisons against the prior "
-                    "generation's 5500 are drawn. For most consolidation "
+                    "The volume model: two processors per node (96 cores "
+                    "in all), 1 TB of memory, all 40 bays. Dell's 'up to "
+                    "50% more cores' figure compares this model with the "
+                    "prior generation's 3200T. For most consolidation "
                     "estates — block plus file plus VMs — this is the "
                     "default answer."
                 ),
             ),
             CatalogOption(
                 id="elite-9500",
-                name="PowerStore Elite 9500",
+                name="PowerStore 9500 (Elite)",
                 summary="The top model, for the heaviest consolidation.",
                 details=(
-                    "Maximum cores, maximum DRAM, maximum front-end ports. "
+                    "Maximum cores (128 in all) and 2 TB of memory. Dell's "
+                    "5.8 PB, 3x throughput and 3x density figures are all "
+                    "drawn on this model, against the 9200T. "
                     "Where a single 3U appliance is asked to hold the full "
                     "5.8 PB effective and serve it at the platform's "
                     "ceiling, this is the configuration doing it."
@@ -67,9 +77,9 @@ CATALOG: list[CatalogCategory] = [
         id="processors",
         name="Processors & dynamic core allocation",
         blurb=(
-            "Intel Xeon Scalable processors with up to 50% more cores than "
-            "the prior generation's 3200T/5500 class — and software that "
-            "moves those cores to where the load is."
+            "Intel Xeon Scalable processors with up to 50% more cores "
+            "(Dell's comparison: the new 5500 against the 3200T) — and "
+            "software that moves those cores to where the load is."
         ),
         limits="2 nodes per appliance · active/active",
         region_ids=["elite-cpu-a", "elite-cpu-b"],
@@ -77,10 +87,11 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="xeon-scalable",
                 name="Intel Xeon Scalable (per node)",
-                summary="Up to 50% more cores per node than the prior generation.",
+                summary="Up to 50% more cores than the prior generation, by Dell's count.",
                 details=(
-                    "Each of the two controller nodes carries an Intel Xeon "
-                    "Scalable processor. Every data service — deduplication, "
+                    "Each of the two controller nodes carries one Intel "
+                    "Xeon Scalable processor on the 1500 and two on the "
+                    "5500 and 9500. Every data service — deduplication, "
                     "compression, RAID math, replication — runs on these "
                     "cores, so the +50% core count is a direct input to the "
                     "3x performance claim."
@@ -89,13 +100,14 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="dynamic-cores",
                 name="Dynamic core allocation",
-                summary="Built-in AI shifts cores between block, file and reduction work.",
+                summary="CPU resources follow the workload as it shifts.",
                 details=(
-                    "PowerStore Elite's built-in AI reassigns processor "
-                    "cores between front-end protocols, file services and "
-                    "background data reduction as the workload mix shifts, "
-                    "and rebalances placement across the cluster "
-                    "continuously. Dell's claim for the automation layer as "
+                    "Dell's launch material says dynamic core allocation "
+                    "adjusts CPU resources as workloads fluctuate, and "
+                    "StorageReview describes resources shared dynamically "
+                    "between block and file services. Dell has not "
+                    "published the mechanism in more detail than that. "
+                    "Dell's claim for the automation layer as "
                     "a whole is up to 95% less manual effort than "
                     "traditional array management — the tuning the "
                     "administrator no longer does."
@@ -107,8 +119,8 @@ CATALOG: list[CatalogCategory] = [
         id="memory",
         name="Memory & Metadata Acceleration",
         blurb=(
-            "DDR5 DIMM banks per node, and a metadata layer engineered to "
-            "live in them."
+            "DDR5 DIMM banks per node, and a software change to the "
+            "metadata layer that Dell credits with faster reads."
         ),
         limits="Per-node DIMM banks · mirrored write cache via NVRAM",
         region_ids=["elite-dimm-a", "elite-dimm-b"],
@@ -120,21 +132,25 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "DDR5 feeds the nodes' caches and metadata structures "
                     "with more bandwidth per DIMM than the prior "
-                    "generation's memory — necessary headroom once PCIe "
-                    "Gen 5 doubles what the drives and ports can push."
+                    "generation's memory — necessary headroom once the "
+                    "fabric moves from PCIe Gen 3 to Gen 5. Part of it "
+                    "also serves as the battery-backed write cache."
                 ),
             ),
             CatalogOption(
                 id="metadata-acceleration",
                 name="Metadata Acceleration",
-                summary="Reads up to 70% faster by keeping hot metadata resident.",
+                summary="Reads up to 70% faster, by Dell's own test.",
                 details=(
                     "Every read consults metadata — where a block lives, "
                     "whether it is deduplicated, which snapshot chain owns "
-                    "it. Metadata Acceleration keeps those hot structures "
-                    "pinned in DRAM rather than paging them from flash; "
-                    "Dell credits it with reads up to 70% faster on the "
-                    "Elite platform."
+                    "it — so a faster metadata path is a faster read. "
+                    "Metadata Acceleration is a PowerStoreOS 5.0 feature "
+                    "that Dell says serves all PowerStore customers, not "
+                    "only Elite. The 'up to 70% faster' figure is Dell's "
+                    "internal test of a PowerStore 500T on OS 4.3 against "
+                    "OS 5.0, with a read-only 8 KB workload. Dell has not "
+                    "published how it works."
                 ),
             ),
         ],
@@ -144,9 +160,10 @@ CATALOG: list[CatalogCategory] = [
         name="Drives — the E3 NVMe bay",
         blurb=(
             "40 low-profile E3 NVMe slots per 3U appliance, taking QLC or "
-            "TLC flash — up to 3x the density of the prior generation."
+            "TLC flash — up to 3x the density of the prior generation, by "
+            "Dell's comparison of a 9500 at 6:1 with a 9200T at 5:1."
         ),
-        limits="40 slots per appliance · dual-ported · QLC or TLC",
+        limits="Up to 40 slots per appliance (24 on the 1500 at launch) · dual-ported · QLC or TLC",
         region_ids=["elite-bay", "elite-nvram"],
         options=[
             CatalogOption(
@@ -158,7 +175,9 @@ CATALOG: list[CatalogCategory] = [
                     "cell — the endurance-and-latency choice. E3 is the "
                     "EDSFF low-profile form factor replacing 2.5″ drives "
                     "industry-wide: more silicon per slot, better airflow, "
-                    "and the reason 40 drives fit where 25 used to."
+                    "and part of how 40 drives fit in 3U where 25 fit in "
+                    "2U. StorageReview lists TLC drives at 3.84, 7.68 and "
+                    "15.36 TB."
                 ),
             ),
             CatalogOption(
@@ -168,23 +187,28 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "QLC (quad-level cell) NAND stores four bits per cell — "
                     "denser and cheaper per terabyte, at some cost in write "
-                    "endurance the array's NVRAM-fronted write path is "
-                    "designed to absorb. QLC behind the 6:1 reduction "
+                    "endurance the array's cache-fronted write path is "
+                    "designed to absorb. StorageReview lists the QLC drive "
+                    "at 30.72 TB. QLC behind the 6:1 reduction "
                     "guarantee is how the 5.8 PB-effective headline is "
                     "reached."
                 ),
             ),
             CatalogOption(
                 id="nvme-nvram",
-                name="NVMe NVRAM write cache",
-                summary="Writes acknowledge from mirrored non-volatile cache.",
+                name="Persistent write cache (SDPM)",
+                summary="Writes acknowledge from mirrored, battery-backed memory.",
                 details=(
-                    "Dedicated non-volatile NVMe devices take every "
-                    "incoming write, mirrored across both nodes, before the "
-                    "host is acknowledged — battery-backed vaulting covers "
-                    "AC loss. Inherited from the prior generation; it is "
-                    "why write latency stays flat while the capacity "
-                    "drives are busy destaging."
+                    "Every incoming write lands in a persistent cache, "
+                    "mirrored across both nodes, before the host is "
+                    "acknowledged — it is why write latency stays flat "
+                    "while the capacity drives are busy destaging. The "
+                    "prior generation used NVRAM drives in the front bay "
+                    "for this. By StorageReview's account Elite uses "
+                    "software-defined persistent memory instead: "
+                    "battery-backed DDR5 that the firmware copies to an "
+                    "M.2 flash device on power loss, which hands the drive "
+                    "slots back to capacity."
                 ),
             ),
         ],
@@ -202,14 +226,16 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="drr-guarantee",
                 name="6:1 data reduction guarantee",
-                summary="Dell contractually guarantees 6 TB stored per TB of flash.",
+                summary="Dell guarantees 6 TB stored per TB of flash, under its program terms.",
                 details=(
                     "Data reduction ratio (DRR) is how many terabytes of "
                     "host data fit per terabyte of physical flash after "
                     "deduplication and compression. Elite raises Dell's "
                     "guaranteed floor from 5:1 to 6:1 — the vendor's own "
                     "'industry-best' claim — and it is the multiplier that "
-                    "turns the 40-slot bay into up to 5.8 PB effective. As "
+                    "turns the 40-slot bay into up to 5.8 PB effective. "
+                    "Dell's footnote limits it to new arrays first "
+                    "installed with PowerStoreOS 5.0. As "
                     "with every reduction guarantee, real ratios depend on "
                     "the data; pre-compressed or encrypted workloads reduce "
                     "less."
@@ -233,8 +259,8 @@ CATALOG: list[CatalogCategory] = [
         id="frontend",
         name="Front-end connectivity",
         blurb=(
-            "Up to 40 network ports per appliance — twice the prior "
-            "generation — fed by PCIe Gen 5."
+            "Up to 40 network ports per appliance — twice the current "
+            "generation, in Dell's words — fed by PCIe Gen 5."
         ),
         limits="Up to 40 ports per appliance · both nodes must match",
         region_ids=["elite-io-a", "elite-io-b"],
@@ -257,36 +283,55 @@ CATALOG: list[CatalogCategory] = [
                 summary="iSCSI, NVMe-oF and file traffic at AI-era speeds.",
                 details=(
                     "100 GbE ports carry iSCSI, NVMe over TCP, NFS and SMB, "
-                    "with the platform ready for 200/400 Gb Ethernet. The "
-                    "3x network-throughput claim (Dell's 70/30 read/write, "
-                    "1 MB basis) rides on these ports plus the doubled port "
-                    "count."
+                    "with the platform ready for 200/400 Gb Ethernet. "
+                    "Dell's 3x throughput claim (a 9500 against a 9200T, "
+                    "70/30 read/write, 1 MB blocks) rides on these ports "
+                    "plus the larger port count."
                 ),
             ),
         ],
     ),
     CatalogCategory(
         id="interconnect",
-        name="Cluster interconnect",
+        name="Node interconnect & cluster network",
         blurb=(
-            "A 200 Gb RDMA link between appliances — the wire "
-            "mixed-generation clustering, rebalancing and failover run on."
+            "Two different wires. A 200 Gb RDMA link joins the two "
+            "controller nodes inside the Elite; an Ethernet cluster network "
+            "joins the appliances, and mixed-generation rebalancing runs "
+            "on that one."
         ),
-        limits="Per-appliance-pair links within one cluster",
-        region_ids=["cluster-mesh"],
+        limits="Node link inside each appliance · cluster network via top-of-rack switches",
+        region_ids=["cluster-mesh", "elite-board-a", "elite-board-b"],
         options=[
             CatalogOption(
                 id="rdma-200",
                 name="200 Gb RDMA node interconnect",
-                summary="Zero-copy transfers between appliances, CPUs left alone.",
+                summary="The in-chassis link that mirrors writes between the two nodes.",
                 details=(
-                    "RDMA (remote direct memory access) lets one appliance "
-                    "move data directly to and from another's memory "
-                    "without a CPU round trip on either side. At 200 Gb it "
-                    "is the freight corridor for live volume rebalancing, "
-                    "cross-generation failover and load balancing — fast "
-                    "enough that the background move never competes with "
-                    "host service for processor time."
+                    "RDMA (remote direct memory access) lets one node "
+                    "place data directly in its partner's memory without "
+                    "a CPU round trip on either side. On Elite the link "
+                    "is cable-free, routed across the midplane, and "
+                    "dedicated to write ingest — the mirroring every "
+                    "acknowledged write needs. StorageReview puts it at "
+                    "200 GbE on the 5500 and 9500 and 100 GbE on the "
+                    "1500, against 2× 10 GbE in the prior generation. It "
+                    "does not leave the chassis."
+                ),
+            ),
+            CatalogOption(
+                id="cluster-network",
+                name="Intra-cluster Ethernet network",
+                summary="The path between appliances, and the one migrations take.",
+                details=(
+                    "Appliances in one PowerStore cluster reach each other "
+                    "over internal management and data networks that run "
+                    "through the top-of-rack Ethernet switches; Dell's "
+                    "clustering white paper says volume migration between "
+                    "appliances uses the data network. This is the strip "
+                    "drawn between the two generations, and the wire the "
+                    "twin's rebalance runs on. Its speed in the trace is "
+                    "illustrative."
                 ),
             ),
         ],
@@ -299,7 +344,7 @@ CATALOG: list[CatalogCategory] = [
             "without a migration project. This category is the twin's whole "
             "trace, sold as line items."
         ),
-        limits="Mixed generations in one cluster · no forklift required",
+        limits="Mixed generations in one cluster · up to 4 appliances · no forklift required",
         region_ids=["cluster-mesh", "prior-cpu-a", "prior-cpu-b", "elite-mgmt-a", "elite-mgmt-b"],
         options=[
             CatalogOption(
@@ -310,7 +355,7 @@ CATALOG: list[CatalogCategory] = [
                     "A prior-generation PowerStore joins the Elite's "
                     "cluster with no service interruption: one management "
                     "plane, one pool, two hardware generations. Volumes "
-                    "then rebalance live over the RDMA interconnect. This "
+                    "then rebalance live over the cluster network. This "
                     "is the option the twin's whole trace demonstrates — "
                     "the downtime counter pinned at zero is this line "
                     "item working."
@@ -322,9 +367,11 @@ CATALOG: list[CatalogCategory] = [
                 summary="Swap the brains, keep the chassis, drives and data.",
                 details=(
                     "Within an Elite appliance, future controller "
-                    "generations swap into the same chassis without "
-                    "replacing the E3 drives or migrating data — the "
-                    "modular architecture TechTarget's coverage highlights. "
+                    "generations are meant to swap into the same chassis "
+                    "without replacing the E3 drives or migrating data — "
+                    "the modular architecture TechTarget's coverage "
+                    "highlights, and what Dell's Lifecycle Extension "
+                    "program calls data-in-place upgrades. "
                     "The refresh cycle shrinks from 'replace the array' to "
                     "'replace the canisters'."
                 ),
@@ -335,10 +382,13 @@ CATALOG: list[CatalogCategory] = [
                 summary="The old array takes a second role instead of a skip.",
                 details=(
                     "After cutover, the older appliance stays a cluster "
-                    "member and is reassigned — replication target, "
-                    "snapshot retention, test estate. Because it never left "
+                    "member and is reassigned — snapshot retention, test "
+                    "and development estate. Because it never left "
                     "the cluster, the reassignment is a policy change, not "
-                    "a project. Refresh stops producing e-waste on a "
+                    "a project. Making it a replication target is a different "
+                    "move: PowerStore replicates between clusters, so the "
+                    "appliance is removed and redeployed as a remote system. "
+                    "Either way, refresh stops producing e-waste on a "
                     "schedule."
                 ),
             ),
@@ -410,8 +460,10 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "Cyber Detect inspects snapshot content at the byte "
                     "level — entropy, not file names — to name the last "
-                    "clean copy after an attack, with Dell citing 99.99% "
-                    "accuracy. It reaches PowerStore in Q3 2026; this "
+                    "clean copy after an attack. Dell cites 99.99% "
+                    "effectiveness from an Omdia/ESG report commissioned "
+                    "by Index Engines, whose analysis engine it uses. It "
+                    "reaches PowerStore in Q3 2026; this "
                     "repo's DellCyberDetect twin is that product's own "
                     "story, told in full."
                 ),
@@ -422,8 +474,8 @@ CATALOG: list[CatalogCategory] = [
                 summary="No acknowledged write is lost to a power cut.",
                 details=(
                     "Battery backup units power each node just long enough "
-                    "on AC loss to flush cached writes to non-volatile "
-                    "flash. The contract is inherited unchanged from the "
+                    "on AC loss to copy cached writes from memory to "
+                    "non-volatile flash. The contract is inherited unchanged from the "
                     "prior generation — availability features carry "
                     "across generations the same way cluster membership "
                     "does."

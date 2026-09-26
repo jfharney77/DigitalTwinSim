@@ -37,6 +37,7 @@ const KIND_ACTIVE_FILL: Record<RegionKind, string> = {
 export function ChassisView({
   anatomy,
   active,
+  failed,
   selected,
   onSelect,
   onHover,
@@ -45,6 +46,9 @@ export function ChassisView({
 }: {
   anatomy: ChassisAnatomy;
   active?: Set<string>;
+  // Failure scenarios: regions that are down at this step. Drawn in the error
+  // colour with a dashed outline, so the state does not rest on hue alone.
+  failed?: Set<string>;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
@@ -88,7 +92,8 @@ export function ChassisView({
       {anatomy.regions.map((r) => {
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
-        const isActive = active?.has(r.id) ?? false;
+        const isFailed = failed?.has(r.id) ?? false;
+        const isActive = !isFailed && (active?.has(r.id) ?? false);
         const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks (drive slots, fan packs),
@@ -116,15 +121,26 @@ export function ChassisView({
           : 0;
         const showTwoLine = !showLabel && !showVLabel && tSize >= 1.05;
         const fontSize = hSize;
-        const stroke = isSel
-          ? "var(--accent)"
-          : isActive
+        const stroke = isFailed
+          ? "var(--dell-error)"
+          : isSel || isActive
             ? "var(--accent)"
             : style.stroke;
+        const labelFill = isFailed
+          ? "var(--region-failed-text)"
+          : isSel || isActive
+            ? "var(--accent)"
+            : style.text;
         return (
           <g
             key={r.id}
-            className={isActive ? "an-region region-active" : "an-region"}
+            className={
+              isFailed
+                ? "an-region region-failed"
+                : isActive
+                  ? "an-region region-active"
+                  : "an-region"
+            }
             onClick={(e) => {
               e.stopPropagation();
               onSelect?.(isSel ? null : r.id);
@@ -146,16 +162,25 @@ export function ChassisView({
               width={r.w}
               height={r.h}
               rx={0.8}
-              fill={isActive ? KIND_ACTIVE_FILL[r.kind] : style.fill}
+              fill={
+                isFailed
+                  ? "var(--region-failed-fill)"
+                  : isActive
+                    ? KIND_ACTIVE_FILL[r.kind]
+                    : style.fill
+              }
               stroke={stroke}
-              strokeWidth={isSel || isActive ? 0.5 : 0.25}
-            />
+              strokeWidth={isSel || isActive || isFailed ? 0.5 : 0.25}
+              strokeDasharray={isFailed ? "1.2 0.8" : undefined}
+            >
+              {isFailed && <title>{`${r.label}: down`}</title>}
+            </rect>
             {showVLabel && (
               <text
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h / 2}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={labelFill}
                 fontSize={vSize}
                 letterSpacing={0.2}
                 transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
@@ -168,7 +193,7 @@ export function ChassisView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h / 2 - tSize * 0.25}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={labelFill}
                 fontSize={tSize}
                 letterSpacing={0.12}
               >
@@ -183,7 +208,7 @@ export function ChassisView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + (r.h < 6 ? r.h / 2 + fontSize * 0.35 : 2.6)}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={labelFill}
                 fontSize={fontSize}
                 letterSpacing={0.12}
               >

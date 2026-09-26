@@ -262,6 +262,14 @@ class LiveHub:
             "value": ev.value,
             "kernel": ev.kernel,
             "measuredAt": time.strftime("%Y-%m-%d"),
+            # Provenance: the device the active session reported, when it
+            # reported one. None means the record cannot say which GPU it
+            # describes, and the UI says so rather than claiming "your die".
+            "device": (
+                self._latest.device.name
+                if self._latest is not None and self._latest.device is not None
+                else None
+            ),
             "history": history,
         }
         path.write_text(json.dumps(data, indent=2) + "\n")

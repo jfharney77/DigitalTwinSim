@@ -9,7 +9,7 @@ no explicit aliases are needed — if you add one that does, pin it with
 
 The twist versus the E3200 campus-switch twin: that twin is one 1RU box
 booting a network OS. This one is a **fabric** — a leaf/spine topology of
-NVIDIA Spectrum-6-based PowerSwitch SN6000 switches (1.6 Tb/s ports, up to
+NVIDIA Spectrum-6-based PowerSwitch SN6000 switches (800 Gb/s ports, up to
 409.6 Tb/s of switching capacity, liquid cooling and co-packaged optics
 options) joining GPU racks into one training cluster. The XE9712 twin's
 NVLink domain stops at the rack wall; this is what carries traffic past it.
@@ -48,10 +48,23 @@ FabricPhase = Literal[
     "topology",    # routing converges; the leaf/spine fabric becomes one fabric
     "ready",       # fabric idle and ready, no job traffic yet
     "collective",  # an all-reduce runs — every GPU exchanging gradients at once
-    "congestion",  # incast: many senders, one receiver, buffers filling
-    "reroute",     # adaptive routing spreads the flows; congestion clears
+    "congestion",  # many-to-one flows converge on one spine link; buffers fill
+    "reroute",     # remote congestion news reaches adaptive routing; it clears
     "steady",      # the training loop's traffic pattern, sustained
+    # --- the gray-link failure scenario (app/scenarios.py). Additive: the
+    # happy-path trace never enters these, and its tests pin that.
+    "degrade",     # one leaf-spine optic starts erring; FEC hides all of it
+    "blind",       # errors outrun FEC; the link stays UP; the job slows
+    "telemetry",   # per-link error counters name the port
+    "steer",       # routing is withdrawn from the sick link; it stays up
+    "drain",       # the operator shuts the port down on purpose (admin-down)
+    "replace",     # the optic is swapped and the link retrains
+    "restored",    # eight clean uplinks again
 ]
+
+# What the switch reports for the sick link's operational state. "up" on the
+# blind steps is the whole point of the scenario.
+LinkStatus = Literal["up", "admin-down", "training"]
 
 
 class Photo(CamelModel):
@@ -129,9 +142,65 @@ class FabricState(CamelModel):
     # UI dwell ticks; long stages (link training) get more.
     cycle_cost: int = 1
 
+    # --- What losslessness costs. Zero drops is not free: the fabric buys it
+    # with marks and pauses, and these two rows are the Ethernet counterpart
+    # of the Quantum-X800 twin's sender-stall row. Illustrative.
+    # The busiest drawn leaf-spine link, as "<leaf id>:<spine id>", set only
+    # while it is saturated (>=90%) so the renderer can draw it hot.
+    hot_link: str | None = None
+    # Share of packets on the hot link carrying an ECN congestion mark.
+    ecn_marked_percent: int = Field(default=0, ge=0, le=100)
+    # PFC pause frames per second sent upstream from the hot port. Each one
+    # stops a whole traffic class on the link behind it, innocent flows too.
+    pfc_pauses_per_sec: int = 0
+
+    # --- Failure-scenario fields. Every one defaults to "nothing is wrong",
+    # so the happy-path trace is unchanged by their existence.
+    # The leaf-spine link under suspicion, as "<leaf id>:<spine id>".
+    sick_link: str | None = None
+    # What the switch reports for that link. A gray failure is "up".
+    sick_link_status: LinkStatus | None = None
+    # True once per-link error telemetry has named the port. Until then the
+    # renderer must draw the sick link exactly like a healthy one.
+    sick_link_located: bool = False
+    # True while routing is withdrawn from the sick link (no job traffic on it).
+    traffic_steered: bool = False
+    # Physical-layer symbol errors per second on the sick link (illustrative).
+    symbol_errors_per_sec: int = 0
+    # Frames per second that arrived corrupt, were discarded by the frame
+    # check, and had to be sent again by the sending NIC. This is NOT
+    # ``dropped_packets``: that field counts congestion loss (a full buffer),
+    # which stays zero. Corruption loss is a different mechanism with a
+    # different cure, and the scenario exists to separate the two.
+    retransmits_per_sec: int = 0
+    # All-reduce completion time in milliseconds — the number the training
+    # team actually feels. 0 when no collective is being timed.
+    collective_ms: int = 0
+
 
 class FabricResponse(CamelModel):
     trace: list[FabricState]
+    # Which scenario this trace is; "healthy" is the original happy path.
+    scenario: str = "healthy"
+
+
+class Scenario(CamelModel):
+    """One selectable trace. ``sources`` back the failure's behaviour."""
+
+    id: str
+    name: str
+    summary: str
+    # The counter the scenario is about, as a wire field name of FabricState.
+    hero_field: str | None = None
+    hero_label: str | None = None
+    # Page prose that belongs to the scenario, leveled like everything else:
+    # the paragraph over the map, the note under the telemetry panel, and the
+    # playback hint (which names this scenario's longest stage).
+    intro: str = ""
+    telemetry_note: str = ""
+    playback_hint: str = ""
+    phases: list[str]
+    sources: list[SourceLink] = Field(default_factory=list)
 
 
 class CatalogOption(CamelModel):

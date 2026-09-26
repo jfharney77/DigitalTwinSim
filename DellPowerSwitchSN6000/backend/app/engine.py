@@ -17,8 +17,16 @@ step — one retransmitted packet stalls not one flow but the entire fleet.
 So the fabric is built never to drop: it signals congestion early (ECN),
 pauses selectively (PFC), and spreads flows across alternate equal-cost
 paths (adaptive routing). ``dropped_packets`` is therefore zero on every
-step of this trace, including at the peak of the incast — and
-``tests/test_engine.py`` asserts exactly that.
+step of this trace, including at the peak of the congestion — and
+``tests/test_engine.py`` asserts exactly that. Zero drops is not free, so the
+trace also carries what it cost: ``ecn_marked_percent`` and
+``pfc_pauses_per_sec``, nonzero where the fabric is under stress.
+
+The hotspot is a spine downlink, not a rack's last hop. Many-to-one traffic
+overloads spine 1's link to leaf 2 while spine 2's has room; the sending
+leaves' adaptive routing judges local queues and cannot see it until
+telemetry tells them. A last-hop incast has no alternate path and only
+congestion control relieves it; the reroute step says so.
 
 Capacities and timings are illustrative but plausible for an SN6000-class
 fabric; favor a correct mental model over measured numbers (project scope
@@ -36,6 +44,11 @@ ENDPOINTS = ["e1", "e2", "e3", "e4"]
 
 # Phases in which traffic is actually crossing the fabric.
 TRAFFIC_PHASES = {"collective", "congestion", "reroute", "steady"}
+
+# The link the congestion step saturates: spine 1's link down to leaf 2. It is
+# a leaf-spine link on purpose. Adaptive routing can only relieve a hotspot
+# that has an alternate path, and the last hop into a rack has none.
+HOT_LINK = "leaf-l2:spine-s1"
 
 
 def _spines() -> list[str]:
@@ -125,27 +138,28 @@ def simulate() -> list[FabricState]:
                     "the same disaggregated open-networking path the E3200 twin "
                     "walks through: hardware init, then a NOS loaded independently "
                     "of the switch vendor. Each system carries NVIDIA Spectrum-6 "
-                    "silicon rated to 409.6 Tb/s of switching capacity with 1.6 "
-                    "Tb/s ports. No link is up and no packet has moved."
+                    "silicon, 800 Gb/s ports and, in the largest four-chip model, up "
+                    "to 409.6 Tb/s of switching capacity. No link is up and no "
+                    "packet has moved."
                 ),
                 standard=(
                     "The SN6000s power up and boot their network operating "
                     "system, the same disaggregated open-networking path the "
                     "E3200 twin walks through in detail: hardware init, then a "
                     "NOS loaded independently of the switch vendor. Each system "
-                    "carries NVIDIA Spectrum-6 silicon rated to 409.6 Tb/s of "
-                    "switching capacity with 1.6 Tb/s ports. No link is up yet "
-                    "and no packet has moved."
+                    "carries NVIDIA Spectrum-6 silicon: 800 Gb/s ports, 102.4 Tb/s "
+                    "per chip, and up to 409.6 Tb/s in the four-chip SN6800. No "
+                    "link is up yet and no packet has moved."
                 ),
                 technical=(
                     "Power-on and NOS boot over the disaggregated open-networking "
-                    "path detailed in the E3200 twin. Spectrum-6 silicon: 409.6 "
-                    "Tb/s switching capacity, 1.6 Tb/s ports. No links up, no "
-                    "forwarding."
+                    "path detailed in the E3200 twin. Spectrum-6 silicon: 102.4 "
+                    "Tb/s per ASIC (409.6 Tb/s in the 4-ASIC SN6800), 800 Gb/s "
+                    "ports on 8x 200G PAM4 lanes. No links up, no forwarding."
                 ),
                 expert=(
-                    "Power-on, disaggregated NOS boot. Spectrum-6: 409.6 Tb/s "
-                    "capacity, 1.6 Tb/s ports. No links, no forwarding."
+                    "Power-on, disaggregated NOS boot. Spectrum-6: 102.4 Tb/s/ASIC, "
+                    "up to 409.6 Tb/s, 800G ports. No links, no forwarding."
                 ),
             ),
             active_regions=_spines() + _leaves() + ["mgmt"],
@@ -172,7 +186,7 @@ def simulate() -> list[FabricState]:
                 plain=(
                     "The long stage. Every leaf-to-spine and leaf-to-endpoint link "
                     "negotiates and tunes: signal equalization, forward error "
-                    "correction, lane alignment, at 1.6 Tb/s per port. This is "
+                    "correction, lane alignment, at 800 Gb/s per port. This is "
                     "where the optics choice shows up — pluggable transceivers or "
                     "co-packaged optics, where the optical engine sits on the "
                     "switch package itself, cutting the electrical distance and "
@@ -182,7 +196,7 @@ def simulate() -> list[FabricState]:
                 standard=(
                     "The long stage. Every leaf-to-spine and leaf-to-endpoint "
                     "link negotiates and tunes: signal equalization, forward "
-                    "error correction, lane alignment, at 1.6 Tb/s per port. "
+                    "error correction, lane alignment, at 800 Gb/s per port. "
                     "This is where the optics choice shows up — pluggable "
                     "transceivers or co-packaged optics, where the optical "
                     "engine sits on the switch package itself, cutting the "
@@ -192,15 +206,15 @@ def simulate() -> list[FabricState]:
                 ),
                 technical=(
                     "Max-dwell stage. Every leaf-spine and leaf-endpoint link "
-                    "trains: equalization, FEC, lane alignment at 1.6 Tb/s per "
-                    "port. The optics decision surfaces here — pluggable "
+                    "trains: equalization, FEC, lane alignment at 800 Gb/s per "
+                    "port (8x 200G PAM4). The optics decision surfaces here — pluggable "
                     "transceivers versus co-packaged optics, where the optical "
                     "engine moves onto the switch package, shortening the "
                     "electrical path and cutting both loss and power."
                 ),
                 expert=(
                     "Max dwell: link training — equalization, FEC, lane alignment "
-                    "at 1.6 Tb/s/port. CPO versus pluggable shows up here; CPO "
+                    "at 800 Gb/s/port. CPO versus pluggable shows up here; CPO "
                     "shortens the electrical path, cutting loss and power."
                 ),
             ),
@@ -317,50 +331,68 @@ def simulate() -> list[FabricState]:
         FabricState(
             step=5,
             phase="collective",
-            label="All-reduce — every GPU exchanging gradients at once",
+            label=L(
+                novice="All-reduce — every GPU sharing its results at once",
+                standard="All-reduce — every GPU exchanging gradients at once",
+            ),
             description=L(
                 novice=(
                     "A training step ends and the whole fleet performs a shared "
-                    "calculation: every processor contributes its results and every "
-                    "one must receive the combined answer before the next step can "
-                    "start. This is the least forgiving traffic pattern networks "
-                    "face — synchronized, everyone-to-everyone, and bursty — and it "
-                    "repeats thousands of times an hour. Because it is a shared "
-                    "calculation, the clock that matters is not the average speed "
-                    "but when the *last* processor finishes."
+                    "calculation called an all-reduce: every processor contributes "
+                    "its results and every one must receive the combined answer "
+                    "before the next step can start. Data crosses a network in "
+                    "small pieces called packets, and this is the least forgiving "
+                    "traffic networks face — everyone at the same instant, every "
+                    "processor taking part, in sudden bursts — repeated thousands "
+                    "of times an hour. The network carries 18 terabits per second "
+                    "comfortably. Each line on the map stands for a bundle of "
+                    "eight cables, which is how so small a drawing carries so "
+                    "much. Because it is a shared calculation, the clock that "
+                    "matters is not the average speed but when the last processor "
+                    "finishes."
                 ),
                 plain=(
                     "A training step ends and the fleet performs an all-reduce: "
-                    "every GPU contributes its gradients and every GPU must receive "
-                    "the summed result before the next step may begin. The traffic "
+                    "every GPU contributes its gradients, the numbers that say how "
+                    "the model should change, and every GPU must receive the "
+                    "summed result before the next step may begin. The traffic "
                     "pattern is the least forgiving networks face — synchronized, "
-                    "all-to-all, and bursty — and it repeats thousands of times an "
-                    "hour. The fabric carries 18 Tb/s comfortably, and because it "
-                    "is a collective, the clock that matters is when the *last* GPU "
-                    "finishes."
+                    "every GPU taking part, and bursty — and it repeats thousands "
+                    "of times an hour. The fabric carries 18 Tb/s comfortably; "
+                    "each line on the map stands for a bundle of eight 800 Gb/s "
+                    "links. Because it is a collective, the clock that matters is "
+                    "when the last GPU finishes."
                 ),
                 standard=(
                     "A training step ends and the fleet performs an all-reduce: "
                     "every GPU contributes its gradients and every GPU must "
                     "receive the summed result before the next step may begin. "
                     "The traffic pattern is the least forgiving one networks "
-                    "face — synchronized, all-to-all, and bursty — and it "
-                    "repeats thousands of times an hour. The fabric carries "
-                    "18 Tb/s comfortably, and because it is a collective, the "
-                    "clock that matters is not average throughput but when the "
-                    "*last* GPU finishes."
+                    "face — synchronized, every rank participating, and bursty — "
+                    "and it repeats thousands of times an hour. The fabric "
+                    "carries 18 Tb/s comfortably. Each leaf-to-spine line on the "
+                    "map stands for a bundle of eight 800 Gb/s links, and fabric "
+                    "throughput is the leaf-to-spine traffic summed over all "
+                    "eight bundles. Because this is a collective, the clock that "
+                    "matters is not average throughput but when the last GPU "
+                    "finishes."
                 ),
                 technical=(
-                    "All-reduce: every GPU contributes gradients and must receive "
-                    "the reduction before the next step. Synchronized, all-to-all, "
-                    "bursty — the least forgiving pattern in networking, repeating "
-                    "thousands of times hourly. 18 Tb/s carried comfortably. "
-                    "Completion time is set by the slowest participant, not by mean "
-                    "throughput."
+                    "All-reduce, in practice a reduce-scatter followed by an "
+                    "all-gather over a ring or tree: every rank contributes "
+                    "gradients and must receive the reduction before the next "
+                    "step. Synchronized, every rank participating, bursty, "
+                    "thousands of times hourly. 18 Tb/s carried comfortably, "
+                    "measured leaf-to-spine and summed over the eight drawn "
+                    "uplinks; each stands for 8x 800G (6.4 Tb/s), so 51.2 Tb/s of "
+                    "uplink capacity. Completion time is set by the slowest "
+                    "participant, not by mean throughput."
                 ),
                 expert=(
-                    "All-reduce: synchronized all-to-all, 18 Tb/s. Completion "
-                    "bounded by slowest participant, not mean throughput."
+                    "All-reduce (reduce-scatter + all-gather), every rank in "
+                    "lockstep. 18 Tb/s leaf-to-spine over 8 drawn uplinks of 8x "
+                    "800G each (51.2 Tb/s). Completion bounded by slowest "
+                    "participant, not mean throughput."
                 ),
             ),
             active_regions=(
@@ -375,60 +407,89 @@ def simulate() -> list[FabricState]:
         FabricState(
             step=6,
             phase="congestion",
-            label="Incast — many senders, one receiver, buffers filling",
+            label="Congestion — many senders converge on one spine link, buffers filling",
             description=L(
                 novice=(
-                    "The hard moment. Traffic converges many-to-one — a save "
-                    "operation landing on the storage network, or a calculation "
-                    "collapsing toward one participant — and a single connection "
-                    "hits 98% with data queuing up behind it. This is where an "
-                    "ordinary network would start throwing traffic away. This one "
-                    "does not: it marks packets so senders slow down before the "
-                    "queues overflow, and it pauses one class of traffic rather "
-                    "than discarding it. Watch the dropped counter stay at zero — "
-                    "that single number is the entire product claim, because a "
-                    "retransmission here would stall not one connection but every "
-                    "processor in the job."
+                    "The hard moment. Many senders aim at one place at once — the "
+                    "job saving its progress (a checkpoint) to storage, or a "
+                    "calculation collapsing toward one participant — and too much "
+                    "of the traffic for rack 2 goes by way of upper switch 1. Its "
+                    "link down to lower switch 2 (leaf 2) hits 98%, with data "
+                    "queuing in the switch's buffer, its waiting space. The other "
+                    "route, through upper switch 2, still has room, but no sender "
+                    "can see that from where it sits. This is where an ordinary "
+                    "network would start throwing packets away. This one does "
+                    "not: it marks packets so senders slow down before the queue "
+                    "overflows, written ECN on the panel, and it can pause one "
+                    "class of traffic for an instant rather than discard it, "
+                    "written PFC. Neither is free. A pause also holds up "
+                    "innocent traffic waiting behind it, which is why the panel "
+                    "counts both — the marked-packets row and the pauses row. "
+                    "Watch the dropped packets row stay at zero — that single "
+                    "number is the entire "
+                    "product claim, because re-sending one packet here would "
+                    "stall not one connection but every processor in the job."
                 ),
                 plain=(
                     "The hard moment. Traffic converges many-to-one — a checkpoint "
-                    "landing on the storage fabric, or a reduction collapsing "
-                    "toward one rank — and a single link hits 98% with buffers "
-                    "filling behind it. This is incast, and it is where ordinary "
-                    "Ethernet would start discarding frames. The SN6000 does not: "
-                    "explicit congestion notification marks packets so senders slow "
-                    "before buffers overflow, and priority flow control pauses a "
-                    "traffic class rather than dropping it. Watch the dropped "
-                    "counter stay at zero."
+                    "(the job saving its progress) landing on the storage fabric, "
+                    "or a reduction collapsing toward one GPU — and too many of "
+                    "the flows for rack 2 cross spine 1. Its link down to leaf 2 "
+                    "hits 98% with buffers filling behind it, while the path "
+                    "through spine 2 has room that no sender can see yet. "
+                    "Many-to-one traffic is called incast, and this is where "
+                    "ordinary Ethernet would start discarding frames. The SN6000 "
+                    "does not: explicit congestion notification (ECN) marks "
+                    "packets so senders slow before buffers overflow, and "
+                    "priority flow control (PFC) pauses a traffic class rather "
+                    "than dropping it. A pause has a price: it also stops "
+                    "innocent flows of that class on the link behind it. Watch "
+                    "the dropped counter stay at zero while the marked-packets "
+                    "and pauses rows move."
                 ),
                 standard=(
                     "The hard moment. Traffic converges many-to-one — a "
                     "checkpoint landing on the storage fabric, or a reduction "
-                    "collapsing toward one rank — and a single link hits 98% "
-                    "with buffers filling behind it. This is called incast, and "
-                    "it is where ordinary Ethernet would start discarding "
-                    "frames. The SN6000 does not: explicit congestion "
-                    "notification (ECN) marks packets so senders slow down "
-                    "before buffers overflow, and priority flow control (PFC) "
-                    "pauses a specific traffic class rather than dropping it. "
-                    "Watch the dropped-packet counter stay at zero — that "
-                    "single number is the entire product claim, because a "
-                    "retransmission here would stall not one flow but every "
-                    "GPU in the job."
+                    "collapsing toward one rank — and too many of the flows "
+                    "bound for rack 2 cross spine 1. Its link down to leaf 2 "
+                    "hits 98% with buffers filling behind it, while the path "
+                    "through spine 2 has room. Each sending leaf picked its "
+                    "spine from its own uplink queues, and those looked fine; "
+                    "the pile-up is one hop further on, where no sender can see "
+                    "it. Many-to-one traffic like this is called incast, and it "
+                    "is where ordinary Ethernet would start discarding frames. "
+                    "The SN6000 does not: explicit congestion notification (ECN) "
+                    "marks packets so senders slow down before buffers overflow, "
+                    "and priority flow control (PFC) pauses a specific traffic "
+                    "class rather than dropping it. Neither is free. A pause "
+                    "stops every flow of that class on the link behind it, "
+                    "including flows bound somewhere uncongested, and pauses can "
+                    "spread upstream hop by hop; the telemetry panel counts "
+                    "marks and pauses for that reason. Watch the dropped-packet "
+                    "counter stay at zero — that single number is the entire "
+                    "product claim, because a retransmission here would stall "
+                    "not one flow but every GPU in the job."
                 ),
                 technical=(
-                    "Incast: many-to-one convergence — checkpoint landing on the "
+                    "Many-to-one convergence — a checkpoint landing on the "
                     "storage fabric, or a reduction collapsing toward one rank — "
-                    "driving a single link to 98% with buffers filling. Ordinary "
-                    "Ethernet discards here. ECN marks before overflow and PFC "
-                    "pauses a class rather than dropping. Zero drops asserted, and "
-                    "the ≥95% utilization is asserted too, so losslessness is "
-                    "proven under stress rather than at idle."
+                    "overloads the spine-1 downlink to leaf 2: 98% with buffers "
+                    "filling, spine 2's downlink underused. Leaf-local adaptive "
+                    "routing chose on its own egress queues and cannot see a "
+                    "queue one hop away. Ordinary Ethernet discards here. ECN "
+                    "marks before overflow (12% of packets on the hot link) and "
+                    "PFC pauses the class upstream (40 pause frames/s), which "
+                    "costs head-of-line blocking for victim flows and can "
+                    "propagate. Zero drops with the link at or above 95%, so "
+                    "losslessness is shown under stress rather than at idle. "
+                    "Figures illustrative."
                 ),
                 expert=(
-                    "Incast to 98% on one link, buffers filling. ECN marks "
-                    "pre-overflow, PFC pauses the class. Zero drops asserted at "
-                    "≥95% utilization — proven under stress, not at idle."
+                    "Many-to-one traffic overloads spine-1 to leaf-2: 98%, "
+                    "buffers filling; remote to the sending leaves, so local AR "
+                    "did not avoid it. ECN marks pre-overflow (12%), PFC pauses "
+                    "the class (40/s) at the cost of head-of-line blocking "
+                    "upstream. Zero drops at ≥95% utilization (illustrative)."
                 ),
             ),
             active_regions=(
@@ -439,6 +500,9 @@ def simulate() -> list[FabricState]:
             dropped_packets=0,
             elapsed_seconds=186,
             cycle_cost=3,
+            hot_link=HOT_LINK,
+            ecn_marked_percent=12,
+            pfc_pauses_per_sec=40,
         ),
         FabricState(
             step=7,
@@ -446,48 +510,67 @@ def simulate() -> list[FabricState]:
             label="Adaptive routing spreads the flows — congestion clears",
             description=L(
                 novice=(
-                    "Information from the congested link feeds the network's "
-                    "adaptive routing, which moves traffic onto the alternative "
-                    "paths the design has been holding in reserve since routing "
-                    "settled. The busy link relaxes from 98% to 71% while the "
-                    "*total* throughput rises — the work did not shrink, it spread "
-                    "out. This is the difference from a generic network, where a "
-                    "connection is pinned to one path for its lifetime, so an "
-                    "unlucky collision stays unlucky for the whole job."
+                    "News of the crowded link reaches the lower switches that are "
+                    "sending into it. The network's adaptive routing had been "
+                    "choosing routes all along, but each switch could only judge "
+                    "by its own cables. Now that they know, they move part of the "
+                    "traffic for rack 2 onto the other route, through upper "
+                    "switch 2, which had room the whole time. The busy link "
+                    "relaxes from 98% to 71%, the pauses stop, and the total the "
+                    "network carries rises from 24 to 31 terabits per second — "
+                    "the work did not shrink, it spread out. A generic network "
+                    "pins each conversation to one route for its whole life, so "
+                    "an unlucky pile-up stays unlucky for the whole job. One "
+                    "limit: the last cable into a rack has no second route, and "
+                    "a pile-up there eases only when the senders slow down."
                 ),
                 plain=(
-                    "Telemetry from the congested link feeds adaptive routing, "
-                    "which moves flows onto the alternate equal-cost paths the "
-                    "topology has held in reserve since routing converged. The hot "
-                    "link relaxes from 98% to 71% while *total* throughput rises to "
-                    "31 Tb/s — the work did not shrink, it spread. This is the "
-                    "difference from generic Ethernet: conventional hashing pins a "
-                    "flow to one path for its lifetime, so an unlucky collision "
-                    "stays unlucky for the whole job."
+                    "Telemetry from the congested link reaches the leaves sending "
+                    "into it. Adaptive routing was on all along, but each leaf "
+                    "could judge only its own uplinks; now it moves flows for "
+                    "rack 2 onto the equal-cost path through spine 2, which had "
+                    "room. The hot link relaxes from 98% to 71%, pauses stop, and "
+                    "total throughput rises from 24 to 31 Tb/s — the work did "
+                    "not shrink, it spread. Generic Ethernet hashes a flow onto "
+                    "one path for its lifetime, so an unlucky collision stays "
+                    "unlucky for the whole job. The last link into a rack has no "
+                    "alternate path; congestion there eases only when senders "
+                    "slow."
                 ),
                 standard=(
-                    "Telemetry from the congested link feeds the fabric's "
-                    "adaptive routing, which moves flows onto the alternate "
-                    "equal-cost paths the leaf/spine topology has been holding "
-                    "in reserve since routing converged. The hot link relaxes "
-                    "from 98% to 71% while *total* throughput rises to 31 Tb/s "
+                    "Telemetry from the congested link reaches the leaves that "
+                    "are sending into it. Adaptive routing has been choosing "
+                    "paths since routing converged, but only on what each leaf "
+                    "could see locally; with the remote queue now visible, it "
+                    "moves flows for rack 2 onto the alternate equal-cost path "
+                    "through spine 2. The hot link relaxes from 98% to 71%, the "
+                    "pauses stop, and total throughput rises from 24 to 31 Tb/s "
                     "— the work did not shrink, it spread. This is the "
                     "difference between Spectrum-X and generic Ethernet: "
                     "conventional hashing pins a flow to one path for its "
                     "lifetime, so an unlucky collision stays unlucky for the "
-                    "whole job."
+                    "whole job. Routing can only help where a second path "
+                    "exists. The last link into a rack has none, and congestion "
+                    "there is relieved only by ECN slowing the senders."
                 ),
                 technical=(
-                    "Congestion telemetry drives adaptive routing onto the reserved "
-                    "ECMP set. Hot link 98% → 71% while aggregate rises 24 → 31 "
-                    "Tb/s: the work spread rather than shrank, and the engine "
-                    "asserts both halves. Conventional flow hashing pins a flow for "
-                    "its lifetime, so a collision persists for the job's duration."
+                    "Congestion telemetry from the spine-1 downlink reaches the "
+                    "sending leaves, and adaptive routing (load-aware all along, "
+                    "but leaf-local) shifts rack-2 flows onto the alternate "
+                    "equal-cost path via spine 2. Hot link 98% → 71%, PFC pauses "
+                    "to zero, ECN marks to 1%, aggregate 24 → 31 Tb/s: the work "
+                    "spread rather than shrank. Static flow hashing pins a flow "
+                    "for its lifetime, so a collision persists for the job. "
+                    "Path diversity ends at the leaf: a last-hop incast is "
+                    "relieved by congestion control alone."
                 ),
                 expert=(
-                    "Adaptive routing onto the reserved ECMP set: 98%@24 Tb/s → "
-                    "71%@31 Tb/s. Both halves asserted. Static hashing pins flows "
-                    "and persists collisions."
+                    "Remote congestion signal reaches the sending leaves; AR "
+                    "shifts rack-2 flows to the alternate equal-cost path via "
+                    "spine 2: 98%@24 Tb/s → 71%@31 Tb/s, pauses 0. Static "
+                    "hashing pins flows and persists collisions. Last-hop "
+                    "incast has no alternate path; only congestion control "
+                    "relieves it."
                 ),
             ),
             active_regions=(
@@ -498,6 +581,7 @@ def simulate() -> list[FabricState]:
             dropped_packets=0,
             elapsed_seconds=190,
             cycle_cost=2,
+            ecn_marked_percent=1,
         ),
         FabricState(
             step=8,
@@ -506,8 +590,8 @@ def simulate() -> list[FabricState]:
             description=L(
                 novice=(
                     "The sustained pattern of the next several weeks: compute, "
-                    "share results, save state, repeat, with the network absorbing "
-                    "each burst and never throwing anything away. It has become "
+                    "share results, save progress (a checkpoint), repeat, with the "
+                    "network absorbing each burst and never throwing a packet away. It has become "
                     "invisible in the good way, which is the only review a network "
                     "ever gets. Together with the compute racks, the cooling loop, "
                     "and the storage that feeds them, this completes the picture."
@@ -535,13 +619,14 @@ def simulate() -> list[FabricState]:
                 technical=(
                     "Steady state: compute, all-reduce, checkpoint, repeat, with "
                     "every burst absorbed and no drops. The success condition for a "
-                    "fabric is invisibility. Completes the quartet — compute "
-                    "(XE9712), cooling (IR7000), data (Exascale), fabric (this)."
+                    "fabric is invisibility. Fourth of this project's four AI "
+                    "factory twins — compute (XE9712), cooling (IR7000), data "
+                    "(Exascale), fabric (this)."
                 ),
                 expert=(
                     "Steady: compute, all-reduce, checkpoint, repeat. Zero drops "
-                    "throughout. Success condition is invisibility. Completes the "
-                    "quartet."
+                    "throughout. Success condition is invisibility. Companion "
+                    "twins: XE9712, IR7000, Exascale."
                 ),
             ),
             active_regions=(

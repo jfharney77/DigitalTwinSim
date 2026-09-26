@@ -104,7 +104,7 @@ export function AnatomyPage() {
               larger would be picking a winner on your behalf. And the pools
               at the bottom are three separate columns with three separate
               lines rising from them, because they are three separate
-              purchases. On a hyperconverged diagram — this repo's VxRail
+              purchases. On a hyperconverged diagram — the VxRail
               twin — compute and storage would be one box, since in that
               architecture they are one box.
             </div>

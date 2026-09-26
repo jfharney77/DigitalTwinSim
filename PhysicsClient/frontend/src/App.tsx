@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LabPanel } from "./components/LabPanel";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import {
   fetchMedia,
   type ProductMediaWire,
   fetchAnatomy,
   fetchConfigPresets,
   fetchExplain,
+  fetchIntro,
   fetchScenarios,
   fetchWorkloadPresets,
   simulate,
@@ -15,6 +19,7 @@ import { ProductGallery } from "./components/ProductGallery";
 import { DeviceView } from "./components/DeviceView";
 import { Instruments } from "./components/Instruments";
 import { ComparePanel } from "./components/ComparePanel";
+import { LegTable } from "./components/LegTable";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
 import { Timeline, bandsWhere } from "./components/Timeline";
@@ -26,6 +31,7 @@ import type {
   Environment,
   Explain,
   GuidedScenario,
+  PageIntro,
   PerfMode,
   Scenario,
   SimEvent,
@@ -50,6 +56,21 @@ const DEFAULT_ENV: Environment = {
 };
 
 const SPEEDS = [1, 10, 60];
+
+// The header's short name for the limit state; Instruments carries the
+// long one.
+const PL_SHORT: Record<string, string> = {
+  "idle": "idle",
+  "pl2-boost": "boost window",
+  "pl1": "sustained limits",
+  "skin-limited": "skin-limited",
+  "budget-limited": "budget-limited",
+};
+
+function sameWorkload(a: Workload, b: Workload): boolean {
+  return a.cpuPct === b.cpuPct && a.gpuPct === b.gpuPct
+    && a.npuPct === b.npuPct && a.inference === b.inference;
+}
 
 type Page = "sim" | "brands";
 
@@ -92,6 +113,7 @@ return () => window.removeEventListener("hashchange", onHash);
   const [workloadPresets, setWorkloadPresets] = useState<WorkloadPreset[]>([]);
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
+  const [intro, setIntro] = useState<PageIntro | null>(null);
   const [explainOn, setExplainOn] = useState(false);
   // Held by id so a reading-level refetch swaps in the re-levelled narration.
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
@@ -111,10 +133,23 @@ return () => window.removeEventListener("hashchange", onHash);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    if (page === "sim") writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    if (page === "sim") writeHash(g ? `#scenario=${g.id}` : rest);
   };
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+    // The intro falls back to the built-in standard text if it cannot load.
+    fetchIntro().then(setIntro).catch(() => setIntro(null));
+  }, [level]);
 
   // Prose-bearing content refetches on level or product change.
   useEffect(() => {
@@ -187,6 +222,26 @@ return () => window.removeEventListener("hashchange", onHash);
     return () => clearInterval(id);
   }, [running, speed, trace.length]);
 
+  // The workload in force at the cursor: the dials' setting until a timed
+  // set-workload event overrules it. The panel shows this, so it never
+  // contradicts the run on screen.
+  const scheduled = [...events]
+    .filter((e) => e.action === "set-workload" && e.workload && e.atS <= (state?.t ?? 0))
+    .sort((a, b) => a.atS - b.atS)
+    .pop();
+  const liveWorkload: Workload = scheduled?.workload ?? workload;
+  const livePreset = workloadPresets.find((w) => sameWorkload(w.workload, liveWorkload));
+  // The engine the live workload is named after, regardless of what the
+  // build carries — Instruments compares it with the engine that actually
+  // ran and says so when they differ.
+  const requestedEngine = liveWorkload.inference
+    ? liveWorkload.npuPct > 0
+      ? "npu"
+      : liveWorkload.gpuPct > 0
+        ? "gpu"
+        : "cpu"
+    : null;
+
   const nowEvent = (e: Omit<SimEvent, "atS">) => {
     setEvents((evs) => [...evs, { atS: state?.t ?? 0, ...e }]);
   };
@@ -231,6 +286,49 @@ return () => window.removeEventListener("hashchange", onHash);
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
+
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEnvironment(lab.start.environment);
+    setEvents(lab.start.events);
+    setDurationS(lab.start.durationS);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
 
   const coldStart = () => {
     setEvents([]);
@@ -283,10 +381,21 @@ return () => window.removeEventListener("hashchange", onHash);
               Explain mode
             </button>
           )}
+          {page === "sim" && (
+            <button
+              className={labsOpen ? "active nav-labs" : "nav-labs"}
+              onClick={() => {
+                setLabsOpen(!labsOpen);
+                writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+              }}
+            >
+              Labs
+            </button>
+          )}
         </nav>
         <span className="sub">
           {page !== "sim" ? "" : state
-            ? `t+${state.t}s · ${state.poweredOn ? state.plState : "OFF"} · ${state.systemPowerW.toFixed(0)} W · ${state.batteryPct.toFixed(0)}%`
+            ? `t+${state.t}s · ${state.poweredOn ? PL_SHORT[state.plState] ?? state.plState : "OFF"} · ${state.systemPowerW.toFixed(0)} W · ${state.batteryPct.toFixed(0)}%`
             : "—"}
         </span>
         <LevelControl />
@@ -309,18 +418,53 @@ return () => window.removeEventListener("hashchange", onHash);
       ) : (
         <>
       <div className="an-hero">
-        <h2>Burst, budget, skin, battery — the client-device physics</h2>
+        <h2>{intro?.heading ?? "Burst, budget, skin, battery — the client-device physics"}</h2>
         <p>
-          The R760 thermal twin's engine, shrunk to the machines that sit
-          on desks and laps: an Alienware laptop or tower and the Pro Max
-          Plus workstation with its discrete NPU. Three mechanics servers
-          never meet — PL2 burst windows that fade to PL1, one shared
-          thermal budget that CPU and GPU fight over, and a
-          skin-temperature cap with the final say — plus a battery whose
-          runtime is honest division. Every constant is sourced or marked
-          as an estimate.
+          {intro?.text ??
+            "An Alienware laptop or tower and the Pro Max Plus workstation with its discrete NPU. A load step opens a burst window (the CPU at its short-term limit PL2, the GPU above its total graphics power TGP) that fades to the sustained limits; CPU and GPU share one thermal budget; a skin-temperature cap has the final say; battery runtime is watt-hours over watts. Every constant is sourced or marked as an estimate."}
         </p>
+        {intro && intro.terms.length > 0 && (
+          <details className="mini intro-terms" open={level <= 2}>
+            <summary>What the instrument labels mean</summary>
+            <dl>
+              {intro.terms.map((t) => (
+                <div key={t.term}>
+                  <dt>{t.term}</dt>
+                  <dd>{t.meaning}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        )}
       </div>
+
+      {activeScenario && (
+        <div className="an-panel scenario-banner">
+          <h2>{activeScenario.title}</h2>
+          <div className="mini scenario-narration">
+            {activeScenario.narration.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+            <p className="scenario-question">{activeScenario.question}</p>
+          </div>
+        </div>
+      )}
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         {/* Left — build panel + guided scenarios */}
@@ -377,14 +521,6 @@ return () => window.removeEventListener("hashchange", onHash);
                 </button>
               ))}
             </div>
-            {activeScenario && (
-              <div className="mini scenario-narration">
-                {activeScenario.narration.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-                <p className="scenario-question">? {activeScenario.question}</p>
-              </div>
-            )}
           </div>
         </div>
 
@@ -478,13 +614,24 @@ return () => window.removeEventListener("hashchange", onHash);
         <div className="thermal-col">
           <div className="an-panel">
             <h2>Workload</h2>
-            <div className="btnrow">
+            <div className="btnrow workload-presets">
               {workloadPresets.map((w) => (
-                <button key={w.id} onClick={() => setWorkloadByHand(w.workload)}>
+                <button
+                  key={w.id}
+                  className={livePreset?.id === w.id ? "active" : ""}
+                  onClick={() => setWorkloadByHand(w.workload)}
+                >
                   {w.name}
                 </button>
               ))}
             </div>
+            {scheduled && (
+              <div className="mini workload-scheduled">
+                The scenario set this workload at t+{scheduled.atS}s
+                {livePreset ? `: ${livePreset.name}` : ""}. Moving a dial
+                replaces the scenario's schedule.
+              </div>
+            )}
             {(
               [
                 ["CPU", "cpuPct"],
@@ -493,11 +640,11 @@ return () => window.removeEventListener("hashchange", onHash);
               ] as const
             ).map(([label, key]) => (
               <label key={key} className="field">
-                {label} {workload[key]}%
+                {label} {liveWorkload[key]}%
                 <input
-                  type="range" min={0} max={100} value={workload[key]}
+                  type="range" min={0} max={100} value={liveWorkload[key]}
                   onChange={(e) =>
-                    setWorkloadByHand({ ...workload, [key]: +e.target.value })
+                    setWorkloadByHand({ ...liveWorkload, [key]: +e.target.value })
                   }
                 />
               </label>
@@ -552,7 +699,9 @@ return () => window.removeEventListener("hashchange", onHash);
             explains={explains}
             explainOn={explainOn}
             hasBattery={config.formFactor === "laptop"}
+            requestedEngine={requestedEngine}
           />
+          <LegTable scenario={scenario} trace={trace} cursorT={state?.t ?? 0} />
           {ghost && result && (
             <ComparePanel
               aName="current build"

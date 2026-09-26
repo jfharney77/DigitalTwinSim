@@ -5,6 +5,10 @@ function fmtTb(tb: number): string {
   return tb >= 1000 ? `${(tb / 1000).toFixed(2)} PB` : `${tb.toFixed(1)} TB`;
 }
 
+function fmtHours(h: number): string {
+  return h < 1 ? `${h.toFixed(2)} h (${(h * 60).toFixed(0)} min)` : `${h.toFixed(1)} h`;
+}
+
 function fmtRpo(s: number): string {
   if (s < 90) return `${s.toFixed(0)} s`;
   if (s < 5400) return `${(s / 60).toFixed(1)} min`;
@@ -20,7 +24,9 @@ function substituted(id: string, s: SimState): string {
     case "rebuild":
       return s.rebuilding
         ? `${s.rebuildPct.toFixed(0)}% rebuilt · ${s.rebuildHoursLeft.toFixed(1)} h left`
-        : "no rebuild running";
+        : s.lastRebuildH > 0
+          ? `last rebuild took ${fmtHours(s.lastRebuildH)}`
+          : "no rebuild running";
     case "srdf":
       return s.rpoSeconds > 0
         ? `RPO ${fmtRpo(s.rpoSeconds)}`
@@ -102,7 +108,13 @@ export function Instruments({
       <div className="stat"><span>units online</span><span>{s ? s.unitsOnline : "—"}</span></div>
       <div className="stat">
         <span>rebuild</span>
-        <span>{s?.rebuilding ? `${s.rebuildPct.toFixed(0)}% · ${s.rebuildHoursLeft.toFixed(1)} h left` : "—"}</span>
+        <span>
+          {s?.rebuilding
+            ? `${s.rebuildPct.toFixed(0)}% · ${s.rebuildHoursLeft.toFixed(1)} h left`
+            : s && s.lastRebuildH > 0
+              ? `last took ${fmtHours(s.lastRebuildH)}`
+              : "—"}
+        </span>
       </div>
       <Info id="rebuild" />
       {product === "powermax" && (

@@ -1,4 +1,5 @@
 import { ControlPanel } from "@twinsim/twin-ui";
+import type { ScenarioInfo } from "../types";
 
 /**
  * PowerOnControls — the shared {@link ControlPanel} with this twin's own note.
@@ -16,7 +17,13 @@ export function PowerOnControls({
   onPause,
   onStep,
   onReset,
+  scenarios,
+  scenarioId,
+  onScenario,
 }: {
+  scenarios: ScenarioInfo[];
+  scenarioId: string;
+  onScenario: (id: string) => void;
   speed: number;
   running: boolean;
   done: boolean;
@@ -27,6 +34,7 @@ export function PowerOnControls({
   onStep: () => void;
   onReset: () => void;
 }) {
+  const current = scenarios.find((sc) => sc.id === scenarioId);
   return (
     <ControlPanel
       running={running}
@@ -40,11 +48,38 @@ export function PowerOnControls({
       onSpeed={onSpeed}
       note={
         <>
+          {current && current.id !== "power-on" && (
+            <span className="scenario-note">
+              {current.summary} {current.basis}
+              {current.sources.map((src) => (
+                <a key={src.url} href={src.url} target="_blank" rel="noreferrer">
+                  {src.label}
+                </a>
+              ))}
+              <br />
+            </span>
+          )}
           The sequence is a fixed trace computed by the backend; Run only plays
           it back. Step walks one event at a time — longer real-world stages
           (node OS boot, pool assembly) dwell on screen longer.
         </>
       }
-    />
+    >
+      {scenarios.length > 1 && (
+        <label className="field" style={{ marginTop: 10 }}>
+          Scenario
+          <select
+            value={scenarioId}
+            onChange={(event) => onScenario(event.target.value)}
+          >
+            {scenarios.map((sc) => (
+              <option key={sc.id} value={sc.id}>
+                {sc.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </ControlPanel>
   );
 }

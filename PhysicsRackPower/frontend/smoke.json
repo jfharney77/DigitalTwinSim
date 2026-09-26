@@ -54,6 +54,21 @@
       "visible": [".scenario-list button.active", ".scenario-narration"],
       "text": ["Lithium ages differently"],
       "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [".lab-panel", ".lab-list button"],
+      "text": ["Three feeds, eight unequal servers", "A surge you cannot balance away"]
+    },
+    {
+      "hash": "#lab=three-feeds-eight-servers",
+      "name": "lab-three-feeds-eight-servers",
+      "svg": true,
+      "visible": [".lab-goal", ".lab-run", ".lab-list button.active"],
+      "text": ["Run and grade", "No grade yet"],
+      "play": { "click": ".lab-run", "watch": ".lab-results", "times": 1 }
     }
   ]
 }

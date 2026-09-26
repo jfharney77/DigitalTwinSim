@@ -36,7 +36,9 @@ FABRIC_ILLO = Photo(
 
 _SPINE_DESC = (
     "A Quantum-X800 spine switch — the Q3400 chassis: 144 ports of "
-    "800 Gb/s, liquid-cooled, with SHARP reduction engines in the ASIC. "
+    "800 Gb/s across 72 OSFP cages, with SHARP reduction engines in the "
+    "ASIC. NVIDIA ships it air-cooled (Q3400-RA, 4U) and liquid-cooled "
+    "(Q3400-LD); this twin draws the liquid-cooled variant. "
     "Every leaf connects to every spine, so any two racks are exactly two "
     "hops apart and the subnet manager can spread routes across the whole "
     "spine layer. During SHARP collectives the spines are where partial "
@@ -54,11 +56,12 @@ _LEAF_DESC = (
 
 _ENDPOINT_DESC = (
     "A GPU rack as the fabric sees it: a set of ConnectX-8 SuperNIC "
-    "endpoints, one 800 Gb/s port per GPU, RDMA all the way — remote "
-    "memory reads and writes with no host CPU in the path. At TACC's "
-    "Horizon these are Dell IRSS racks of Grace Blackwell nodes; inside "
-    "the rack NVLink does the talking, and past the rack wall every "
-    "conversation rides these ports."
+    "endpoints at 800 Gb/s a port — drawn here one port per GPU, the "
+    "densest design — RDMA all the way: remote memory reads and writes "
+    "with no host CPU in the path. At TACC's Horizon these are Dell IRSS "
+    "racks of Grace Blackwell nodes, each node on a full 800 Gb/s link "
+    "per TACC's user guide; inside the node NVLink does the talking, and "
+    "past it every conversation rides these ports."
 )
 
 
@@ -149,8 +152,8 @@ ANATOMY = FabricAnatomy(
             "the two-hop path, the manager marginal by design."
         ),
         technical=(
-            "Two-tier fat tree: Q3400 spines (144× 800 Gb/s, liquid-cooled, "
-            "SHARP engines), leaves, ConnectX-8 endpoints. Phase order "
+            "Two-tier fat tree: Q3400 spines (144× 800 Gb/s, liquid-cooled "
+            "variant drawn, SHARP engines), leaves, ConnectX-8 endpoints. Phase order "
             "off → power → discover → routes → credits → ready → "
             "collective → sharp → burst → steady. Asserted: uncredited "
             "transmission is zero on every step (constructive, not "
@@ -171,7 +174,8 @@ ANATOMY = FabricAnatomy(
     ),
     regions=[
         FabricRegion(
-            id="manager", kind="manager", label="UFM / SM",
+            id="manager", kind="manager",
+            label=L(standard="UFM / SM", novice="Manager"),
             x=0, y=1, w=8, h=6,
             description=(
                 "The subnet manager — NVIDIA UFM, the fabric's "
@@ -194,8 +198,9 @@ ANATOMY = FabricAnatomy(
             id="optics", kind="optics", label="OSFP optics & fibre",
             x=8, y=42, w=64, h=4,
             description=(
-                "The cabling layer: OSFP twin-port transceivers and the "
-                "fibre plant carrying 800 Gb/s per port between tiers. At "
+                "The cabling layer: OSFP twin-port transceivers — two "
+                "800 Gb/s ports per cage — and the fibre plant between "
+                "tiers. At "
                 "these rates the optics budget — power, cost, and failure "
                 "rate — is a first-class design constraint; a "
                 "Horizon-scale fabric carries thousands of transceivers, "
@@ -208,10 +213,12 @@ ANATOMY = FabricAnatomy(
             x=74, y=42, w=22, h=4,
             description=(
                 "The switch silicon's liquid loop. A Q3400 spine moves "
-                "over 100 Tb/s through one chassis, and at that density "
-                "the ASICs are cold-plated like the GPUs they serve — "
-                "the same plumbing story the IR7000 twin tells for the "
-                "compute racks, extended to the network that joins them."
+                "115.2 Tb/s through one chassis. NVIDIA sells it "
+                "air-cooled (Q3400-RA) and liquid-cooled (Q3400-LD); the "
+                "liquid variant, drawn here, cold-plates the ASICs like "
+                "the GPUs they serve — the same plumbing story the IR7000 "
+                "twin tells for the compute racks, extended to the "
+                "network that joins them."
             ),
         ),
         _endpoint(1, 8),
@@ -221,13 +228,13 @@ ANATOMY = FabricAnatomy(
     ],
     stats=[
         Stat(label="Port speed", value="800 Gb/s InfiniBand (XDR generation)"),
-        Stat(label="Spine chassis", value="Q3400 — 144 ports, liquid-cooled"),
+        Stat(label="Spine chassis", value="Q3400 — 144 ports in 72 OSFP cages; air- or liquid-cooled"),
         Stat(label="Topology", value="Two-tier fat tree — any pair, two hops"),
         Stat(label="Flow control", value="Credit-based — no send without a granted buffer"),
         Stat(label="Routing", value="Computed centrally by the subnet manager, pre-installed"),
         Stat(label="In-network compute", value="SHARP v4 — reductions in the switch ASICs"),
-        Stat(label="Endpoints", value="ConnectX-8 SuperNICs — RDMA, one port per GPU"),
-        Stat(label="At TACC Horizon", value="Joins Dell IRSS Grace Blackwell racks — 4,000 GPUs"),
+        Stat(label="Endpoints", value="ConnectX-8 SuperNICs — RDMA, 800 Gb/s a port"),
+        Stat(label="At TACC Horizon", value="Joins Dell IRSS Grace Blackwell racks — 4,000 GPUs, 800 Gb/s per GPU node"),
     ],
     photo=FABRIC_ILLO,
     sources=[
@@ -245,7 +252,15 @@ ANATOMY = FabricAnatomy(
         ),
         SourceLink(
             label="NVIDIA SHARP (in-network computing) documentation",
-            url="https://docs.nvidia.com/networking/display/sharpv300",
+            url="https://networking-docs.nvidia.com/sharpum/3.16.0",
+        ),
+        SourceLink(
+            label="NVIDIA Q32xx/Q34xx XDR switch systems user manual (models, ports, cooling)",
+            url="https://networking-docs.nvidia.com/xdrswitcheshw/introduction",
+        ),
+        SourceLink(
+            label="TACC Horizon user guide (node counts, XDR link speeds, topology)",
+            url="https://docs.tacc.utexas.edu/hpc/horizon/",
         ),
     ],
 )

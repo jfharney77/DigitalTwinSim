@@ -242,6 +242,19 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                     sustain[i] += DT
                     if sustain[i] >= (C("trip_sustain_base_s")
                                       + C("trip_sustain_step_s") * i):
+                        if not any(tripped):
+                            # Every bank shows the same hottest-silicon
+                            # reading, so the order of trips needs saying.
+                            log.append(LogEntry(
+                                t=t, severity="info",
+                                message="Banks share one silicon reading "
+                                        "in this model; their trip timers "
+                                        "are staggered "
+                                        f"{C('trip_sustain_step_s'):g} s "
+                                        "apart to stand in for position "
+                                        "and part-to-part spread, so bank "
+                                        "1 always goes first",
+                            ))
                         tripped[i] = True
                         log.append(LogEntry(
                             t=t, severity="critical",
@@ -303,6 +316,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             sec_return_c=round(sec_ret, 2),
             sec_flow_lpm=round(flow, 1),
             approach_c=round(supply - env.facility_supply_c, 2),
+            sec_supply_steady_c=round(supply_ss, 2),
             pump_speed_pct=round(100.0 * speed, 1),
             pumps_alive=pumps_alive,
             pump_power_kw=round(pump_kw, 2),
@@ -316,6 +330,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             cap_pct=round(100.0 * cap, 1),
             capping=capping,
             chip_temp_c=round(chip, 2),
+            chip_steady_c=round(chip_ss, 2),
+            delivered_kwh=round(delivered_kwh, 3),
             dew_margin_c=round(supply - env.dew_point_c, 2),
             floor_active=floor_active,
             region_temps=region_temps,

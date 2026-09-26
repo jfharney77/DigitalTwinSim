@@ -38,7 +38,7 @@ USE_CASES: list[UseCase] = [
                 "VM from vCenter policy rather than to whole datastores. "
                 "Always-on inline deduplication and compression thrive on "
                 "VM images — hundreds of near-identical guest OS disks "
-                "routinely reduce well beyond the guaranteed 4:1 — and "
+                "routinely reduce well beyond the guaranteed 5:1 — and "
                 "the all-NVMe pool keeps latency flat as the estate "
                 "grows. If the cluster later outgrows one appliance, "
                 "scale-out clustering adds a second under the same "
@@ -74,8 +74,12 @@ USE_CASES: list[UseCase] = [
                 option_id="drive-7_68tb",
                 qty=12,
                 rationale=(
-                    "~92 TB raw → ~368 TB effective at 4:1; nine empty "
-                    "slots left for growth before any shelf is needed."
+                    "~92 TB raw → roughly 370 TB effective: about four times "
+                    "raw, the ratio Dell's spec sheet implies once 5:1 "
+                    "reduction is offset by drive-failure protection "
+                    "(illustrative); "
+                    "nine empty slots left for growth before any shelf is "
+                    "needed."
                 ),
             ),
             UseCaseItem(
@@ -127,7 +131,7 @@ USE_CASES: list[UseCase] = [
             ),
         ],
         outcomes=[
-            Stat(label="Effective capacity", value="~368 TB from 12 drives"),
+            Stat(label="Effective capacity", value="~370 TB from 12 drives (illustrative)"),
             Stat(label="Host paths per volume", value="4 (2 per node)"),
             Stat(label="Controller failover", value="Seconds · invisible to VMs"),
             Stat(label="RPO with Metro", value="Zero"),
@@ -171,9 +175,11 @@ USE_CASES: list[UseCase] = [
                 "ships the production volume group to a DR-site "
                 "PowerStore on a 15-minute RPO, and DR tests run against "
                 "a clone of the replica without ever pausing "
-                "replication. The ransomware detection in PowerStoreOS "
-                "watches the write stream and pins hardened snapshots "
-                "as restore points of last resort."
+                "replication. Secure snapshots in PowerStoreOS cannot be "
+                "deleted before their retention expires, which leaves "
+                "restore points of last resort; Dell Cyber Detect, "
+                "announced for PowerStore in 2026, is the separate product "
+                "that scans them for ransomware corruption."
             ),
         ],
         config=[
@@ -226,7 +232,7 @@ USE_CASES: list[UseCase] = [
                 option_id="sw-security",
                 qty=1,
                 rationale=(
-                    "Databases are the ransomware target; hardened "
+                    "Databases are the ransomware target; secure "
                     "snapshots give a restore point the attacker can't "
                     "encrypt."
                 ),
@@ -303,8 +309,9 @@ USE_CASES: list[UseCase] = [
                 option_id="drive-3_84tb",
                 qty=8,
                 rationale=(
-                    "~31 TB raw / ~123 TB effective covers VMs plus the "
-                    "CAD share with 13 slots of growth room."
+                    "~31 TB raw, roughly 120 TB effective at about four "
+                    "times raw (illustrative), covers VMs "
+                    "plus the CAD share with 13 slots of growth room."
                 ),
             ),
             UseCaseItem(
@@ -353,7 +360,7 @@ USE_CASES: list[UseCase] = [
         ],
         outcomes=[
             Stat(label="Boxes on site", value="1 (block + file unified)"),
-            Stat(label="Effective capacity", value="~123 TB from 8 drives"),
+            Stat(label="Effective capacity", value="~120 TB from 8 drives (illustrative)"),
             Stat(label="On-site storage admin", value="None required"),
             Stat(label="Compliance copy", value="Nightly async to core"),
         ],

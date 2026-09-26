@@ -40,20 +40,29 @@ DriveType = Literal["ssd", "hdd"]
 ThermalConfig = Literal["standard", "extended"]
 Redundancy = Literal["1+0", "1+1"]
 
-# CPU TDP tiers per platform: the XR8000's sleds take single-socket
-# 4th Gen Xeon Scalable parts; the XR4000's nodes take Xeon D. Exact
-# per-SKU wattages are `verify` — these are the modeled classes.
+# CPU TDP tiers per platform. XR8000 sleds (XR8610t/XR8620t) take one
+# 4th/5th Gen Xeon Scalable part; the XR8000 Technical Guide lists
+# 125–205 W SKUs with a 205 W platform maximum (4509Y 125 W, 4510/4514Y
+# 150 W, 6403N/6421N 185 W, 6433N/6438N 205 W) — so those four classes are
+# sourced. The XR4000's sleds take one Xeon D; its wattage classes are
+# modeled, not taken from a Dell table.
 PLATFORM_TDP_TIERS: dict[str, list[int]] = {
-    "xr8000": [125, 185, 225, 250],
+    "xr8000": [125, 150, 185, 205],
     "xr4000": [65, 80, 100, 122],
 }
+# Modeled PSU classes. On the real XR8000r the AC options are 1400 W
+# (Platinum, 100–240 V; derated to 1050 W at 100–120 V) and 1800 W
+# (Titanium, 200–240 V only); 800/1100/1400 W are −48 V DC units. 800 W
+# and 1100 W AC supplies exist elsewhere in the XR line (XR5610/XR7620).
 PSU_CAPACITIES = [800, 1100, 1400]
-DIMM_COUNTS = [4, 8, 16]
+# XR8000 sleds have 8 DDR5 slots; XR4000 sleds have 4 DDR4 slots
+# (Dell PowerEdge XR-Series spec sheet, Jan 2026).
+DIMM_COUNTS = [2, 4, 8]
 
 
 class ServerConfig(CamelModel):
     platform: Platform = "xr8000"
-    cpu_tdp_w: int = 225          # must be in PLATFORM_TDP_TIERS (a rule)
+    cpu_tdp_w: int = 205          # must be in PLATFORM_TDP_TIERS (a rule)
     thermal_config: ThermalConfig = "standard"
     dimms: int = 8                # one of DIMM_COUNTS
     drive_type: DriveType = "ssd"
@@ -118,6 +127,11 @@ class Scenario(CamelModel):
     environment: Environment = Environment()
     duration_s: int = Field(600, ge=10, le=7200)
     events: list[SimEvent] = Field(default_factory=list)
+    # True = the run opens on a sled that has already been carrying this
+    # workload in this environment long enough to settle (fans at their
+    # operating point, thermal masses warm). False = a cold start: masses
+    # at ambient, fans at the floor.
+    warm_start: bool = False
 
 
 # --- Validation rules ------------------------------------------------------
@@ -170,7 +184,8 @@ class SimState(CamelModel):
     # Protective state.
     cpu_throttling: bool
     accel_throttling: bool
-    perf_lost_pct: float
+    perf_lost_pct: float           # CPU clock clipped by its throttle clamp
+    accel_perf_lost_pct: float     # accelerator clipped by its throttle clamp
     storage_perf_lost_pct: float   # vibration tax on spinning drives
     # Region id → temperature, for the chassis coloring. Keys must exist
     # in the anatomy (asserted in tests).

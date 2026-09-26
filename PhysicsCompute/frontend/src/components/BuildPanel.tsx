@@ -79,10 +79,10 @@ export function BuildPanel({
               ))}
             </select>
           </Row>
-          <Row label="PSU (×4, N+N)">
+          <Row label="PSU rating (8 fitted, 4+4 — budget counts 4)">
             <select value={config.psuCapacityW} onChange={(e) => set({ psuCapacityW: +e.target.value })}>
               {PSU_7745_W.map((t) => (
-                <option key={t} value={t}>{t} W</option>
+                <option key={t} value={t}>{t === 2900 ? "2900 W (200–220 V input)" : `${t} W`}</option>
               ))}
             </select>
           </Row>

@@ -1,3 +1,4 @@
+import { useLevel } from "../level";
 import type { FactoryMap, FactoryRegion, SimState } from "../types";
 
 // The factory block diagram: six coupled blocks painted by activity
@@ -8,15 +9,16 @@ import type { FactoryMap, FactoryRegion, SimState } from "../types";
 
 const MARGIN = 2.5;
 
-// Activity ramp: idle slate → Dell blue → amber → red as a block runs
-// hot against its own budget.
+// Activity ramp: idle slate → Dell blue → green as a block gets busier.
+// Busy is not a fault, so the ramp never reaches red. Red is reserved for
+// the blocks the engine names in limitingRegions: the ones holding the
+// factory back right now.
 const STOPS: [number, string][] = [
   [0.0, "#233043"],
-  [0.4, "#2596be"],
-  [0.75, "#7fbf5a"],
-  [0.9, "#e8c33d"],
-  [1.0, "#c8281e"],
+  [0.5, "#2596be"],
+  [1.0, "#5fae4e"],
 ];
+const LIMITING = "#c8281e";
 
 function lerpColor(a: string, b: string, f: number): string {
   const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
@@ -37,14 +39,18 @@ function statusColor(v: number): string {
   return STOPS[STOPS.length - 1][1];
 }
 
-function blockStat(id: string, s: SimState): string {
+// At the plain reading levels the Greek letter is spelled out: a bare η
+// on a tile teaches nothing to the reader who most needs the number.
+function blockStat(id: string, s: SimState, level: number): string {
   switch (id) {
     case "ops":
       return s.phase;
     case "compute":
       return `${s.gpusOnline.toLocaleString()} GPUs · ${s.gpuUtilPct.toFixed(0)}%`;
     case "fabric":
-      return `η ${s.fabricEffPct.toFixed(0)}%`;
+      return level <= 2
+        ? `efficiency ${s.fabricEffPct.toFixed(0)}%`
+        : `η ${s.fabricEffPct.toFixed(0)}%`;
     case "data":
       return `${s.storageSupplyGbps.toFixed(0)} GB/s`;
     case "power":
@@ -73,6 +79,7 @@ export function FactoryView({
   selected?: string | null;
   onSelect?: (id: string | null) => void;
 }) {
+  const level = useLevel();
   const W = anatomy.width + 2 * MARGIN;
   const H = anatomy.height + 2 * MARGIN;
   const rx = (r: FactoryRegion) => r.x + MARGIN;
@@ -109,7 +116,7 @@ export function FactoryView({
 
   return (
     <svg
-      viewBox={`0 0 ${W} ${H + 6}`}
+      viewBox={`0 0 ${W} ${H + 10}`}
       aria-label={`${anatomy.name} block diagram`}
       onClick={() => onSelect?.(null)}
     >
@@ -147,7 +154,8 @@ export function FactoryView({
       {anatomy.regions.map((r) => {
         const status = state?.regionStatus[r.id] ?? 0;
         const isSel = r.id === selected;
-        const fill = statusColor(status);
+        const limiting = state?.limitingRegions?.includes(r.id) ?? false;
+        const fill = limiting ? LIMITING : statusColor(status);
         return (
           <g
             key={r.id}
@@ -182,7 +190,7 @@ export function FactoryView({
                 fontSize={1.8}
                 fontWeight={700}
               >
-                {blockStat(r.id, state)}
+                {limiting ? "LIMITING · " : ""}{blockStat(r.id, state, level)}
               </text>
             )}
           </g>
@@ -209,8 +217,25 @@ export function FactoryView({
           );
         })}
 
-      <text x={MARGIN} y={H + 4} fill="#5a6b82" fontSize={1.7}>
-        blocks painted by activity · compute shows {racks} rack{racks === 1 ? "" : "s"} · click a block for its story
+      {/* Legend: what the paint means. */}
+      <defs>
+        <linearGradient id="factory-ramp" x1="0" x2="1" y1="0" y2="0">
+          {STOPS.map(([f, c]) => (
+            <stop key={f} offset={f} stopColor={c} />
+          ))}
+        </linearGradient>
+      </defs>
+      <g className="factory-legend">
+        <text x={MARGIN} y={H + 3.6} fill="#8fa1b8" fontSize={1.7}>idle</text>
+        <rect x={MARGIN + 4} y={H + 2.2} width={22} height={1.8} rx={0.4} fill="url(#factory-ramp)" />
+        <text x={MARGIN + 27} y={H + 3.6} fill="#8fa1b8" fontSize={1.7}>busy</text>
+        <rect x={MARGIN + 36} y={H + 2.2} width={3} height={1.8} rx={0.4} fill={LIMITING} />
+        <text x={MARGIN + 40} y={H + 3.6} fill="#8fa1b8" fontSize={1.7}>
+          red: this block is holding the factory back right now
+        </text>
+      </g>
+      <text x={MARGIN} y={H + 8} fill="#5a6b82" fontSize={1.7}>
+        blocks painted by how busy they are · compute shows {racks} rack{racks === 1 ? "" : "s"} · click a block for its story
       </text>
     </svg>
   );

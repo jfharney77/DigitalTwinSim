@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { warmEngine } from "@twinsim/twin-ui";
 import {
   fetchMedia,
   type ProductMediaWire,
@@ -10,12 +11,15 @@ import {
   simulate,
 } from "./api";
 import { BuildPanel } from "./components/BuildPanel";
+import { LabPanel } from "./components/LabPanel";
 import { ProductGallery } from "./components/ProductGallery";
 import { Instruments } from "./components/Instruments";
 import { LevelControl } from "./components/LevelControl";
 import { ResilienceView } from "./components/ResilienceView";
 import { StripCharts } from "./components/StripCharts";
 import { Timeline, bandsWhere } from "./components/Timeline";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -45,6 +49,15 @@ const DEFAULT_EVENTS: SimEvent[] = [
 ];
 
 const SPEEDS = [1, 12, 48];
+
+const EVENT_LABEL: Record<SimEvent["action"], string> = {
+  incident: "Corruption (fast)",
+  "slow-incident": "Corruption (slow)",
+  contain: "Contain",
+  "attempt-restore": "Attempt restore",
+  compromise: "Identity marked hostile",
+  "access-review": "Access review",
+};
 
 // Deep link to a guided scenario: /#scenario=<id> (ids from
 // GET /api/scenarios: backups-arent-enough, rto-surprise, slow-burn,
@@ -88,10 +101,29 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+  }, [level]);
+
+  // Grading runs the engine on a scenario nobody prebaked, so on the hosted
+  // static build it needs the in-browser engine. Start that download when the
+  // labs open rather than on the first click. A no-op in a normal build.
+  useEffect(() => {
+    if (labsOpen) warmEngine();
+  }, [labsOpen]);
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -180,6 +212,59 @@ return () => {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setEvents(lab.start.events);
+    setDurationH(lab.start.durationH);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
+  // The incident script as an editable list: labs need an event at an exact
+  // hour, and the playback cursor is a blunt way to get one.
+  const sortedEvents = events
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => a.e.atH - b.e.atH || a.i - b.i);
+  const moveEvent = (i: number, atH: number) => {
+    const h = Math.max(0, Math.min(durationH, Math.round(atH)));
+    if (Number.isNaN(h)) return;
+    setEvents((evs) => evs.map((e, j) => (j === i ? { ...e, atH: h } : e)));
+  };
+  const removeEvent = (i: number) => setEvents((evs) => evs.filter((_, j) => j !== i));
+
   const clearScript = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -213,10 +298,19 @@ return () => {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
-            ? `h+${state.tH} · ${fz ? `${state.reachableAssets} reachable` : `RPO ${state.lastCleanPointAgeH.toFixed(0)} h`}`
+            ? `h+${state.tH} · ${fz ? `${state.reachableAssets} reachable` : `clean copy ${state.lastCleanPointAgeH.toFixed(0)} h old`}`
             : "—"}
         </span>
         <LevelControl />
@@ -224,17 +318,50 @@ return () => {
 
       <div className="an-hero">
         <h2>Will a copy survive, who will notice, and how fast can you act?</h2>
-        <p>
-          One timeline engine, four defensive questions: PowerProtect's
-          air-gapped vault (which copies survive), Cyber Detect's content
-          analysis (which copy to trust, and the false-alarm price of
-          knowing sooner), MDR's response clock (blast radius = rate ×
-          time-to-contain), and Fort Zero's access graph (what one stolen
-          identity can reach). The incident is always an abstract
-          corruption rate and a timestamp; scrub the timeline and watch
-          the architecture answer.
-        </p>
+        {level <= 2 ? (
+          <p>
+            Something starts damaging a company's data at a set hour and
+            spreads at a set speed. That is all this simulator says about
+            the incident. Everything else is about the defence, as three
+            questions. Does a backup copy survive? Does anyone notice, and
+            how soon? How many hours until the systems are back? Pick a
+            guided scenario on the left: the run starts on its own, and
+            the button reads Pause because of that — press it to stop the
+            clock. ×12h moves an hour-by-hour run along faster, and
+            dragging the timeline jumps straight to any hour. The four
+            product cards below each take one question further.
+          </p>
+        ) : (
+          <p>
+            One timeline engine, four defensive questions: PowerProtect's
+            air-gapped vault (which copies survive), Cyber Detect's content
+            analysis (which copy to trust, and the false-alarm price of
+            knowing sooner), MDR's response clock (MDR is managed detection
+            and response, an outside team on watch around the clock; blast
+            radius, the data corrupted before someone stops the spread, =
+            rate × time-to-contain), and Fort Zero's access graph (what one
+            stolen identity can reach). The incident is always an abstract
+            corruption rate and a timestamp; scrub the timeline and watch
+            the architecture answer.
+          </p>
+        )}
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         <div className="thermal-col">
@@ -378,6 +505,34 @@ return () => {
             </div>
             <div className="mini" style={{ marginTop: 6 }}>
               {events.length} scripted event{events.length === 1 ? "" : "s"}.
+              {events.length > 0 && " Edit an hour to move an event."}
+            </div>
+            <div className="script-list">
+              {sortedEvents.map(({ e, i }) => (
+                <div key={i} className="script-row mini">
+                  <span className="script-action">
+                    {EVENT_LABEL[e.action]}
+                    {e.value != null ? ` · ${e.value} GB/h` : ""}
+                  </span>
+                  <label>
+                    h+
+                    <input
+                      type="number"
+                      min={0}
+                      max={durationH}
+                      value={e.atH}
+                      aria-label={`Hour of ${EVENT_LABEL[e.action]}`}
+                      onChange={(ev) => moveEvent(i, Number(ev.target.value))}
+                    />
+                  </label>
+                  <button
+                    onClick={() => removeEvent(i)}
+                    aria-label={`Remove ${EVENT_LABEL[e.action]} at hour ${e.atH}`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
           <Instruments

@@ -52,8 +52,8 @@ export function PowerOnControls({
       <div className="mini" style={{ marginTop: 8 }}>
         The power-on sequence is a fixed trace computed by the backend; Run
         only plays it back. Step walks one event at a time — longer
-        real-world stages (GPU init and HBM training) dwell on screen
-        longer.
+        real-world stages (waking the eight GPUs and tuning their
+        memory) stay on screen longer.
       </div>
     </div>
   );

@@ -6,8 +6,8 @@ Same pattern as the other twins: categories map onto site regions via
 drawn part of the map — cloud tiers, services). Written for a technically
 skilled reader new to data protection; jargon (dedupe, DD Boost, Retention
 Lock, air gap, CyberSense, RPO/RTO, ...) is spelled out on first use.
-Figures are product-literature numbers from Dell's 2025 announcements, not
-benchmarks.
+Figures are Dell's own product-literature numbers from its 2025
+announcements (vendor claims, not benchmarks), sourced in anatomy.py.
 """
 
 from __future__ import annotations
@@ -24,20 +24,22 @@ CATALOG: list[CatalogCategory] = [
             "vault. The 2025 all-flash generation changed the headline "
             "number from capacity to restore speed."
         ),
-        limits="From 8 TBu (DD3410) to multi-PB flagships; usable grows in place",
+        limits="From 8 TB usable (DD3410) to petabyte-class flagships; usable grows in place",
         region_ids=["dd-prod", "dd-vault"],
         options=[
             CatalogOption(
                 id="app-allflash",
                 name="Data Domain All-Flash appliance",
-                summary="The 2025 flagship: up to 4× faster restores, 65:1 reduction, 40% less rack.",
+                summary="The 2025 all-flash DD9910F: Dell claims up to 4× faster restores, 65:1 reduction, 40% less rack.",
                 details=(
-                    "The all-flash generation (announced September 2025) "
-                    "rebuilds Data Domain on flash media: Dell quotes up to "
+                    "The all-flash generation (the DD9910F, announced at Dell "
+                    "Technologies World in May 2025) rebuilds Data Domain on "
+                    "flash media. Against the disk DD9910, Dell quotes up to "
                     "4× faster restores, 2× faster replication, 2.8× faster "
                     "CyberSense analytics, 40% less rack space, and up to "
-                    "80% power savings — at the same up-to-65:1 data "
-                    "reduction. The design point is honest about what "
+                    "80% power savings — with up to 65:1 data reduction "
+                    "quoted at launch (Dell's pages now say up to 75:1). All "
+                    "of these are Dell's own test figures. The design point is honest about what "
                     "changed in the world: backups used to be judged on "
                     "how cheaply they ingested; after ransomware, they are "
                     "judged on how fast they restore."
@@ -49,7 +51,8 @@ CATALOG: list[CatalogCategory] = [
                 summary="The high-end disk-era appliance for petabyte-scale estates.",
                 details=(
                     "The established flagship: petabyte-class usable "
-                    "capacity (multi-tens of PB logical after dedupe), "
+                    "capacity (Dell lists up to 158.4 PB logical after "
+                    "dedupe), "
                     "high-throughput ingest via DD Boost, and cloud tiering "
                     "for long-term retention. In mixed fleets it remains "
                     "the deep archive tier while all-flash takes the "
@@ -60,12 +63,14 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="app-dd3410",
                 name="Data Domain DD3410 (edge/ROBO)",
-                summary="Compact entry appliance: 8–32 TBu, grow-in-place, full DDOS.",
+                summary="Compact entry appliance, successor to the DD3300: from 8 TBu, grow-in-place, full DDOS.",
                 details=(
-                    "The small end of the family (available Q1 2026): a "
+                    "The small end of the family (announced September 2025 "
+                    "for Q1 2026 availability): a "
                     "compact appliance for remote offices and smaller "
                     "estates that starts at 8 TB usable and grows in place "
-                    "to 32 TBu by license, no hardware change. It runs the "
+                    "to 32 TBu by license, no hardware change (Dell's "
+                    "product page has since listed up to 40 TB). It runs the "
                     "same DDOS filesystem — same dedupe, same Boost, same "
                     "Retention Lock — so a branch office replicates into "
                     "the same core and vault architecture as the data "
@@ -253,7 +258,8 @@ CATALOG: list[CatalogCategory] = [
                     "extensions, database page corruption. Machine-"
                     "learning models trained on ransomware families turn "
                     "the signals into a per-restore-point verdict with "
-                    "high accuracy — the difference between restoring data "
+                    "what Dell and Index Engines state is up to 99.99% "
+                    "confidence (their figure) — the difference between restoring data "
                     "and restoring the infection. The 2025 all-flash "
                     "platform runs these scans up to 2.8× faster."
                 ),
@@ -311,7 +317,7 @@ CATALOG: list[CatalogCategory] = [
                     "NetBackup, and native database tools. An organization "
                     "rarely has one backup product; the appliance and the "
                     "vault architecture work regardless, and CyberSense's "
-                    "2025 updates extended analytics to Commvault "
+                    "September 2025 update extended analytics to Commvault "
                     "client-direct Oracle backups."
                 ),
             ),

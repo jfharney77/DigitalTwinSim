@@ -116,7 +116,7 @@ POWERMAX = ProductMap(
     vendor="Dell Technologies",
     form_factor="Rack-scale — architecture view",
     generation="PowerMax 2500/8500",
-    year=2024,
+    year=2022,  # announced at Dell Technologies World, May 2022
     width=100,
     height=52,
     overview=L(
@@ -127,15 +127,17 @@ POWERMAX = ProductMap(
             "things repeatedly and watch it degrade without going down. "
             "Its second lesson is about distance: if every write must "
             "also land at a second site before it counts, light itself "
-            "becomes the delay — a hundredth of a millisecond per "
-            "kilometer, doubled for the round trip. That is why "
+            "becomes the delay — about five thousandths of a "
+            "millisecond per kilometer, doubled for the round trip. "
+            "That is why "
             "synchronous disaster protection has a radius."
         ),
         standard=(
             "The extreme-availability personality: component failures "
             "produce decaying latency blips, never zeros — the "
-            "six-nines mindset as a trace. The replication physics is "
-            "the star: sync SRDF adds distance × 0.01 ms/km × 2 to "
+            "six-nines mindset (Dell's availability claim for the "
+            "platform) as a trace. The replication physics is "
+            "the star: sync SRDF adds distance × 0.005 ms/km × 2 to "
             "every write (a speed-of-light fact, not an estimate), so "
             "the distance slider turns geography into latency; async "
             "mode trades that for an RPO that grows whenever write "
@@ -143,7 +145,7 @@ POWERMAX = ProductMap(
             "narrates the same machine's bring-up."
         ),
         expert=(
-            "Blip-not-outage failure model. Sync: +d×0.01×2 ms on "
+            "Blip-not-outage failure model. Sync: +d×0.005×2 ms on "
             "writes — c in fiber, non-negotiable. Async: RPO = "
             "backlog/link, grows under bursts. Geography is the "
             "config."
@@ -342,8 +344,9 @@ POWERFLEX = ProductMap(
             "network ports and no amount of fast drives helps; give "
             "them fast ones and a hundred nodes answer as one. "
             "Because every node holds a slice of everything, a failed "
-            "drive is rebuilt by everyone at once — in about a "
-            "minute, not hours. And growing the system is just "
+            "drive is rebuilt by everyone at once — in minutes, "
+            "not hours (the rate here is illustrative). And growing "
+            "the system is just "
             "plugging in more servers while it runs."
         ),
         standard=(
@@ -352,8 +355,10 @@ POWERFLEX = ProductMap(
             "usually binds, so the nic-speed dial moves the aggregate "
             "ceiling (10 vs 100 GbE is the scenario). Rebuilds are "
             "massively parallel (rate × survivors at ~4× the NAS "
-            "figure): the 15 TB drive comes back in minutes — the "
-            "'60-second rebuild' against PowerStore's hours. Add-nodes "
+            "figure, an illustrative rate): the drive comes back in "
+            "minutes against PowerStore's hours. Dell's published "
+            "rebuild tests show the time falling as nodes are added; "
+            "they state no single headline figure. Add-nodes "
             "is a live event with a brief rebalance penalty. "
             "Companion: DellPowerFlex (:5189)."
         ),
@@ -392,6 +397,12 @@ POWERFLEX = ProductMap(
         {"label": "physics_specs/02-storage-platforms.md (this repo)",
          "url": "../physics_specs/02-storage-platforms.md"},
         {"label": "DellPowerFlex twin", "url": "http://localhost:5189/"},
+        {"label": "Dell Info Hub — Grace Under Pressure: PowerFlex "
+                  "rebuild tests (more nodes, less rebuild time)",
+         "url": "https://infohub.delltechnologies.com/en-us/p/grace-under-pressure-powerflex-rebuild-superpowers/"},
+        {"label": "Dell press release, 24 Sep 2025 — PowerFlex Ultra "
+                  "(5.0)",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~09~dell-technologies-data-center-breakthroughs-power-smarter-faster-and-more-secure-private-clouds.htm"},
     ],
 )
 
@@ -447,9 +458,12 @@ EXASCALE = ProductMap(
             ),
         ),
         MapRegion(
-            id="network", kind="network", label="800GbE storage fabric",
+            id="network", kind="network", label="Storage fabric (up to 800 GbE)",
             x=2, y=12, w=96, h=6,
-            description="The fabric between the GPUs and the pools.",
+            description=(
+                "The fabric between the GPUs and the pools. Dell lists "
+                "links of up to 800 GbE for Exascale Storage."
+            ),
         ),
         MapRegion(
             id="pool-lightning", kind="pool", label="Lightning (parallel FS)",
@@ -474,8 +488,9 @@ EXASCALE = ProductMap(
             id="pool-block", kind="pool", label="Block (PowerFlex, roadmap)",
             x=52, y=39, w=46, h=11,
             description=(
-                "Database/block duty — 5% of demand. Flagged roadmap "
-                "1H 2027 in Dell's materials; drawn solid here because "
+                "Database/block duty — 5% of demand. Dell's May 2026 "
+                "announcement puts Exascale with PowerFlex at 1H 2027; "
+                "drawn solid here because "
                 "the physics doesn't care about ship dates."
             ),
         ),
@@ -484,6 +499,13 @@ EXASCALE = ProductMap(
         {"label": "physics_specs/02-storage-platforms.md (this repo)",
          "url": "../physics_specs/02-storage-platforms.md"},
         {"label": "DellExascale twin", "url": "http://localhost:5184/"},
+        {"label": "StorageReview — Dell at GTC 2026: Lightning File "
+                  "System and Exascale Storage (up to 800 GbE, up to "
+                  "6 TB/s per rack)",
+         "url": "https://www.storagereview.com/news/dell-expands-ai-factory-with-nvidia-at-gtc-2026-new-data-engines-lightning-file-system-and-exascale-storage"},
+        {"label": "Dell press release, 18 May 2026 — Exascale with "
+                  "PowerFlex available 1H 2027",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-closes-the-gap-between-ai-ambition-and-ai-outcomes.htm"},
     ],
 )
 

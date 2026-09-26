@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiFetch } from "@twinsim/twin-ui";
 import {
   deleteLiveSession,
   fetchAtlas,
@@ -6,6 +7,7 @@ import {
   fetchLiveTrace,
   fetchProfiles,
   fetchSessionSummary,
+  hosted,
   importLiveSession,
   liveStreamUrl,
   sessionCsvUrl,
@@ -103,7 +105,8 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
   // a health probe on mount tells the difference honestly.
   const [backendDown, setBackendDown] = useState(false);
   useEffect(() => {
-    fetch("/api/health")
+    if (hosted) return; // no backend to probe on the hosted site
+    apiFetch("/api/health")
       .then((r) => setBackendDown(!r.ok))
       .catch(() => setBackendDown(true));
   }, [conn]);
@@ -122,6 +125,9 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
   // SSE subscription — the live feed. EventSource reconnects on its own.
   useEffect(() => {
     if (replayTrace || touring) return; // replay/tour mode owns the screen
+    // Static hosting: SSE needs the local backend. The hosted site replays
+    // the shipped recordings and says so (the badge below).
+    if (hosted) return;
     const es = new EventSource(liveStreamUrl());
     es.onopen = () => setConn("live");
     es.onerror = () => setConn("reconnecting");
@@ -314,7 +320,9 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
         : "Live"
       : conn === "replaying"
         ? "Replaying"
-        : "Reconnecting…";
+        : hosted
+          ? "Recorded only"
+          : "Reconnecting…";
 
   if (touring) {
     return (
@@ -387,7 +395,7 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
                 <select
                   value={viewProfile ?? ""}
                   onChange={(e) => viewOn(e.target.value || null)}
-                  title="fleet replay (spec_28): view this recording remapped onto another die"
+                  title="Fleet replay: view this recording remapped onto another die"
                 >
                   <option value="">View on: recorded device</option>
                   {profileNames.map((n) => (
@@ -449,7 +457,19 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
           )}
           {!shown && (
             <div className="mini">
-              <p>waiting for events — quick start:</p>
+              {hosted && (
+                <p>
+                  Live capture needs the local backend and a CUDA GPU, so it
+                  works only on your own machine. This hosted page replays the
+                  shipped lesson recordings — pick one under Recordings, or
+                  open the guided lessons.
+                </p>
+              )}
+              <p>
+                {hosted
+                  ? "Nothing is waiting for events on this hosted page. To capture on your own machine:"
+                  : "waiting for events — quick start:"}
+              </p>
               <pre>
                 {"./GPU/scripts/start_all.sh\n"}
                 {"./GPU/cuda/twin-sampler &        # counters\n"}
@@ -530,7 +550,14 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
       <aside className="controls">
         <div className="an-card">
           <h3>Session</h3>
-          <div className="live-row">
+          {hosted && (
+            <p className="mini">
+              Local only. Starting a session, importing, and downloading
+              recordings need the backend running on your machine
+              (./GPU/scripts/start_all.sh).
+            </p>
+          )}
+          <div className="live-row" hidden={hosted}>
             <input
               placeholder="session name"
               value={sessionName}
@@ -558,7 +585,17 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
             </button>
           </div>
           <h3 style={{ marginTop: 14 }}>Recordings</h3>
-          <label className="mini" style={{ display: "block", marginBottom: 6 }}>
+          {hosted && (
+            <p className="mini">
+              The shipped lesson recordings, replayed through the same pipeline
+              as a live session. Lessons marked representative in the guided
+              tour were not captured on hardware.
+            </p>
+          )}
+          <label
+            className="mini"
+            style={{ display: hosted ? "none" : "block", marginBottom: 6 }}
+          >
             Import a downloaded .jsonl:{" "}
             <input
               type="file"
@@ -584,24 +621,31 @@ export function LivePage({ profile }: { profile: GpuProfile }) {
                 }}
               >
                 <span>
-                  {s.name} · {s.eventCount} events{s.active ? " · recording" : ""}
+                  {s.name} · {s.eventCount} {hosted ? "frames" : "events"}{s.active ? " · recording" : ""}
                 </span>
                 <span className="live-row" style={{ gap: 4 }}>
                   {s.eventCount > 0 && (
                     <>
-                      <button title="session summary" onClick={() => showSummary(s.id)}>
-                        ⓘ
-                      </button>
+                      {!hosted && (
+                        <button title="session summary" onClick={() => showSummary(s.id)}>
+                          ⓘ
+                        </button>
+                      )}
                       <button onClick={() => startReplay(s.id)}>Replay</button>
-                      <a href={sessionDownloadUrl(s.id)} download>
-                        <button>Download</button>
-                      </a>
-                      <a href={sessionCsvUrl(s.id)} download>
-                        <button title="kernel frames as CSV">CSV</button>
-                      </a>
+                      {!hosted && (
+                        <>
+                          <a href={sessionDownloadUrl(s.id)} download>
+                            <button>Download</button>
+                          </a>
+                          <a href={sessionCsvUrl(s.id)} download>
+                            <button title="kernel frames as CSV">CSV</button>
+                          </a>
+                        </>
+                      )}
                     </>
                   )}
                   <button
+                    hidden={hosted}
                     disabled={s.active}
                     title={s.active ? "actively recording" : "delete recording"}
                     onClick={() => deleteLiveSession(s.id).then(refreshSessions)}

@@ -53,7 +53,7 @@ export function BuildPanel({
           onChange={(e) => set({ product: e.target.value as DataConfig["product"] })}
         >
           <option value="aidataplatform">AI Data Platform · pipeline</option>
-          <option value="cloudiq">CloudIQ / AIOps · console</option>
+          <option value="cloudiq">Dell AIOps (formerly CloudIQ) · console</option>
         </select>
       </Row>
       {p === "aidataplatform" && (
@@ -79,7 +79,7 @@ export function BuildPanel({
               onChange={(e) => set({ gpuProcessing: e.target.value === "on" })}
             >
               <option value="off">Off</option>
-              <option value="on">On (×6-class, labeled claim)</option>
+              <option value="on">On (×6, estimate)</option>
             </select>
           </Row>
           <Row label="GPU analytics">
@@ -88,7 +88,7 @@ export function BuildPanel({
               onChange={(e) => set({ gpuAnalytics: e.target.value === "on" })}
             >
               <option value="off">Off</option>
-              <option value="on">On (×6-class scan)</option>
+              <option value="on">On (up to ×6, Dell claim)</option>
             </select>
           </Row>
           <Row label="KV-cache offload">

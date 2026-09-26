@@ -70,6 +70,80 @@
         "watch": ".tour-caption",
         "times": 1
       }
+    },
+    {
+      "hash": "#scenario=charge-taper-diagnostics",
+      "name": "scenario-charge-diagnostics",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".pp-desc",
+        ".diag-screen"
+      ],
+      "text": [
+        "1 / 20",
+        "On battery at 62%",
+        "what is limiting the charge",
+        "Primarily AC Use"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#scenario=charge-taper-diagnostics&phase=heat",
+      "name": "scenario-charge-diagnostics-heat",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".pp-desc",
+        ".region-failed >> nth=0"
+      ],
+      "text": [
+        "13 / 20",
+        "Plugged in, not charging",
+        "battery over its charge temperature",
+        "46.5 °C"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Fit the game inside the brick",
+        "Charge fast, play hard, stay quiet"
+      ]
+    },
+    {
+      "hash": "#lab=fit-the-brick",
+      "name": "lab-fit-the-brick",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

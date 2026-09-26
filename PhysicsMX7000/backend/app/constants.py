@@ -20,20 +20,20 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "fan_count": Constant(
         value=9, unit="fans",
-        source="Dell MX7000 spec sheet — 4 front + 5 rear hot-swap fans",
+        source="Dell MX7000 spec sheet — 5 rear- and 4 front-accessible hot-swap fans (technical guide: 4× 60 mm front, 5× 80 mm rear)",
         estimated=False,
-        blurb="Chassis-level fan population. There are no per-sled fans — sharing is the architecture.",
+        blurb="Chassis-level fan population. There are no per-sled fans — sharing is the architecture. On the real chassis the five rear fans pull air through the sleds and the four front fans cool the I/O and management modules; this model treats all nine as one wall.",
     ),
     "psu_capacity_w": Constant(
         value=3000, unit="W",
-        source="Dell MX7000 spec sheet — up to six 3000 W PSUs",
+        source="Dell MX7000 spec sheet and technical guide — up to six 3000 W Platinum PSUs (3000 W at high-line AC input)",
         estimated=False,
         blurb="Per-PSU capacity; up to six share one pooled budget.",
     ),
     # --- Compute sled ------------------------------------------------------
     "sled_sockets": Constant(
         value=2, unit="sockets",
-        source="Dell MX750c compute sled — dual-socket", estimated=False,
+        source="Dell MX7000 spec sheet — 2-socket single-width compute sleds (MX740c/MX750c/MX760c)", estimated=False,
         blurb="CPU sockets per single-width compute sled.",
     ),
     "cpu_idle_fraction": Constant(
@@ -71,7 +71,7 @@ CONSTANTS: dict[str, Constant] = {
     # --- Storage sled --------------------------------------------------------
     "storage_sled_drives": Constant(
         value=16, unit="drives",
-        source="Dell MX5016s storage sled — 16 hot-pluggable SAS drives",
+        source="Dell MX7000 spec sheet — MX5016s: up to 16 hot-pluggable 2.5-inch SAS drives",
         estimated=False,
         blurb="Drive count in one MX5016s-class storage sled.",
     ),
@@ -99,7 +99,7 @@ CONSTANTS: dict[str, Constant] = {
         blurb="Per-module power of the redundant management pair.",
     ),
     "fan_pmax_w": Constant(
-        value=45, unit="W", source="estimate — 80 mm chassis fan class",
+        value=45, unit="W", source="estimate — 80 mm rear-fan class applied to all nine (the four front fans are 60 mm)",
         estimated=True,
         blurb="Per-fan power at 100% rpm. Cubic in speed below that.",
     ),
@@ -167,7 +167,7 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "ashrae_a2_recommended_c": Constant(
         value=27, unit="°C",
-        source="ASHRAE A2 recommended envelope upper bound", estimated=False,
+        source="ASHRAE thermal guidelines — recommended envelope upper bound (18–27 °C, all classes)", estimated=False,
         blurb="Upper bound of the ASHRAE-recommended inlet band.",
     ),
     # --- PSU pool ---------------------------------------------------------------
@@ -186,16 +186,23 @@ CONSTANTS: dict[str, Constant] = {
 }
 
 # PSU efficiency curve: (load fraction of alive capacity, efficiency).
-# Titanium-class approximation; linear interpolation, flat beyond the ends.
+# The MX7000's PSUs are Platinum class (Dell technical guide, PSU
+# specifications). The 20/50/100% points are the 80 PLUS Platinum 230 V
+# thresholds; the two light-load points are estimates. Linear
+# interpolation, flat beyond the ends.
 PSU_EFFICIENCY_CURVE: list[tuple[float, float]] = [
     (0.0, 0.85),
-    (0.10, 0.90),
-    (0.20, 0.94),
-    (0.50, 0.96),
-    (1.00, 0.94),
+    (0.10, 0.88),
+    (0.20, 0.90),
+    (0.50, 0.94),
+    (1.00, 0.91),
 ]
 
-PSU_CURVE_SOURCE = "estimate — Titanium-class approximation"
+PSU_CURVE_SOURCE = (
+    "estimate — Platinum-class approximation (Dell lists the MX7000 PSU "
+    "as Platinum; 90/94/91% at 20/50/100% load are the 80 PLUS Platinum "
+    "230 V thresholds, light-load points estimated)"
+)
 
 
 def value(name: str) -> float:

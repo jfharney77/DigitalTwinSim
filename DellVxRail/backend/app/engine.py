@@ -312,14 +312,13 @@ def simulate() -> list[FirstRunState]:
                     "Primary election, defaulting to lowest serial. Only the "
                     "elected node instantiates the VxRail Manager VM that drives "
                     "the build, so the trace becomes deliberately asymmetric here. "
-                    "The engine asserts the active suffix set is exactly {n1} at "
-                    "this step — the single break in an otherwise lockstep "
-                    "sequence."
+                    "The other three nodes sit idle until the build; this is the "
+                    "single break in an otherwise lockstep sequence."
                 ),
                 expert=(
                     "Primary election (lowest serial); only the winner instantiates "
-                    "VxRail Manager. Active suffix set exactly {n1} — the sole "
-                    "lockstep break, asserted."
+                    "VxRail Manager. The other three idle until the build — the "
+                    "sole break in lockstep."
                 ),
             ),
             active_regions=["compute-n1", "memory-n1", "mgmt-n1"],
@@ -363,21 +362,23 @@ def simulate() -> list[FirstRunState]:
                     "others; the console is otherwise silent."
                 ),
                 technical=(
-                    "Max-dwell stage, ~25–40 minutes. A single JSON configuration "
+                    "Longest stage; Dell quotes ~25–40 minutes, and the twin's "
+                    "clock gives it 30. A single JSON configuration "
                     "is validated, then drives the build: management IP assignment "
                     "across nodes, vCenter deployment or attachment, and cluster "
                     "formation with HA and DRS enabled. Declarative input, "
                     "orchestrated execution."
                 ),
                 expert=(
-                    "Max dwell (~25–40 min): JSON validated, then IP assignment, "
+                    "Longest stage (Dell: ~25–40 min; 30 on this clock): JSON "
+                    "validated, then IP assignment, "
                     "vCenter deploy/attach, cluster formation with HA and DRS."
                 ),
             ),
             active_regions=_all("compute") + _all("memory") + FABRIC + ["mgmt-n1"],
             power_watts=1700,
             progress_percent=60,
-            elapsed_seconds=900,
+            elapsed_seconds=320,
             cycle_cost=5,
         ),
         FirstRunState(
@@ -428,7 +429,7 @@ def simulate() -> list[FirstRunState]:
             active_regions=_all("storage") + _all("compute") + FABRIC,
             power_watts=1850,
             progress_percent=85,
-            elapsed_seconds=1500,
+            elapsed_seconds=2120,
             cycle_cost=4,
         ),
         FirstRunState(
@@ -486,6 +487,6 @@ def simulate() -> list[FirstRunState]:
             ),
             power_watts=1900,
             progress_percent=100,
-            elapsed_seconds=1800,
+            elapsed_seconds=2720,
         ),
     ]

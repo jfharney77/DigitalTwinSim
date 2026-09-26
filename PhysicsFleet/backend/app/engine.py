@@ -65,6 +65,23 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     asvc_cost_acc = 0.0
     capex_cost_acc = 0.0
     vm_hours_acc = 0.0
+    # Private Cloud: every whole VM of growth is one workload deployment,
+    # charged at the catalog or the hand-built rate.
+    private = p == "privatecloud"
+    deploy_acc = 0.0
+    deploys_cum = 0
+    deploys_month = 0
+    deploy_hours_cum = 0.0
+    # A second stack adds patch work; a shared control plane absorbs most
+    # of it, hand-run operations absorb none.
+    stack_factor = 1.0
+    if private and cfg.stacks > 1:
+        stack_factor += (cfg.stacks - 1) * (
+            C("second_stack_patch_overhead_auto") if automated
+            else C("second_stack_patch_overhead_manual")
+        )
+    exposure_open_day = -1
+    exposure_days = 0
 
     trace: list[SimState] = []
     log: list[LogEntry] = []
@@ -76,7 +93,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         hours_today = 0.0
         new_faults = 0
         # Repaired nodes rejoin at the start of their due day.
-        repairs_due = [d for d in repairs_due if d > t]
+        still_out = [d for d in repairs_due if d > t]
+        repaired_today = len(repairs_due) - len(still_out)
+        repairs_due = still_out
 
         # --- Events -------------------------------------------------------
         while ei < len(events) and events[ei].at_d <= t:
@@ -139,7 +158,35 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                                     message=f"Demand spike ×{ev.value:g} for 30 days"))
 
         # --- Growth & demand ----------------------------------------------
-        vms_demand *= 1.0 + wl.growth_pct_month / 100.0 / 30.0
+        grown = vms_demand * wl.growth_pct_month / 100.0 / 30.0
+        vms_demand += grown
+        if private:
+            deploy_acc += grown
+            n_new = int(deploy_acc)
+            if n_new > 0:
+                deploy_acc -= n_new
+                per_deploy = (
+                    C("catalog_deploy_h") if cfg.catalog
+                    else C("artisanal_deploy_h")
+                )
+                backlog_h += n_new * per_deploy
+                deploy_hours_cum += n_new * per_deploy
+                deploys_cum += n_new
+                deploys_month += n_new
+            if t > 0 and t % 30 == 0 and deploys_month > 0:
+                per_deploy = (
+                    C("catalog_deploy_h") if cfg.catalog
+                    else C("artisanal_deploy_h")
+                )
+                log.append(LogEntry(
+                    t_d=t, severity="info",
+                    message=(
+                        f"{deploys_month} workloads deployed in the last 30 days "
+                        f"({'from the catalog' if cfg.catalog else 'built by hand'}) — "
+                        f"{deploys_month * per_deploy:g} admin-hours"
+                    ),
+                ))
+                deploys_month = 0
         mult = demand_multiplier(cfg.demand_curve, t) if p == "apex" else 1.0
         if t <= demand_spike_until:
             mult *= spike_mult
@@ -187,7 +234,36 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             rebuild_target = nodes_per - nodes_down >= 2 * tolerated + 1
             exposure = nodes_down > 0 and (new_faults > 0 or not rebuild_target)
         else:
-            exposure = nodes_down > 0 and nodes_per - nodes_down < 1 + tolerated
+            rebuild_target = nodes_per - nodes_down >= 1 + tolerated
+            exposure = nodes_down > 0 and not rebuild_target
+
+        # The exposure window, on the record: when it opened, what closed
+        # it, and how many days it stood.
+        if exposure:
+            exposure_days += 1
+            if exposure_open_day < 0:
+                exposure_open_day = t
+                log.append(LogEntry(
+                    t_d=t, severity="warning",
+                    message=(
+                        "Exposure opened — copies rebuilding onto a spare node"
+                        if rebuild_target else
+                        "Exposure opened — no spare node to rebuild copies on; "
+                        "it stays open until the repair"
+                    ),
+                ))
+        elif exposure_open_day >= 0:
+            stood = t - exposure_open_day
+            days = f"{stood} day" + ("" if stood == 1 else "s")
+            log.append(LogEntry(
+                t_d=t, severity="info",
+                message=(
+                    f"Node repaired — exposure closed after {days}"
+                    if repaired_today > 0 else
+                    f"Copies rebuilt on a spare node — exposure closed after {days}"
+                ),
+            ))
+            exposure_open_day = -1
 
         # Remediation consumes hours (once per fault); remote sites may
         # need a truck.
@@ -201,12 +277,16 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         # --- Monthly update wave ------------------------------------------
         if t > 0 and t % int(C("update_days")) == 0:
             per_node = C("patch_node_auto_h") if automated else C("patch_node_manual_h")
-            backlog_h += nodes_total * per_node
+            backlog_h += nodes_total * per_node * stack_factor
             version_current = 0.0
             updating_until = max(updating_until, t + (2 if automated else 14))
             log.append(LogEntry(
                 t_d=t, severity="info",
-                message=f"Update released — {nodes_total * per_node:.0f} h of patching queued",
+                message=(
+                    f"Update released — {nodes_total * per_node * stack_factor:.0f} h "
+                    "of patching queued"
+                    + (f" across {cfg.stacks} stacks" if private and cfg.stacks > 1 else "")
+                ),
             ))
 
         # --- Drift ---------------------------------------------------------
@@ -226,7 +306,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         hours_today += spend
         # Patch progress: version currency recovers as its hours are worked.
         per_node = C("patch_node_auto_h") if automated else C("patch_node_manual_h")
-        fleet_patch_hours = nodes_total * per_node
+        fleet_patch_hours = nodes_total * per_node * stack_factor
         if version_current < 1.0 and fleet_patch_hours > 0:
             version_current = min(1.0, version_current + spend / fleet_patch_hours)
         # Manual drift-fixing eats hours too (automated reconciles free).
@@ -310,6 +390,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             capacity_vms=int(capacity),
             headroom_pct=round(headroom, 1),
             exposure=exposure,
+            exposure_days_cum=exposure_days,
+            workloads_deployed=deploys_cum,
+            deploy_hours_cum=round(deploy_hours_cum, 2),
             version_current_pct=round(100.0 * version_current, 1),
             drift_count=int(drift),
             outage_minutes_cum=round(outage_min, 1),
@@ -335,6 +418,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         outage_minutes=round(outage_min, 1),
         truck_rolls=truck_rolls,
         faults=faults,
+        exposure_days=exposure_days,
+        workloads_deployed=deploys_cum,
+        deploy_hours=round(deploy_hours_cum, 2),
         final_version_current_pct=last.version_current_pct,
         total_bill=round(bill_cum, 0),
         mean_cost_per_vm_hour_asvc=last.cost_per_vm_hour_asvc,

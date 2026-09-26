@@ -40,7 +40,9 @@ WIFI_EDGE = UseCase(
         (
             "The catch with 90W is arithmetic: 90W across dozens of ports can "
             "exceed even the 1600W internal supply, so a serious deployment "
-            "adds an external power shelf to guarantee the PoE budget. "
+            "adds an external power shelf to guarantee the PoE budget (Dell's "
+            "installation guide lists 4800W of PoE as the ceiling, and only "
+            "with an MPS-3S shelf). "
             "Enterprise SONiC runs the switch as part of a larger open fabric, "
             "and zero-touch provisioning means the closet unit configures "
             "itself on first power-on — no truck roll to a wiring closet."
@@ -155,7 +157,7 @@ FIBER_DISTRIBUTION = UseCase(
     id="fiber-distribution",
     title="Fiber branch distribution",
     summary=(
-        "A quiet, low-power Layer 3 distribution switch for fiber runs in a "
+        "A low-power Layer 3 distribution switch for fiber runs in a "
         "branch or server room — routing, not powering devices."
     ),
     narrative=[
@@ -170,8 +172,8 @@ FIBER_DISTRIBUTION = UseCase(
             "The E3224F-ON fits this precisely. Its 24 fiber SFP ports take "
             "the branch's optical links, it does full non-blocking Layer 3 "
             "routing in hardware (BGP, OSPF, VRF-lite to carve the box into "
-            "isolated virtual routers), and with no PoE it draws only about "
-            "230W and runs cool and quiet on a single 550W supply. The two "
+            "isolated virtual routers), and with no PoE it draws at most 230W "
+            "(Dell's spec-sheet maximum) on a single 550W supply. The two "
             "rear 100GbE QSFP28 ports uplink to the core far above what the "
             "branch will use."
         ),
@@ -198,7 +200,7 @@ FIBER_DISTRIBUTION = UseCase(
         ),
         UseCaseItem(
             category_id="power", option_id="pwr-550ac", qty=2,
-            rationale="550W is ample without PoE; two give 1+1 redundancy at ~230W draw.",
+            rationale="550W is ample without PoE; two give 1+1 redundancy at 230W max draw.",
         ),
         UseCaseItem(
             category_id="nos", option_id="nos-os10", qty=1,
@@ -211,7 +213,7 @@ FIBER_DISTRIBUTION = UseCase(
     ],
     outcomes=[
         Stat(label="Ports", value="24× 1G SFP fiber"),
-        Stat(label="Draw", value="~230W, fan-quiet"),
+        Stat(label="Draw", value="230W max (spec sheet)"),
         Stat(label="Routing", value="L3 BGP/OSPF, VRF-lite"),
         Stat(label="Uplinks", value="2× 100G QSFP28"),
     ],

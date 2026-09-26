@@ -5,6 +5,7 @@ import type {
   NamespaceResponse,
   UseCase,
 } from "./types";
+import { apiFetch } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
 
 const BASE = "/api";
@@ -17,31 +18,31 @@ function url(path: string): string {
 }
 
 export async function fetchAnatomy(): Promise<ClusterAnatomy> {
-  const r = await fetch(url("/anatomy"));
+  const r = await apiFetch(url("/anatomy"));
   if (!r.ok) throw new Error(`anatomy ${r.status}`);
   return r.json();
 }
 
 export async function fetchNamespace(): Promise<NamespaceResponse> {
-  const r = await fetch(url("/namespace"));
+  const r = await apiFetch(url("/namespace"));
   if (!r.ok) throw new Error(`namespace ${r.status}`);
   return r.json();
 }
 
 export async function fetchCatalog(): Promise<CatalogCategory[]> {
-  const r = await fetch(url("/catalog"));
+  const r = await apiFetch(url("/catalog"));
   if (!r.ok) throw new Error(`catalog ${r.status}`);
   return r.json();
 }
 
 export async function fetchUseCases(): Promise<UseCase[]> {
-  const r = await fetch(url("/usecases"));
+  const r = await apiFetch(url("/usecases"));
   if (!r.ok) throw new Error(`usecases ${r.status}`);
   return r.json();
 }
 
 export async function fetchTour(): Promise<TourResponse> {
-  const r = await fetch(url("/tour"));
+  const r = await apiFetch(url("/tour"));
   if (!r.ok) throw new Error(`tour ${r.status}`);
   return r.json();
 }

@@ -6,7 +6,8 @@ drawn part of the data path — services, validated designs). Written for a
 technically skilled reader new to parallel storage; jargon (pNFS, layout,
 stripe, OneFS, GPUDirect, RDMA, MDS, ...) is spelled out on first use.
 Figures are product-literature numbers from Dell's 2025–26 AI Data Platform
-announcements, not benchmarks.
+announcements, not benchmarks; performance figures are labeled as Dell's
+claims in the served text.
 """
 
 from __future__ import annotations
@@ -25,19 +26,24 @@ CATALOG: list[CatalogCategory] = [
             "engines under one roof; how much of that you buy at once is "
             "the first decision."
         ),
-        limits="~6 TB/s per Exascale rack; engines scale independently",
+        limits="Up to 6 TB/s reads per rack (Dell's claim); capacity moves between engines",
         region_ids=[],
         options=[
             CatalogOption(
                 id="plat-exascale",
                 name="Dell Exascale Storage (unified rack)",
-                summary="Block, file, parallel file, and object consolidated in one footprint.",
+                summary="File, parallel file, and object on common servers; block planned for 2027.",
                 details=(
-                    "Announced at Dell Technologies World 2026, Exascale "
-                    "Storage combines PowerFlex (block), PowerScale and "
-                    "Lightning (file and parallel file), and ObjectScale "
-                    "(object) on current PowerEdge hardware, delivering on "
-                    "the order of 6 TB/s per rack. The motivation is "
+                    "Announced in March 2026, Exascale Storage runs "
+                    "PowerScale (file), Lightning (parallel file), and "
+                    "ObjectScale (object) as software personalities on "
+                    "qualified PowerEdge servers, beginning with the "
+                    "R7725xd, at up to 800 GbE per node. Dell targets "
+                    "PowerFlex (block) for the first half of 2027, and "
+                    "quotes up to 6 TB/s of reads per rack running the "
+                    "Lightning personality. One license covers every "
+                    "personality, so capacity can be moved between them. "
+                    "The motivation is "
                     "spatial and operational as much as technical: an AI "
                     "corpus arrives as objects, is prepared as files, and "
                     "must be read in parallel, and doing that across three "
@@ -48,45 +54,63 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="plat-powerscale",
                 name="PowerScale cluster (file only)",
-                summary="Classic scale-out NAS — add Lightning later on the same OneFS.",
+                summary="Classic scale-out NAS — turn on parallel NFS in the same OneFS.",
                 details=(
                     "The conventional entry point: a PowerScale all-flash "
                     "cluster (F710/F910 class) serving NFS and SMB from one "
-                    "namespace that grows node by node. Because Lightning "
-                    "is built on the same OneFS foundation, an estate can "
-                    "start here for ordinary file workloads and add the "
+                    "namespace that grows node by node. OneFS 9.15 adds "
+                    "parallel NFS to that same namespace, so an estate can "
+                    "start here for ordinary file workloads and turn on the "
                     "parallel path when AI training arrives — without "
-                    "migrating the data into a different system."
+                    "migrating the data into a different system. The "
+                    "Lightning File System is a separate, faster engine."
                 ),
             ),
         ],
     ),
     CatalogCategory(
         id="parallel",
-        name="Lightning parallel file system",
+        name="Parallel file systems",
         blurb=(
-            "The parallel path — and the reason this twin exists. Its "
-            "defining move is architectural: get the metadata server out of "
-            "the data path."
+            "The parallel paths — and the reason this twin exists. The "
+            "defining move is architectural: get metadata out of the data "
+            "path."
         ),
-        limits="pNFS + Flex Files; parallel NFS globally available in 2026",
+        limits="Lightning FS from April 2026; PowerScale pNFS in OneFS 9.15",
         region_ids=["metadata", "fanout"],
         options=[
             CatalogOption(
                 id="par-lightning",
                 name="Lightning File System",
-                summary="Parallel NFS on OneFS: up to 6× large-file performance.",
+                summary="Dell's own parallel file system: up to 150 GB/s per rack unit, by Dell's claim.",
                 details=(
-                    "Lightning is the production form of Project Lightning, "
-                    "an 18-month effort to add parallel IO to PowerScale's "
-                    "OneFS. It uses pNFS — parallel NFS, the standard "
-                    "extension that lets one client stream from many "
-                    "servers at once — with a metadata server handing out "
-                    "Flex Files layouts. Dell reports up to 6× faster "
-                    "large-file performance than the prior NFS stack and "
-                    "positions it as the fastest parallel file system "
-                    "available. Because it is standards-based pNFS, clients "
-                    "need no proprietary driver."
+                    "The Lightning File System grew out of Project "
+                    "Lightning and became available in April 2026. It is "
+                    "a separate file system, not OneFS: Dell describes "
+                    "clients that turn file requests into direct reads and "
+                    "writes against NVMe, metadata distributed across the "
+                    "system, and its own client software. Dell calls it "
+                    "the world's fastest parallel file system, on its own "
+                    "internal analysis, and quotes up to 150 GB/s per rack "
+                    "unit, which is where the 6 TB/s per rack comes from. "
+                    "Dell aims it at short-lived, high-speed training and "
+                    "inference data, beside PowerScale and ObjectScale "
+                    "rather than in place of them."
+                ),
+            ),
+            CatalogOption(
+                id="par-pnfs",
+                name="PowerScale parallel NFS (pNFS)",
+                summary="The open-standard parallel path, inside OneFS.",
+                details=(
+                    "The other result of Project Lightning: OneFS 9.15 "
+                    "adds pNFS — parallel NFS, the standard extension that "
+                    "lets one client stream from many servers at once — "
+                    "with a metadata server handing out Flex Files "
+                    "layouts. Dell claims up to 6× faster large-file "
+                    "performance than NFSv3. This is the path the twin's "
+                    "trace narrates, because the protocol is public and "
+                    "names its parts."
                 ),
             ),
             CatalogOption(
@@ -94,15 +118,17 @@ CATALOG: list[CatalogCategory] = [
                 name="Metadata server + Flex Files layouts",
                 summary="Answers 'where are the stripes?' once, then leaves the path.",
                 details=(
-                    "The metadata server (MDS) holds the namespace and the "
-                    "layout map. A client asks once, receives a delegation "
+                    "In pNFS, the metadata server (MDS) holds the namespace and the "
+                    "layout map. A client asks once, receives a layout "
                     "describing which data servers hold which stripes, and "
                     "then transfers data directly — the MDS is not "
                     "consulted again for that transfer and could be "
                     "restarted without interrupting it. That separation is "
                     "why metadata never becomes the bottleneck as GPU "
                     "counts rise, and it is the invariant this twin's "
-                    "engine tests enforce."
+                    "engine tests enforce. In OneFS any node can take the "
+                    "metadata role; Lightning spreads metadata across the "
+                    "system instead."
                 ),
             ),
         ],
@@ -194,24 +220,26 @@ CATALOG: list[CatalogCategory] = [
         id="block",
         name="Block tier",
         blurb=(
-            "The engine that lets an AI storage rack also be ordinary "
-            "enterprise infrastructure."
+            "The engine that would let an AI storage rack also be ordinary "
+            "enterprise infrastructure. Planned, not yet shipping in Exascale."
         ),
-        limits="Software-defined; scales with the rack",
+        limits="Targeted by Dell for 1H 2027 as an Exascale personality",
         region_ids=["protocol-block"],
         options=[
             CatalogOption(
                 id="blk-powerflex",
                 name="Dell PowerFlex",
-                summary="Software-defined block storage inside the same rack.",
+                summary="Software-defined block storage, planned as the fourth personality.",
                 details=(
                     "PowerFlex pools server-local media into software-"
                     "defined block volumes with independent compute and "
-                    "capacity scaling. Its inclusion is what makes "
-                    "PowerRack-for-storage and Exascale useful beyond AI: "
-                    "the demanding conventional databases next to the "
-                    "training job get first-class block storage from the "
-                    "same footprint, instead of a separate array."
+                    "capacity scaling. It is a shipping product on its "
+                    "own; as an Exascale personality Dell targets the "
+                    "first half of 2027. Its inclusion is what would make "
+                    "Exascale useful beyond AI: the demanding conventional "
+                    "databases next to the training job get first-class "
+                    "block storage from the same footprint, instead of a "
+                    "separate array."
                 ),
             ),
         ],
@@ -223,7 +251,7 @@ CATALOG: list[CatalogCategory] = [
             "How the GPUs actually reach the data — and how little of the "
             "host CPU gets involved."
         ),
-        limits="pNFS, NFS/SMB, S3; RDMA and GPUDirect where supported",
+        limits="Lightning client, pNFS, NFS/SMB, S3; RDMA and GPUDirect where supported",
         region_ids=["clients", "fabric"],
         options=[
             CatalogOption(
@@ -237,7 +265,7 @@ CATALOG: list[CatalogCategory] = [
                     "saved copies are not a micro-optimization: host memory "
                     "bandwidth and CPU cycles become a real ceiling long "
                     "before the storage does, and removing the bounce is "
-                    "what lets a rack's 6 TB/s actually reach the "
+                    "what lets a rack's claimed 6 TB/s actually reach the "
                     "accelerators."
                 ),
             ),
@@ -246,10 +274,14 @@ CATALOG: list[CatalogCategory] = [
                 name="pNFS client (standards-based)",
                 summary="Parallel access using the in-tree NFS client — no proprietary driver.",
                 details=(
-                    "Because Lightning speaks pNFS rather than a "
-                    "proprietary protocol, standard Linux clients can mount "
-                    "it with the in-tree NFS client and get parallel "
-                    "access. That is an underrated operational property: "
+                    "Because PowerScale's parallel path is pNFS rather "
+                    "than a proprietary protocol, standard Linux clients "
+                    "mount it with the in-tree NFS client and get parallel "
+                    "access; Dell says no special software or custom "
+                    "driver is needed. The Lightning File System is the "
+                    "other trade: more speed, with Dell's own client "
+                    "software. The standard client is an underrated "
+                    "operational property: "
                     "competing parallel file systems often require a "
                     "kernel module matched to the OS version, which turns "
                     "every client upgrade into a storage project."
@@ -300,7 +332,7 @@ CATALOG: list[CatalogCategory] = [
         id="management",
         name="Management & observability",
         blurb=(
-            "One control plane over four engines — and the place the "
+            "One control plane over every engine — and the place the "
             "question 'is storage why the GPUs are idle?' gets answered."
         ),
         limits="Unified provisioning + AIOps telemetry",
@@ -309,11 +341,11 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="mgmt-unified",
                 name="Unified Exascale management",
-                summary="Provision block, file, parallel file, and object from one place.",
+                summary="Provision file, parallel file, and object from one place.",
                 details=(
                     "Consolidation's operational payoff: one console for "
-                    "capacity, performance, and provisioning across all "
-                    "four engines. Without it, a unified rack would just be "
+                    "capacity, performance, and provisioning across "
+                    "every engine. Without it, a unified rack would just be "
                     "three products sharing a floor tile — the "
                     "single control plane is what makes it one system."
                 ),

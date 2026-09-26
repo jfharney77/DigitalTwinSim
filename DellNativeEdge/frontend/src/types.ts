@@ -63,7 +63,11 @@ export type OnboardPhase =
   | "provision"
   | "blueprint"
   | "workload"
-  | "managed";
+  | "managed"
+  // failure scenarios only
+  | "quarantine"
+  | "replace"
+  | "recovered";
 
 export interface OnboardState {
   step: number;
@@ -77,9 +81,25 @@ export interface OnboardState {
   progressPercent: number;
   elapsedSeconds: number;
   cycleCost: number;
+  // Present only on failure-scenario traces (backend ScenarioState).
+  endpointTrust?: Record<string, boolean>;
+  failedEndpoints?: string[];
+  deployedTo?: string[];
+  recoveryActions?: number;
+}
+
+export interface ScenarioInfo {
+  id: string;
+  title: string;
+  summary: string;
+  heroLabel: string;
+  sources: SourceLink[];
+  illustrative: string;
+  intro: string;
 }
 
 export interface OnboardResponse {
+  scenario?: ScenarioInfo;
   trace: OnboardState[];
 }
 

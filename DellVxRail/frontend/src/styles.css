@@ -422,7 +422,7 @@ select:hover {
   margin-top: 20px;
 }
 .uc-build h3 {
-  margin: 0 0 4px;
+  margin: 0 0 8px;
   font-size: 14px;
   color: var(--txt);
 }
@@ -614,4 +614,24 @@ select:hover {
 }
 .app.dell .tour-page {
   grid-row: 2 / -1;
+}
+
+/* Failure scenario: the picker, the hero and failed rows in the counters,
+   and the sources note under the diagram. */
+.app.dell .scenario-select {
+  width: 100%;
+  margin-top: 4px;
+}
+.app.dell .stat.stat-hero span:last-child {
+  font-weight: 500;
+}
+.app.dell .stat.stat-failed span:last-child {
+  color: var(--dell-error);
+  font-weight: 500;
+}
+.app.dell .scenario-note {
+  margin-top: 10px;
+}
+.app.dell .scenario-note p {
+  margin: 0 0 8px;
 }

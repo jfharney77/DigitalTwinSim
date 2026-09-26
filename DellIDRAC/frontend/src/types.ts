@@ -64,9 +64,33 @@ export type BringUpPhase =
   | "services"
   | "ready";
 
+// The firmware-update failure scenario starts at "ready" and walks these.
+export type UpdatePhase =
+  | "upload"
+  | "verify"
+  | "stage"
+  | "reboot"
+  | "bootcheck"
+  | "rollback"
+  | "restored";
+
+export type ScenarioId = "bring-up" | "firmware-update-rollback";
+
+export interface ScenarioInfo {
+  id: ScenarioId;
+  name: string;
+  summary: string;
+  phases: string[];
+  heroLabel: string;
+  basis: string;
+  /** The paragraph under the trace page's heading, at the reading level. */
+  intro?: string;
+  sources: SourceLink[];
+}
+
 export interface BringUpState {
   step: number;
-  phase: BringUpPhase;
+  phase: BringUpPhase | UpdatePhase;
   label: string;
   description: string;
   activeRegions: string[];
@@ -74,6 +98,17 @@ export interface BringUpState {
   progressPercent: number;
   elapsedSeconds: number;
   cycleCost: number;
+  // Failure-scenario fields: absent from the bring-up trace entirely.
+  hostPowered?: boolean;
+  activePartition?: "A" | "B";
+  runningVersion?: string;
+  writingPartition?: "A" | "B";
+  signatureVerified?: boolean;
+  bootableImages?: number;
+  managementReachable?: boolean;
+  managementOutageSeconds?: number;
+  failedRegions?: string[];
+  logEntry?: string;
 }
 
 export interface BringUpResponse {

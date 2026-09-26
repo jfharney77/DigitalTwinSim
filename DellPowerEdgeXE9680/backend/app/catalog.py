@@ -19,10 +19,10 @@ CATALOG: list[CatalogCategory] = [
         name="Chassis platform",
         blurb=(
             "The same 8-GPU machine at two densities: air-cooled in 6U, or "
-            "direct liquid-cooled in 4U for the racks Colossus was built "
-            "from."
+            "direct liquid-cooled in 4U for denser racks, the shape "
+            "reported at Colossus."
         ),
-        limits="One HGX baseboard — eight SXM sockets — per chassis, either way",
+        limits="One 8-way accelerator baseboard per chassis, either way (Dell also lists AMD and Intel OAM boards for the 6U)",
         region_ids=["fan-bank-a", "fan-bank-b"],
         options=[
             CatalogOption(
@@ -51,20 +51,25 @@ CATALOG: list[CatalogCategory] = [
                 name="XE9680L — 4U direct liquid-cooled",
                 summary=(
                     "The dense variant: cold plates on GPUs and CPUs shrink "
-                    "the box to 4U and the rack to 64 GPUs — Colossus's "
-                    "geometry."
+                    "the box to 4U, so eight or more servers share a rack — "
+                    "the geometry reported at Colossus."
                 ),
                 details=(
                     "DLC (direct liquid cooling) puts cold plates on the "
                     "eight SXM modules and both Xeons, moving most of the "
                     "heat into a coolant loop instead of the room's air. "
                     "Dropping the giant heatsinks and half the airflow path "
-                    "shrinks the chassis to 4U, so eight servers — 64 GPUs — "
-                    "fit in one rack with the loop plumbed to a CDU (coolant "
-                    "distribution unit; the IR7000 twin is that machine's "
-                    "story). This is the reported shape of xAI's Colossus "
-                    "racks: 8-GPU HGX servers, liquid-cooled, 64 GPUs per "
-                    "rack, roughly 1,500 racks in the first build."
+                    "shrinks the chassis to 4U, with the loop plumbed to a CDU "
+                    "(coolant distribution unit; the IR7000 twin is that "
+                    "machine's story). Dell announced the XE9680L in May "
+                    "2024 for HGX B200 and H200 boards, in its IR5000 rack, "
+                    "and quotes 72 to 96 GPUs per rack depending on the "
+                    "cooling design (Dell's figures). The reported shape "
+                    "of xAI's Colossus racks is the same idea: 4U "
+                    "liquid-cooled 8-GPU HGX servers, 64 GPUs per rack, "
+                    "roughly 1,500 racks in the first build. The racks "
+                    "toured publicly were Supermicro's; Dell built about "
+                    "half, and the Dell server model was not published."
                 ),
             ),
         ],
@@ -84,7 +89,8 @@ CATALOG: list[CatalogCategory] = [
                 name="NVIDIA HGX H100 (8× H100 SXM)",
                 summary=(
                     "The Hopper-generation baseboard the XE9680 launched "
-                    "with — and the first build of Colossus ran on."
+                    "with, and the GPU generation the first build of "
+                    "Colossus was reported to run."
                 ),
                 details=(
                     "Eight H100 SXM modules, each with 80 GB of HBM3 "
@@ -93,8 +99,8 @@ CATALOG: list[CatalogCategory] = [
                     "complex, pooling to 640 GB across the domain. SXM is "
                     "the socketed form factor: no card edge, no power "
                     "cables, just a module bolted to the baseboard, which "
-                    "is what lets each GPU draw roughly 700 W — double "
-                    "what a PCIe slot may deliver."
+                    "is what lets each GPU draw up to 700 W — double "
+                    "the 350 to 400 W of the H100's PCIe-card versions."
                 ),
             ),
             CatalogOption(
@@ -119,14 +125,15 @@ CATALOG: list[CatalogCategory] = [
                 id="hgx-b200",
                 name="NVIDIA HGX B200 (8× Blackwell SXM)",
                 summary=(
-                    "The Blackwell-generation baseboard — Colossus's "
-                    "expansion hardware in server form."
+                    "The Blackwell-generation baseboard, which Dell lists "
+                    "for the liquid-cooled XE9680L."
                 ),
                 details=(
-                    "Eight Blackwell B200 modules with 180+ GB of HBM3e "
-                    "each — over 1.4 TB pooled — and a per-GPU power "
-                    "budget high enough that Dell steers dense builds to "
-                    "the liquid-cooled XE9680L or the rack-scale XE9712. "
+                    "Eight Blackwell B200 modules with 180 GB of HBM3e "
+                    "each — 1.4 TB pooled, 1.8 TB/s of NVLink per GPU — "
+                    "at 1,000 W per module, which is why Dell's spec "
+                    "sheets pair this board with the liquid-cooled "
+                    "XE9680L and 3,000 W supplies. "
                     "The three baseboards tell one story: the chassis, "
                     "host, and one-NIC-per-GPU design carry across GPU "
                     "generations, and the accelerator inside is the part "
@@ -150,14 +157,14 @@ CATALOG: list[CatalogCategory] = [
                 name="NVSwitch complex (on-baseboard)",
                 summary=(
                     "Switch silicon soldered to the HGX board: every GPU "
-                    "reads every other's memory at 900 GB/s."
+                    "reads every other's memory at 900 GB/s (H100/H200)."
                 ),
                 details=(
                     "The NVSwitch chips cross-connect all eight SXM "
                     "modules so any GPU can load or store directly against "
                     "any other's HBM — no host involvement, no copies. It "
-                    "is the same switch silicon the XE9712 rack fills nine "
-                    "trays with, shrunk to a strip of board: the fuse "
+                    "is the same kind of switch silicon the XE9712 rack fills "
+                    "nine trays with, here as a strip of board: the fuse "
                     "takes seconds instead of minutes of cable training, "
                     "and the domain it makes is exactly eight, forever. "
                     "Everything larger is the fabric's job."
@@ -177,21 +184,24 @@ CATALOG: list[CatalogCategory] = [
         options=[
             CatalogOption(
                 id="connectx-400",
-                name="8× ConnectX-7 400 GbE (one per GPU)",
+                name="8× 400 GbE, one per GPU (ConnectX-7 or BlueField-3 SuperNIC)",
                 summary=(
-                    "The Colossus configuration: every GPU gets its own "
+                    "The Colossus pattern: every GPU gets its own "
                     "400 GbE port onto a Spectrum-X Ethernet fabric."
                 ),
                 details=(
-                    "Each ConnectX-7 adapter is dedicated to one GPU and "
+                    "Each adapter is dedicated to one GPU and "
                     "carries its RDMA traffic (remote direct memory "
                     "access — the NIC moves data between GPU memories "
                     "without the host CPU touching it) straight onto the "
                     "data-center fabric. One NIC per GPU means all-to-all "
                     "training traffic never queues behind a shared port: "
-                    "~3.6 Tb/s of network per server, which is the "
-                    "per-server figure reported at Colossus. The SN6000 "
-                    "twin is the other end of these cables."
+                    "8 × 400 GbE is 3.2 Tb/s of GPU networking per "
+                    "server. At Colossus the per-GPU adapters were "
+                    "reported as BlueField-3 SuperNICs, with a ninth "
+                    "400 GbE ConnectX-7 for the host — the roughly "
+                    "3.6 Tb/s per server in the published tour. The "
+                    "SN6000 twin is the other end of these cables."
                 ),
             ),
             CatalogOption(
@@ -207,9 +217,9 @@ CATALOG: list[CatalogCategory] = [
                     "isolation execute on the adapter's Arm cores instead "
                     "of the Xeons. In multi-tenant clusters the DPU is "
                     "what keeps one customer's training job invisible to "
-                    "another's while both share the same fabric — the "
-                    "per-GPU ConnectX ports move tensors, and the "
-                    "BlueField moves everything else."
+                    "another's while both share the same fabric. In this "
+                    "option the per-GPU ports move tensors and a "
+                    "host-side BlueField moves everything else."
                 ),
             ),
             CatalogOption(
@@ -221,8 +231,8 @@ CATALOG: list[CatalogCategory] = [
                 ),
                 details=(
                     "The adapters speak InfiniBand as readily as Ethernet, "
-                    "so sites standardized on NDR InfiniBand — most "
-                    "academic HPC, and clusters like TACC's — run the "
+                    "so sites standardized on InfiniBand — much of "
+                    "academic HPC — run the "
                     "identical one-NIC-per-GPU design on IB instead of "
                     "Spectrum-X. The architectural point survives the "
                     "protocol choice: the domain is the box, and every "
@@ -249,8 +259,9 @@ CATALOG: list[CatalogCategory] = [
                     "The XE9680 launched with dual 4th-Gen Xeon Scalable "
                     "processors. What matters here is less core count than "
                     "lanes and memory: PCIe Gen5 fans out to eight GPUs, "
-                    "eight-plus NICs, and the NVMe bay, while 32 channels "
-                    "of DDR5 stage training batches on their way into HBM. "
+                    "eight-plus NICs, and the NVMe bay, while 32 DIMM slots "
+                    "of DDR5 (eight memory channels per socket, up to "
+                    "4 TB) stage training batches on their way into HBM. "
                     "In an accelerator server the host spec follows the "
                     "GPU spec — it is sized to never be the bottleneck."
                 ),
@@ -274,12 +285,12 @@ CATALOG: list[CatalogCategory] = [
         id="storage",
         name="Local storage",
         blurb="NVMe cache for data on its way to HBM; boot kept off the data slots.",
-        limits="Up to 8 front NVMe bays + BOSS-N1 boot module",
+        limits="Up to 8× 2.5-inch NVMe (or 16× E3.S) front bays + BOSS-N1 boot module",
         region_ids=["nvme-bay"],
         options=[
             CatalogOption(
                 id="nvme-front",
-                name="Front NVMe bay (up to 8× U.2)",
+                name="Front NVMe bay (up to 8× 2.5-inch U.2)",
                 summary="Hot-swap NVMe for staging batches and landing checkpoints.",
                 details=(
                     "Training data stages here on its way to the GPUs, and "
@@ -297,7 +308,7 @@ CATALOG: list[CatalogCategory] = [
                 summary="Mirrored boot drives that spend no data bay on the OS.",
                 details=(
                     "The BOSS-N1 (Boot Optimized Storage Solution) is a "
-                    "pair of mirrored M.2 drives on a small rear module, "
+                    "pair of hardware-mirrored M.2 NVMe drives on a small module, "
                     "dedicated to the operating system — the same part the "
                     "R760 and VxRail twins carry. Losing a boot drive "
                     "never touches the data bay, and reimaging 12,500 "
@@ -319,15 +330,17 @@ CATALOG: list[CatalogCategory] = [
                 name="6× 2,800 W hot-swap PSUs",
                 summary="Capacity plus redundancy for a server that draws like a rack.",
                 details=(
-                    "Six high-efficiency supplies feed the chassis's ~11 kW "
-                    "full-load draw with headroom to lose units and keep "
+                    "Six 2,800 W Titanium supplies feed the chassis's "
+                    "full-load draw (on the order of 11 kW, illustrative) "
+                    "with headroom to lose units and keep "
                     "running, hot-swappable from the rear. The arithmetic "
                     "deserves saying plainly: one XE9680 draws roughly what "
                     "an entire rack of ordinary 1U servers draws, so power "
                     "delivery and heat rejection — not floor space — are "
                     "what actually limit how many of these a building can "
-                    "hold. Colossus's grid-plus-Megapack story starts at "
-                    "this PSU bank times 12,500."
+                    "hold. Colossus's reported grid-plus-Megapack story "
+                    "starts at a PSU bank like this one, times roughly "
+                    "12,500."
                 ),
             ),
         ],
@@ -375,7 +388,7 @@ CATALOG: list[CatalogCategory] = [
             "How boxes become a machine: liquid racks, integrated delivery, "
             "and the fabric above."
         ),
-        limits="8 servers (64 GPUs) per liquid-cooled rack at Colossus density",
+        limits="8 servers (64 GPUs) per liquid-cooled rack at the density reported for Colossus",
         options=[
             CatalogOption(
                 id="irss",
@@ -386,21 +399,24 @@ CATALOG: list[CatalogCategory] = [
                     "show up populated, cabled, leak-tested, and burned "
                     "in, so on-site work is placement, power, and fabric "
                     "uplinks. Stand-up speed is the product: Colossus's "
-                    "122 days and TACC Horizon's build both lean on rack "
-                    "integration rather than server-by-server assembly, "
+                    "reported 122 days (19 from first rack to first "
+                    "training run) and TACC Horizon's build both lean on "
+                    "rack integration rather than server-by-server assembly, "
                     "and the XE9712 twin's 'the rack is the unit of "
                     "delivery' idea starts here."
                 ),
             ),
             CatalogOption(
                 id="colossus-rack",
-                name="64-GPU liquid rack (8× XE9680L)",
+                name="64-GPU liquid rack (8× 4U liquid-cooled servers)",
                 summary="The reported Colossus building block: eight boxes, one loop.",
                 details=(
-                    "Eight liquid-cooled XE9680L servers share one rack, "
-                    "one coolant loop to the CDU, and one pair of leaf "
-                    "switches — 64 GPUs and 64 400 GbE ports per rack, "
-                    "times roughly 1,500 racks in the first build. Note "
+                    "Eight 4U liquid-cooled 8-GPU servers (the XE9680L is "
+                    "Dell's box of this shape) share one rack and one "
+                    "coolant loop — 64 GPUs and 64 GPU-facing 400 GbE "
+                    "ports per rack, times roughly 1,500 racks in the "
+                    "first build, as reported from the Supermicro half "
+                    "of Colossus. Note "
                     "what the rack is not: the NVLink domains inside it "
                     "stay eight GPUs each. The rack is a plumbing and "
                     "cabling unit, and the cluster exists in the fabric — "

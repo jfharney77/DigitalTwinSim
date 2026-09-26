@@ -43,3 +43,15 @@ Narrated twins: `DellPowerProtect/` (:5183), `DellCyberDetect/`
 (:5192), `DellFortZero/` (:5195). ObjectScale's WORM bucket in
 `PhysicsStorage/` is this app's vault substrate; the sensitivity knob
 rhymes with `PhysicsData/`'s anomaly detector on purpose.
+
+## Graded labs
+
+`#labs` opens three graded labs (`docs/LAB_PATTERN.md`; backend `app/labs.py`, routes `GET /api/labs` and `POST /api/labs/{id}/grade`, tests `tests/test_labs.py`). The learner builds the architecture with the ordinary controls and edits the incident script (each event's hour is editable in the Incident script panel); the pure engine runs it and a pure function grades the trace. On the static site the same Python grades in the browser.
+
+| Lab | Difficulty | The lesson |
+|---|---|---|
+| `back-within-a-day` | 1 | Only a vaulted copy survives, the 24 h RTO is bought with the restore pipe, and the RPO follows the vault's sync cadence, not the backup cadence. |
+| `slow-burn-on-a-budget` | 2 | In-house, the alert queue sets time-to-contain and sensitivity changes nothing; with 24/7 response the knob matters, and the false-alarm budget caps it at 7. |
+| `two-am-whole-clock` | 3 | Onset to clean is one 30-hour clock shared by detection, response, decision and data movement; an hour of slack anywhere breaks it. |
+
+Delivered work is `serviceRatePct`: the clean share of the estate averaged over the 336 h after onset, with restore hours, corrupted terabytes and out-of-run hours counted as zero, and a run with no incident scoring zero. It is an illustrative proxy, not an SLA. Every constraint (scripted onset, spread rate, no Contain button, estate size, run length) is a criterion measured from the trace. The scope boundary holds: the incident is an abstract rate and a timestamp, and `test_labs_stay_inside_the_scope_boundary` checks the lab prose at every reading level.

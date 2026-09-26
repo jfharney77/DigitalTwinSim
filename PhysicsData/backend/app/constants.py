@@ -5,18 +5,36 @@ from __future__ import annotations
 
 from .models import Constant
 
+DELL_DTW_2026 = (
+    "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-closes-the-gap-between-ai-ambition-and-ai-outcomes.htm"
+)
+DELL_KV_BLOG = "https://www.dell.com/en-us/blog/dell-and-nvidia-expand-the-horizons-of-ai-inference/"
+
 CONSTANTS: dict[str, Constant] = {
     "gpu_process_speedup": Constant(
         value=6.0, unit="×",
-        source="estimate — Dell cites a 6×-class GPU-acceleration claim; verify against Dell AI Data Platform materials",
+        source=("estimate — Dell publishes no speedup figure for its Spark/"
+                "NVIDIA RAPIDS Data Processing Engine; this borrows the ×6 of "
+                "the analytics claim below. Verify if Dell publishes one."),
         estimated=True,
         blurb="Process-stage speedup with GPU acceleration on.",
     ),
     "gpu_analytics_speedup": Constant(
         value=6.0, unit="×",
-        source="estimate — Starburst-engine GPU scan claim; verify and cite Dell",
-        estimated=True,
+        source=("vendor claim — Dell, 18 May 2026: the Starburst-powered Data "
+                "Analytics Engine delivers 'up to 6x faster query performance' "
+                "on NVIDIA Blackwell GPUs versus non-GPU systems. An upper "
+                "bound, not a typical result. " + DELL_DTW_2026),
+        estimated=False,
         blurb="Analytics scan speedup with GPU acceleration on.",
+    ),
+    "serve_store_headroom_tbh": Constant(
+        value=5.0, unit="TB/h",
+        source=("estimate — re-reads of data the serve stage already holds, "
+                "on top of fresh pipeline throughput"),
+        estimated=True,
+        blurb=("What the serve stage can hand the GPUs beyond fresh "
+               "throughput: served = min(demand, serve rate, throughput + this)."),
     ),
     "base_sessions": Constant(
         value=40, unit="concurrent long-context sessions",
@@ -25,7 +43,11 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "kv_offload_multiplier": Constant(
         value=4.0, unit="×",
-        source="estimate — KV spill to fast shared storage (NVIDIA CMX-class)",
+        source=("estimate — KV spill to fast shared storage (NVIDIA CMX "
+                "context memory storage class). Dell's own published figures "
+                "for KV offload to PowerScale/ObjectScale are 19x time-to-"
+                "first-token and 5.3x queries per second, not a session "
+                "multiplier. " + DELL_KV_BLOG),
         estimated=True,
         blurb="Session-capacity multiplier when KV cache spills to shared storage.",
     ),

@@ -93,8 +93,9 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "is production: virtual machines, databases, and a PowerProtect "
                     "Data Domain, Dell's purpose-built backup appliance. On the "
                     "right, beyond the air gap, is the Cyber Recovery vault, with a "
-                    "second Data Domain drawn identical in size, because the vault's "
-                    "power is reachability, not hardware. At this step nothing is "
+                    "second Data Domain. The vault appliance is the same hardware; "
+                    "what protects it is that production cannot reach it. At this "
+                    "step nothing is "
                     "protected yet: a few hundred terabytes exist in exactly one "
                     "place."
                 ),
@@ -169,7 +170,7 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "only from 20 to 25. "
                     "Variable-length deduplication keeps only pointers plus each "
                     "day's genuinely new segments, so 500 TB of logical protection "
-                    "occupies about 25 TB of flash, 20:1 and climbing "
+                    "occupies about 25 TB of flash, 20:1 here "
                     "(illustrative; Dell quotes up to 65:1 on the all-flash "
                     "appliance). This arithmetic is what makes weeks of restore "
                     "points, fast replication and an affordable vault possible."
@@ -200,8 +201,9 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "for minutes, not days. Across the whole story the gap opens "
                     "exactly twice: now, to bring a copy in, and at the very end, "
                     "to send clean data back out. Both times the vault opens it. "
-                    "The rest of the time it is closed and dark. The PowerMax twin's "
-                    "cyber vault use case is this same arrangement."
+                    "The rest of the time it is closed and dark. Dell's largest "
+                    "storage array, PowerMax, protects itself the same way, and "
+                    "it has a model of its own here."
                 ),
                 standard=(
                     "This is the idea the whole design rests on. On the vault's "
@@ -271,8 +273,10 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
             script=L(
                 novice=(
                     "Inside the vault, a tool called CyberSense reads the locked "
-                    "copy, and this takes longer than anything else in the story, "
-                    "so the timeline lingers here. It looks for signs of damage: "
+                    "copy. Reading every file is the most demanding single job in "
+                    "the story, so the playback lingers here, though by the clock "
+                    "it is about four hours (illustrative). It looks for signs of "
+                    "damage: "
                     "files that suddenly look scrambled, the way encrypted files "
                     "do, files renamed in bulk, broken databases. It compares each "
                     "copy with the ones before it. The question it answers is not "
@@ -282,7 +286,9 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "same question on primary storage."
                 ),
                 standard=(
-                    "The longest stage in the trace, deliberately. CyberSense "
+                    "The most expensive single operation in the trace, so the playback "
+                    "dwells here; by the clock it is about four hours "
+                    "(illustrative). CyberSense "
                     "indexes the locked copy and runs machine-learning analytics "
                     "over content features: entropy (encrypted files look "
                     "statistically different from documents), file-type "
@@ -293,7 +299,7 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "Detect twin asks the same question on primary storage."
                 ),
                 expert=(
-                    "Longest stage: CyberSense content analytics on the locked copy "
+                    "Costliest stage (max dwell, ~4 h illustrative): CyberSense content analytics on the locked copy "
                     "(entropy, corruption, renames, DB pages), diffed against prior "
                     "scans. Output: the last clean restore point."
                 ),
@@ -348,7 +354,10 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "Now recovery, and again the vault is in charge. In the clean "
                     "room, an isolated space inside the vault, the team uses "
                     "CyberSense's findings to pick the newest copy that is "
-                    "definitely clean, skipping recent copies it flagged. They "
+                    "definitely clean. Here that is the one copy in the vault, "
+                    "scanned and not flagged four hours before the attack; if it "
+                    "had been flagged they would step back to an older locked "
+                    "copy, which is why a real vault keeps many days of them. They "
                     "practise the restore on a separate recovery computer first. "
                     "Only then does the vault open the gap for the second and last "
                     "time, and push clean data back to a rebuilt production Data "
@@ -358,14 +367,17 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                 standard=(
                     "Recovery runs at the vault's pace, from the vault's side. In "
                     "the clean room, the team uses CyberSense's verdicts to choose "
-                    "the last provably clean restore point, skipping the recent "
-                    "copies it flagged, and rehearses on the isolated recovery host. "
+                    "the last provably clean restore point. Here that is the one "
+                    "vaulted copy, scanned and not flagged four hours before "
+                    "detonation; a flagged copy would send them back to an older "
+                    "locked one, which is why a real vault retains many days of "
+                    "them. The team rehearses on the isolated recovery host. "
                     "Only then does the vault open the gap outward, the second of "
                     "its two openings, and push clean data to a rebuilt production "
                     "Data Domain. Dell quotes up to 4x faster restores on all-flash."
                 ),
                 expert=(
-                    "Clean-room restore: pick last clean point, rehearse on the "
+                    "Clean-room restore: pick last clean point (1 scanned, 0 flagged), rehearse on the "
                     "recovery host, then vault-initiated push through the gap. Up "
                     "to 4x faster restore (Dell's claim)."
                 ),
@@ -388,7 +400,9 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "made it impossible to reach. The routine starts again, backup, "
                     "copy, lock, scan, because the vault's protection was never one "
                     "device. It was a habit that was already running before anyone "
-                    "needed it. The timeline here is illustrative."
+                    "needed it. The block labelled DDMC / consoles lights here too: "
+                    "DDMC is Data Domain Management Center, the screen administrators "
+                    "use to watch the appliances. The timeline here is illustrative."
                 ),
                 standard=(
                     "Workloads run again, restored from a copy that spent the attack "
@@ -396,7 +410,9 @@ def build_tour(anatomy: SiteAnatomy) -> Tour:
                     "affordable vault possible; the air gap plus immutability made "
                     "it unreachable. The cycle resumes, backup, replicate, lock, "
                     "scan, because the protection was never a device but a routine "
-                    "already running before anyone needed it. The lifecycle page "
+                    "already running before anyone needed it. The consoles block lights "
+                    "too: Data Domain Management Center (DDMC) and the PowerProtect "
+                    "Data Manager (PPDM) console, watching the cycle. The lifecycle page "
                     "walks the same trace one step at a time."
                 ),
                 expert=(

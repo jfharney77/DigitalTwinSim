@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from .models import CatalogCategory, CatalogOption
 
-_FANS = [f"fan-{i}" for i in range(4)]
+_FANS = [f"fan-{i}" for i in range(3)]
 
 CATALOG: list[CatalogCategory] = [
     CatalogCategory(
@@ -39,7 +39,7 @@ CATALOG: list[CatalogCategory] = [
                     "24 line-rate 1GbE SFP fiber ports, four 10GbE SFP+ "
                     "uplinks and two rear 100GbE QSFP28. No PoE — it is a "
                     "fiber aggregation/distribution switch. 528 Gbps fabric, "
-                    "733 Mpps, 550W PSU, only ~230W max draw. Runs SmartFabric "
+                    "733 Mpps, 550W PSU, 230W maximum draw on the spec sheet. Runs SmartFabric "
                     "OS10, Dell's easier-to-learn NOS. Americas only."
                 ),
             ),
@@ -74,7 +74,8 @@ CATALOG: list[CatalogCategory] = [
         id="nos",
         name="Network operating system",
         blurb=(
-            "'ON' hardware boots ONIE and runs a disaggregated network OS, so "
+            "'ON' hardware ships with ONIE, the open installer that loads a "
+            "disaggregated network OS (later boots go straight to that OS), so "
             "the software is chosen with (and constrained by) the model. Both "
             "are Linux-based and share the CLI/SNMP/automation surfaces."
         ),
@@ -128,7 +129,7 @@ CATALOG: list[CatalogCategory] = [
                     "The E3224F-ON is a fiber switch with no PoE — SFP optical "
                     "links do not carry power. Its job is bandwidth and "
                     "distance, not powering devices, which is why it needs only "
-                    "a 550W supply and draws about 230W."
+                    "a 550W supply and draws at most 230W (Dell's spec-sheet maximum)."
                 ),
             ),
             CatalogOption(
@@ -140,7 +141,8 @@ CATALOG: list[CatalogCategory] = [
                     "across all 48 copper ports — plenty for most wireless "
                     "access points, VoIP handsets, and IP cameras. The 1050W "
                     "supply sizes the shared budget across the ports drawing at "
-                    "once."
+                    "once; Dell's installation guide caps the PoE budget at "
+                    "1440W (48 × 30W), which two internal supplies can meet."
                 ),
             ),
             CatalogOption(
@@ -153,7 +155,8 @@ CATALOG: list[CatalogCategory] = [
                     "points, pan-tilt-zoom cameras, LED luminaires, and small "
                     "displays. At 90W across many ports the 1600W supply, and "
                     "often an external power shelf, is what makes the budget "
-                    "add up."
+                    "add up: Dell's installation guide lists a 4800W PoE "
+                    "ceiling, reached only with an MPS-3S shelf."
                 ),
             ),
         ],
@@ -198,8 +201,9 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "Two 100GbE QSFP28 ports on the rear of every E3200, the "
                     "'built-in rear high capacity ports' for handing off to the "
-                    "core or spine without using a front cage. Each QSFP28 also "
-                    "breaks out to 4× 25GbE for flexible aggregation."
+                    "core or spine without using a front cage. Dell documents "
+                    "them at 100GbE or 40GbE under both OS10 and Enterprise "
+                    "SONiC."
                 ),
             ),
         ],
@@ -298,7 +302,8 @@ CATALOG: list[CatalogCategory] = [
         id="cooling",
         name="Cooling",
         blurb=(
-            "Redundant variable-speed fans move air front-to-rear (I/O to PSU) "
+            "Three pluggable, redundant variable-speed fan modules move air "
+            "front-to-rear (I/O to PSU) "
             "and spin only as fast as the load needs, keeping cooling power and "
             "noise down."
         ),
@@ -310,7 +315,7 @@ CATALOG: list[CatalogCategory] = [
                 name="Fan module · I/O-to-PSU airflow",
                 summary="Variable-speed, hot-serviceable, Fresh Air rated.",
                 details=(
-                    "The E3200 uses redundant variable-speed fan modules with "
+                    "The E3200 uses three pluggable, variable-speed fan modules with "
                     "'I/O to PSU' airflow — intake at the port side, exhaust "
                     "past the power supplies — matching a wiring closet where "
                     "cabling is at the front. Dell Fresh Air compliance allows "

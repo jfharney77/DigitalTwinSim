@@ -172,6 +172,24 @@ def test_guided_scenarios_are_complete_and_runnable():
         assert g.question.strip().endswith("?"), g.id
         trace, _, _ = simulate(g.scenario)
         assert trace, g.id
+        # Variants: the first is the scenario as loaded, labels are unique,
+        # and every variant runs under the scenario's own events.
+        if g.variants:
+            assert g.variants[0].config == g.scenario.config, g.id
+            labels = [v.label for v in g.variants]
+            assert len(labels) == len(set(labels)) >= 2, g.id
+            for v in g.variants:
+                assert v.config.product == g.scenario.config.product, g.id
+                assert simulate(g.scenario.model_copy(update={"config": v.config}))[0]
+
+
+def test_the_intro_glosses_the_instrument_labels():
+    from app.presets import INTRO
+    assert INTRO.body.strip()
+    terms = {t.term for t in INTRO.glossary}
+    assert {"FTT", "drift", "version currency", "faults · trucks",
+            "exposure", "headroom"} <= terms
+    assert all(t.gloss.strip() for t in INTRO.glossary)
 
 
 def test_explain_entries_cover_the_required_readouts():

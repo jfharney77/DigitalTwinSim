@@ -13,6 +13,8 @@ from .models import (
     Environment,
     Explain,
     GuidedScenario,
+    PageIntro,
+    Term,
     Scenario,
     SimEvent,
     Workload,
@@ -38,12 +40,12 @@ AW_DESKTOP = DeviceConfig(
 
 PROMAX_NPU = DeviceConfig(
     product="promax", form_factor="laptop", cpu_pl1_w=55, gpu_tgp_w=115,
-    npu=True, ram_gb=64, nvme_count=2, battery_wh=97, charger_w=240,
+    npu=True, ram_gb=64, nvme_count=2, battery_wh=96, charger_w=280,
 )
 
 PROMAX_GPU = DeviceConfig(
     product="promax", form_factor="laptop", cpu_pl1_w=55, gpu_tgp_w=115,
-    npu=False, ram_gb=64, nvme_count=2, battery_wh=97, charger_w=240,
+    npu=False, ram_gb=64, nvme_count=2, battery_wh=96, charger_w=280,
 )
 
 CONFIG_PRESETS = [
@@ -54,7 +56,7 @@ CONFIG_PRESETS = [
     ConfigPreset(id="aw-desktop", name="Alienware tower", config=AW_DESKTOP,
                  blurb="125 W CPU, 450 W GPU, 1000 W PSU — the control group."),
     ConfigPreset(id="promax-npu", compare_preset_id="promax-gpu", name="Pro Max Plus + NPU", config=PROMAX_NPU,
-                 blurb="Workstation with the discrete AI-100-class NPU card."),
+                 blurb="Workstation with the discrete NPU card. Dell ships the card in place of the discrete GPU; this model keeps both so one machine can run the comparison."),
     ConfigPreset(id="promax-gpu", name="Pro Max Plus (GPU only)", config=PROMAX_GPU,
                  blurb="Same workstation without the NPU — the honest contrast."),
 ]
@@ -257,35 +259,65 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "The same AI language model runs three times: first "
-                    "on the processor, then on the graphics chip, then "
-                    "on the dedicated AI chip. The processor is slow "
-                    "and works hard for every word. The graphics chip "
-                    "is much faster — and hot and loud. The AI chip is "
-                    "a little slower than the graphics chip but sips "
-                    "power: watch the tokens-per-joule meter, which "
-                    "says how many words each unit of energy buys. "
-                    "That meter is the entire argument for building a "
-                    "dedicated AI chip into a portable machine."
+                    "The same AI language model runs three times, 400 "
+                    "seconds each: first on the processor (CPU), then "
+                    "on the graphics chip (GPU), then on the dedicated "
+                    "AI chip (NPU). The event log names each switch, "
+                    "and the results table under the instruments keeps "
+                    "one row per run so you can compare them at the "
+                    "end. Before it plays, guess which chip writes "
+                    "words fastest and which needs the least energy "
+                    "for each word. Then read four things on each run: "
+                    "tokens per second (a token is about one word), "
+                    "system power in watts, fan noise in dB(A), and "
+                    "tokens per joule, which says how many words one "
+                    "unit of energy buys. The machine is on battery "
+                    "the whole time, so look at the runtime left row "
+                    "as well. All three runs use the same model — a "
+                    "roughly 13-billion-parameter local model, kept in "
+                    "the same small 4-bit number format on every chip — "
+                    "so the differences you read come from the chips, "
+                    "not from one run being handed an easier version of "
+                    "the model."
                 ),
                 standard=(
-                    "The local-LLM preset rotates across engines: CPU "
-                    "at t=0, GPU at t=400, NPU at t=800. Compare four "
-                    "instruments per leg: tokens/s (GPU wins), system "
-                    "watts and dB(A) (GPU pays), and tokens per joule "
-                    "— where the NPU wins by a multiple. On battery, "
-                    "tokens/joule is runtime; in a meeting room, it is "
-                    "silence. Efficiency, not peak rate, is the "
-                    "discrete NPU's pitch."
+                    "The local-LLM preset rotates across engines on "
+                    "battery: CPU at t=0, GPU at t=400, NPU at t=800. "
+                    "The log names each switch and the results table "
+                    "keeps one row per leg. Read five instruments per "
+                    "leg: tokens/s, system watts, fan noise in dB(A), "
+                    "tok/J per engine watt, and tok/J per system watt. "
+                    "The two tok/J figures differ because the display, "
+                    "memory, storage and fans draw power whichever "
+                    "chip is working, and the system figure is the one "
+                    "that sets battery runtime. Each load step opens a "
+                    "short boost window (PL2 on the CPU, an excursion "
+                    "above TGP on the GPU); the log marks where it "
+                    "ends, so compare the legs after the fade. One "
+                    "assumption makes the table readable: all three "
+                    "legs run the same ~13B-class model at the same "
+                    "numeric precision (4-bit weights), so what the "
+                    "rows compare is silicon rather than quantization. "
+                    "On real hardware an NPU's efficiency lead is "
+                    "partly an INT8/INT4-versus-FP16 result — see the "
+                    "DellProMaxPlus twin, which runs MXINT4 weights "
+                    "with FP16 compute."
                 ),
                 expert=(
-                    "CPU→GPU→NPU legs. GPU: max tok/s, max W/dB. NPU: "
-                    "~0.7× rate, several× tok/J. Efficiency is the "
-                    "product."
+                    "CPU→GPU→NPU legs at t=0/400/800, on battery, same "
+                    "~13B-class model at 4-bit weights on every leg — "
+                    "the rows isolate silicon, not quantization. Per "
+                    "leg: tok/s, system W, dB(A), tok/J at the engine "
+                    "and at the system. Compare after each boost "
+                    "window closes."
                 ),
             ),
         ],
-        question="Which engine wins tokens per second, which wins tokens per joule, and which is loudest?",
+        question=(
+            "Which engine gives the most tokens per second, which is "
+            "loudest, and how much of the NPU's tokens-per-joule lead is "
+            "left when you count system watts instead of engine watts?"
+        ),
         scenario=Scenario(
             config=PROMAX_NPU, workload=LLM_CPU,
             environment=Environment(plugged_in=False),
@@ -305,7 +337,7 @@ GUIDED_SCENARIOS = [
                     "A long render job starts on a full battery with no "
                     "charger. The machine holds its sustained pace — "
                     "workstations are tuned for exactly this — but "
-                    "look at the runtime estimate: a 97 watt-hour "
+                    "look at the runtime estimate: a 96 watt-hour "
                     "battery feeding a machine drawing around 90 watts "
                     "lasts about an hour, not eight. No setting changes "
                     "this; it is division. The scenario exists so the "
@@ -314,7 +346,7 @@ GUIDED_SCENARIOS = [
                 standard=(
                     "The ISV render preset, unplugged, full pack: "
                     "sustained PL1 work at ~85–95 W system draw against "
-                    "97 Wh × 0.92 usable — the runtime readout does the "
+                    "96 Wh × 0.92 usable — the runtime readout does the "
                     "Wh ÷ W division live and lands near an hour. The "
                     "trace ends in the low-battery power-off. The "
                     "lesson is that battery capacity is a numerator, "
@@ -322,7 +354,7 @@ GUIDED_SCENARIOS = [
                     "workloads."
                 ),
                 expert=(
-                    "97 Wh · 0.92 / ~90 W ≈ 1 h. The render is 8. "
+                    "96 Wh · 0.92 / ~90 W ≈ 1 h. The render is 8. "
                     "Division, dramatized."
                 ),
             ),
@@ -351,17 +383,18 @@ GUIDED_SCENARIOS = [
                 ),
                 standard=(
                     "GPU inference to t=400 s, then the same load on "
-                    "the NPU. The GPU leg drives ~100 W of system draw "
-                    "and fans well into the audible band; the NPU leg "
-                    "drops draw by roughly half and lets the fans fall "
-                    "toward the floor — with tokens/s down only "
-                    "modestly. dB(A) is the instrument to watch: the "
+                    "the NPU. The GPU leg drives ~130 W of system draw "
+                    "and holds the fans near 40% and ~29 dB(A) after a "
+                    "louder burst at the start; the NPU leg drops draw "
+                    "by about 40% and lets the fans fall to the floor "
+                    "at ~25 dB(A), with tokens/s down by about a "
+                    "quarter. dB(A) is the instrument to watch: the "
                     "NPU's efficiency shows up as silence before it "
                     "shows up on any battery gauge."
                 ),
                 expert=(
-                    "GPU leg vs NPU leg, same prompt stream: ~½ the "
-                    "watts, fans near floor, modest tok/s cost. "
+                    "GPU leg vs NPU leg, same prompt stream: ~0.6× the "
+                    "system watts, fans at the floor, ~0.75× tok/s. "
                     "Efficiency audible."
                 ),
             ),
@@ -374,6 +407,60 @@ GUIDED_SCENARIOS = [
         ),
     ),
 ]
+
+# --- Page intro and instrument glossary ------------------------------------
+
+PAGE_INTRO = PageIntro(
+    heading="Burst, budget, skin, battery — the client-device physics",
+    text=L(
+        novice=(
+            "This page is a working model of the power and heat inside "
+            "a laptop or desktop: an Alienware gaming machine, or the "
+            "Dell Pro Max Plus workstation with its separate AI chip "
+            "(NPU). Pick a guided scenario, press Run, and watch the "
+            "instruments. Four ideas explain most of what you will see. "
+            "Chips sprint for about half a minute and then settle to a "
+            "pace they can hold; the readout calls the sprint PL2 and "
+            "the steady pace PL1. In a laptop the processor and the "
+            "graphics chip share one cooler, so they cannot both run "
+            "flat out. The case has to stay cool enough to touch, below "
+            "46 °C, and that rule beats every other. Battery life is "
+            "division: energy stored, divided by power drawn. The "
+            "numbers are illustrative, and estimates are marked."
+        ),
+        standard=(
+            "The R760 thermal twin's engine, shrunk to the machines "
+            "that sit on desks and laps: an Alienware laptop or tower "
+            "and the Pro Max Plus workstation with its discrete NPU. "
+            "Three mechanics that servers never meet. A load step opens "
+            "a burst window: the CPU runs at its short-term power limit "
+            "(PL2) and the GPU above its total graphics power (TGP), "
+            "then both fade to their sustained limits (PL1 and TGP). "
+            "One shared thermal budget is what CPU and GPU fight over. "
+            "A skin-temperature cap, the limit on how hot the case may "
+            "get where people touch it, has the final say. Add a "
+            "battery whose runtime is division, watt-hours over watts. "
+            "Every constant is sourced or marked as an estimate."
+        ),
+        expert=(
+            "Client power and thermal proxy model: PL2→PL1 fade "
+            "(τ ≈ 28 s) with a GPU excursion above TGP, a shared "
+            "heat-pipe budget that favors the GPU, a 46 °C skin "
+            "governor, and Wh ÷ W runtime. Constants are sourced or "
+            "flagged as estimates."
+        ),
+    ),
+    terms=[
+        Term(term="limit state", meaning="What is holding the chips back right now: the boost window, the sustained limits, the shared cooling budget, or the skin cap."),
+        Term(term="PL2 and PL1", meaning="The CPU's two power limits. PL2 is the short sprint allowed after a load step; PL1 is the pace it can hold indefinitely."),
+        Term(term="TGP", meaning="Total graphics power, the GPU's sustained power limit. It may run a little above it during the boost window."),
+        Term(term="skin temp", meaning="The temperature of the case where a person touches it. Above 46 °C the machine cuts power, whatever the fans are doing."),
+        Term(term="dB(A)", meaning="Fan noise as the ear weighs it. About 25 is a quiet room; each extra 10 sounds roughly twice as loud."),
+        Term(term="FPS proxy", meaning="A stand-in for game frame rate, scaled from the power the GPU receives. It is a model output, not a benchmark."),
+        Term(term="tok/s", meaning="Tokens per second, the speed of a language model. A token is about one word."),
+        Term(term="tok/J (engine) and tok/J (system)", meaning="Tokens per joule of energy. The engine figure divides by the working chip's watts alone; the system figure divides by the whole machine's watts, which is what the battery supplies."),
+    ],
+)
 
 # --- Explain-mode entries --------------------------------------------------
 
@@ -536,29 +623,42 @@ EXPLAINS = [
     Explain(
         id="tokens-per-joule",
         title="Tokens per joule",
-        equation="tok/J = tokens_per_second ÷ P_engine",
-        inputs=["engine", "token rate", "engine power", "efficiency"],
+        equation="tok/J (engine) = tok/s ÷ P_engine   ·   tok/J (system) = tok/s ÷ P_system",
+        inputs=["engine", "token rate", "engine power", "system power", "efficiency"],
         explanation=L(
             novice=(
                 "Speed says how fast the words come; tokens per joule "
-                "says what each word costs in energy. On a machine "
-                "with a battery and a fan, the cost is what you "
-                "actually feel — as runtime and as noise. The "
-                "dedicated AI chip loses the speed race and wins the "
-                "cost race, which is why it exists."
+                "says what each word costs in energy. The meter shows "
+                "the cost twice. The engine figure counts only the "
+                "chip doing the work. The system figure counts the "
+                "whole machine, screen and fans included, and that is "
+                "the one the battery feels. The dedicated AI chip "
+                "loses the speed race and wins the cost race on both "
+                "figures, by a wide margin at the chip and a smaller "
+                "one at the battery."
             ),
             standard=(
                 "Each engine has a characteristic rate at full power "
-                "(estimates: CPU ~6 tok/s, GPU ~45, NPU ~30) and a "
-                "power cost; the ratio is the instrument. The NPU's "
-                "~0.75 tok/J versus the GPU's ~0.4 is the entire "
-                "case for discrete inference silicon in a portable "
-                "chassis — the same watts buy roughly double the "
-                "words, and the fans stay near the floor doing it."
+                "(estimates: CPU ~6 tok/s, GPU ~45 in the boost "
+                "window and ~39 sustained, NPU ~30) and a power cost. "
+                "Per engine watt the NPU's ~0.75 tok/J is about "
+                "double the GPU's ~0.39. Per system watt the lead "
+                "shrinks to ~0.38 against ~0.30, about 1.3×, because "
+                "roughly 25 W of display, memory, storage and fans, "
+                "plus the two idle engines, runs under every leg. Battery runtime follows the "
+                "system figure; fan noise follows the engine watts. The "
+                "rates assume one model — ~13B-class, 4-bit weights — "
+                "run at the same precision on each engine, so the "
+                "comparison is between chips rather than between "
+                "quantizations."
             ),
             expert=(
-                "tok/J: NPU ≈ 0.75, GPU ≈ 0.4, CPU ≈ 0.1 (estimates). "
-                "The ratio is the product; tok/s is marketing."
+                "tok/J at the engine: NPU ≈ 0.75, GPU ≈ 0.39, CPU ≈ "
+                "0.11. At the system: ≈ 0.38 / 0.30 / 0.07. The ~25 W "
+                "platform floor plus idle engines dilutes the NPU's 1.9× to 1.3× "
+                "(estimates). One model, ~13B-class at 4-bit weights, "
+                "same precision on every engine — the ratios are "
+                "architectural, not a quantization artefact."
             ),
         ),
     ),

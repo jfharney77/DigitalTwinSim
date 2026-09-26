@@ -70,7 +70,8 @@ def test_the_boundary_is_drawn_and_the_sides_are_separate():
 
 
 def test_ai_memory_spans_both_npus():
-    """The 64 GB is one pool serving the whole card, not per-NPU — so it is
+    """The 64 GB is drawn as one block serving the whole card (physically
+    2 x 32 GB banks, one per NPU; a large model is sharded across both) — so it is
     drawn spanning both, and drawn large, because capacity is what decides
     which models the machine can run at all."""
     by_kind = _by_kind()

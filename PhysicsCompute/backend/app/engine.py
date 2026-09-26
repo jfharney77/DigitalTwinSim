@@ -54,6 +54,14 @@ def gpu_count(cfg: SystemConfig) -> int:
     return cfg.trays * 4
 
 
+def fan_wall_pmax_w(product: str) -> float:
+    """Whole fan wall at 100% rpm. The XE9680's 6U high-static wall uses
+    far bigger fans than the XE7745's."""
+    if product == "xe7745":
+        return C("fan_count_7745") * C("fan_pmax_w")
+    return C("fan_count_9680") * C("fan_pmax_9680_w")
+
+
 def gpu_tdp(cfg: SystemConfig) -> float:
     if cfg.product == "xe7745":
         return float(cfg.pcie_gpu_tdp_w)
@@ -71,10 +79,11 @@ def max_dc_w(cfg: SystemConfig) -> float:
             cfg.trays * (4 * C("tray_gpu_w") + 2 * C("tray_cpu_w") + C("tray_base_w"))
             + C("nvswitch_trays") * C("nvswitch_tray_w")
         )
-        return it + C("pump_w_max")
-    fans = (
-        C("fan_count_7745") if cfg.product == "xe7745" else C("fan_count_9680")
-    ) * C("fan_pmax_w")
+        # Tray fans for the residual air share ride on top (see simulate()).
+        return (it + C("pump_w_max")) / (
+            1.0 - C("rack_air_mover_w_per_w") * C("residual_air_fraction")
+        )
+    fans = fan_wall_pmax_w(cfg.product)
     nics = (cfg.nics if cfg.product == "xe9680" else 2) * C("nic_w")
     return (
         n * gpu_tdp(cfg)
@@ -103,9 +112,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     tdp = gpu_tdp(cfg)
     n_cpu = cfg.trays * 2 if liquid else 2
     cpu_tdp = C("tray_cpu_w") if liquid else float(cfg.cpu_tdp_w)
-    fan_n = 0 if liquid else int(
-        C("fan_count_7745") if product == "xe7745" else C("fan_count_9680")
-    )
+    fan_wall_w = 0.0 if liquid else fan_wall_pmax_w(product)
     nic_n = cfg.nics if product == "xe9680" else (0 if liquid else 2)
     base_w = (
         cfg.trays * C("tray_base_w") + C("nvswitch_trays") * C("nvswitch_tray_w")
@@ -205,11 +212,22 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 C("cpu_idle_fraction"), cpu_tdp, wl.cpu_pct / 100.0
             )
             nic_w = nic_n * C("nic_w")
-            fan_w = fan_n * C("fan_pmax_w") * (rpm / 100.0) ** 3
             pump_w = (
                 C("pump_w_max") * (flow_lpm / 240.0) if liquid else 0.0
             )
-            dc = gpu_w + cpu_w + nic_w + base_w + fan_w + pump_w
+            if liquid:
+                # The rack has no fan wall, but the residual air share is
+                # still moved by small tray fans. Their draw is a fixed
+                # cost per watt of air-side heat, and it is heat itself,
+                # so solve dc = subtotal + k·f·dc in closed form.
+                subtotal = gpu_w + cpu_w + nic_w + base_w + pump_w
+                dc = subtotal / (
+                    1.0 - C("rack_air_mover_w_per_w") * C("residual_air_fraction")
+                )
+                fan_w = dc - subtotal
+            else:
+                fan_w = fan_wall_w * (rpm / 100.0) ** 3
+                dc = gpu_w + cpu_w + nic_w + base_w + fan_w + pump_w
 
             # Wall side.
             if liquid:

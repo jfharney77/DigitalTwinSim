@@ -12,7 +12,7 @@ Per-product personalities, each pinned by tests:
   capability and moves the knee left (degradation, never outage).
 - **PowerMax** — component failures are decaying latency blips
   (`min_delivered_ratio > 0.99` under repeated kills); sync SRDF adds
-  distance × 0.01 ms/km × 2 to writes (speed of light, the app's one
+  distance × 0.005 ms/km × 2 to writes (speed of light, the app's one
   non-estimate performance constant); async RPO = backlog ÷ link, grows
   under bursts, drains after.
 - **PowerScale** — near-linear scale-out with a coordination tax;

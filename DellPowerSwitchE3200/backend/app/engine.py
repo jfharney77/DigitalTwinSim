@@ -8,8 +8,10 @@ plain data the renderer consumes. ``cycle_cost`` marks the long stages (the
 network-OS boot) so the UI dwells on them.
 
 The distinctive part is the '-ON' (Open Networking) path: the hardware boots
-ONIE (the Open Network Install Environment, a small bootloader-cum-installer),
-which hands off to a disaggregated network OS — SmartFabric OS10 on the
+ONIE (the Open Network Install Environment, a small install environment that
+runs only while no network OS is installed — later boots go from the boot
+loader straight to the NOS, per the ONIE project's own overview), which gives
+way to a disaggregated network OS — SmartFabric OS10 on the
 E3224F, Enterprise SONiC on the E3248 models — which then programs the
 switching ASIC. Wattages and timings are illustrative but plausible for a
 PoE edge switch; per the project's scope guardrails, favor a correct mental
@@ -22,7 +24,7 @@ from __future__ import annotations
 from .leveling import L
 from .models import BootState
 
-_FANS = [f"fan-{i}" for i in range(4)]
+_FANS = [f"fan-{i}" for i in range(3)]
 
 
 def simulate() -> list[BootState]:
@@ -199,44 +201,49 @@ def simulate() -> list[BootState]:
             label="ONIE bootloader",
             description=L(
                 novice=(
-                    "A small open installer runs. This is what the '-ON' in the "
-                    "product name means: instead of a fixed operating system welded "
-                    "to the hardware by the manufacturer, the switch boots a "
-                    "standard installer that either launches whichever network "
-                    "operating system is already in flash or, on a factory-fresh "
-                    "unit, fetches and installs one over the network. It is the "
-                    "layer that lets the same silicon run software from different "
-                    "suppliers."
+                    "The boot loader picks what to start. This is where the '-ON' "
+                    "in the product name shows up: instead of a fixed operating "
+                    "system welded to the hardware by the manufacturer, the switch "
+                    "ships with a small open installer called ONIE. On a "
+                    "factory-fresh unit, ONIE runs, goes out over the network, and "
+                    "fetches and installs whichever network operating system the "
+                    "owner chose. Once one is installed, every later start-up skips "
+                    "ONIE and goes straight to that system. It is the layer that "
+                    "lets the same hardware run software from different suppliers."
                 ),
                 plain=(
-                    "ONIE — the Open Network Install Environment — runs. This is "
-                    "what the '-ON' in E3200-ON means: instead of a fixed vendor "
-                    "OS, the switch boots a small open installer that either "
-                    "launches the network OS already in flash or, on a "
-                    "factory-fresh unit, fetches and installs one over the network. "
-                    "It is the disaggregation layer that lets the same silicon run "
-                    "OS10 or SONiC."
+                    "The boot loader chooses what to start, and ONIE — the Open "
+                    "Network Install Environment — is what the '-ON' in E3200-ON "
+                    "means. Instead of a fixed vendor OS, the switch ships with a "
+                    "small open installer. On a factory-fresh unit ONIE runs and "
+                    "fetches and installs a network OS over the network; once one "
+                    "is in flash, later boots bypass ONIE and start that OS "
+                    "directly. It is the disaggregation layer that lets the same "
+                    "silicon run OS10 or SONiC."
                 ),
                 standard=(
-                    "ONIE — the Open Network Install Environment — runs. This is "
-                    "what the '-ON' in E3200-ON means: instead of a fixed vendor "
-                    "OS, the switch boots a small open installer that either "
-                    "launches the network OS already installed in flash, or, on a "
-                    "factory-fresh unit, fetches and installs one over the network. "
-                    "It is the disaggregation layer that lets the same silicon run "
-                    "OS10 or SONiC."
+                    "The boot loader decides what runs next, and this is where "
+                    "ONIE — the Open Network Install Environment, the '-ON' in "
+                    "E3200-ON — sits. Instead of a fixed vendor OS, the switch "
+                    "ships with a small open install environment. On a "
+                    "factory-fresh unit ONIE runs, finds a network OS installer "
+                    "over the network and executes it; once a NOS is in flash, "
+                    "subsequent boots bypass ONIE and go straight to it. It is the "
+                    "disaggregation layer that lets the same silicon run OS10 or "
+                    "SONiC."
                 ),
                 technical=(
-                    "ONIE executes — the disaggregation layer behind the '-ON' "
-                    "designation. Rather than a vendor-welded OS, an open installer "
-                    "either chain-loads the resident NOS from flash or, on a "
-                    "factory unit, retrieves and installs one over the network. The "
+                    "Boot loader stage — home of ONIE, the disaggregation layer "
+                    "behind the '-ON' designation. With no NOS resident, ONIE boots, "
+                    "discovers an installer over the network and executes it; with "
+                    "a NOS in flash, GRUB's default entry is that NOS and ONIE is "
+                    "bypassed (it stays available for reinstall and rescue). The "
                     "same silicon therefore runs OS10 or SONiC."
                 ),
                 expert=(
-                    "ONIE: chain-loads the resident NOS or network-installs on a "
-                    "factory unit. The disaggregation layer — same silicon, OS10 or "
-                    "SONiC."
+                    "GRUB: default entry is the resident NOS; ONIE runs only for "
+                    "install, reinstall or rescue. The disaggregation layer — same "
+                    "silicon, OS10 or SONiC."
                 ),
             ),
             active_regions=["cpu"],
@@ -251,7 +258,7 @@ def simulate() -> list[BootState]:
             label="Network OS boots (OS10 / SONiC)",
             description=L(
                 novice=(
-                    "The longest stage. The installer hands off to the installed "
+                    "The longest stage. The boot loader starts the installed "
                     "network operating system and a full Linux control plane boots: "
                     "the kernel first, then the switching software and its "
                     "databases. This is where a switch spends most of its start-up "
@@ -259,7 +266,7 @@ def simulate() -> list[BootState]:
                     "while it tunes its memory."
                 ),
                 plain=(
-                    "The longest stage. The installer hands off to whichever "
+                    "The longest stage. The boot loader starts whichever "
                     "network operating system is installed — SmartFabric OS10 on "
                     "the E3224F, Enterprise SONiC on the E3248 models — and a "
                     "complete Linux control plane boots: the kernel first, then the "
@@ -268,7 +275,7 @@ def simulate() -> list[BootState]:
                     "server does while it trains memory."
                 ),
                 standard=(
-                    "The longest stage. ONIE hands off to the installed network "
+                    "The longest stage. The boot loader starts the installed network "
                     "operating system — SmartFabric OS10 on the E3224F, Enterprise "
                     "SONiC on the E3248 models — and a full Linux control plane "
                     "boots: kernel, then the switching stack and databases. This "
@@ -276,7 +283,7 @@ def simulate() -> list[BootState]:
                     "idle, exactly as a server does during memory training."
                 ),
                 technical=(
-                    "Max-dwell stage. ONIE hands off to the resident NOS — "
+                    "Max-dwell stage. GRUB loads the resident NOS — "
                     "SmartFabric OS10 on the E3224F, Enterprise SONiC on the E3248 "
                     "variants — and a full Linux control plane boots: kernel, then "
                     "switching stack and state databases. This dominates "

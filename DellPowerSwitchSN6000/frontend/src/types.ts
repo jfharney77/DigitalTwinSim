@@ -63,7 +63,17 @@ export type FabricPhase =
   | "collective"
   | "congestion"
   | "reroute"
-  | "steady";
+  | "steady"
+  // The gray-link failure scenario's own phases (backend/app/scenarios.py).
+  | "degrade"
+  | "blind"
+  | "telemetry"
+  | "steer"
+  | "drain"
+  | "replace"
+  | "restored";
+
+export type LinkStatus = "up" | "admin-down" | "training";
 
 export interface FabricState {
   step: number;
@@ -76,10 +86,39 @@ export interface FabricState {
   droppedPackets: number;
   elapsedSeconds: number;
   cycleCost: number;
+  // What losslessness costs (illustrative). hotLink is "<leaf id>:<spine id>",
+  // set only while that link is saturated.
+  hotLink: string | null;
+  ecnMarkedPercent: number;
+  pfcPausesPerSec: number;
+  // Failure-scenario fields; all at their nothing-is-wrong defaults on the
+  // healthy trace. sickLink is "<leaf id>:<spine id>".
+  sickLink: string | null;
+  sickLinkStatus: LinkStatus | null;
+  sickLinkLocated: boolean;
+  trafficSteered: boolean;
+  symbolErrorsPerSec: number;
+  retransmitsPerSec: number;
+  collectiveMs: number;
 }
 
 export interface FabricResponse {
   trace: FabricState[];
+  scenario: string;
+}
+
+export interface Scenario {
+  id: string;
+  name: string;
+  summary: string;
+  heroField: string | null;
+  heroLabel: string | null;
+  // Leveled page prose that belongs to the scenario.
+  intro: string;
+  telemetryNote: string;
+  playbackHint: string;
+  phases: string[];
+  sources: SourceLink[];
 }
 
 export interface CatalogOption {

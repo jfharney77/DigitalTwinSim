@@ -4,33 +4,138 @@
       "hash": "",
       "name": "simulator",
       "svg": true,
-      "visible": [".thermal-grid", ".scenario-list button", ".cfg-presets button", "label.cfg-row select", ".event-log"],
-      "text": ["Guided scenarios", "Instruments", "HX load (of 220 kW class)", "banks online", "dew-point margin", "click a pump to fail it"],
-      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+      "visible": [
+        ".thermal-grid",
+        ".scenario-list button",
+        ".cfg-presets button",
+        "label.cfg-row select",
+        ".event-log"
+      ],
+      "text": [
+        "Guided scenarios",
+        "Instruments",
+        "HX load (of 220 kW class)",
+        "banks online",
+        "dew-point margin",
+        "click a pump to fail it"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=warm-water-panic",
       "name": "scenario-warm-water-panic",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question"],
-      "text": ["Warm water day (panic)", "Strip charts"],
-      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question",
+        ".scenario-answer"
+      ],
+      "text": [
+        "Warm water day (panic)",
+        "Strip charts",
+        "energy delivered",
+        "IRC cap (Integrated Rack Controller; 100% = no slowdown)",
+        "Show the answer"
+      ],
+      "play": {
+        "click": "button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#scenario=warm-water-day",
+      "name": "scenario-warm-water-day",
+      "svg": true,
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question",
+        ".scenario-answer"
+      ],
+      "text": [
+        "Warm water day (coordinated)",
+        "energy delivered",
+        "heat moved",
+        "Show the answer"
+      ],
+      "play": {
+        "click": "button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=one-pump-down",
       "name": "scenario-one-pump-down",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["One pump down (N+1)"],
-      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "One pump down (N+1)"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=humid-morning",
       "name": "scenario-humid-morning",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["The dew-point floor"],
-      "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(> h2:text-is('Instruments'))", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "The dew-point floor"
+      ],
+      "play": {
+        "click": "button:text-is('Explain mode')",
+        "watch": ".an-panel:has(> h2:text-is('Instruments'))",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Full rack, leanest pumps",
+        "Ride out a chiller trip",
+        "A pump down on a warm day"
+      ]
+    },
+    {
+      "hash": "#lab=full-rack-lean-pumps",
+      "name": "lab-full-rack-lean-pumps",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

@@ -5,7 +5,10 @@ plan in `physics_specs/BUILD_PLAN.md`): the R760 thermal twin's engine
 generalized to the machines that sit on desks and laps. Two product
 personalities in one app — **Alienware** (laptop or desktop tower) and
 the **Dell Pro Max Plus** mobile workstation with its optional discrete
-NPU (Qualcomm AI-100-class).
+NPU (the Qualcomm AI 100 PC Inference Card). On the shipping Dell Pro Max
+16 Plus that card takes the discrete GPU's slot; the simulator keeps both so
+the GPU-vs-NPU comparison runs on one chassis, and says so in the UI. The
+promax presets use the real machine's 96 Wh pack and 280 W adapter.
 
 The mechanics servers never meet, each asserted in the tests:
 
@@ -43,10 +46,26 @@ the scheme that names both of this app's products ("Pro Max Plus" = the
 workstation brand's Plus tier). Served leveled from `GET /api/brandmap`,
 so the reading-level control applies to it like everything else. The 2026
 course corrections are labeled by sourcing strength: the XPS revival
-(CES 2026) is confirmed; the reported "Pro Max" → "Dell Pro Precision"
-workstation rename is marked *reported*, per the spec's `verify`
-discipline — `tests/test_brandmap.py` enforces the labeling, the tier
+(CES 2026) and the return of Precision as "Dell Pro Precision" (Dell's
+March 25, 2026 release, which also numbered the business notebooks Dell
+Pro 3/5/7) are confirmed by Dell; the model-by-model mapping and any
+retirement of the Pro Max name are marked *reported* — `tests/test_brandmap.py` enforces the labeling, the tier
 ladder, the placement of "Pro Max Plus", and the twin cross-links.
+
+## Graded labs (`#labs`, `#lab=<id>`)
+
+Three labs on the `docs/LAB_PATTERN.md` recipe (`backend/app/labs.py`, pure;
+`GET /api/labs`, `POST /api/labs/{id}/grade`; `tests/test_labs.py`). Every
+constraint is a criterion measured from the trace, delivered work is a rate
+averaged over the whole run (dark seconds count as zero), and the reference
+solutions stay server-side. Work proxies and scores are illustrative. On the
+static site the same `labs.py` grades in the browser under Pyodide.
+
+| Lab | Difficulty | The lesson |
+|---|---|---|
+| `charge-while-you-play` | 1 | The pack only gets the charger's surplus over the system, and the opening PL2/GPU boost sets the peak the charger must cover. |
+| `hour-of-tokens` | 2 | The battery divides by system watts, not engine watts: remove the passengers (idle GPU, spare RAM, background CPU), then run the NPU flat out. |
+| `warm-lap-no-clamp` | 3 | On a lap the skin cap limits total internal heat, and a tenth of the charge power is heat: a right-sized charger hands watts back to the chips. |
 
 ## Companions
 

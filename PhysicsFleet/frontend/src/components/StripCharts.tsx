@@ -1,4 +1,5 @@
 import type { SimState } from "../types";
+import { useLevel } from "../level";
 
 const WINDOW_D = 240;
 
@@ -60,6 +61,33 @@ function Chart({
   );
 }
 
+// The caption reads at the level the rest of the page does. The backend's
+// L(...) covers server prose; this is page chrome, so the three registers
+// live here, keyed the same way (1-2 novice, 3 standard, 4-5 expert).
+function caption(level: number): string {
+  if (level <= 2) {
+    return (
+      "The green line is how up to date the servers are. It drops every " +
+      "time an update is released and climbs back as the update is " +
+      "installed. How fast it climbs is the difference between patching " +
+      "by hand and letting the software do it — that choice is the Ops " +
+      "mode control — and the hours it costs are the top chart."
+    );
+  }
+  if (level >= 4) {
+    return (
+      "Version currency saws on the monthly release wave; the close rate " +
+      "is the ops mode, priced in the admin-hours strip."
+    );
+  }
+  return (
+    "Version currency falls on each monthly release wave and climbs back " +
+    "as patching lands. How fast a wave closes is the ops mode — " +
+    "automated or manual — and the hours it costs are the admin-hours " +
+    "strip at the top."
+  );
+}
+
 export function StripCharts({
   trace,
   cursor,
@@ -69,6 +97,7 @@ export function StripCharts({
   cursor: number;
   product: string;
 }) {
+  const level = useLevel();
   const upto = trace.slice(0, cursor + 1);
   const from = Math.max(0, upto.length - WINDOW_D);
   const win = upto.slice(from);
@@ -127,10 +156,7 @@ export function StripCharts({
           current={cur ? String(cur.vmsRunning) : "—"}
         />
       )}
-      <div className="mini">
-        The sawtooth in version currency is the monthly release wave; how
-        fast each tooth closes is the ops mode, priced in the top strip.
-      </div>
+      <div className="mini">{caption(level)}</div>
     </div>
   );
 }

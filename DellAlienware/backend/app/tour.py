@@ -286,14 +286,14 @@ def build_tour(anatomy: Anatomy) -> Tour:
                     "six-cell lithium-ion pack. This is the constant-current bulk "
                     "stage: a steady ~90 W while cell voltage rises, the regime "
                     "Dell sells as ExpressCharge and rates at roughly 80% in an "
-                    "hour lid-closed. "
+                    "hour with the computer off. "
                     "Near the top the charger switches to constant voltage and the "
                     "current tapers, which is why the last 20% is slow; a deeply "
                     "drained pack gets a gentle precharge first. Rates are "
                     "illustrative."
                 ),
                 expert=(
-                    "Lid-closed charge, 97 Wh 6-cell pack: CC bulk ~90 W "
+                    "Powered-off charge, 97 Wh 6-cell pack: CC bulk ~90 W "
                     "(ExpressCharge, ~80% in 1 h), then CV taper; precharge only "
                     "below 10%. Illustrative."
                 ),

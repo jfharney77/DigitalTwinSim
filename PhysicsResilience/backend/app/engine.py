@@ -66,7 +66,14 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     failed_restores = 0
     recovered = False
     rto_actual = 0.0
-    rpo_hours = 0.0
+    # The restore's two terms, kept apart so the UI can show them apart:
+    # hours deciding and validating, then hours moving bytes.
+    move_start_h = -1.0
+    restore_failed = False
+    rpo_realised = -1.0
+    outage_h = 0.0
+    peak_blast_gb = 0.0
+    repo_loss_logged = False
     # Fort Zero.
     compromised = False
     compromise_start = -1
@@ -130,19 +137,33 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                         source = "the newest backup"
                     if not any_ok:
                         restoring = False
+                        restore_failed = True
                         log.append(LogEntry(
                             t_h=t, severity="critical",
-                            message="No backup exists intact to restore from",
+                            message=(
+                                "No backup exists intact to restore from — "
+                                "every retained copy sat in the repository, "
+                                "and the repository was reachable"
+                            ),
                         ))
                     else:
-                        hours = (
-                            C("decision_hours")
-                            + cfg.estate_tb * 1000.0 / (cfg.restore_gbps * 3600.0)
-                        )
+                        decide_h = C("decision_hours")
+                        move_h = cfg.estate_tb * 1000.0 / (cfg.restore_gbps * 3600.0)
+                        hours = decide_h + move_h
                         restore_done_h = t + hours
+                        move_start_h = t + decide_h
+                        held = "the vault" if vault_ok else "the repository"
+                        clean_ts = [ts for ts, ok in repo_copies if ok] + \
+                            [ts for ts, ok in vault_copies if ok]
+                        rpo_realised = float(t - max(clean_ts))
                         log.append(LogEntry(
                             t_h=t, severity="info",
-                            message=f"Restore started from {source} — ≈ {hours:.0f} h of data movement",
+                            message=(
+                                f"Restore ordered from {source}, held in {held} — "
+                                f"≈ {decide_h:.0f} h deciding and validating + "
+                                f"≈ {move_h:.0f} h moving {cfg.estate_tb:g} TB at "
+                                f"{cfg.restore_gbps:g} GB/s ≈ {hours:.0f} h"
+                            ),
                         ))
             elif ev.action == "compromise":
                 compromised = True
@@ -175,6 +196,25 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         # reachable from production are encrypted too (spec 05's
         # devastating, common pattern, shown abstractly).
         if incident_active and not contained and repo_copies:
+            if not repo_loss_logged:
+                repo_loss_logged = True
+                held_vault = sum(1 for _, ok in vault_copies if ok)
+                log.append(LogEntry(
+                    t_h=t, severity="critical",
+                    message=(
+                        f"The backup repository is reachable from production: "
+                        f"all {len(repo_copies)} retained copies are corrupted "
+                        f"with it ({len(repo_copies)} backups taken so far, of "
+                        f"the {cfg.retention_copies} the policy keeps). "
+                        + (
+                            f"The vault is not reachable: {held_vault} copies "
+                            "stay intact behind the closed gap, one sync "
+                            "cycle behind the repository"
+                            if cfg.vault else
+                            "There is no vault, so no copy is out of reach"
+                        )
+                    ),
+                ))
             repo_copies = [(ts, False) for ts, _ in repo_copies]
         # Vault sync: the gap opens briefly on schedule; copies inside are
         # locked immutable and unreachable between windows.
@@ -246,9 +286,16 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
 
         # --- Recovery -------------------------------------------------------
         progress = 0.0
+        restore_stage = ""
         if restoring:
-            span = restore_done_h - restore_started
-            progress = min(100.0, 100.0 * (t - restore_started) / span) if span else 100.0
+            # Progress counts bytes moved, so it sits at zero through the
+            # decision hours and only then starts to climb.
+            span = restore_done_h - move_start_h
+            if t < move_start_h:
+                restore_stage = "deciding"
+            else:
+                restore_stage = "moving"
+                progress = min(100.0, 100.0 * (t - move_start_h) / span) if span else 100.0
             if t >= restore_done_h:
                 if restore_from_clean:
                     recovered = True
@@ -257,9 +304,18 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                     clean_tb = cfg.estate_tb
                     corrupted_tb = 0.0
                     incident_active = False
+                    restore_stage = ""
+                    outage_h = float(t - incident_start) if incident_start >= 0 else 0.0
                     log.append(LogEntry(
                         t_h=t, severity="info",
-                        message=f"Recovery complete — RTO {rto_actual:.0f} h",
+                        message=(
+                            f"Recovery complete — RTO {rto_actual:.0f} h, counted "
+                            "from the restore order"
+                            + (
+                                f"; {outage_h:.0f} h since the incident began"
+                                if incident_start >= 0 else ""
+                            )
+                        ),
                     ))
                 else:
                     failed_restores += 1
@@ -267,8 +323,12 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                         any(ok for _, ok in vault_copies)
                     if have_clean:
                         restore_from_clean = True
-                        restore_done_h = t + C("failed_restore_penalty_h") \
+                        move_start_h = t + C("failed_restore_penalty_h")
+                        restore_done_h = move_start_h \
                             + cfg.estate_tb * 1000.0 / (cfg.restore_gbps * 3600.0)
+                        clean_ts = [ts for ts, ok in repo_copies if ok] + \
+                            [ts for ts, ok in vault_copies if ok]
+                        rpo_realised = float(t - max(clean_ts))
                         log.append(LogEntry(
                             t_h=t, severity="critical",
                             message=(
@@ -278,6 +338,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                         ))
                     else:
                         restoring = False
+                        restore_failed = True
+                        restore_stage = ""
+                        rpo_realised = -1.0
                         log.append(LogEntry(
                             t_h=t, severity="critical",
                             message="Restored data was CORRUPT and no intact copy remains",
@@ -308,10 +371,13 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             else C("perimeter_policy_checks")
         )
 
+        transfer_h = cfg.estate_tb * 1000.0 / (cfg.restore_gbps * 3600.0)
         rto_estimate = (
-            rto_actual if recovered else
-            C("decision_hours") + cfg.estate_tb * 1000.0 / (cfg.restore_gbps * 3600.0)
+            rto_actual if recovered else C("decision_hours") + transfer_h
         )
+        if incident_active and incident_start >= 0 and not recovered:
+            outage_h = float(t - incident_start)
+        peak_blast_gb = max(peak_blast_gb, corrupted_tb * 1000.0)
 
         vault_intact = sum(1 for _, ok in vault_copies if ok)
         repo_intact = sum(1 for _, ok in repo_copies if ok)
@@ -323,8 +389,10 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
 
         region_load = {
             "estate": round(100.0 * corrupted_tb / cfg.estate_tb, 1),
+            # An empty repository (before the first backup) is quiet, not corrupt.
             "backup": round(
-                100.0 * (1.0 - repo_intact / max(len(repo_copies), 1)), 1
+                100.0 * (1.0 - repo_intact / len(repo_copies))
+                if repo_copies else 0.0, 1
             ),
             "gap": round(100.0 if (t - last_vault_sync) < 1 else 0.0, 1),
             "vault": round(0.0 if vault_intact else 50.0, 1),
@@ -357,6 +425,13 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             restoring=restoring,
             restore_progress_pct=round(progress, 1),
             rto_hours=round(rto_estimate, 1),
+            decision_hours=round(C("decision_hours"), 1),
+            transfer_hours=round(transfer_h, 1),
+            restore_stage=restore_stage,
+            restore_failed=restore_failed,
+            rpo_realised_h=round(rpo_realised, 1),
+            outage_hours=round(outage_h, 1),
+            peak_blast_gb=round(peak_blast_gb, 1),
             recovered=recovered,
             failed_restores=failed_restores,
             reachable_assets=reachable,
@@ -367,8 +442,10 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
 
     last = trace[-1]
     summary = Summary(
+        # Realised RPO: how old the clean copy was when the restore was
+        # ordered — the same number the instruments freeze on screen.
         rpo_hours=last.last_clean_point_age_h if not recovered else round(
-            max(detect_time, 0.0) + cfg.backup_every_h, 1
+            rpo_realised, 1
         ),
         rto_hours=round(rto_actual if recovered else last.rto_hours, 1),
         blast_radius_gb=last.blast_radius_gb if not recovered else round(

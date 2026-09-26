@@ -59,6 +59,40 @@ def test_congestion_actually_happens_and_is_survived():
     )
 
 
+def test_losslessness_is_paid_for_and_the_price_is_shown():
+    """Zero drops is not a free lunch. On the congestion step the fabric is
+    marking (ECN) and pausing (PFC), and both figures are on the trace so the
+    panel can show them beside the zero — the Ethernet counterpart of the
+    Quantum-X800 twin's sender-stall row. After the reroute the pauses stop
+    and the marks fall; before any traffic both are zero."""
+    trace = simulate()
+    peak = next(s for s in trace if s.phase == "congestion")
+    after = next(s for s in trace if s.phase == "reroute")
+    assert peak.ecn_marked_percent > 0 and peak.pfc_pauses_per_sec > 0
+    assert after.pfc_pauses_per_sec == 0
+    assert after.ecn_marked_percent < peak.ecn_marked_percent
+    for s in trace:
+        if s.fabric_tbps == 0:
+            assert s.ecn_marked_percent == 0 and s.pfc_pauses_per_sec == 0
+        if s.pfc_pauses_per_sec > 0:
+            assert s.peak_link_percent >= 90, "pauses only under saturation"
+
+
+def test_the_hot_link_is_one_adaptive_routing_can_relieve():
+    """The hotspot is a leaf-spine link, named exactly while it is saturated.
+    A rack's last hop has no alternate path, so crediting adaptive routing
+    with relieving it would be wrong; the hot link must have a sibling
+    through the other spine."""
+    ids = {r.id for r in ANATOMY.regions}
+    for s in simulate():
+        assert (s.hot_link is not None) == (s.peak_link_percent >= 90), s.step
+        if s.hot_link:
+            leaf, spine = s.hot_link.split(":")
+            assert leaf in ids and leaf.startswith("leaf-")
+            assert spine in ids and spine.startswith("spine-")
+            assert len(SPINES) > 1, "no alternate path to reroute onto"
+
+
 def test_adaptive_routing_relieves_without_losing_work():
     """After the reroute, the hot link must be measurably cooler while total
     throughput does not fall — the work did not shrink, it spread."""
@@ -120,7 +154,7 @@ def test_traffic_always_crosses_leaves_and_spines():
 
 
 def test_link_training_is_the_longest_stage():
-    """Training every link at 1.6 Tb/s is the single longest stage — as with
+    """Training every link at 800 Gb/s is the single longest stage — as with
     the R760's memory training and the XE9712's NVLink fabric, the UI dwells
     here."""
     trace = simulate()

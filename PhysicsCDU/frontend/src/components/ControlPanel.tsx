@@ -61,7 +61,7 @@ export function ControlPanel({
 
       <Row label={`Flow setpoint ${config.flowSetpointLpm} L/min`}>
         <input
-          type="range" min={200} max={400} step={10}
+          type="range" min={200} max={400} step={5}
           value={config.flowSetpointLpm}
           onChange={(e) => set({ flowSetpointLpm: +e.target.value })}
         />

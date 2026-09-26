@@ -4,12 +4,16 @@ is the naming scheme this app's two products live inside. Served from
 ``GET /api/brandmap`` so the reading-level mechanism applies server-side,
 like every other piece of teaching prose here.
 
-Verification status (checked August 2026): the 2025 three-brand scheme
-and its Base/Plus/Premium tiers are confirmed by CES 2025 coverage. Two
-2026 course-corrections are noted below — the XPS revival is widely
-reported (CES 2026); the "Dell Pro Max" → "Dell Pro Precision" workstation
-rename is reported by fewer outlets and is labeled accordingly in the
-prose rather than stated as settled fact.
+Verification status (fact-checked September 2026): the 2025 three-brand
+scheme and its Base/Plus/Premium tiers are confirmed by CES 2025 coverage.
+Two 2026 course-corrections are both confirmed by Dell's own releases —
+the XPS revival (CES 2026, January 6) and the return of Precision as
+"Dell Pro Precision" (March 25, 2026 commercial-PC release, which also
+introduced the numbered Dell Pro 3/5/7 notebooks). What stays labeled
+*reported*: the model-by-model mapping (Pro Precision 5/7 replacing Pro
+Max / Pro Max Premium, per Notebookcheck) and whether the Pro Max name
+is eventually retired — Dell still launched Pro Max products in March
+2026 (Pro Max 16, Pro Max with GB300).
 """
 
 from __future__ import annotations
@@ -64,7 +68,9 @@ BRANDS: list[Brand] = [
                 "and OptiPlex (business desktops). The same three-step "
                 "ladder applies, so a 'Dell Pro 14 Premium' is the "
                 "thin-and-light executive laptop, while a Base model "
-                "is the sturdy fleet workhorse."
+                "is the sturdy fleet workhorse. In 2026 Dell swapped "
+                "the Base and Plus words on its business laptops for "
+                "numbers: Dell Pro 3, 5, and 7."
             ),
             standard=(
                 "The commercial brand, née Latitude (mobile) and "
@@ -72,11 +78,15 @@ BRANDS: list[Brand] = [
                 "lifecycle stability over consumer flash. "
                 "Base/Plus/Premium maps the old sub-range spread — "
                 "Premium takes the old Latitude 9000-class slot. "
-                "Naming runs brand · size · tier: 'Dell Pro 14 Plus'."
+                "Naming runs brand · size · tier: 'Dell Pro 14 Plus'. "
+                "The March 2026 notebooks moved to numbered series — "
+                "Dell Pro 3, 5, and 7 — with Premium reported to "
+                "remain above them."
             ),
             expert=(
                 "Commercial. Latitude + OptiPlex. Premium ≈ old "
-                "9000-class. Brand · size · tier naming."
+                "9000-class. Brand · size · tier naming (2025); "
+                "Pro 3/5/7 numbering from Mar 2026."
             ),
         ),
     ),
@@ -94,10 +104,12 @@ BRANDS: list[Brand] = [
                 "product lives here: the 'Pro Max Plus' is the "
                 "middle-tier mobile workstation, and its optional "
                 "dedicated AI chip is what the simulator's "
-                "tokens-per-joule instrument is about. In 2026, "
-                "several reports say Dell began renaming these "
-                "machines 'Dell Pro Precision', bringing the old "
-                "name back — treat that as reported, not settled."
+                "tokens-per-joule instrument is about. In March 2026 "
+                "Dell brought the old name back as 'Dell Pro "
+                "Precision' for its new workstations. Some machines "
+                "still carry the Pro Max name, and it is reported — "
+                "not settled — that the name will fade out as models "
+                "are replaced."
             ),
             standard=(
                 "The workstation brand, née Precision: ISV-certified "
@@ -106,15 +118,19 @@ BRANDS: list[Brand] = [
                 "the Plus tier of this brand, the mobile workstation "
                 "with the discrete AI-100-class NPU option (see the "
                 "DellProMaxPlus narrative twin and this simulator's "
-                "promax personality). 2026 update, reported but less "
-                "uniformly sourced than the XPS revival: the Pro Max "
-                "name giving way to 'Dell Pro Precision' for new "
-                "workstations."
+                "promax personality; the shipping product is the 'Dell "
+                "Pro Max 16 Plus'). 2026 update: Dell's March 25, 2026 "
+                "release brought Precision back as 'Dell Pro "
+                "Precision' for new workstations. Reported by trade "
+                "press rather than stated by Dell: Pro Precision 5 and "
+                "7 succeed the Pro Max and Pro Max Premium laptops, "
+                "while Pro Max continues on a few AI-focused systems."
             ),
             expert=(
                 "Workstation. Précision → Pro Max (2025); 'Pro Max "
-                "Plus' = this app's promax subject. Reported 2026: "
-                "→ 'Dell Pro Precision'."
+                "Plus' = this app's promax subject. Mar 2026: Dell "
+                "Pro Precision returns (Dell PR); model mapping and "
+                "Pro Max's retirement are reported, not stated."
             ),
         ),
     ),
@@ -164,7 +180,8 @@ BRAND_MAP = BrandMap(
             "gaming laptop, and a 'Pro Max Plus' workstation — the "
             "Plus tier of the Pro Max brand. One footnote from a year "
             "later: customers pushed back hard enough that Dell "
-            "brought the XPS name back in 2026."
+            "brought the XPS name back in 2026, and the Precision name "
+            "too, as 'Dell Pro Precision'."
         ),
         standard=(
             "Dell's January 2025 client rebrand collapsed the legacy "
@@ -176,17 +193,17 @@ BRAND_MAP = BrandMap(
             "stayed itself. The scheme is why this app's products are "
             "named as they are: the promax personality is the 'Pro "
             "Max Plus', i.e. the Plus tier of the workstation brand. "
-            "Two 2026 corrections are noted honestly: XPS returned at "
-            "CES 2026 (widely reported), and the Pro Max name is "
-            "reportedly giving way to 'Dell Pro Precision' (less "
-            "uniformly sourced)."
+            "Two 2026 corrections, both from Dell's own releases: XPS "
+            "returned at CES 2026, and Precision returned in March "
+            "2026 as 'Dell Pro Precision'. How far the Pro Max name "
+            "recedes is reported rather than stated."
         ),
         expert=(
             "CES 2025: Dell / Dell Pro / Dell Pro Max × "
             "Base/Plus/Premium, brand · size · tier; Alienware exempt. "
             "'Pro Max Plus' = workstation brand, Plus tier — this "
-            "app's promax. 2026: XPS revived; Pro Max → 'Pro "
-            "Precision' reported."
+            "app's promax. 2026: XPS revived (CES); Dell Pro "
+            "Precision returns (Mar 25); Pro Max retirement reported."
         ),
     ),
     naming_note=L(
@@ -198,31 +215,41 @@ BRAND_MAP = BrandMap(
         standard=(
             "Names run brand · size · tier: 'Dell Pro 14 Premium' is "
             "the business brand's 14-inch top tier; tier omitted "
-            "means Base. Desktops and towers follow the same pattern."
+            "means Base. Desktops put the form factor where the size "
+            "goes: 'Dell Pro Max Tower', 'Dell Pro Slim'."
         ),
         expert=("Brand · size · tier; omitted tier = Base."),
     ),
     since_note=L(
         novice=(
-            "What changed after 2025: at CES 2026 Dell admitted the "
-            "backlash was right and brought back the XPS name for its "
-            "best consumer laptops. Several reports also say the "
-            "workstation line is being renamed from 'Pro Max' to "
-            "'Dell Pro Precision' — that one is less certain, so this "
-            "page labels it as reported rather than fact."
+            "What changed after 2025: at CES 2026 Dell brought back "
+            "the XPS name for its best consumer laptops. In March "
+            "2026 it brought back Precision as well — new "
+            "workstations are 'Dell Pro Precision' — and gave its "
+            "business laptops numbers: Dell Pro 3, 5, and 7. Both "
+            "come from Dell's own announcements. Which exact model "
+            "replaces which, and whether the Pro Max name disappears "
+            "completely, is reported by the press rather than said "
+            "by Dell, so this page labels it that way."
         ),
         standard=(
-            "Status as of August 2026: the XPS revival is confirmed "
-            "and widely covered (CES 2026, XPS 14/16 first); the "
-            "reported 'Pro Max' → 'Dell Pro Precision' workstation "
-            "rename has thinner sourcing and is labeled as reported "
-            "throughout this page. The 2025 tier structure itself — "
-            "Base/Plus/Premium — remains in use across the Dell and "
-            "Dell Pro ranges."
+            "Status as of September 2026: the XPS revival is "
+            "confirmed by Dell (CES 2026 release: XPS 14 and 16 "
+            "first, XPS 13 later in the year). Dell's March 25, 2026 "
+            "commercial release confirms 'Dell Pro Precision' "
+            "workstations and numbered Dell Pro 3/5/7 notebooks, so "
+            "the Base/Plus wording is receding from the business "
+            "range. Reported by Notebookcheck rather than stated by "
+            "Dell: Pro Precision 5 replaces the Pro Max laptop and "
+            "Pro Precision 7 the Pro Max Premium. Pro Max has not "
+            "vanished — Dell launched a Pro Max 16 and a Pro Max with "
+            "GB300 the same month — and this app's subject, the Pro "
+            "Max 16 Plus, keeps its 2025 name."
         ),
         expert=(
-            "Aug 2026: XPS revival confirmed; 'Pro Precision' rename "
-            "reported, unconfirmed. Tier ladder unchanged."
+            "Sep 2026: XPS revival and Dell Pro Precision both "
+            "confirmed by Dell; Dell Pro → 3/5/7. Model mapping and "
+            "Pro Max retirement reported only."
         ),
     ),
     sources=[
@@ -234,6 +261,14 @@ BRAND_MAP = BrandMap(
          "url": "https://www.windowscentral.com/hardware/dell/dell-xps-returns-in-2026-after-rebrand-flop"},
         {"label": "ChannelPro — Dell at CES 2026: XPS revival",
          "url": "https://www.channelpronetwork.com/2026/01/08/dell-revives-xps-brand-new-displays/"},
+        {"label": "Dell — CES 2026 press release: XPS returns (January 6, 2026)",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~1~dell-technologies-at-ces-2026.htm"},
+        {"label": "Dell — commercial PC press release: Dell Pro Precision, Dell Pro 3/5/7 (March 25, 2026)",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~03~dell-reimagines-commercial-pcs-with-new-sleek-and-powerful-designs.htm"},
+        {"label": "Notebookcheck — 2026 Dell Pro hands-on: numbered naming, Pro Precision 5/7 replace Pro Max (reported)",
+         "url": "https://www.notebookcheck.net/Dell-is-back-in-the-laptop-game-2026-Dell-Pro-laptops-hands-on.1271200.0.html"},
+        {"label": "StorageReview — Dell's March 2026 workstation lineup: Pro Precision alongside Pro Max 16 and Pro Max with GB300",
+         "url": "https://www.storagereview.com/news/dell-expands-professional-workstation-portfolio-with-new-precision-and-pro-max-systems"},
         {"label": "DellProMaxPlus narrative twin (this repo) — the on-device inference data path",
          "url": "http://localhost:5186/"},
         {"label": "DellAlienware narrative twin (this repo) — the AC power path",

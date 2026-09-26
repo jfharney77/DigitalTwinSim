@@ -11,11 +11,17 @@ function fmtW(w: number): string {
 
 const PL_LABEL: Record<SimState["plState"], string> = {
   "idle": "idle",
-  "pl2-boost": "PL2 boost — the sprint",
-  "pl1": "PL1 sustained",
+  "pl2-boost": "boost window — CPU at PL2, GPU above TGP",
+  "pl1": "sustained limits — CPU at PL1, GPU at TGP",
   "skin-limited": "SKIN-LIMITED — the case has the last word",
   "budget-limited": "BUDGET-LIMITED — CPU and GPU sharing one cooler",
 };
+
+function engineW(s: SimState): number {
+  if (s.activeEngine === "npu") return s.npuPowerW;
+  if (s.activeEngine === "gpu") return s.gpuPowerW;
+  return s.cpuPowerW;
+}
 
 function substituted(id: string, s: SimState): string {
   switch (id) {
@@ -33,7 +39,7 @@ function substituted(id: string, s: SimState): string {
       return `${(s.acInputW * s.psuEfficiency).toFixed(0)} + ${s.batteryDischargeW.toFixed(0)} = ${s.systemPowerW.toFixed(0)} + ${s.chargeW.toFixed(0)} W`;
     case "tokens-per-joule":
       return s.activeEngine
-        ? `${s.tokensPerS.toFixed(1)} tok/s ÷ engine W = ${s.tokensPerJoule.toFixed(2)} tok/J (${s.activeEngine.toUpperCase()})`
+        ? `${s.tokensPerS.toFixed(1)} tok/s ÷ ${engineW(s).toFixed(0)} W engine = ${s.tokensPerJoule.toFixed(2)} · ÷ ${s.systemPowerW.toFixed(0)} W system = ${s.systemTokensPerJoule.toFixed(2)} tok/J (${s.activeEngine.toUpperCase()})`
         : "no inference running";
     default:
       return "";
@@ -45,13 +51,20 @@ export function Instruments({
   explains,
   explainOn,
   hasBattery = true,
+  requestedEngine = null,
 }: {
   state: SimState | null;
   explains: Explain[];
   explainOn: boolean;
   hasBattery?: boolean;   // the desktop tower has no pack to gauge
+  // The engine the live workload is named after. When the build does not
+  // carry it the engine falls back (NPU -> GPU -> CPU), and the readout
+  // has to say so or a CPU result gets recorded as an NPU one.
+  requestedEngine?: SimState["activeEngine"];
 }) {
   const s = state;
+  const fellBack =
+    !!requestedEngine && !!s?.activeEngine && requestedEngine !== s.activeEngine;
   const ex = (id: string) => explains.find((e) => e.id === id);
 
   const Info = ({ id }: { id: string }) => {
@@ -87,6 +100,14 @@ export function Instruments({
       )}
       {s && !s.poweredOn && (
         <div className="mini rule-error">■ POWERED OFF — see the event log</div>
+      )}
+      {fellBack && (
+        <div className="mini rule-warning">
+          ▼ No {requestedEngine!.toUpperCase()} in this build — the run fell
+          back to the {s!.activeEngine!.toUpperCase()}. The tokens/s and
+          tokens/joule figures below are {s!.activeEngine!.toUpperCase()}
+          {" "}numbers.
+        </div>
       )}
       {s && (s.plState === "skin-limited" || s.plState === "budget-limited") && (
         <div className="mini rule-warning">▼ {PL_LABEL[s.plState]}</div>
@@ -126,18 +147,30 @@ export function Instruments({
       <div className="stat"><span>fans · noise</span><span>{s ? `${s.fanRpmPct.toFixed(0)}% · ${s.noiseDba.toFixed(0)} dB(A)` : "—"}</span></div>
       <div className="stat"><span>FPS proxy</span><span>{s && !s.activeEngine ? s.fpsProxy.toFixed(0) : "—"}</span></div>
       <div className="stat">
-        <span>inference</span>
         <span>
-          {s && s.activeEngine
-            ? `${s.tokensPerS.toFixed(1)} tok/s · ${s.tokensPerJoule.toFixed(2)} tok/J`
-            : "—"}
+          inference
+          {s?.activeEngine
+            ? fellBack
+              ? ` — ${requestedEngine!.toUpperCase()} not fitted, running on the ${s.activeEngine.toUpperCase()}`
+              : ` on the ${s.activeEngine.toUpperCase()}`
+            : ""}
         </span>
+        <span>{s && s.activeEngine ? `${s.tokensPerS.toFixed(1)} tok/s` : "—"}</span>
+      </div>
+      <div className="stat">
+        <span>tok/J (engine watts)</span>
+        <span>{s && s.activeEngine ? s.tokensPerJoule.toFixed(2) : "—"}</span>
+      </div>
+      <div className="stat">
+        <span>tok/J (system watts)</span>
+        <span>{s && s.activeEngine ? s.systemTokensPerJoule.toFixed(2) : "—"}</span>
       </div>
       <Info id="tokens-per-joule" />
       <div className="mini" style={{ marginTop: 6 }}>
-        A proxy model, not a benchmark: most constants are estimates (each
-        carries a source tag in the backend table). The relationships are
-        the point — watch what limits what.
+        A proxy model, not a benchmark: most constants are estimates, each
+        carrying its units and a source tag in the model's constants file
+        (backend/app/constants.py, served raw at /api/constants). The
+        relationships are the point — watch what limits what.
       </div>
     </div>
   );

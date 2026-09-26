@@ -16,8 +16,8 @@ This repo's VxRail twin models the opposite bargain, and the two are meant
 to be read together. Hyperconverged infrastructure fused compute and
 storage into one node and bought real, substantial simplicity with that
 coupling. The price was paid in two currencies. You scale in fixed ratios,
-so needing storage means buying processors as well, and estates routinely
-end up with a third more of one resource than they will ever use — racked,
+so once the drive bays are full, needing storage means buying processors as
+well, and estates commonly end up with a surplus of one resource — racked,
 powered, and depreciating. And the software stack that performs the magic
 is the stack you are married to for the life of the estate.
 
@@ -25,7 +25,8 @@ Disaggregation un-buys the coupling while keeping most of the simplicity,
 because a single control plane now provides what the fused node used to.
 Compute, storage, and networking are pooled separately and bought
 separately; the hypervisor becomes a swappable layer — VMware, Red Hat,
-Nutanix (added February 2026), or Microsoft. Dell cites research that 52%
+Nutanix AHV (added February 2026), or Microsoft Azure Local (June 2026).
+Dell cites Gartner research that 52%
 of IT leaders are weighing multiple hypervisors to reduce lock-in.
 
 Worth being honest about why this is possible now rather than in 2012. The
@@ -36,7 +37,10 @@ the compromise stopped being necessary.
 
 Two counters carry the claim. ``workloads`` and
 ``workload_downtime_seconds`` hold still through both the storage expansion
-and the hypervisor migration, and ``control_planes`` stays at one even with
+and the hypervisor migration (the counter is *service-level* downtime: there
+is no cross-hypervisor live migration, so each VM takes a short scheduled
+cutover restart, rolled through redundant instances — the switch step says
+so at every reading level), and ``control_planes`` stays at one even with
 two hypervisors running — because multi-hypervisor is not worth having if
 it also means multi-management. ``tests/test_engine.py`` asserts both.
 
@@ -433,22 +437,25 @@ def simulate() -> list[CloudState]:
                     "They run out of space, so they add 200 TB more storage. "
                     "Now look at the server count: still forty-eight. "
                     "Nothing was added there. This is the moment the whole "
-                    "design pays off. In the all-in-one approach, more space "
+                    "design pays off. In the all-in-one approach, once the "
+                    "drive slots in the existing boxes are full, more space "
                     "means buying another complete box, and that box arrives "
                     "with processors and memory whether or not anyone needed "
                     "them — sitting in the rack, drawing power, losing value "
-                    "every year. That is not a rare mistake. It is what "
-                    "normally happens, and it is why so many organizations "
-                    "own far more of one resource than they will ever use."
+                    "every year. That is not a rare mistake. It is a common "
+                    "outcome, and it is why organizations can end up owning "
+                    "noticeably more of one resource than they will ever use."
                 ),
                 plain=(
                     "Capacity runs short, so 200 TB of storage is added. The "
                     "compute figure does not move: still forty-eight "
-                    "servers. On a hyperconverged cluster the same need is "
-                    "met by adding nodes, and a node brings processors and "
-                    "memory along whether or not there is demand for them — "
-                    "so the estate ends up owning compute it does not need, "
-                    "racked, powered, licensed, and losing value. There is "
+                    "servers. On a hyperconverged cluster, spare drive bays "
+                    "can take more drives, but once they are full the same "
+                    "need is met by adding nodes, and a node brings "
+                    "processors and memory along whether or not there is "
+                    "demand for them — so the estate ends up owning compute "
+                    "it does not need, racked, powered, licensed, and losing "
+                    "value. There is "
                     "also a lifecycle point: servers and storage wear out on "
                     "different schedules, and fusing them forces the shorter "
                     "schedule on both."
@@ -456,32 +463,41 @@ def simulate() -> list[CloudState]:
                 standard=(
                     "The estate runs short of capacity, so 200 TB more "
                     "storage is added. Look at the compute figure: "
-                    "unchanged, at forty-eight. On a hyperconverged cluster "
-                    "this same need would have been met by adding nodes, and "
-                    "nodes bring processors and memory whether or not there "
-                    "is any demand for them — so the estate would now own "
-                    "compute it does not need, racked, powered, licensed, "
-                    "and depreciating. That is not a hypothetical "
-                    "inefficiency; it is the routine outcome, and it is why "
-                    "estates so often carry a third more of one resource "
-                    "than they will ever use. There is also a lifecycle "
+                    "unchanged, at forty-eight. A hyperconverged cluster "
+                    "with empty drive bays can absorb some growth by adding "
+                    "drives, but once the bays are full this same need is "
+                    "met by adding nodes, and nodes bring processors and "
+                    "memory whether or not there is any demand for them — "
+                    "so the estate would now own compute it does not need, "
+                    "racked, powered, licensed, and depreciating. "
+                    "Hyperconvergence has its own partial answers (VxRail "
+                    "Dynamic Nodes, which carry no drives and mount "
+                    "external storage, are one), and they work by "
+                    "disaggregating. The surplus is a common outcome "
+                    "rather than a hypothetical one, though its size "
+                    "varies by estate. There is also a lifecycle "
                     "version of the same point: servers and storage have "
                     "genuinely different useful lives, and fusing them "
                     "imposes the shorter one on both."
                 ),
                 technical=(
                     "Capacity short, so 200 TB is added and compute holds at "
-                    "48. On HCI the same requirement is met by adding nodes, "
-                    "which drag processors and memory in at the SKU ratio — "
-                    "stranded capacity, racked, powered, licensed, "
-                    "depreciating. It is the routine outcome, not an edge "
-                    "case. The lifecycle argument is the same shape: compute "
+                    "48. On HCI, once the drive bays are full, the same "
+                    "requirement is met by adding nodes, which drag "
+                    "processors and memory in at the SKU ratio — stranded "
+                    "capacity, racked, powered, licensed, depreciating. "
+                    "HCI's own remedies (VxRail Dynamic Nodes, vSAN Max, "
+                    "remote datastores) decouple the ratio by "
+                    "disaggregating, which concedes the argument. The "
+                    "lifecycle argument is the same shape: compute "
                     "and storage have different useful lives, and fusion "
                     "imposes the shorter on both."
                 ),
                 expert=(
-                    "+200 TB, compute unchanged at 48. HCI meets this by "
-                    "node addition at a fixed SKU ratio, stranding compute. "
+                    "+200 TB, compute unchanged at 48. HCI with full bays "
+                    "meets this by node addition at a fixed SKU ratio, "
+                    "stranding compute; Dynamic Nodes and vSAN Max escape "
+                    "that by disaggregating, which is the point conceded. "
                     "Same argument applies to refresh cadence: fusion "
                     "imposes the shorter useful life on both resources."
                 ),
@@ -509,9 +525,18 @@ def simulate() -> list[CloudState]:
                     "virtualization platforms is genuinely hard work. Files "
                     "have to be converted, everything has to be retested, "
                     "and small details often do not carry across cleanly. "
-                    "Nobody should tell you this is easy. The point is that "
-                    "it is *possible at all*, and that the applications keep "
-                    "running while it happens. With the all-in-one approach "
+                    "Nobody should tell you this is easy. No tool can slide "
+                    "a running virtual machine from one make of hypervisor "
+                    "to another. Each machine is copied across while it "
+                    "keeps working, then switched over with a short planned "
+                    "restart of a few minutes, one machine at a time, at a "
+                    "quiet hour. The services people use stay up because "
+                    "each one runs on several machines and only one of them "
+                    "restarts at a time. So the downtime figure of zero "
+                    "counts services, not single machines, and it is an "
+                    "illustrative target, not a promise from Dell. The point "
+                    "is that the move is *possible at all* without the whole "
+                    "organization stopping. With the all-in-one approach "
                     "the alternative is not a slow move — it is buying an "
                     "entirely new set of equipment."
                 ),
@@ -522,10 +547,18 @@ def simulate() -> list[CloudState]:
                     "honestly: migrating workloads between virtualization "
                     "platforms means converting disk formats, retesting "
                     "everything, and handling the details that do not "
-                    "translate cleanly. The freedom is real but it is not "
-                    "free, and anyone selling it as effortless is selling "
-                    "something. What matters is that it is possible at all, "
-                    "and that the workloads stay up while it happens."
+                    "translate cleanly. There is no live migration between "
+                    "different hypervisors: each virtual machine is "
+                    "replicated while it runs, then takes a short scheduled "
+                    "cutover restart on the new platform, a few minutes "
+                    "each, one at a time. Services stay up because the "
+                    "cutovers roll through redundant instances. The "
+                    "downtime figure of zero therefore counts service-level "
+                    "downtime, not per-machine restarts, and it is "
+                    "illustrative. The freedom is real but it is not free, "
+                    "and anyone selling it as effortless is selling "
+                    "something. What matters is that it is possible at all "
+                    "without an estate-wide outage."
                 ),
                 standard=(
                     "The long stage, and the one that justifies the whole "
@@ -536,11 +569,22 @@ def simulate() -> list[CloudState]:
                     "workloads between virtualization platforms is real "
                     "work, involving format conversion, testing, and a great "
                     "deal of care about the things that do not translate "
-                    "cleanly. The freedom is genuine but it is not free, and "
-                    "anyone selling it as effortless is selling something. "
-                    "What matters is that it is *possible* at all, and that "
-                    "the workloads stay up throughout — the alternative, in "
-                    "a coupled architecture, is not a slow migration but a "
+                    "cleanly. There is no live migration across hypervisors, "
+                    "as this twin's own catalog says: live migration within "
+                    "one, conversion between them. Each virtual machine is "
+                    "replicated while it runs and then takes a brief "
+                    "scheduled cutover, a power-off on VMware and a boot on "
+                    "Nutanix, minutes per machine. The downtime counter "
+                    "reads zero because it counts service-level downtime: "
+                    "cutovers roll one machine at a time through redundant "
+                    "instances, in maintenance windows, so no service goes "
+                    "dark and all 120 workloads still exist at the end. "
+                    "That zero is an illustrative target, not a sourced "
+                    "Dell figure. The freedom is genuine but it is not "
+                    "free, and anyone selling it as effortless is selling "
+                    "something. What matters is that it is *possible* "
+                    "without an estate-wide outage — the alternative, in a "
+                    "coupled architecture, is not a slow migration but a "
                     "new estate."
                 ),
                 technical=(
@@ -549,18 +593,30 @@ def simulate() -> list[CloudState]:
                     "since February 2026 — while the rest stays on VMware. "
                     "It is slow and the trace says so: format conversion, "
                     "regression testing, and the guest tooling, snapshot, "
-                    "and network constructs that do not translate. The "
-                    "freedom is real and not free. The claim is that it is "
-                    "possible without an outage; in a coupled architecture "
+                    "and network constructs that do not translate. No "
+                    "cross-hypervisor live migration exists: tools "
+                    "replicate, then take a per-VM cutover (power off, "
+                    "convert, boot on the target), minutes each. The "
+                    "counter's zero is service-level downtime, reached by "
+                    "rolling cutovers through redundant instances in "
+                    "maintenance windows; single-instance machines take a "
+                    "planned restart that the counter does not count. It is "
+                    "illustrative, not a Dell figure. The freedom is real "
+                    "and not free. The claim is no estate-wide outage and "
+                    "no rebuild; in a coupled architecture "
                     "the alternative is not a slow migration but a new "
                     "estate."
                 ),
                 expert=(
                     "Partial migration to Nutanix, VMware retained. "
                     "Expensive — format conversion, regression, untranslated "
-                    "guest tooling and network constructs. Claim is "
-                    "feasibility without outage, not speed. Coupled "
-                    "alternative is a rebuild, not a migration."
+                    "guest tooling and network constructs. No ESXi-to-AHV "
+                    "live migration: replicate, then per-VM cutover "
+                    "(power-off, boot on target), minutes each, nonzero. "
+                    "The 0 s counter is service-level downtime under "
+                    "rolling, scheduled cutovers behind app redundancy; "
+                    "illustrative, not vendor-sourced. Claim is no "
+                    "estate-wide outage and no rebuild, not speed."
                 ),
             ),
             active_regions=[

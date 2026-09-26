@@ -1,9 +1,11 @@
+import { apiFetch } from "@twinsim/twin-ui";
 import { getLevel } from "./level";
 import type { TourResponse } from "@twinsim/twin-ui";
 import type {
   CatalogCategory,
   FabricAnatomy,
   FabricResponse,
+  Scenario,
   UseCase,
 } from "./types";
 
@@ -17,31 +19,40 @@ function url(path: string): string {
 }
 
 export async function fetchAnatomy(): Promise<FabricAnatomy> {
-  const r = await fetch(url("/anatomy"));
+  const r = await apiFetch(url("/anatomy"));
   if (!r.ok) throw new Error(`anatomy ${r.status}`);
   return r.json();
 }
 
-export async function fetchFabric(): Promise<FabricResponse> {
-  const r = await fetch(url("/fabric"));
+// The healthy trace is the endpoint's default, so it is requested exactly as
+// it was before scenarios existed.
+export async function fetchFabric(scenario = "healthy"): Promise<FabricResponse> {
+  const q = scenario === "healthy" ? "" : `&scenario=${encodeURIComponent(scenario)}`;
+  const r = await apiFetch(url("/fabric") + q);
   if (!r.ok) throw new Error(`fabric ${r.status}`);
   return r.json();
 }
 
+export async function fetchScenarios(): Promise<Scenario[]> {
+  const r = await apiFetch(url("/scenarios"));
+  if (!r.ok) throw new Error(`scenarios ${r.status}`);
+  return r.json();
+}
+
 export async function fetchCatalog(): Promise<CatalogCategory[]> {
-  const r = await fetch(url("/catalog"));
+  const r = await apiFetch(url("/catalog"));
   if (!r.ok) throw new Error(`catalog ${r.status}`);
   return r.json();
 }
 
 export async function fetchUseCases(): Promise<UseCase[]> {
-  const r = await fetch(url("/usecases"));
+  const r = await apiFetch(url("/usecases"));
   if (!r.ok) throw new Error(`usecases ${r.status}`);
   return r.json();
 }
 
 export async function fetchTour(): Promise<TourResponse> {
-  const r = await fetch(url("/tour"));
+  const r = await apiFetch(url("/tour"));
   if (!r.ok) throw new Error(`tour ${r.status}`);
   return r.json();
 }

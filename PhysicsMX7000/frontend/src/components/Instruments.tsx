@@ -32,10 +32,16 @@ export function Instruments({
   state,
   explains,
   explainOn,
+  sledKinds,
+  selectedSlot,
+  onSelectSlot,
 }: {
   state: SimState | null;
   explains: Explain[];
   explainOn: boolean;
+  sledKinds: ("compute" | "storage" | "empty")[];
+  selectedSlot: number;
+  onSelectSlot: (slot: number) => void;
 }) {
   const s = state;
   const ex = (id: string) => explains.find((e) => e.id === id);
@@ -72,6 +78,29 @@ export function Instruments({
       <div className="stat"><span>wall (AC) power</span><span>{s ? fmtW(s.acPowerW) : "—"}</span></div>
       <Info id="wall-power" />
       <div className="stat"><span>sled power (Σ 8 bays)</span><span>{s ? fmtW(sledTotal) : "—"}</span></div>
+      {/* The per-sled list: the evidence for "seven unchanged, one
+          climbing". Click a row to edit that sled's workload. */}
+      <div className="sled-list" aria-label="Power per sled">
+        {sledKinds.map((kind, i) => (
+          <button
+            key={i}
+            type="button"
+            className={`stat sled-row${i === selectedSlot ? " active" : ""}`}
+            onClick={() => onSelectSlot(i)}
+          >
+            <span>
+              sled {i + 1}
+              {kind === "storage" ? " · storage" : kind === "empty" ? " · empty bay" : ""}
+              {s && s.hottestSlot === i + 1 ? " · hottest" : ""}
+            </span>
+            <span>
+              {s && kind !== "empty"
+                ? `${s.sledPowerW[i].toFixed(0)} W · ${s.sledTempC[i].toFixed(0)} °C`
+                : "—"}
+            </span>
+          </button>
+        ))}
+      </div>
       <Info id="sled-power" />
       <div className="stat">
         <span>fan power (shared tax)</span>

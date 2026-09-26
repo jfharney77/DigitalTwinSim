@@ -91,11 +91,11 @@ def validate(scenario: Scenario) -> list[Validation]:
             rule_id="srdf-distance", level="warning",
             message=(
                 f"{cfg.distance_km} km of sync SRDF adds "
-                f"{cfg.distance_km * 0.02:.1f} ms to every write — beyond "
+                f"{cfg.distance_km * 0.01:.1f} ms to every write — beyond "
                 "typical sync radii. Physics, not firmware: consider "
                 "async past ~100–200 km."
             ),
-            source="speed of light in fiber — 0.01 ms/km each way",
+            source="speed of light in fiber — ~0.005 ms/km each way, ~1 ms round trip per 100 km",
         ))
 
     # Rule 5 — HDD under a transactional load.

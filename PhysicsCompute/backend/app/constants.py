@@ -39,7 +39,7 @@ CONSTANTS: dict[str, Constant] = {
     # --- XE9712 tray & rack -----------------------------------------------
     "tray_gpu_w": Constant(
         value=1400, unit="W",
-        source="estimate — Blackwell-class superchip GPU share incl. HBM; verify against NVIDIA GB200 documentation",
+        source="estimate — model share that folds tray VR losses into the GPU; trade press reports about 1,200 W per Blackwell GPU in GB200 NVL72",
         estimated=True,
         blurb="Per-GPU power in a compute tray (4 per tray).",
     ),
@@ -59,7 +59,7 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "nvswitch_trays": Constant(
         value=9, unit="trays",
-        source="NVIDIA GB200 NVL72 — 9 switch trays", estimated=False,
+        source="NVIDIA technical blog, GB200 NVL72 — nine NVLink switch trays (https://developer.nvidia.com/blog/nvidia-gb200-nvl72-delivers-trillion-parameter-llm-training-and-real-time-inference/)", estimated=False,
         blurb="NVLink switch trays in the rack.",
     ),
     "pump_w_max": Constant(
@@ -71,6 +71,12 @@ CONSTANTS: dict[str, Constant] = {
         value=0.12, unit="fraction",
         source="estimate — spec 01 names 10–15%", estimated=True,
         blurb="Share of rack heat the cold plates miss; it still hits the room.",
+    ),
+    "rack_air_mover_w_per_w": Constant(
+        value=0.06, unit="W per W of air-side heat",
+        source="estimate — small tray fans moving the residual air share; charged so the rack's cooling overhead counts fans and pumps the way the air-cooled boxes do",
+        estimated=True,
+        blurb="Tray-fan power per watt of heat the cold plates miss (XE9712).",
     ),
     "water_cp": Constant(
         value=4186, unit="J/(kg·K)",
@@ -87,8 +93,16 @@ CONSTANTS: dict[str, Constant] = {
         blurb="Coolant return temperature that trips the rack off.",
     ),
     "tray_weight_kg": Constant(
-        value=40, unit="kg", source="estimate", estimated=True,
+        value=30, unit="kg",
+        source="Dell PowerEdge XE9712 spec sheet, April 2026 — sled weight 30 kg (https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-xe9712-spec-sheet.pdf)",
+        estimated=False,
         blurb="Per-tray weight, for the IR7000 floor-loading advisory.",
+    ),
+    "rack_fixed_weight_kg": Constant(
+        value=1050, unit="kg",
+        source="derived — Dell XE9712 spec sheet cabinet wet weight 1,590 kg minus 18 sleds at 30 kg (https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-xe9712-spec-sheet.pdf)",
+        estimated=False,
+        blurb="Rack, power shelves, switch trays, manifolds and coolant — everything but the compute sleds.",
     ),
     "rack_weight_limit_kg": Constant(
         value=1000, unit="kg",
@@ -119,7 +133,13 @@ CONSTANTS: dict[str, Constant] = {
     "fan_pmax_w": Constant(
         value=30, unit="W", source="estimate — spec 01: fan overhead at full bore is hundreds of watts",
         estimated=True,
-        blurb="Per-fan power at 100% rpm.",
+        blurb="Per-fan power at 100% rpm, XE7745.",
+    ),
+    "fan_pmax_9680_w": Constant(
+        value=90, unit="W",
+        source="estimate — high-static dual-rotor fans; sized so an 8-GPU SXM box spends roughly 5% (700 W parts, cool room) to 15% (1000 W parts, fans pinned) of IT power on air, the range commonly quoted for air-cooled HGX servers. Verify against Dell's XE9680 power data",
+        estimated=True,
+        blurb="Per-fan power at 100% rpm, XE9680 (6U high-static wall).",
     ),
     "fan_floor_pct": Constant(
         value=30, unit="% rpm", source="estimate — GPU boxes idle loud",

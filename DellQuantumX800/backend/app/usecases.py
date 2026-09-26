@@ -34,7 +34,7 @@ USE_CASES: list[UseCase] = [
                 "InfiniBand is the incumbent grammar of that world. The "
                 "MPI stacks, schedulers, and operational muscle of "
                 "academic HPC grew up on subnet managers and RDMA verbs; "
-                "TACC's own lineage (Frontera, Stampede3) runs on it. "
+                "TACC's own Frontera and Vista run on it. "
                 "Horizon extends the tradition to the AI era: SHARP "
                 "accelerates both an MPI_Allreduce and an NCCL gradient "
                 "exchange, credit-based transport gives the fortnight-long "
@@ -75,8 +75,12 @@ USE_CASES: list[UseCase] = [
                 ),
             ),
             UseCaseItem(
-                category_id="endpoints", option_id="connectx8", qty=4000,
-                rationale="One 800 Gb/s port per GPU, RDMA end to end.",
+                category_id="endpoints", option_id="connectx8", qty=2000,
+                rationale=(
+                    "TACC's user guide gives 2,000 Grace Blackwell nodes, "
+                    "each on a full 800 Gb/s link; the adapter model is "
+                    "not published, so ConnectX-8 is inferred."
+                ),
             ),
             UseCaseItem(
                 category_id="delivery", option_id="irss", qty=1,
@@ -88,7 +92,7 @@ USE_CASES: list[UseCase] = [
         ],
         outcomes=[
             Stat(label="System", value="300 PF · 4,000 GPUs · 1M CPU cores"),
-            Stat(label="Fabric", value="Quantum-X800, non-blocking fat tree"),
+            Stat(label="Fabric", value="Quantum-X800, fat tree with no oversubscription (TACC)"),
             Stat(label="Lineage", value="10× Frontera — same InfiniBand grammar"),
         ],
     ),

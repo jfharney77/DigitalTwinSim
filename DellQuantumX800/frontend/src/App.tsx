@@ -308,7 +308,10 @@ export function App() {
                         <dt>Fabric traffic</dt>
                         <dd>{state.fabricTbps} Tb/s</dd>
                         <dt>Effective all-reduce</dt>
-                        <dd>{state.allreduceGbps.toLocaleString()} Gb/s</dd>
+                        <dd>
+                          {state.allreduceGbps.toLocaleString()} Gb/s (
+                          {(state.allreduceGbps / 1000).toFixed(1)} Tb/s)
+                        </dd>
                         <dt>Busiest link</dt>
                         <dd>{state.peakLinkPercent}%</dd>
                       </dl>
@@ -331,21 +334,67 @@ export function App() {
       {page === "fabric" && (
         <>
           <div className="an-hero">
-            <h2>Lossless by construction, not by vigilance</h2>
-            <p>
-              The Ethernet fabric twin (SN6000) must prove it never drops a
-              packet — Ethernet drops by default, so losslessness there is
-              a reaction executed in time. InfiniBand inverts the premise:
-              a sender may not transmit until the receiver has granted it
-              buffer credits, so a packet is never sent without a reserved
-              place to land. One central subnet manager maps the fabric and
-              programs every route before a byte moves, then steps aside;
-              SHARP puts the all-reduce arithmetic in the switches
-              themselves; and under the incast burst, senders wait
-              microseconds instead of losing anything. This is the fabric
-              TACC's Horizon names. Play the trace and watch the
-              sent-without-credit counter — it cannot move.
-            </p>
+            <h2>
+              {level <= 2
+                ? "A network that cannot lose data"
+                : "Lossless by construction, not by vigilance"}
+            </h2>
+            {level <= 2 ? (
+              <p>
+                This page plays a network for a GPU cluster coming to life,
+                one step at a time. The network is InfiniBand, a kind built
+                for supercomputers. An ordinary network (Ethernet, like the
+                SN6000 twin) throws data away when a cable gets too full,
+                so it has to react quickly to avoid that. InfiniBand works
+                the other way round: a sender may not send anything until
+                the receiver has promised it room. That promise is called
+                a credit, so nothing is ever sent without a place to land.
+                Three things to watch. First, one small computer called the
+                subnet manager (the block labelled Manager; NVIDIA's
+                software for it is called UFM) maps the network and writes
+                every route into the switches before any data moves, then
+                steps aside. Second, a feature called SHARP lets the
+                switches add up the GPUs' numbers as they pass through,
+                instead of only carrying them. Third, when many senders
+                aim at one receiver at once (an incast burst), the senders
+                wait a moment instead of losing anything. The TACC Horizon
+                supercomputer in Texas uses this kind of network. Play the
+                steps and watch the sent-without-credit counter. It stays
+                at zero.
+              </p>
+            ) : level >= 4 ? (
+              <p>
+                Ethernet (the SN6000 twin) is lossless only as a reaction
+                executed in time. InfiniBand is lossless by construction:
+                no transmit without granted buffer credits, so uncredited
+                tx = 0 on every step, unexpressible at the link layer. The
+                SM programs routes up front and is active in{" "}
+                {"{discover, routes}"} only — absent from every traffic
+                step. At the SHARP step the counters cross: fabric traffic
+                falls, effective all-reduce rises, because the reduction
+                runs in the switches. The incast burst drives the hot link
+                past 95% and is paid in sender stalls, not loss. The
+                fabric TACC's Horizon names.
+              </p>
+            ) : (
+              <p>
+                The Ethernet fabric twin (SN6000) must prove it never drops a
+                packet — Ethernet drops by default, so losslessness there is
+                a reaction executed in time. InfiniBand inverts the premise:
+                a sender may not transmit until the receiver has granted it
+                buffer credits, so a packet is never sent without a reserved
+                place to land. One central subnet manager (the block
+                labelled UFM / SM: NVIDIA's Unified Fabric Manager running
+                the subnet manager) maps the fabric and programs every route
+                before a byte moves, then steps aside; SHARP puts the
+                all-reduce arithmetic (summing every GPU's gradients) in
+                the switches themselves; and under the incast burst, many
+                senders converging on one receiver, senders wait
+                microseconds instead of losing anything. This is the fabric
+                TACC's Horizon names. Play the trace and watch the
+                sent-without-credit counter — it cannot move.
+              </p>
+            )}
             <button
               className="primary fabric-tour-link"
               onClick={() => setPage("tour")}
@@ -370,14 +419,32 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Watch the manager: lit only while it maps and programs the
-                fabric, dark forever after — data never passes through it.
-                Then watch the SHARP step, where fabric traffic <em>falls</em>
-                {" "}while the effective all-reduce rate rises, because the
-                switches start doing the arithmetic. Click a block to pin
-                what it is; the narrated walk-through lives under Guided
-                tour.
+                {level <= 2 ? (
+                  <>
+                    Highlighted blocks are the parts doing work at this
+                    step. Watch the Manager block (the subnet manager): it
+                    lights only while it maps the network and writes the
+                    routes, and stays dark after that, because data never
+                    passes through it. Then watch the SHARP step, where
+                    fabric traffic <em>falls</em> while the effective
+                    all-reduce rate (how fast the training job gets its
+                    numbers added up) rises, because the switches start
+                    doing the adding. Click a block to see what it is; the
+                    narrated walk-through lives under Guided tour.
+                  </>
+                ) : (
+                  <>
+                    Highlighted blocks are the parts doing work at this
+                    step. Watch the manager (UFM / SM): lit only while it
+                    maps and programs the fabric, dark forever after —
+                    data never passes through it. Then watch the SHARP
+                    step, where fabric traffic <em>falls</em> while the
+                    effective all-reduce rate rises, because the switches
+                    start doing the arithmetic. Click a block to pin what
+                    it is; the narrated walk-through lives under Guided
+                    tour.
+                  </>
+                )}
               </div>
             </div>
           </div>

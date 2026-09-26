@@ -1,7 +1,8 @@
 """Data models for the CloudIQ / Dell AIOps digital twin.
 
 CloudIQ is not a box — it is Dell's cloud-native AIOps observability SaaS
-(rebranded **Dell AIOps**, part of APEX AIOps, in 2024). So the shared
+(renamed APEX AIOps Infrastructure Observability in 2024, then **Dell
+AIOps** in 2025). So the shared
 "anatomy" is not a chassis floorplan but a **platform architecture diagram**
 (the telemetry-to-insight pipeline), and the "power-on trace" is the
 **lifecycle of a batch of telemetry becoming an actionable insight**. The
@@ -46,8 +47,23 @@ PipelinePhase = Literal[
     "detect",    # a risk crosses threshold — health score drops
     "surface",   # the insight appears in the CloudIQ / AIOps UI
     "assist",    # the AIOps Assistant explains it and recommends a fix
-    "notify",    # notifications / ITSM / webhooks fire; remediation begins
+    "notify",    # notifications / ITSM / webhooks fire; a later collection rescoring
+    # --- the "connected, no data" failure scenario (engine.simulate_scenario).
+    # Additive: the happy path never enters these phases.
+    "register",  # the system is onboarded in the portal; no score exists yet
+    "handshake", # the gateway's connection test to Dell passes — "connected"
+    "blocked",   # the telemetry upload is refused at the customer's own egress
+    "starved",   # collection intervals pass and the cloud receives nothing
+    "stale",     # the portal lists the system as not sending; still no score
+    "repair",    # the admin unblocks the upload at the proxy, customer side
+    "backfill",  # the waiting telemetry flows, one way, as always
+    "resume",    # a first real Health Score, computed from delivered data
 ]
+
+# What the Health Score readout is allowed to claim. "fresh" — computed from
+# telemetry that actually arrived. "no-data" — nothing has arrived, so there is
+# no score to show: CloudIQ draws a grey dash, never a green number.
+ScoreState = Literal["fresh", "no-data"]
 
 
 class Photo(CamelModel):
@@ -115,7 +131,7 @@ class PipelineState(CamelModel):
     # Pipeline progress, 0 → 100, monotonic.
     progress_percent: int = Field(ge=0, le=100)
     # The CloudIQ Health Score (0–100): 100 when healthy, drops when a risk is
-    # detected, recovers as remediation begins.
+    # detected, recovers once a later collection shows the issue cleared.
     health_score: int = Field(ge=0, le=100)
     # Telemetry data points processed so far across the fleet (illustrative).
     data_points: int = 0
@@ -123,10 +139,41 @@ class PipelineState(CamelModel):
     elapsed_seconds: int
     # UI dwell ticks; the ML analyze stage gets the most.
     cycle_cost: int = 1
+    # --- additive fields for failure scenarios; the defaults are the happy
+    # path's truth, so its trace is unchanged in every original field.
+    # Regions that are failing at this step (drawn in the error colour).
+    failed_regions: list[str] = Field(default_factory=list)
+    # Whether ``health_score`` may be shown at all (see ScoreState).
+    score_state: ScoreState = "fresh"
+    # Minutes the cloud has gone without telemetry from the system (illustrative).
+    minutes_without_data: int = Field(default=0, ge=0)
+    # Telemetry collected on the system but not yet delivered (illustrative).
+    backlog_points: int = Field(default=0, ge=0)
 
 
 class PipelineResponse(CamelModel):
     trace: list[PipelineState]
+    # Which trace this is: "healthy" (the default) or a failure scenario id.
+    scenario: str = "healthy"
+
+
+class ScenarioInfo(CamelModel):
+    """One selectable trace. ``sources`` carries the research a failure
+    scenario's behaviour is anchored to; the UI renders them."""
+
+    id: str
+    name: str
+    summary: str
+    # The pipeline page's opening paragraph and the counters panel's note while
+    # this scenario plays. Backend data so they follow the reading level like
+    # the step prose beside them.
+    intro: str = ""
+    note: str = ""
+    # The counter the scenario exists for, as a PipelineState field name
+    # (camelCase, as on the wire).
+    hero_field: str
+    phases: list[str]
+    sources: list[SourceLink] = Field(default_factory=list)
 
 
 class CatalogOption(CamelModel):

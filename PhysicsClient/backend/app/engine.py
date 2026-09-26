@@ -76,6 +76,36 @@ def _demand(idle: float, full: float, util: float) -> float:
     return idle + (full - idle) * (util ** C("cpu_util_exponent"))
 
 
+def describe_workload(wl: Workload, has_npu: bool, has_gpu: bool) -> str:
+    """Name a workload for the event log, so a reader can tell which run
+    they are looking at without decoding the power row."""
+    if wl.inference or (has_npu and wl.npu_pct > 0):
+        note = missing_engine_note(wl, has_npu, has_gpu)
+        if has_npu and wl.npu_pct > 0:
+            return "local LLM on the NPU"
+        if has_gpu and wl.gpu_pct > 0:
+            return "local LLM on the GPU" + (f" ({note})" if note else "")
+        if wl.cpu_pct > 0:
+            return "local LLM on the CPU" + (f" ({note})" if note else "")
+    return f"CPU {wl.cpu_pct:g}% · GPU {wl.gpu_pct:g}% · NPU {wl.npu_pct:g}%"
+
+
+def missing_engine_note(wl: Workload, has_npu: bool, has_gpu: bool) -> str | None:
+    """Name the engine an inference workload asked for and did not get.
+
+    The fallback order is NPU → GPU → CPU, and the token readouts carry no
+    mark of it, so a reader can record a CPU result as an NPU one. The log
+    says so instead; ``validation.py`` warns on the same condition.
+    """
+    if not wl.inference:
+        return None
+    if wl.npu_pct > 0 and not has_npu:
+        return "no NPU fitted — this run is not an NPU result"
+    if wl.gpu_pct > 0 and not has_gpu:
+        return "no discrete GPU fitted — this run is not a GPU result"
+    return None
+
+
 def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summary]:
     cfg = scenario.config
     env = scenario.environment.model_copy()
@@ -111,9 +141,17 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     t_gpu = env.ambient_c
     t_skin = env.ambient_c
     shutdown_reason = ""
+    was_boosting = False
 
     trace: list[SimState] = []
     log: list[LogEntry] = []
+    start_note = missing_engine_note(wl, bool(npu_max), bool(tgp))
+    if start_note:
+        log.append(LogEntry(
+            t=0, severity="warning",
+            message="Starting workload: " + start_note
+            + ". The token readouts describe the engine that ran.",
+        ))
     ei = 0
     peak_sys = 0.0
     min_batt = 100.0
@@ -131,7 +169,12 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 if ev.workload.cpu_pct > wl.cpu_pct or ev.workload.gpu_pct > wl.gpu_pct:
                     boost_left = C("pl2_tau_s")  # a load step re-arms PL2
                 wl = ev.workload.model_copy()
-                log.append(LogEntry(t=t, severity="info", message="Workload changed"))
+                note = missing_engine_note(wl, bool(npu_max), bool(tgp))
+                log.append(LogEntry(
+                    t=t, severity="warning" if note else "info",
+                    message="Workload changed: "
+                    + describe_workload(wl, bool(npu_max), bool(tgp)),
+                ))
             elif ev.action == "unplug":
                 if plugged:
                     plugged = False
@@ -172,6 +215,19 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             pl_limit = (pl2 if boosting else pl1) * skin_clamp * cpu_clamp
             if boosting:
                 boost_left -= DT
+            elif was_boosting and boost_left <= 0:
+                # The fade is the lesson; say what ended it, since no
+                # temperature limit did.
+                parts = []
+                if cpu_util >= 0.6:
+                    parts.append("CPU back to its sustained limit (PL1)")
+                if gpu_util >= 0.6:
+                    parts.append("GPU back to its sustained limit (TGP)")
+                log.append(LogEntry(
+                    t=t, severity="info",
+                    message="Boost window over — " + ", ".join(parts),
+                ))
+            was_boosting = boosting
             cpu_idle = C("cpu_idle_fraction") * pl1
             cpu_demand = min(_demand(cpu_idle, pl2, cpu_util), max(pl_limit, cpu_idle))
             gpu_idle = C("gpu_idle_fraction") * tgp
@@ -265,7 +321,12 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             cool = 0.35 + 0.65 * (rpm / 100.0)          # airflow factor
             preheat = 6.0 if (env.on_lap and laptop) else 0.0
             r_cpu = C("cpu_r_th") if laptop else C("cpu_r_th_desktop")
-            r_gpu = C("gpu_r_th") if laptop else C("gpu_r_th_desktop")
+            if not laptop:
+                r_gpu = C("gpu_r_th_desktop")
+            elif cfg.product == "promax":
+                r_gpu = C("gpu_r_th_promax")
+            else:
+                r_gpu = C("gpu_r_th")
             t_cpu_ss = env.ambient_c + preheat + cpu_w * r_cpu / cool
             t_gpu_ss = (
                 env.ambient_c + preheat + gpu_w * r_gpu / cool
@@ -345,7 +406,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             pl_state = "skin-limited"
         elif budget_limited:
             pl_state = "budget-limited"
-        elif boosting and wl.cpu_pct >= 60:
+        elif boosting:
             pl_state = "pl2-boost"
         elif wl.cpu_pct < 5 and wl.gpu_pct < 5 and wl.npu_pct < 5:
             pl_state = "idle"
@@ -363,7 +424,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             if (powered_on and tgp and wl.gpu_pct > 0 and not inferring) else 0.0
         )
         active = None
-        tokps = tokpj = 0.0
+        tokps = tokpj = sys_tokpj = 0.0
         if powered_on and inferring:
             if npu_max and wl.npu_pct > 0:
                 active, rate, p = "npu", C("tokps_npu"), npu_w
@@ -379,6 +440,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             if active and full > 0:
                 tokps = rate * min(1.0, p / full)
                 tokpj = tokps / p if p > 0 else 0.0
+                # The same tokens against everything the battery feeds —
+                # the ratio that decides runtime.
+                sys_tokpj = tokps / system_w if system_w > 0 else 0.0
 
         runtime_min = (
             (energy_wh * C("discharge_efficiency") / batt_out) * 60.0
@@ -394,7 +458,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         common = {
             "cpu": round(t_cpu, 1),
             "gpu": round(t_gpu if tgp else amb, 1),
-            "dimm": round(amb if off else t_cpu - 20, 1),
+            # Memory sits beside the CPU: it follows it, but never reads
+            # below the air around it.
+            "dimm": round(amb if off else max(amb + 3, t_cpu - 20), 1),
             "nvme": round(amb if off else amb + 12, 1),
             "board": round(amb if off else amb + 10, 1),
             "skin": round(t_skin, 1),
@@ -445,6 +511,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             fps_proxy=round(fps, 1),
             tokens_per_s=round(tokps, 2),
             tokens_per_joule=round(tokpj, 4),
+            system_tokens_per_joule=round(sys_tokpj, 4),
             active_engine=active,
             region_temps=region_temps,
         ))

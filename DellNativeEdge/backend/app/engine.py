@@ -14,10 +14,16 @@ sites, no IT staff at any of them, and the person who unboxes the machine
 is a shop manager whose job is not this. So NativeEdge inverts the
 direction of trust. The device is not provisioned *by* someone; it wakes,
 proves cryptographically that it is the machine Dell built and shipped,
-and asks the central Orchestrator what it is supposed to become. The only
-human action in the whole sequence is supplying power and a network cable
-— ``operator_actions`` reaches 1 there and never moves again, and
-``tests/test_engine.py`` asserts exactly that. Timings are illustrative;
+and asks the central Orchestrator what it is supposed to become. The trace
+is ONE site receiving FOUR devices. The only on-site human action in the
+sequence is the plug-in visit (power and a network cable for the delivered
+devices, counted as one act) — ``operator_actions`` reaches 1 there and
+never moves again, and ``tests/test_engine.py`` asserts exactly that.
+Central work (loading ownership vouchers, authoring the blueprint) is done
+by administrators for the whole estate and is named in the prose, not
+counted. The first three steps are reused verbatim by the failure scenario
+(``scenarios.py``), so their prose must stay true on both paths: a swap of
+a failed unit is counted separately, as a recovery action. Timings are illustrative;
 favor a correct mental model over measured numbers (project scope
 guardrail).
 """
@@ -45,49 +51,63 @@ def simulate() -> list[OnboardState]:
             label="The crate arrives — nothing is configured",
             description=L(
                 novice=(
-                    "Boxes arrive at a site with no IT department: a shop, a "
-                    "factory floor, a race-weekend garage. Inside each box is "
-                    "an edge computer that has never been switched on since it "
-                    "left Dell's factory, and nobody on site knows how to set "
-                    "up a server — nor should they have to. Notice what is "
-                    "missing from this whole story from the start: there is no "
-                    "technician in it. The count of human actions taken so far "
-                    "is zero, and the point of everything that follows is that "
-                    "it will only ever reach one."
+                    "A delivery arrives at one site with no IT department: a "
+                    "shop, a factory floor, a race-weekend garage. It holds "
+                    "four edge computers, the four boxes on the left of the "
+                    "map, and none has been switched on since it left Dell's "
+                    "factory. Nobody on site knows how to set up a server, "
+                    "and they should not have to. Notice what is missing from "
+                    "this story: there is no technician in it. The operator "
+                    "actions counter counts things a person at this site has "
+                    "to do to bring it up. It reads zero now, and the plan is "
+                    "that it reaches one and stops. A faulty device that has "
+                    "to be swapped later is counted separately, as a recovery "
+                    "action."
                 ),
                 plain=(
-                    "Sealed crates arrive at a site with no IT staff — a "
-                    "branch, a line, a substation, a garage. Inside are edge "
-                    "devices exactly as Dell's factory built them: nothing "
-                    "configured, no OS staged for this site, no credentials "
-                    "on board that matter yet. The operator-actions counter "
-                    "reads zero, and the trace exists to show it stopping at "
-                    "one."
+                    "A sealed delivery arrives at one site with no IT staff — "
+                    "a branch, a line, a substation, a garage. Inside are "
+                    "four edge devices exactly as Dell's factory built them: "
+                    "nothing configured, no OS staged for this site, no "
+                    "credentials on board that matter yet. The "
+                    "operator-actions counter counts on-site human acts for "
+                    "this site. It reads zero, and the trace exists to show "
+                    "it stopping at one; swapping a faulty unit would be "
+                    "counted apart from it, as a recovery action."
                 ),
                 standard=(
-                    "Sealed crates arrive at the site — a retail branch, a "
-                    "factory line, a substation, a trackside garage — and "
-                    "the site has no IT staff, which is the premise the "
-                    "whole platform is built on. Inside each crate is an "
-                    "edge device exactly as Dell's factory built it: "
+                    "A sealed delivery arrives at one site — a retail "
+                    "branch, a factory line, a substation, a trackside "
+                    "garage — and the site has no IT staff, which is the "
+                    "premise the whole platform is built on. Inside are "
+                    "four edge devices, the four blocks on the left of the "
+                    "map, each exactly as Dell's factory built it: "
                     "firmware signed, identity burned in at manufacture, "
                     "nothing configured for this site. Every hardware twin "
                     "in this repo assumes a person at the moment of truth — "
                     "someone presses the power button, someone racks the "
                     "machine. Watch the operator-actions counter through "
-                    "this trace: it reads zero now, it will reach one at "
-                    "the next step, and the platform's entire argument is "
-                    "that it never moves again."
+                    "this trace. It counts on-site human acts for this "
+                    "site: it reads zero now, it will reach one at the "
+                    "next step, and the platform's argument is that "
+                    "bringing the site up never moves it again. Replacing "
+                    "a unit that fails its check is a separate count, "
+                    "recovery actions, which the failure scenario shows."
                 ),
                 technical=(
-                    "Crates on site, no IT staff present — the design "
-                    "premise. Devices are factory-state: signed firmware, "
-                    "manufacture-time identity, no site configuration. "
-                    "operator_actions = 0; the trace asserts it peaks at 1."
+                    "One site, four devices delivered, no IT staff present "
+                    "— the design premise. Devices are factory-state: "
+                    "signed firmware, a Device Attestation Key (DAK) "
+                    "provisioned in the TPM at manufacture, a minimal "
+                    "factory OS, no site configuration. On-site human acts "
+                    "so far: zero. Onboarding is designed to need one; a "
+                    "unit replacement is tallied separately."
                 ),
                 expert=(
-                    "Factory-state devices, no staff on site. "
-                    "operator_actions = 0, ceiling 1 (asserted)."
+                    "One site, four factory-state devices: TPM-held Device "
+                    "Attestation Key (DAK), signed firmware, minimal factory "
+                    "OS. No staff on site. On-site acts: zero of a planned "
+                    "one; replacements tallied apart."
                 ),
             ),
             active_regions=[],
@@ -100,55 +120,75 @@ def simulate() -> list[OnboardState]:
         OnboardState(
             step=1,
             phase="power",
-            label="Power and a network cable — the only human action",
+            label="Power and a network cable — the only on-site action",
             description=L(
                 novice=(
                     "Someone on site — a shop manager, a plant supervisor, a "
-                    "mechanic — follows a one-line instruction: plug in the "
-                    "power lead and the network cable. That is the entire "
-                    "job, and it is the only thing any human at any site will "
-                    "do in this whole story. The counter ticks from zero to "
-                    "one. Everything after this happens between the machine "
-                    "and a distant control system, in both cases without "
-                    "anyone standing there — because at four hundred sites, "
-                    "'someone technical stands there' is not a plan."
+                    "mechanic — follows a one-line instruction: plug each of "
+                    "the four devices into power and the network. That one "
+                    "visit is the entire on-site job, and it is the only "
+                    "thing a person at the site is meant to do. The counter "
+                    "ticks from zero to one; it counts the visit, not the "
+                    "number of cables. People did work elsewhere, earlier and "
+                    "once for every site: an administrator at head office "
+                    "loaded Dell's digital receipts for these devices into "
+                    "the control system and wrote the plan for what sites "
+                    "like this run. That is where the effort moved to. "
+                    "Everything after this step happens between the machines "
+                    "and the distant control system with nobody standing "
+                    "there, because at four hundred sites 'someone technical "
+                    "stands there' is not a plan."
                 ),
                 plain=(
-                    "A shop manager follows a one-line instruction — plug in "
-                    "the power lead and the black network cable — and the "
-                    "operator-actions counter ticks 0 → 1, where it stays. "
-                    "The device boots its factory firmware and reaches out "
+                    "A shop manager follows a one-line instruction — plug "
+                    "each device into power and the black network cable — "
+                    "and the operator-actions counter ticks 0 → 1. It counts "
+                    "that one on-site act, and onboarding never adds to it. "
+                    "The central work was done beforehand, once for the "
+                    "estate: an administrator loaded the devices' ownership "
+                    "vouchers into the Orchestrator and wrote the blueprint. "
+                    "Each device boots its factory firmware and reaches out "
                     "for the Orchestrator; nothing is pushed to it, and "
                     "nobody logs in. At estate scale this step is the whole "
-                    "human resourcing plan, which is why it must fit in one "
-                    "sentence."
+                    "on-site resourcing plan, which is why it must fit in "
+                    "one sentence."
                 ),
                 standard=(
                     "Someone on site follows a one-line instruction: plug "
-                    "in the power lead and the black network cable. The "
-                    "operator-actions counter ticks from zero to one — and "
-                    "that is the last time it moves, because this is the "
-                    "last thing any human does. The device boots the "
-                    "firmware Dell's factory signed, finds the network, and "
-                    "reaches *out* toward the Orchestrator: nothing is "
-                    "pushed at it, no laptop is connected to it, nobody "
-                    "logs in locally. The direction of that first "
-                    "connection is the platform's whole inversion — the "
-                    "device asks to be claimed, rather than waiting to be "
-                    "configured. Multiply this moment by four hundred "
-                    "sites and the one-line instruction is the entire "
-                    "human resourcing plan."
+                    "each of the four devices into power and the black "
+                    "network cable. The operator-actions counter ticks from "
+                    "zero to one. It counts that visit as one on-site act, "
+                    "and onboarding never moves it again. The human effort "
+                    "has not vanished; it moved to the centre and is done "
+                    "once for the estate: an administrator loaded each "
+                    "device's ownership voucher into the Orchestrator and "
+                    "authored the blueprint, and neither is counted here. "
+                    "Each device boots the firmware Dell's factory signed, "
+                    "finds the network, and reaches *out* toward the "
+                    "Orchestrator: nothing is pushed at it, no laptop is "
+                    "connected to it, nobody logs in locally. The "
+                    "direction of that first connection is the platform's "
+                    "whole inversion — the device asks to be claimed, "
+                    "rather than waiting to be configured. Multiply this "
+                    "moment by four hundred sites and the one-line "
+                    "instruction is the entire on-site resourcing plan."
                 ),
                 technical=(
-                    "Power + network applied by untrained staff — "
-                    "operator_actions 0 → 1, final value (asserted). "
-                    "Device boots signed factory firmware and initiates "
-                    "outbound contact; no local login, no push, no console. "
-                    "Pull, not push, from the first packet."
+                    "Power and network applied to all four devices by "
+                    "untrained staff: one on-site act, and the only one "
+                    "onboarding needs. Ownership vouchers were loaded into "
+                    "the Orchestrator centrally beforehand (uncounted "
+                    "central work, as is blueprint authoring). Each device "
+                    "boots its signed minimal factory OS and initiates "
+                    "outbound contact under FDO (FIDO Device Onboard); no "
+                    "local login, no push, no console. Pull, not push, "
+                    "from the first packet."
                 ),
                 expert=(
-                    "Power + cable: operator_actions → 1, never again. "
-                    "Outbound-only first contact; no local access."
+                    "Power and cable to four devices: the one on-site act. "
+                    "Vouchers and blueprint are central, prior, uncounted. "
+                    "Outbound-only first contact under FDO (FIDO Device "
+                    "Onboard); no local access."
                 ),
             ),
             active_regions=_endpoints() + ["network"],
@@ -205,18 +245,21 @@ def simulate() -> list[OnboardState]:
                     "stands on."
                 ),
                 technical=(
-                    "Max-dwell stage. Device presents manufacture-time "
-                    "identity + measured boot evidence; the onboarding "
-                    "service verifies against factory records (hardware "
-                    "root of trust — cf. the iDRAC twin). No claim, no "
-                    "payload, no secrets until verification completes. "
-                    "trust_established stays false through this step; "
-                    "ZTP without attestation is an open door."
+                    "The longest stage. Each device signs with its "
+                    "TPM-held attestation key and presents measured-boot "
+                    "evidence; the onboarding service checks the ownership "
+                    "voucher chain back to manufacture and the "
+                    "measurements against what Dell signed (hardware root "
+                    "of trust — cf. the iDRAC twin). No claim, no payload, "
+                    "no secrets until verification completes, so trust is "
+                    "still unestablished on this step. Zero-touch "
+                    "provisioning without attestation is an open door."
                 ),
                 expert=(
-                    "Max dwell: measured boot + factory identity verified. "
-                    "Nothing lands pre-verification. trust still false "
-                    "here."
+                    "Longest stage: TPM-signed measured boot checked "
+                    "against Dell's signed references, voucher chain "
+                    "checked to manufacture. Nothing lands before the "
+                    "verdict; trust not yet established."
                 ),
             ),
             active_regions=_endpoints() + ["identity", "network"],
@@ -237,17 +280,18 @@ def simulate() -> list[OnboardState]:
                     "Orchestrator, running far from this site — recognizes "
                     "the machines as ones it was expecting and claims them "
                     "into the estate. The online counter jumps from zero to "
-                    "four, all at once: the site is claimed as a set, not "
-                    "one box at a time. Note who did this — no one. The "
-                    "machines asked, proved themselves, and were accepted, "
-                    "while the human count stayed at one."
+                    "four, all at once: the site's four devices are claimed "
+                    "as a set, not one box at a time. Note who did this at "
+                    "the site — no one. The machines asked, proved "
+                    "themselves, and were accepted, while the on-site count "
+                    "stayed at one."
                 ),
                 plain=(
                     "Attestation passed, trust is established, and the "
                     "Orchestrator claims the site: the devices appear in "
                     "the estate inventory, bound to this site's "
                     "definition, and endpoints-online snaps 0 → 4 together "
-                    "— a site is claimed as a set. The Orchestrator "
+                    "— a site's devices are claimed as a set. The Orchestrator "
                     "itself is never in that count: it is the thing doing "
                     "the claiming, not a thing being claimed. Operator "
                     "actions: still one."
@@ -259,25 +303,29 @@ def simulate() -> list[OnboardState]:
                     "the estate: they appear in inventory, bound to this "
                     "site, keyed to the blueprint that describes what "
                     "the site should run. The endpoints-online counter "
-                    "snaps from zero to four in one step, because a "
-                    "site is claimed as a set — the estate's unit is "
-                    "the site, not the box. Two things to notice: the "
+                    "snaps from zero to four in one step, because this "
+                    "site's four devices are claimed as a set — the "
+                    "estate's unit is the site, not the box. Two things "
+                    "to notice: the "
                     "Orchestrator is not in the counter, because it is "
                     "the claimer and never the claimed; and the "
                     "operator-actions counter still reads one, because "
                     "the claiming happened between machines."
                 ),
                 technical=(
-                    "trust_established → true (monotone from here — "
-                    "asserted). Orchestrator claims the site as a unit: "
-                    "endpoints_online 0 → 4 in one step, devices bound "
-                    "to site + blueprint. The Orchestrator is excluded "
-                    "from the endpoint count (asserted). "
-                    "operator_actions unchanged at 1."
+                    "Trust established, and never revoked from here on. "
+                    "The Orchestrator, named as owner by each voucher, "
+                    "claims the site's devices as a unit: endpoints online "
+                    "0 → 4 in one step, devices bound to site and "
+                    "blueprint. The Orchestrator is the claimer and is "
+                    "never in the endpoint count. On-site acts unchanged "
+                    "at one."
                 ),
                 expert=(
-                    "Trust true (monotone). Site claimed as a set: "
-                    "online 0 → 4. Orchestrator ∉ count. Humans: still 1."
+                    "Trust established, never revoked. Voucher-named owner "
+                    "claims the site's four devices as a set: online 0 → 4. "
+                    "Orchestrator is claimer, never counted. On-site acts: "
+                    "still one."
                 ),
             ),
             active_regions=_endpoints() + ["identity", "orchestrator", "network"],
@@ -333,8 +381,8 @@ def simulate() -> list[OnboardState]:
                     "Tuesday, not an incident."
                 ),
                 technical=(
-                    "OS + platform runtime pulled by all endpoints in "
-                    "lockstep (asserted): fetch from Orchestrator, verify "
+                    "OS + platform runtime pulled by all four endpoints in "
+                    "lockstep: fetch from Orchestrator, verify "
                     "against attestation-rooted trust, install. "
                     "Interruption-tolerant by design — resume on WAN "
                     "return. No push, no media, no console."
@@ -438,7 +486,7 @@ def simulate() -> list[OnboardState]:
                     "garage. Deployment is the same pulled, verified "
                     "motion as everything before it. The site is now "
                     "doing the job it was shipped for; local hands "
-                    "involved so far: one plug-in."
+                    "involved so far: one plug-in visit."
                 ),
                 standard=(
                     "The workloads land and start — pulled from the "
@@ -488,9 +536,11 @@ def simulate() -> list[OnboardState]:
                     "same way everything else did — pulled, verified, "
                     "unattended. Read the counters one last time. Four "
                     "machines online. Trust proven and kept. And exactly "
-                    "one human action, ever: somebody plugged in two "
-                    "cables. That is the entire story, and at four "
-                    "hundred sites it is the only story that scales."
+                    "one action by anyone at the site: somebody plugged "
+                    "the devices into power and the network. The rest of "
+                    "the human work was done once, centrally, for every "
+                    "site. At four hundred sites that is the only version "
+                    "of the story that scales."
                 ),
                 plain=(
                     "Steady state: Zero Trust policy enforced at the "
@@ -499,8 +549,9 @@ def simulate() -> list[OnboardState]:
                     "updates, eventually decommissioning — automated "
                     "over the same pulled, verified path. Final "
                     "counters: four online, trust held, operator "
-                    "actions one. The person who plugged it in has "
-                    "long since gone back to their actual job."
+                    "actions one on-site act. The person who plugged "
+                    "the devices in has long since gone back to their "
+                    "actual job."
                 ),
                 standard=(
                     "Steady state, which at the edge means: running "
@@ -516,8 +567,10 @@ def simulate() -> list[OnboardState]:
                     "verified path that built the site. Read the "
                     "counters one last time: four endpoints online, "
                     "trust established and never revoked, operator "
-                    "actions exactly one. The shop manager plugged in "
-                    "two cables and went back to work — and that is "
+                    "actions exactly one on-site act. The shop manager "
+                    "plugged four devices into power and the network "
+                    "and went back to work; the vouchers and the "
+                    "blueprint were handled centrally, once. That is "
                     "the only version of this story that survives "
                     "multiplication by four hundred."
                 ),
@@ -525,14 +578,14 @@ def simulate() -> list[OnboardState]:
                     "Steady state: Zero Trust enforcement at the "
                     "endpoint, telemetry to AIOps (CloudIQ handoff), "
                     "full lifecycle over the pull path (patch, update, "
-                    "rotate, decommission). Finals: online 4, trust "
-                    "held, operator_actions 1 — the invariant the "
-                    "twin exists for, at its terminal value."
+                    "rotate, decommission). Finals: four endpoints "
+                    "online, trust held, one on-site act — the figure "
+                    "the twin exists for, unchanged since the plug-in."
                 ),
                 expert=(
                     "Unattended steady state: ZT enforced, telemetry "
-                    "out, lifecycle on the pull path. online 4, trust "
-                    "true, operator_actions 1. QED."
+                    "out, lifecycle on the pull path. Four online, trust "
+                    "held, one on-site act since the crate was opened."
                 ),
             ),
             active_regions=(

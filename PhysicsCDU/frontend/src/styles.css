@@ -601,3 +601,7 @@ label.field.cfg-row { display: flex; flex-direction: row; align-items: center; g
   .app.dell header { flex-wrap: wrap; row-gap: 8px; padding: 12px 16px; }
   .app.dell header .sub { margin-left: 0; flex-basis: 100%; }
 }
+
+.scenario-answer { margin-top: 6px; }
+.scenario-answer summary { cursor: pointer; color: var(--dell-blue, #0672cb); }
+.scenario-answer p { margin: 6px 0 0; }

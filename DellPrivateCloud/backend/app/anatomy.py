@@ -67,7 +67,9 @@ _HYPERVISORS = [
     ),
     (
         "hv-nutanix", "Nutanix", 51.5,
-        "Added to Dell Private Cloud in February 2026, and the most direct "
+        "Nutanix AHV, added to Dell Private Cloud on 10 February 2026 — on "
+        "PowerFlex storage at launch, with PowerStore following in July "
+        "2026 — and the most direct "
         "like-for-like alternative for an estate that wants to move "
         "without relearning how virtualization works. Worth noting the "
         "irony in this repo's context: Nutanix built its reputation on "
@@ -77,7 +79,9 @@ _HYPERVISORS = [
     ),
     (
         "hv-microsoft", "Microsoft", 76.25,
-        "Hyper-V and Azure Stack HCI, most compelling where the estate is "
+        "Microsoft Azure Local — the platform formerly named Azure Stack "
+        "HCI, built on Hyper-V — which Dell announced for Dell Private "
+        "Cloud with availability from June 2026. Most compelling where the estate is "
         "already deeply committed to Microsoft licensing and identity — at "
         "which point the marginal cost of the hypervisor is genuinely "
         "different from what it looks like on a price list. Licensing "
@@ -92,7 +96,10 @@ ANATOMY = CloudAnatomy(
     name="Dell Private Cloud — disaggregated infrastructure",
     vendor="Dell Technologies",
     form_factor="Pooled compute, storage, and networking under one control plane",
-    generation="Multi-hypervisor: VMware, Red Hat, Nutanix (Feb 2026), Microsoft",
+    generation=(
+        "Multi-hypervisor: VMware, Red Hat, Nutanix (Feb 2026), "
+        "Microsoft Azure Local (June 2026)"
+    ),
     year=2026,
     width=100,
     height=66,
@@ -111,8 +118,8 @@ ANATOMY = CloudAnatomy(
             "divides physical machines into virtual ones also becomes a choice "
             "you can change later, rather than something baked in. Watch the "
             "story: the storage doubles without a single server being added, "
-            "and a second software platform appears without any application "
-            "noticing or anyone gaining a second set of tools to learn."
+            "and a second software platform appears without any service "
+            "going down or anyone gaining a second set of tools to learn."
         ),
         plain=(
             "Dell Private Cloud separates compute, storage, and networking "
@@ -121,7 +128,7 @@ ANATOMY = CloudAnatomy(
             "one management system, and treats the hypervisor — the layer that "
             "turns physical servers into virtual ones — as a swappable choice: "
             "VMware, Red Hat, Nutanix, or Microsoft. It is best read against "
-            "this repo's VxRail twin, which is the opposite bargain. "
+            "the VxRail model in this course, which is the opposite bargain. "
             "Hyperconverged systems fuse compute and storage into one node and "
             "buy real simplicity with that coupling: you grow by adding nodes, "
             "so both resources grow in a fixed ratio whether or not that ratio "
@@ -129,10 +136,11 @@ ANATOMY = CloudAnatomy(
             "life of the estate. Separating them un-buys the coupling and "
             "keeps "
             "most of the simplicity, because the control plane now does what "
-            "the fused node did. Dell cites 52% of IT leaders weighing "
+            "the fused node did. Dell cites a Gartner figure of 52% of IT "
+            "leaders weighing "
             "multiple "
             "hypervisors to reduce lock-in. Watch the trace: storage doubles "
-            "with no server added, and a second hypervisor arrives unnoticed."
+            "with no server added, and a second hypervisor arrives with no service going down."
         ),
         standard=(
             "Dell Private Cloud is Dell's disaggregated-infrastructure answer: "
@@ -149,13 +157,13 @@ ANATOMY = CloudAnatomy(
             "need, and you are committed to one software stack for the life of "
             "the estate. Disaggregation un-buys the coupling and keeps most of "
             "the simplicity, because a single control plane now does what the "
-            "fused node used to do. Dell cites research that 52% of IT leaders "
+            "fused node used to do. Dell cites Gartner research that 52% of IT leaders "
             "are considering multiple hypervisors to reduce lock-in, which is "
             "a "
             "fairly direct summary of what the last few years taught the "
             "market. Watch the trace: storage doubles without a single server "
-            "being added, and a second hypervisor appears without a workload "
-            "noticing or an operator gaining a second console."
+            "being added, and a second hypervisor appears without a service "
+            "going down or an operator gaining a second console."
         ),
         technical=(
             "Disaggregated infrastructure: compute, storage, and networking "
@@ -169,7 +177,7 @@ ANATOMY = CloudAnatomy(
             "software stack is a commitment for the life of the estate. "
             "Disaggregation removes the coupling and retains the simplicity "
             "because the control plane now supplies what the fused node did. "
-            "Dell cites 52% of IT leaders weighing multi-hypervisor to reduce "
+            "Dell cites Gartner: 52% of IT leaders weighing multi-hypervisor to reduce "
             "lock-in. The trace shows capacity doubling with compute flat and "
             "a "
             "second hypervisor arriving without workload or operational "
@@ -240,9 +248,11 @@ ANATOMY = CloudAnatomy(
                 "stating plainly: on a VxRail cluster, adding capacity "
                 "means adding a node, and a node brings processors, "
                 "memory, and drives together in whatever ratio the model "
-                "offers. If you need storage you buy compute too. Estates "
-                "routinely end up with a third more of one resource than "
-                "they ever use, paid for and racked and drawing power. "
+                "offers. Once the drive bays are full, if you need storage "
+                "you buy compute too, and estates commonly end up with a "
+                "surplus of one resource, paid for and racked and drawing "
+                "power. (VxRail Dynamic Nodes, which mount external "
+                "storage, are hyperconvergence's own partial answer.) "
                 "Here the pools are bought separately, and the trace shows "
                 "storage doubling with this number untouched."
             ),
@@ -251,9 +261,11 @@ ANATOMY = CloudAnatomy(
             id="storage", kind="storage", label="Storage pool",
             x=35, y=39, w=30, h=12,
             description=(
-                "Storage, pooled and scaled on its own — PowerStore, "
-                "PowerFlex, PowerMax, or PowerScale depending on the "
-                "workload, all twinned separately in this repo. The "
+                "Storage, pooled and scaled on its own — Dell names "
+                "PowerStore, PowerFlex, and PowerMax as the platforms "
+                "behind Dell Private Cloud, all twinned separately in "
+                "this repo, and which of them a given hypervisor can use "
+                "varies (Nutanix launched on PowerFlex alone). The "
                 "interesting consequence of disaggregating storage is not "
                 "the purchasing flexibility but the lifecycle one: storage "
                 "and servers have genuinely different useful lives, and "
@@ -297,12 +309,16 @@ ANATOMY = CloudAnatomy(
     stats=[
         Stat(label="Architecture", value="Disaggregated — pools, not fused nodes"),
         Stat(label="Hypervisors", value="VMware · Red Hat · Nutanix · Microsoft"),
-        Stat(label="Nutanix support", value="Added February 2026"),
-        Stat(label="Control plane", value="One, regardless of hypervisor count"),
+        Stat(label="Nutanix support", value="Added 10 February 2026 (AHV, on PowerFlex)"),
+        Stat(label="Azure Local support", value="Announced for June 2026"),
+        Stat(label="Control plane", value="One — Dell Automation Platform — at any hypervisor count"),
         Stat(label="Scaling", value="Compute, storage, network independently"),
-        Stat(label="Market driver", value="52% of IT leaders weighing multi-hypervisor"),
+        Stat(
+            label="Market driver",
+            value="52% of IT leaders weighing multi-hypervisor (Gartner, cited by Dell)",
+        ),
         Stat(label="Compared with", value="HCI (see this repo's VxRail twin)"),
-        Stat(label="Workload impact", value="None — no downtime on any step"),
+        Stat(label="Service downtime", value="0 s in this trace (illustrative; each VM takes a cutover restart)"),
     ],
     photo=STACK_ILLO,
     sources=[
@@ -319,8 +335,25 @@ ANATOMY = CloudAnatomy(
             url="https://www.computerweekly.com/news/366624041/Dell-unveils-disaggregated-infrastructure-strategy",
         ),
         SourceLink(
-            label="Dell Private Cloud expands choice with Nutanix support",
-            url="https://www.hpcwire.com/bigdatawire/this-just-in/dell-private-cloud-expands-choice-with-nutanix-support/",
+            label=(
+                "Dell — Dell Private Cloud expands choice with Nutanix "
+                "support (10 Feb 2026; the Gartner 52% figure)"
+            ),
+            url="https://www.dell.com/en-us/blog/dell-private-cloud-expands-choice-with-nutanix-support/",
+        ),
+        SourceLink(
+            label=(
+                "Dell — data center announcements, 19 May 2026 (Azure "
+                "Local June 2026; Nutanix with PowerStore July 2026)"
+            ),
+            url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-reimagines-the-modern-data-center-for-the-ai-era.htm",
+        ),
+        SourceLink(
+            label=(
+                "Dell — private cloud announcements, 24 Sep 2025 "
+                "(PowerStore, PowerFlex, PowerMax; Dell Automation Platform)"
+            ),
+            url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~09~dell-technologies-data-center-breakthroughs-power-smarter-faster-and-more-secure-private-clouds.htm",
         ),
     ],
 )

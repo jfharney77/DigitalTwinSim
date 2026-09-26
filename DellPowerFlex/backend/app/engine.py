@@ -20,9 +20,9 @@ volumes are chopped into chunks and scattered, redundantly, across every
 node; clients hold the map and talk straight to whichever nodes hold what
 they want. The metadata manager referees but carries nothing.
 
-The payoff shows up at the failure. In a controller array, one surviving
-controller performs the rebuild — a single device reading, a single device
-writing, hours at reduced protection. Here the lost node's data lives in
+The payoff shows up at the failure. In a controller array a drive rebuild may be
+spread over many drives, but all of it runs through one controller pair,
+whose fixed budget caps the rate at any size. Here the lost node's data lives in
 fragments on every other node, so every survivor rebuilds a sliver at once,
 reading from every other survivor. Recovery therefore gets faster as the
 cluster grows, which is the reverse of how storage systems normally age.
@@ -42,7 +42,7 @@ from __future__ import annotations
 from .leveling import L
 from .models import ClusterState
 
-# Six drawn nodes. A real pool runs from three to past two thousand, which
+# Six drawn nodes. Dell quotes mirrored pools from three to past two thousand, which
 # is the scale at which many-to-many rebuild stops being a nicety.
 ALL_NODES = [f"node-{i}" for i in range(1, 7)]
 
@@ -147,13 +147,15 @@ def simulate() -> list[ClusterState]:
                 technical=(
                     "Cluster forms over IP; a metadata manager is elected to hold "
                     "the chunk map. Manager, not controller — it handles placement "
-                    "and failure arbitration and carries no client data. The "
+                    "and failure arbitration and carries no client data. In "
+                    "production the MDM is itself a three- or five-member cluster "
+                    "with one primary; the map draws it as one block. The "
                     "distinction is the architecture, and the geometry reflects it."
                 ),
                 expert=(
-                    "Cluster forms over IP; MDM elected for placement and failure "
-                    "arbitration. Control plane, not data plane — reflected in the "
-                    "geometry."
+                    "Cluster forms over IP; MDM primary elected (a 3- or 5-member "
+                    "MDM cluster in production, drawn as one block) for placement "
+                    "and failure arbitration. Control plane, not data plane."
                 ),
             ),
             active_regions=[*ALL_NODES, "fabric", "mdm"],
@@ -206,14 +208,14 @@ def simulate() -> list[ClusterState]:
                     "The long stage, and the one that earns the rest. Drives are "
                     "contributed to a shared pool; capacity is chunked and "
                     "distributed redundantly across all six nodes, so no node holds "
-                    "a whole volume and every node holds part of each. Deliberately "
-                    "the max-dwell stage — the scatter is the prepayment that makes "
+                    "a whole volume and every node holds part of each. The longest "
+                    "stage by design — the scatter is the prepayment that makes "
                     "later recovery short."
                 ),
                 expert=(
                     "Chunked, redundantly scattered across all nodes; no node holds "
-                    "a whole volume. Max dwell by design — the scatter prepays the "
-                    "rebuild."
+                    "a whole volume. Longest stage by design — the scatter prepays "
+                    "the rebuild."
                 ),
             ),
             active_regions=[*ALL_NODES, "fabric", "mdm", "protection"],
@@ -283,9 +285,12 @@ def simulate() -> list[ClusterState]:
                     "because its data is on every server at once. There is no queue "
                     "in front of a special machine and no path that all requests "
                     "have to share, so the total speed is simply the sum of what "
-                    "the servers can do — which is why very large systems of this "
-                    "kind are rated in the hundreds of millions of operations per "
-                    "second. Notice which block is dark: the manager. It handed out "
+                    "the servers can do. In this made-up example each server "
+                    "handles 300 thousand requests a second, so six of them handle "
+                    "1,800 thousand — the client I/O number in the panel. It is "
+                    "also why very large systems of this kind are rated in the "
+                    "hundreds of millions of operations per second. Notice which "
+                    "block is dark: the manager. It handed out "
                     "the map and got out of the way."
                 ),
                 plain=(
@@ -293,8 +298,10 @@ def simulate() -> list[ClusterState]:
                     "client talks to every node at once, because its data is on "
                     "every node at once. There is no queue in front of a controller "
                     "and no shared path, so aggregate throughput is the sum of what "
-                    "the servers can do — which is why a large pool is rated past "
-                    "240 million operations per second. Notice which block is dark: "
+                    "the servers can do: six nodes at an illustrative 300 thousand "
+                    "operations per second each is the 1,800k in the panel. It is "
+                    "also why Dell quotes a large pool at up to 240 million "
+                    "operations per second. Notice which block is dark: "
                     "the metadata manager. It handed out the map and stepped out of "
                     "the way."
                 ),
@@ -304,22 +311,26 @@ def simulate() -> list[ClusterState]:
                     "because its data is on every node at once. There is no "
                     "queue in front of a controller and no path that all "
                     "requests share, so aggregate throughput is simply the sum "
-                    "of what the servers can do — which is why the published "
-                    "ceiling for a large pool runs to 240 million operations "
-                    "per second. Notice which block is dark: the metadata "
+                    "of what the servers can do: six nodes at an illustrative "
+                    "300 thousand operations per second each is the 1,800k in "
+                    "the panel. It is also why the published ceiling for a "
+                    "large pool runs to 240 million operations per second. "
+                    "Notice which block is dark: the metadata "
                     "manager. It handed out the map and stepped out of the "
                     "way."
                 ),
                 technical=(
                     "Steady I/O. Every client addresses every node, because its "
                     "data is on every node — no controller queue, no shared path, "
-                    "so aggregate throughput sums across nodes; hence the 240M IOPS "
+                    "so aggregate throughput sums across nodes (6 x 300k = 1,800k "
+                    "IOPS here, illustrative); hence Dell's quoted 240M IOPS "
                     "ceiling for a large pool. The MDM is dark: map distributed, "
                     "control plane out of the path."
                 ),
                 expert=(
                     "Full client-to-node fan-out; no shared path, throughput sums "
-                    "across nodes (240M IOPS at scale). MDM dark — out of the data "
+                    "across nodes (6 x 300k illustrative; Dell-quoted 240M IOPS at "
+                    "scale). MDM dark — out of the data "
                     "path."
                 ),
             ),
@@ -344,9 +355,11 @@ def simulate() -> list[ClusterState]:
                     "the clients simply stop talking to one address and carry on "
                     "with the other five, because a second copy of everything node "
                     "6 held is already sitting on those five and always was. "
-                    "Throughput drops by roughly the share of the system that "
-                    "vanished, and nothing else happens. Protection, though, has "
-                    "genuinely fallen: something that had two copies now has one, "
+                    "Requests that were on their way to node 6 wait a few seconds "
+                    "and are sent again to the other copy. Speed drops by the "
+                    "share of the system that vanished, one sixth: 1,800 thousand "
+                    "requests a second becomes 1,500 thousand. Protection, though, "
+                    "has genuinely fallen: something that had two copies now has one, "
                     "and until that is fixed a second failure would be a real loss."
                 ),
                 plain=(
@@ -355,9 +368,11 @@ def simulate() -> list[ClusterState]:
                     "applications feel. Here the clients stop sending to one "
                     "address and keep sending to the other five, because a second "
                     "copy of everything node 6 held is already on those five and "
-                    "always was. Throughput dips by roughly the share of the "
-                    "cluster that vanished, and nothing else happens. Protection "
-                    "has genuinely fallen, though: a chunk with two copies now has "
+                    "always was. Requests already in flight to node 6 wait out a "
+                    "timeout of a few seconds and are retried against the other "
+                    "copy. Throughput dips by the share of the cluster that "
+                    "vanished, one sixth: 1,800k becomes 1,500k. Protection has "
+                    "genuinely fallen, though: a chunk with two copies now has "
                     "one, and until that is fixed a second failure would be a real "
                     "loss."
                 ),
@@ -369,9 +384,12 @@ def simulate() -> list[ClusterState]:
                     "the clients simply stop sending to one address and keep "
                     "sending to the other five, because a second copy of "
                     "everything node 6 held is already sitting on those five "
-                    "and always was. Throughput dips by roughly the share of "
-                    "the cluster that just vanished, and nothing else happens. "
-                    "Protection, though, has genuinely fallen: a chunk that "
+                    "and always was. Requests already in flight to node 6 "
+                    "wait out a timeout of a few seconds and are retried "
+                    "against the other copy; this trace's steps are too coarse "
+                    "to show that stall. Throughput dips by the share of the "
+                    "cluster that just vanished, one sixth: 1,800k becomes "
+                    "1,500k. Protection, though, has genuinely fallen: a chunk that "
                     "had two copies now has one, and until that is fixed a "
                     "second failure would be a real loss."
                 ),
@@ -379,21 +397,27 @@ def simulate() -> list[ClusterState]:
                     "Node loss. In a controller array this is failover — path "
                     "renegotiation and an application-visible pause. Here clients "
                     "drop one address and continue against the remaining five, "
-                    "since the redundant copies were already resident there. "
-                    "Throughput falls by the lost node's share; nothing else "
-                    "changes. Protection is genuinely degraded until rebuild — "
+                    "since the redundant copies were already resident there. No "
+                    "controller failover, but not nothing: I/O to the dead node's "
+                    "chunks stalls for a timeout (seconds) until the MDM cluster "
+                    "remaps it, and losing the node that hosts the primary MDM "
+                    "adds an MDM switchover. The trace's steps are too coarse to "
+                    "show either. Throughput falls by the lost node's share, 1/6 "
+                    "(1,800k to 1,500k). Protection is genuinely degraded until rebuild — "
                     "single-copy chunks would not survive a second loss."
                 ),
                 expert=(
-                    "Node loss: no failover event, clients simply drop an address. "
-                    "Throughput -1/n; redundancy degraded to single-copy until "
-                    "rebuild completes."
+                    "Node loss: no controller failover. I/O to the dead node's "
+                    "chunks stalls for a timeout (seconds) until the MDM cluster "
+                    "remaps; an MDM switchover too if it hosted the primary. Below "
+                    "this trace's resolution. Throughput -1/n (1,800k to 1,500k); "
+                    "single-copy until rebuild completes."
                 ),
             ),
             active_regions=[*SURVIVORS, "clients", "fabric", "mdm", "protection"],
             nodes_online=5,
             rebuild_participants=0,
-            iops_thousands=1620,
+            iops_thousands=1500,
             protected_percent=68,
             elapsed_seconds=246,
         ),
@@ -408,12 +432,17 @@ def simulate() -> list[ClusterState]:
                     "all five survivors. So the repair is many-to-many: each of the "
                     "five rebuilds a fifth of what was lost, reading from the other "
                     "four, all at the same time. Every machine helps; none watches. "
-                    "Run that forward and the striking property appears — in a "
-                    "hundred-machine pool, a hundred machines each rebuild a "
-                    "hundredth, so the repair is about twenty times faster than it "
-                    "is here in a cluster twenty times smaller. Recovery gets "
-                    "quicker as the system grows, which is the reverse of how "
-                    "storage normally ages."
+                    "While they do, a little of their effort goes to the repair, "
+                    "so client speed slips from 1,500 to 1,380 thousand requests a "
+                    "second and never stops. Run that forward and the striking "
+                    "property appears — in a hundred-machine pool about a hundred "
+                    "survivors share the same job, so the repair is about twenty "
+                    "times faster than with the five here. Recovery gets quicker "
+                    "as the system grows, which is the reverse of how storage "
+                    "normally ages — up to a point: the repair is deliberately "
+                    "held back so it does not eat the speed the clients are still "
+                    "using, and in a very large pool the network decides the pace "
+                    "rather than the number of helpers."
                 ),
                 plain=(
                     "The reason this architecture exists. The lost node's data was "
@@ -421,11 +450,15 @@ def simulate() -> list[ClusterState]:
                     "five survivors. So the rebuild is many-to-many: each of the "
                     "five reconstructs a fifth of what was lost, reading from the "
                     "other four, simultaneously. Every node participates; none "
-                    "spectates. Run it forward and the striking property appears — "
-                    "in a hundred-node pool, a hundred nodes each rebuild a "
-                    "hundredth, roughly twenty times faster than here. Rebuild time "
-                    "falls as the system grows, which is why this stage is not the "
-                    "longest in the trace."
+                    "spectates. The repair takes a little of their effort, so "
+                    "client I/O slips from 1,500k to 1,380k and never stops. Run it "
+                    "forward and the striking property appears — in a hundred-node "
+                    "pool about a hundred survivors share the same job, roughly "
+                    "twenty times faster than the five here — until the rebuild "
+                    "throttle or the fabric binds, since the repair is capped on "
+                    "purpose so it does not eat the front end. Rebuild time falls as "
+                    "the system grows, which is why this stage is not the longest "
+                    "in the trace."
                 ),
                 standard=(
                     "The reason this architecture exists. The lost node's data "
@@ -434,12 +467,23 @@ def simulate() -> list[ClusterState]:
                     "rebuild is many-to-many: each of the five reconstructs a "
                     "fifth of what was lost, reading from the other four, "
                     "simultaneously. Every node is a participant; none is a "
-                    "spectator. Run the arithmetic forward and the striking "
-                    "property appears — in a hundred-node pool, a hundred "
-                    "nodes each rebuild a hundredth, so the recovery is "
-                    "roughly twenty times faster than it is here, in a cluster "
-                    "twenty times smaller. Rebuild time falls as the system "
-                    "grows. That is the reverse of how storage normally ages, "
+                    "spectator. The repair takes some of their effort, so "
+                    "client I/O slips from 1,500k to 1,380k and never stops. "
+                    "Run the arithmetic forward and the striking property "
+                    "appears — in a hundred-node pool about a hundred "
+                    "survivors share the same job, so the recovery is roughly "
+                    "twenty times faster than with the five survivors here. A "
+                    "controller array also spreads a drive rebuild over many "
+                    "drives, but all of it runs through one controller pair, "
+                    "whose fixed budget caps the rate however many drives sit "
+                    "behind it. Here the budget grows with the pool, so "
+                    "rebuild time falls as the system grows. The one-over-n "
+                    "arithmetic holds until something else binds: PowerFlex "
+                    "throttles rebuild traffic on purpose so the repair does not "
+                    "eat the front-end I/O — the 1,380k above is that throttle — "
+                    "and at large scale the fabric and the spare capacity's write "
+                    "bandwidth bind before the count of participants does. That is the "
+                    "reverse of how storage normally ages, "
                     "and it is why this stage is not the longest one in the "
                     "trace: building the pool took six times as long as "
                     "repairing it."
@@ -448,22 +492,29 @@ def simulate() -> list[ClusterState]:
                     "The architecture's justification. The lost node's data was "
                     "fragmented across all survivors, so rebuild is many-to-many: "
                     "each of five reconstructs a fifth concurrently, reading from "
-                    "the other four. Every node participates. Scaled out, an n-node "
-                    "pool rebuilds 1/n each, so MTTR falls as n rises — the reverse "
-                    "of controller-array behaviour, and why the scatter rather than "
-                    "the repair holds max dwell."
+                    "the other four; client I/O gives up 1,500k to 1,380k to the "
+                    "rebuild load. Every node participates. Scaled out, an n-node "
+                    "pool rebuilds 1/n each, so MTTR falls as n rises — until the "
+                    "rebuild QoS throttle or the fabric binds; the 1,380k dip is "
+                    "that throttle. In a "
+                    "controller array the rebuild rate is capped by the controller "
+                    "pair's fixed budget at any size, however many drives share "
+                    "the work; here the budget grows with the survivors. It is why "
+                    "the scatter, not the repair, is the longest stage."
                 ),
                 expert=(
                     "Many-to-many rebuild: each survivor reconstructs 1/n "
-                    "concurrently. MTTR inversely proportional to node count — the "
-                    "inverse of controller-array scaling. Scatter, not repair, "
-                    "holds max dwell."
+                    "concurrently; client I/O 1,500k to 1,380k under rebuild load. "
+                    "MTTR ~1/n until the rebuild QoS throttle or the fabric binds "
+                    "(the 1,380k dip is the throttle), where a controller array's rebuild rate is capped "
+                    "by the controller pair's fixed budget at any size. Scatter, "
+                    "not repair, is the longest stage."
                 ),
             ),
             active_regions=[*SURVIVORS, "clients", "fabric", "mdm", "protection"],
             nodes_online=5,
             rebuild_participants=5,
-            iops_thousands=1500,
+            iops_thousands=1380,
             protected_percent=89,
             elapsed_seconds=300,
             cycle_cost=3,
@@ -476,51 +527,64 @@ def simulate() -> list[ClusterState]:
                 novice=(
                     "Everything has its full protection again, now spread across "
                     "five machines instead of six. Nothing was restored from a "
-                    "backup, no spare drive was used up, and nobody was woken in "
-                    "the night — the pool simply used capacity it already had. The "
-                    "cluster is genuinely smaller now and behaves that way: a "
-                    "little less space, a little less speed, and complete "
-                    "protection. Replacing the failed machine later is an addition "
+                    "backup, no spare drive was swapped in, and nobody was woken in "
+                    "the night. The rebuild did use something: empty space the pool "
+                    "keeps in reserve for exactly this, about one machine's worth. "
+                    "A pool filled past that reserve would have nowhere to put the "
+                    "new copies and would stay under-protected until someone added "
+                    "space. The cluster is genuinely smaller now and behaves that "
+                    "way: less space, a sixth less speed (1,500 thousand requests "
+                    "a second, five machines' worth), and complete protection. Replacing the failed machine later is an addition "
                     "rather than a repair, and the pool will spread onto it the "
                     "same way."
                 ),
                 plain=(
                     "Every chunk has full protection again, redistributed across "
                     "five nodes instead of six. Nothing was restored from backup, "
-                    "no spare drive was consumed, and no administrator was paged — "
-                    "the pool used capacity it already had. The cluster is "
-                    "genuinely smaller and behaves accordingly: slightly less "
-                    "capacity, slightly less throughput, complete protection. "
+                    "no spare drive was swapped in, and no administrator was paged. "
+                    "The rebuild did consume something: spare capacity the pool "
+                    "keeps reserved for this, about one node's worth. A pool "
+                    "filled past that reserve stays degraded until capacity is "
+                    "added. The cluster is genuinely smaller and behaves "
+                    "accordingly: less capacity, a sixth less throughput (1,500k, "
+                    "five nodes' worth), complete protection. "
                     "Replacing node 6 later is an addition, not a repair."
                 ),
                 standard=(
                     "Every chunk has its full protection again, redistributed "
                     "across five nodes instead of six. Nothing was restored "
-                    "from a backup, no spare drive was consumed, and no "
-                    "administrator was paged — the pool simply used the "
-                    "capacity it already had. The cluster is now genuinely "
-                    "smaller and behaves accordingly: slightly less capacity, "
-                    "slightly less throughput, and complete protection. "
+                    "from a backup, no spare drive was swapped in, and no "
+                    "administrator was paged. The rebuild did consume "
+                    "something: spare capacity the pool keeps reserved for "
+                    "exactly this, about one node's worth. A pool filled past "
+                    "that reserve has nowhere to put the new copies, and "
+                    "protection stays degraded until capacity is added. The "
+                    "cluster is now genuinely smaller and behaves accordingly: "
+                    "less capacity, a sixth less throughput (1,500k, five "
+                    "nodes' worth), and complete protection. "
                     "Replacing node 6 later is an addition, not a repair, and "
                     "the pool will rebalance onto it the same way."
                 ),
                 technical=(
                     "Full protection restored across five nodes. No backup restore, "
-                    "no spare consumed, no page raised — redistribution used "
-                    "existing capacity. The cluster is smaller and behaves so: "
-                    "reduced capacity and throughput, full redundancy. Replacement "
-                    "is an addition, not a repair."
+                    "no hot-spare drive, no page raised — the rebuild landed in "
+                    "reserved spare capacity (about one node's worth); below that "
+                    "reserve, protection stays degraded until capacity is added. "
+                    "The cluster is smaller and behaves so: reduced capacity, "
+                    "throughput at 5/6 (1,500k), full redundancy. Replacement is "
+                    "an addition, not a repair."
                 ),
                 expert=(
-                    "Redundancy restored on n-1 nodes from existing capacity. No "
-                    "spare, no restore, no page. Replacement is an add, not a "
-                    "repair."
+                    "Redundancy restored on n-1 into reserved spare capacity (~one "
+                    "node's worth); without that headroom it stays degraded. No "
+                    "hot spare, no restore, no page. Throughput 5/6. Replacement "
+                    "is an add, not a repair."
                 ),
             ),
             active_regions=[*SURVIVORS, "clients", "fabric"],
             nodes_online=5,
             rebuild_participants=0,
-            iops_thousands=1780,
+            iops_thousands=1500,
             protected_percent=100,
             elapsed_seconds=420,
         ),
@@ -530,27 +594,31 @@ def simulate() -> list[ClusterState]:
             label="Steady state — one fewer server, no drama",
             description=L(
                 novice=(
-                    "Back to ordinary operation. The whole episode cost a little "
-                    "speed for a few minutes and required nobody's attention, which "
-                    "is an unusual way to describe losing a machine from a storage "
+                    "Back to ordinary operation on five machines. The whole episode "
+                    "cost one machine's share of the speed, which comes back when a "
+                    "replacement is added, and required nobody's attention. That is "
+                    "an unusual way to describe losing a machine from a storage "
                     "system. The same mechanism handles the pleasant version of the "
                     "story too: to replace ageing hardware, add new machines, let "
                     "the pool spread onto them, then remove the old ones — with "
                     "everything still running and no interruption at all."
                 ),
                 plain=(
-                    "Back to ordinary operation. The episode cost some throughput "
-                    "for a few minutes and required nobody's attention, which is an "
-                    "unusual description of losing a server from a storage system. "
+                    "Back to ordinary operation on five nodes. The episode cost one "
+                    "node's share of the throughput, which returns when a "
+                    "replacement is added, and required nobody's attention. That is "
+                    "an unusual description of losing a server from a storage "
+                    "system. "
                     "The same mechanism handles the pleasant version: to refresh "
                     "hardware, add new nodes, let the pool rebalance onto them, "
                     "then remove the old ones — hosts running throughout, without "
                     "so much as a dropped path."
                 ),
                 standard=(
-                    "Back to ordinary operation. The episode cost some "
-                    "throughput for a few minutes and required nobody's "
-                    "attention, which is an unusual description of losing a "
+                    "Back to ordinary operation on five nodes. The episode "
+                    "cost one node's share of the throughput, which returns "
+                    "when a replacement is added, and required nobody's "
+                    "attention. That is an unusual description of losing a "
                     "server from a storage system. The same mechanism handles "
                     "the pleasant version of the story too: to refresh "
                     "hardware, add new nodes, let the pool rebalance onto "
@@ -562,15 +630,15 @@ def simulate() -> list[ClusterState]:
                     "middle."
                 ),
                 technical=(
-                    "Steady state on n-1. The incident cost minutes of throughput "
-                    "and no operator attention. The same rebalance machinery drives "
+                    "Steady state on n-1 at 5/6 throughput until a node is added. "
+                    "The incident cost no operator attention. The same rebalance machinery drives "
                     "hardware refresh: add, rebalance, drain, remove — hosts up "
                     "throughout, no path events. PowerStore and PowerMax show what "
                     "it costs to make a controller safe enough to sit in the "
                     "middle; this removes the middle."
                 ),
                 expert=(
-                    "Steady on n-1. Same rebalance path drives refresh: add, "
+                    "Steady on n-1 at 5/6 throughput. Same rebalance path drives refresh: add, "
                     "rebalance, drain, remove — no host-visible events. The "
                     "controller twins harden the centre; this deletes it."
                 ),
@@ -578,7 +646,7 @@ def simulate() -> list[ClusterState]:
             active_regions=[*SURVIVORS, "clients", "fabric", "mgmt"],
             nodes_online=5,
             rebuild_participants=0,
-            iops_thousands=1800,
+            iops_thousands=1500,
             protected_percent=100,
             elapsed_seconds=600,
         ),

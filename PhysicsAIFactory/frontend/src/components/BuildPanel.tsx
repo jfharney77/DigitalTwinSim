@@ -173,6 +173,11 @@ export function BuildPanel({
           onChange={(e) => onJobChange({ ...job, dataGbpsPerGpu: +e.target.value })}
         />
       </Row>
+      <div className="mini">
+        Illustrative estimate. Image and multimodal pipelines read
+        gigabytes per second per GPU. Text-only LLM pretraining reads far
+        less, and its storage pressure comes from checkpoint writes.
+      </div>
 
       <div className="rules">
         {problems.length === 0 && (

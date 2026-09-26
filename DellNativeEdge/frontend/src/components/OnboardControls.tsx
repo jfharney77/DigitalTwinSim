@@ -1,3 +1,5 @@
+import type { ScenarioInfo } from "../types";
+
 export function OnboardControls({
   speed,
   running,
@@ -8,6 +10,9 @@ export function OnboardControls({
   onPause,
   onStep,
   onReset,
+  scenario,
+  scenarios,
+  onScenario,
 }: {
   speed: number;
   running: boolean;
@@ -18,10 +23,36 @@ export function OnboardControls({
   onPause: () => void;
   onStep: () => void;
   onReset: () => void;
+  scenario: string;
+  scenarios: ScenarioInfo[];
+  onScenario: (id: string) => void;
 }) {
+  const current = scenarios.find((s) => s.id === scenario);
   return (
     <div className="an-panel">
       <h2>Playback</h2>
+      {scenarios.length > 0 && (
+        <label className="field" style={{ marginBottom: 10 }}>
+          Scenario
+          <select
+            className="scenario-select"
+            value={current ? scenario : ""}
+            onChange={(e) => onScenario(e.target.value)}
+          >
+            {!current && <option value="">Unknown scenario</option>}
+            {scenarios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {current && (
+        <div className="mini scenario-summary" style={{ marginBottom: 10 }}>
+          {current.summary}
+        </div>
+      )}
       <div className="btnrow">
         {running ? (
           <button className="primary" onClick={onPause}>

@@ -148,14 +148,63 @@ class DetectState(CamelModel):
     content_confidence_percent: int = Field(ge=0, le=100)
     # Index of the last snapshot proven clean; -1 before the verdict.
     last_clean_snapshot: int = -1
+    # When the named copy was taken, on the same illustrative clock as
+    # ``elapsed_hours``. ``None`` until a copy is named: the deliverable is a
+    # date, so the trace carries one.
+    last_clean_taken_at_hours: int | None = None
     # Illustrative hours since the intrusion began.
     elapsed_hours: int
     # UI dwell ticks; reading every byte of every snapshot is the long one.
     cycle_cost: int = 1
+    # --- Additive fields (failure scenarios). Defaults keep every earlier
+    # --- field of the baseline trace exactly as it was.
+    # Snapshots no longer on the array: deleted by the retention policy, or
+    # (after an incident) exported for forensics and removed. Retained copies
+    # are ``snapshots_taken - snapshots_expired``; the array keeps a fixed
+    # window, and what falls off the old end is gone for good.
+    snapshots_expired: int = Field(default=0, ge=0)
+    # What the analysis concluded: "" before the verdict, then either
+    # "clean-copy-named" or "no-clean-copy-on-array". The second is an
+    # answer too — the honest one when every retained copy is ruined.
+    verdict: str = ""
+    # Where recovery reads from: "" before recovery, "array-snapshot" when
+    # the verdict named a copy on this array, "powerprotect-vault" when the
+    # array had none and the restore comes from the isolated vault.
+    recovery_source: str = ""
+    # Illustrative age, in hours, of the data being restored — the recovery
+    # point objective (RPO) actually achieved. Zero before recovery.
+    recovery_point_age_hours: int = Field(default=0, ge=0)
+    # Regions that cannot do their job at this step (drawn in the error
+    # colour). Ids from anatomy.py.
+    failed_regions: list[str] = Field(default_factory=list)
 
 
 class DetectResponse(CamelModel):
     trace: list[DetectState]
+    # Which scenario this trace is; "baseline" is the original incident.
+    scenario: str = "baseline"
+
+
+class ScenarioInfo(CamelModel):
+    """One selectable incident. The baseline ends with a named clean copy;
+    failure scenarios end some other honest way."""
+
+    id: str
+    name: str
+    summary: str
+    # The one number to watch, and the value it must reach.
+    hero_label: str
+    hero_value: str
+    # The array's snapshot retention window, illustrative hours.
+    retention_hours: int
+    sources: list[SourceLink] = Field(default_factory=list)
+    # Page copy for the incident page while this scenario is selected, so
+    # the intro and the two notes describe the trace beside them and carry
+    # reading levels like the rest of the prose.
+    heading: str = ""
+    intro: str = ""
+    map_note: str = ""
+    counters_note: str = ""
 
 
 class CatalogOption(CamelModel):

@@ -46,11 +46,13 @@ _IO_DESC = (
 )
 
 
-def _regions_18_inch() -> list[Region]:
+def _regions_18_inch(vram: str = "GDDR6") -> list[Region]:
     """The shared 18-inch floorplan; both dies use the same physical layout.
 
     Region ids are the vocabulary ``PowerState.activeRegions`` speaks, so
-    the set (and ids) must stay in sync with engine.py.
+    the set (and ids) must stay in sync with engine.py. ``vram`` is the one
+    thing that differs on the board: GDDR6 on the RTX 40-series m18 R2,
+    GDDR7 on the RTX 50-series 18 Area-51 (both per Dell's owner's manuals).
     """
     return [
         Region(
@@ -108,8 +110,9 @@ def _regions_18_inch() -> list[Region]:
                 "power, and package temperatures touching 99–100 °C under "
                 "load are documented as normal: Intel's thermal control "
                 "circuit trims a few hundred MHz at the limit rather than "
-                "shutting down. A BIOS 'TCC offset' can move that trigger "
-                "up to 15 °C lower for a cooler, slightly slower machine."
+                "shutting down. A 'TCC offset' slider in Alienware Command "
+                "Center can move that trigger up to 15 °C lower for a "
+                "cooler, slightly slower machine."
             ),
         ),
         Region(
@@ -130,10 +133,10 @@ def _regions_18_inch() -> list[Region]:
         Region(
             id="vram",
             kind="memory",
-            label="GDDR6 VRAM",
+            label=f"{vram} VRAM",
             x=48, y=25, w=16, h=4,
             description=(
-                "The GPU's dedicated graphics memory: GDDR6 packages "
+                f"The GPU's dedicated graphics memory: {vram} packages "
                 "arranged around the GPU die to keep trace lengths short. "
                 "They share the GPU's thermal solution via pads to the "
                 "vapor-chamber plate, and their power draw is accounted "
@@ -304,7 +307,7 @@ M18_R2_ANATOMY = Anatomy(
         Stat(label="Adapter", value="280 W or 360 W SFF · 19.5 V barrel"),
         Stat(label="Adapter ID", value="1-Wire PSID chip, center pin"),
         Stat(label="Battery", value="6-cell 97 Wh · 11.4 V"),
-        Stat(label="ExpressCharge", value="~80% in 1 h (lid closed)"),
+        Stat(label="ExpressCharge", value="~80% in 1 h, powered off (Dell's rating)"),
         Stat(label="GPU power", value="RTX 4090 Laptop · 175 W TGP"),
         Stat(label="CPU", value="i9-14900HX · up to 157 W"),
         Stat(label="Hybrid power", value="Battery supplements AC at peak"),
@@ -312,11 +315,19 @@ M18_R2_ANATOMY = Anatomy(
     sources=[
         SourceLink(
             label="Dell — m18 R2 power adapter specs",
-            url="https://www.dell.com/support/manuals/en-us/alienware-m18-r2-laptop/alienware-m18-r2-owners-manual/power-adapter",
+            url="https://www.dell.com/support/manuals/en-us/alienware-m18-r2-laptop/alienware-m18-r2-owners-manual/power-adapter?guid=guid-f26b1c4b-c8be-4a81-9936-781588327ef5&lang=en-us",
         ),
         SourceLink(
-            label="Dell — m18 R1 battery specs",
-            url="https://www.dell.com/support/manuals/en-us/alienware-m18-r1-laptop/alienware-m18-r1-setup-and-specifications/battery",
+            label="Dell — m18 R2 battery specs (97 Wh, 11.4 V, charge times)",
+            url="https://www.dell.com/support/manuals/en-us/alienware-m18-r2-laptop/alienware-m18-r2-owners-manual/battery?guid=guid-f65273b2-af5e-4c69-b895-7cef2148f79d&lang=en-us",
+        ),
+        SourceLink(
+            label="Dell — ExpressCharge and ExpressCharge Boost ratings",
+            url="https://www.dell.com/support/manuals/en-us/dell-wd19-130w-dock/wd19_userguide/dell-expresscharge-and-expresscharge-boost-overview?guid=guid-291d7a27-2ccb-4f0c-8c67-45869f58918d&lang=en-us",
+        ),
+        SourceLink(
+            label="Dell KB — thermal modes, TCC offset, 99–100 °C as normal",
+            url="https://www.dell.com/support/kbdoc/en-us/000198980/alienware-x15-r2-and-x17-r2-guide-to-thermal-controls-in-operating-modes-in-alienware-command-center",
         ),
         SourceLink(
             label="Dell KB — battery drain on AC is hybrid power by design",
@@ -390,18 +401,28 @@ AREA51_18_ANATOMY = Anatomy(
             "Core Ultra 200HX, RTX 50-series to 175 W TGP."
         ),
     ),
-    regions=_regions_18_inch(),
+    regions=_regions_18_inch(vram="GDDR7"),
     stats=[
-        Stat(label="Adapter", value="360 W · 19.5 V barrel"),
+        Stat(label="Adapter", value="280 W or 360 W · 19.5 V barrel"),
         Stat(label="Adapter ID", value="1-Wire PSID chip, center pin"),
-        Stat(label="Battery", value="6-cell ~96 Wh"),
-        Stat(label="GPU power", value="RTX 5090 Laptop · 175 W TGP"),
+        Stat(label="Battery", value="6-cell 96 Wh · 11.7 V"),
+        Stat(label="ExpressCharge 2", value="0→80% in 35 min, powered off (Dell's rating)"),
+        Stat(label="USB-C charging", value="USB PD supported · 90 W minimum"),
+        Stat(label="GPU power", value="RTX 5090 Laptop · 175 W TGP (Dell's figure)"),
         Stat(label="CPU", value="Core Ultra 9 275HX"),
         Stat(label="Cooling", value="Cryo-chamber (vapor chamber + pipes)"),
     ],
     sources=[
         SourceLink(
-            label="Dell KB — adapter wattage requirements by model",
+            label="Dell — 18 Area-51 (AA18250) battery specs: 96 Wh, 11.7 V, ExpressCharge 2",
+            url="https://www.dell.com/support/manuals/en-us/alienware-area-51-aa18250-gaming-laptop/alienware-18-area-51-aa18250-owners-manual/battery?guid=guid-085998d3-f81d-4397-b195-4fc447e3e83a&lang=en-us",
+        ),
+        SourceLink(
+            label="Dell — 18 Area-51 (AA18250) adapter and USB PD power requirements",
+            url="https://www.dell.com/support/manuals/en-us/alienware-area-51-aa18250-gaming-laptop/alienware-18-area-51-aa18250-owners-manual/power-requirements-for-computers-shipped-with-6-cell-96-wh-battery?guid=guid-0bd5b1fb-c60f-42dd-8a5d-60ef19fbe41d&lang=en-us",
+        ),
+        SourceLink(
+            label="Dell KB — under-voltage protection after an undersized adapter (m-/x-series)",
             url="https://www.dell.com/support/kbdoc/en-us/000218837/no-power-after-shut-down-using-the-incorrect-ac-adapter-on-alienware-gaming-laptops",
         ),
         SourceLink(
@@ -409,7 +430,7 @@ AREA51_18_ANATOMY = Anatomy(
             url="https://www.dell.com/support/kbdoc/en-us/000125125/how-to-troubleshoot-ac-adapter-issues",
         ),
         SourceLink(
-            label="CES 2026 lineup coverage (16/18 Area-51, 16X Aurora)",
+            label="Wccftech, CES 2026 — 18 Area-51: 175 W TGP + 105 W CPU, 280 W total (reported)",
             url="https://wccftech.com/alienware-2026-laptop-16x-aurora-18-16-area-51-16-oled-brand-new-entry-level-ultra-slim-models/",
         ),
     ],

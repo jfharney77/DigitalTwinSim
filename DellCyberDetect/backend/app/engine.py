@@ -61,6 +61,19 @@ _SNAPSHOTS = [f"snap-{i}" for i in range(1, TOTAL_SNAPSHOTS + 1)]
 _CLEAN = _SNAPSHOTS[:CLEAN_SNAPSHOTS]
 _DIRTY = _SNAPSHOTS[CLEAN_SNAPSHOTS:]
 
+# Snapshot 3 was taken at t+0 and the restore starts at t+134h, so the data
+# that comes back is 134 hours old (illustrative). The failure scenario in
+# scenarios.py is measured against this number.
+BASELINE_RECOVERY_POINT_AGE_HOURS = 134
+
+# The baseline array takes a snapshot every 30 hours (illustrative): snapshot
+# 3 at t+0, then t+30, t+60, t+90, t+120. Every ``snapshots_taken`` below
+# follows from that; the eighth copy at the end is taken on demand after the
+# restore. The interval is 30 rather than 24 because snapshot 3 sits at t+0
+# and snapshot 7 must exist by the blind step at t+120.
+SNAPSHOT_INTERVAL_HOURS = 30
+_LAST_CLEAN_TAKEN_AT_HOURS = 0
+
 
 def simulate() -> list[DetectState]:
     """An incident, and the analysis that produces a usable answer."""
@@ -128,8 +141,9 @@ def simulate() -> list[DetectState]:
                     "in real incidents it is routinely measured in weeks: the "
                     "intruder is quietly mapping the network, finding where the "
                     "backups live, and learning what normal activity looks like so "
-                    "they can imitate it. Every copy saved during this period is "
-                    "still perfectly good, which means recovery would still be "
+                    "they can imitate it. This trace squeezes the wait into about "
+                    "a day so the story fits on one screen. Every copy saved so far "
+                    "is still perfectly good, which means recovery would still be "
                     "easy. Nobody knows there is anything to recover from."
                 ),
                 plain=(
@@ -138,9 +152,10 @@ def simulate() -> list[DetectState]:
                     "encrypted yet. This is dwell time, and in real incidents it is "
                     "routinely weeks: the attacker is mapping the estate, finding "
                     "the backup system, and learning what normal looks like so they "
-                    "can imitate it. Every snapshot taken now is still clean, so "
-                    "recovery would still be easy. Nobody knows there is anything "
-                    "to recover from."
+                    "can imitate it. This trace compresses the wait to about a day. "
+                    "All three snapshots on the array are still clean, so recovery "
+                    "would still be easy. Nobody knows there is anything to recover "
+                    "from."
                 ),
                 standard=(
                     "Access has been obtained — a stolen credential, an "
@@ -149,30 +164,33 @@ def simulate() -> list[DetectState]:
                     "incidents it is routinely measured in weeks: the attacker "
                     "is mapping the estate, finding the backup system, and "
                     "learning what normal looks like so they can imitate it. "
-                    "Every snapshot taken during this period is still perfectly "
-                    "clean, which means recovery is still easy. Nobody knows "
-                    "there is anything to recover from."
+                    "This trace compresses that wait to about a day "
+                    "(illustrative). All three snapshots on the array are still "
+                    "perfectly clean, which means recovery is still easy. "
+                    "Nobody knows there is anything to recover from."
                 ),
                 technical=(
                     "Initial access achieved; no encryption yet. Dwell time — "
                     "routinely weeks in practice — spent on discovery, locating the "
                     "backup infrastructure, and baselining normal activity for "
-                    "later imitation. Snapshots taken in this window remain clean, "
-                    "so recovery is trivial and nobody knows it is needed."
+                    "later imitation. Compressed here to about a day "
+                    "(illustrative). All three snapshots remain clean, so recovery "
+                    "is trivial and nobody knows it is needed."
                 ),
                 expert=(
                     "Access established, pre-encryption. Dwell: discovery, backup "
-                    "enumeration, behavioural baselining. Snapshots still clean; "
-                    "recovery trivial and unknown to be necessary."
+                    "enumeration, behavioural baselining, compressed here to ~1 d. "
+                    "All three snapshots clean; recovery trivial and unknown to be "
+                    "necessary."
                 ),
             ),
             active_regions=["array", *_CLEAN],
-            snapshots_taken=4,
+            snapshots_taken=3,
             snapshots_corrupted=0,
             metadata_alerts=0,
             content_confidence_percent=0,
             last_clean_snapshot=-1,
-            elapsed_hours=72,
+            elapsed_hours=24,
             cycle_cost=2,
         ),
         DetectState(
@@ -187,7 +205,9 @@ def simulate() -> list[DetectState]:
                     "ending. The amount of data changing stays within what ordinary "
                     "work produces. Every one of those choices costs the attacker "
                     "time, and they make it anyway, because the alternative is "
-                    "setting something off on the first afternoon. Two saved copies "
+                    "setting something off on the first afternoon. The storage "
+                    "system saves a copy every 30 hours in this example, and the two "
+                    "newest copies "
                     "now contain damaged data, and from the outside they are "
                     "indistinguishable from the three before them."
                 ),
@@ -198,9 +218,10 @@ def simulate() -> list[DetectState]:
                     "conspicuous. The volume of changed blocks stays inside the "
                     "range ordinary work produces. Each of those choices costs the "
                     "attacker time, and they make it anyway, because the "
-                    "alternative is tripping something on the first afternoon. Two "
-                    "snapshots now contain corrupted data, indistinguishable from "
-                    "the others by every visible property."
+                    "alternative is tripping something on the first afternoon. The "
+                    "array snapshots every 30 hours here (illustrative), and the two "
+                    "newest snapshots now contain corrupted data, indistinguishable "
+                    "from the others by every visible property."
                 ),
                 standard=(
                     "The encryption campaign starts, and it is designed around "
@@ -210,7 +231,9 @@ def simulate() -> list[DetectState]:
                     "stays inside the range that ordinary work produces. Every "
                     "one of those choices costs the attacker time, and they "
                     "make it anyway, because the alternative is tripping "
-                    "something on the first afternoon. Two snapshots now "
+                    "something on the first afternoon. The array takes a "
+                    "snapshot every 30 hours in this trace (illustrative), so "
+                    "two have been taken since the encryption began. Both "
                     "contain corrupted data, and they are indistinguishable "
                     "from the three before them by every property visible from "
                     "outside."
@@ -220,13 +243,14 @@ def simulate() -> list[DetectState]:
                     "rate-limited rewrites, extensions preserved, changed-block "
                     "volume held inside the normal envelope. Each constraint costs "
                     "the attacker time and is accepted, because the alternative is "
-                    "a first-day alert. Two snapshots corrupted, externally "
-                    "indistinguishable from the clean ones."
+                    "a first-day alert. 30 h snapshot interval (illustrative); the "
+                    "two taken since are corrupted, externally indistinguishable "
+                    "from the clean ones."
                 ),
                 expert=(
                     "Encryption begins, evasion-shaped: rate-limited, extensions "
-                    "preserved, changed-block volume within envelope. Two snapshots "
-                    "corrupt, externally indistinguishable."
+                    "preserved, changed-block volume within envelope. 30 h snapshot "
+                    "interval; the two newest corrupt, externally indistinguishable."
                 ),
             ),
             active_regions=["array", *_SNAPSHOTS[:5]],
@@ -235,7 +259,7 @@ def simulate() -> list[DetectState]:
             metadata_alerts=0,
             content_confidence_percent=0,
             last_clean_snapshot=-1,
-            elapsed_hours=96,
+            elapsed_hours=66,
             cycle_cost=2,
         ),
         DetectState(
@@ -245,52 +269,60 @@ def simulate() -> list[DetectState]:
             description=L(
                 novice=(
                     "The uncomfortable step. Four of the seven saved copies are now "
-                    "damaged, the attack has been running for two days, and the "
+                    "damaged, the attack has been running for almost four days, and the "
                     "alarm count reads zero — not because the security tools are "
                     "broken, but because they are working exactly as designed and "
                     "are being asked the wrong question. No file name changed, so "
                     "the name monitor is quiet. The scrambling happened gradually, "
-                    "so the threshold for sudden change was never crossed. Nothing "
+                    "so the alarm that watches for files suddenly turning into "
+                    "random-looking noise (a measure called entropy) never went "
+                    "off. Nothing "
                     "was renamed in bulk. The activity looks like a busy Tuesday. "
                     "Everything that watches *descriptions* of the data is "
                     "satisfied, and the data is ruined."
                 ),
                 plain=(
                     "The uncomfortable step. Four of seven snapshots are now "
-                    "corrupted, the campaign has run for two days, and the alert "
+                    "corrupted, the campaign has run for almost four days, and the alert "
                     "counter reads zero — not because the tools are misconfigured, "
                     "but because they are working as designed and being asked the "
                     "wrong question. No extension changed, so the extension monitor "
-                    "is quiet. Entropy rose gradually, so the threshold was never "
-                    "crossed. Nothing was renamed en masse. The I/O profile looks "
+                    "is quiet. Entropy (how random the bytes look) rose gradually, "
+                    "so the threshold was never crossed. Nothing was renamed en "
+                    "masse. The I/O profile looks "
                     "like a busy Tuesday. Everything watching descriptions of the "
                     "data is satisfied, and the data is ruined."
                 ),
                 standard=(
                     "The uncomfortable step. Four of seven snapshots are now "
-                    "corrupted, the campaign has been running for two days, "
+                    "corrupted, the campaign has been running for almost four days, "
                     "and the alert counter reads zero — not because the tools "
                     "are misconfigured, but because they are working exactly "
                     "as designed and are being asked the wrong question. No "
                     "extension changed, so the extension monitor is quiet. "
-                    "Entropy rose gradually, so the entropy threshold was "
+                    "Entropy (how random the bytes look, a statistic sampled "
+                    "from outside or inferred from how well the data "
+                    "compresses) rose gradually, so the entropy threshold was "
                     "never crossed. Nothing was renamed en masse. The I/O "
                     "profile looks like a busy Tuesday. Everything that "
-                    "watches *descriptions* of the data is satisfied, and the "
-                    "data is ruined."
+                    "watches *descriptions* of the data, or a threshold on a "
+                    "statistic about it, is satisfied, and the data is ruined."
                 ),
                 technical=(
-                    "Four of seven snapshots corrupt, two days in, alert count zero "
-                    "— the detectors are working correctly and answering the wrong "
-                    "question. No extension delta, entropy raised below threshold "
-                    "gradient, no mass rename, I/O within profile. Every "
-                    "metadata-derived signal is nominal while the payload is "
-                    "destroyed."
+                    "Four of seven snapshots corrupt, almost four days in, alert "
+                    "count zero — the detectors are working correctly and answering "
+                    "the wrong question. No extension delta, no mass rename, I/O "
+                    "within profile: the metadata signals are nominal. The "
+                    "statistical ones are too: sampled entropy is raised below the "
+                    "threshold gradient, and the array's data-reduction ratio "
+                    "drifts down slowly enough to pass as workload change. Every "
+                    "outside-in signal is nominal while the payload is destroyed."
                 ),
                 expert=(
-                    "4/7 corrupt, zero alerts. Every metadata-derived signal "
-                    "nominal by construction: no extension delta, sub-threshold "
-                    "entropy gradient, no mass rename, in-profile I/O."
+                    "4/7 corrupt, zero alerts. Metadata signals nominal by "
+                    "construction: no extension delta, no mass rename, in-profile "
+                    "I/O. Statistical signals too: sub-threshold entropy gradient, "
+                    "data-reduction ratio drifting within workload noise."
                 ),
             ),
             active_regions=["array", *_SNAPSHOTS],
@@ -308,13 +340,17 @@ def simulate() -> list[DetectState]:
             label="Content inspection opens the snapshots and reads the bytes",
             description=L(
                 novice=(
-                    "The long step, and the one being paid for. Instead of "
+                    "Somebody in the business reports records that will not open, "
+                    "and the administrator starts the content check by hand. Until "
+                    "this incident it was not run on a schedule. This is the long "
+                    "step, and the one being paid for. Instead of "
                     "reasoning about the data from the outside, the analysis opens "
                     "the files and database records inside every saved copy and "
                     "reads what is actually there. This is expensive — by some "
                     "distance the slowest thing in the whole story — and the "
                     "expense is the entire product. A description of a file is "
-                    "something the attacker can also control; the contents are not. "
+                    "something the attacker can also control; whether the contents "
+                    "still make sense is far harder to fake. "
                     "A file can be made to look ordinary from every angle except "
                     "the one that asks whether it still means anything, and that is "
                     "the only angle being used. Note too that this runs on the "
@@ -322,25 +358,35 @@ def simulate() -> list[DetectState]:
                     "travel elsewhere before the question can even be asked."
                 ),
                 plain=(
-                    "The long stage, and the one being paid for. Rather than "
+                    "An application team reports records that will not open, and "
+                    "the administrator runs content inspection on demand; before "
+                    "this incident it was not scheduled. The long stage, and the "
+                    "one being paid for. Rather than "
                     "reasoning about the data, the analysis opens files and "
                     "database pages inside every snapshot and reads what is there. "
                     "It is expensive — by some distance the slowest thing in this "
                     "trace — and the expense is the product. Metadata is a "
-                    "description the attacker also controls; content is not. A file "
+                    "description the attacker also controls; whether the content "
+                    "still parses is far harder to fake. A file "
                     "can be made to look ordinary from every angle except the one "
                     "asking whether it still means anything. It runs on the array "
                     "against local snapshots, so there is no replication lag before "
                     "the question can be asked."
                 ),
                 standard=(
-                    "The long stage, and the one being paid for. Rather than "
+                    "An application team reports records that will not open, "
+                    "and the administrator runs content inspection on demand. "
+                    "Before this incident it was not on a schedule, which is "
+                    "why the damage went unread for days. This is the long "
+                    "stage, and the one being paid for. Rather than "
                     "reasoning about the data, the analysis opens files and "
                     "database pages inside every snapshot on the array and "
                     "reads what is actually there. This is expensive — it is "
                     "by some distance the slowest thing in this trace — and "
                     "the expense is the entire product. Metadata is a "
-                    "description the attacker also controls; content is not. "
+                    "description the attacker also controls; whether the "
+                    "content is still a valid document or database page is far "
+                    "harder to fake. "
                     "A file can be made to look ordinary from every angle "
                     "except the one that asks whether it still means anything, "
                     "and that is the only angle being used here. Note that it "
@@ -349,17 +395,24 @@ def simulate() -> list[DetectState]:
                     "question can even be asked."
                 ),
                 technical=(
-                    "Max-dwell stage and the one being paid for: files and database "
-                    "pages inside each snapshot are opened and inspected at byte "
-                    "level. Expensive, and the expense is the product — metadata is "
-                    "attacker-controlled, payload integrity is not. Runs "
+                    "Admin-initiated after an application team reports unreadable "
+                    "records; no scan was scheduled before this incident. Max-dwell "
+                    "stage and the one being paid for: files and database pages "
+                    "inside each snapshot are opened and checked at byte level for "
+                    "format and structure validity, compared with earlier scans. "
+                    "Expensive, and the expense is the product — metadata is "
+                    "attacker-controlled, and a payload that still parses is far "
+                    "harder to counterfeit than a statistic about it. Runs "
                     "array-local against local snapshots, so no replication lag "
                     "gates the question."
                 ),
                 expert=(
-                    "Byte-level content inspection across all snapshots. Max dwell; "
-                    "cost is the product. Metadata is attacker-controlled, payload "
-                    "integrity is not. Array-local — no replication lag."
+                    "Admin-initiated on a user report; nothing was scheduled. "
+                    "Byte-level inspection across all snapshots: format and "
+                    "structure validity per file and DB page, against prior scans. "
+                    "Max dwell; cost is the product. Metadata is "
+                    "attacker-controlled; a payload that still parses is far harder "
+                    "to fake. Array-local — no replication lag."
                 ),
             ),
             active_regions=["array", *_SNAPSHOTS, "inspect"],
@@ -400,7 +453,7 @@ def simulate() -> list[DetectState]:
                     "at. You are looking at the damage, and there are far fewer "
                     "ways to wreck a file than programs that do it — which is why "
                     "this generalizes to uncatalogued variants. Confidence lands in "
-                    "the 99%-plus range. The error that matters is the false "
+                    "the 99%-plus range Dell publishes (illustrative here). The error that matters is the false "
                     "negative."
                 ),
                 standard=(
@@ -425,14 +478,17 @@ def simulate() -> list[DetectState]:
                     "Trained across thousands of variants, which is not signature "
                     "matching: the artefact under examination is the damage, not "
                     "the malware, and damage morphology generalizes far better than "
-                    "binaries do. Confidence ≥99%. The consequential error is the "
-                    "false negative, which certifies corruption as clean."
+                    "binaries do. Confidence ≥99% for this run (illustrative; "
+                    "Dell's published accuracy claim, a population figure, is "
+                    "99.99%). The consequential error is the false negative, which "
+                    "certifies corruption as clean."
                 ),
                 expert=(
                     "Integrity scoring against trained fingerprints; damage "
                     "morphology generalizes where signatures do not. ≥99% "
-                    "confidence. False negative is the consequential error — it "
-                    "certifies corruption."
+                    "confidence (illustrative, per run; Dell's published accuracy "
+                    "claim is 99.99%). False negative is the consequential error — "
+                    "it certifies corruption."
                 ),
             ),
             active_regions=["array", *_SNAPSHOTS, "inspect", "classifier", "models"],
@@ -450,7 +506,8 @@ def simulate() -> list[DetectState]:
             label="The answer is a date, not an alert",
             description=L(
                 novice=(
-                    "Copy 3 is the last one whose contents are provably intact; "
+                    "Copy 3, the box numbered 3 on the row, saved at t+0h, is the "
+                    "last one whose contents are provably intact; "
                     "everything from copy 4 onward carries the damage. That "
                     "sentence, with the evidence attached, is the deliverable — and "
                     "notice how different it is from what a security product "
@@ -461,8 +518,8 @@ def simulate() -> list[DetectState]:
                     "which is why the previous step cost what it did."
                 ),
                 plain=(
-                    "Snapshot 3 is the last copy whose contents are provably "
-                    "intact; everything from snapshot 4 onward carries the "
+                    "Snapshot 3, taken at t+0h, is the last copy whose contents are "
+                    "provably intact; everything from snapshot 4 onward carries the "
                     "corruption. That sentence, with evidence attached, is the "
                     "deliverable — and it is very different from what a detection "
                     "product usually produces. 'You have ransomware' is not useful "
@@ -472,9 +529,10 @@ def simulate() -> list[DetectState]:
                     "which is why the inspection cost what it did."
                 ),
                 standard=(
-                    "Snapshot 3 is the last copy whose contents are provably "
-                    "intact; everything from snapshot 4 onward carries the "
-                    "corruption. That sentence — with evidence attached — is "
+                    "Snapshot 3, taken at t+0h, is the last copy whose contents "
+                    "are provably intact; everything from snapshot 4 onward "
+                    "carries the corruption. That sentence — a copy, a "
+                    "timestamp, and the evidence attached — is "
                     "the deliverable, and it is worth noticing how different "
                     "it is from what a detection product usually produces. "
                     "'You have ransomware' is not useful here; by this point "
@@ -484,7 +542,7 @@ def simulate() -> list[DetectState]:
                     "byte, which is why the inspection stage cost what it did."
                 ),
                 technical=(
-                    "Recovery point established: snapshot 3 is the last "
+                    "Recovery point established: snapshot 3 (t+0h) is the last "
                     "provably-intact copy, corruption from 4 onward, evidence "
                     "attached. The deliverable is a recovery point rather than an "
                     "alert — detection is not news at this stage. Which copy is not "
@@ -492,7 +550,7 @@ def simulate() -> list[DetectState]:
                     "is what the inspection stage bought."
                 ),
                 expert=(
-                    "Recovery point: snapshot 3, corruption from 4. Deliverable is "
+                    "Recovery point: snapshot 3 (t+0h), corruption from 4. Deliverable is "
                     "a point, not an alert. Not inferable — established by "
                     "exhaustive read."
                 ),
@@ -503,7 +561,9 @@ def simulate() -> list[DetectState]:
             metadata_alerts=0,
             content_confidence_percent=99,
             last_clean_snapshot=CLEAN_SNAPSHOTS,
+            last_clean_taken_at_hours=_LAST_CLEAN_TAKEN_AT_HOURS,
             elapsed_hours=130,
+            verdict="clean-copy-named",
         ),
         DetectState(
             step=7,
@@ -516,7 +576,10 @@ def simulate() -> list[DetectState]:
                     "used, because it would bring the attack back, and a copy from "
                     "three months ago is not used out of caution, because it would "
                     "throw away three months of legitimate work. The gap between "
-                    "those two options is what precision is worth. This is also "
+                    "those two options is what precision is worth. Precise is not "
+                    "free: copy 3 is 134 hours old, so about five and a half days of "
+                    "honest work done since then is lost and has to be redone "
+                    "(example figures). This is also "
                     "where the vault twin elsewhere in this repo joins on — it "
                     "covers where a guaranteed-reachable copy comes from. Isolation "
                     "without detection leaves you a safe copy you cannot identify; "
@@ -529,7 +592,9 @@ def simulate() -> list[DetectState]:
                     "not used, because it would reinstate the attack, and a "
                     "three-month-old copy is not used out of caution, because it "
                     "would discard three months of legitimate work. The gap between "
-                    "those is what a precise answer is worth. This repo's "
+                    "those is what a precise answer is worth. It still costs "
+                    "something: the restored data is 134 hours old (illustrative), "
+                    "so about five and a half days of writes are lost. This repo's "
                     "PowerProtect twin covers where a guaranteed-reachable copy "
                     "comes from — isolation without detection gives you a safe copy "
                     "you cannot identify, detection without isolation gives you an "
@@ -542,7 +607,10 @@ def simulate() -> list[DetectState]:
                     "attack, and a copy from three months ago is not used out "
                     "of caution, because it would throw away three months of "
                     "legitimate work. The gap between those two options is "
-                    "what a precise answer is worth. This is where this repo's "
+                    "what a precise answer is worth. It is not free: the "
+                    "restored data is 134 hours old (illustrative), so roughly "
+                    "five and a half days of legitimate writes are lost even "
+                    "with the right copy. This is where this repo's "
                     "PowerProtect twin joins on — it models where a "
                     "guaranteed-reachable copy comes from, behind an "
                     "operational air gap and immutably locked. Isolation "
@@ -555,14 +623,17 @@ def simulate() -> list[DetectState]:
                     "Restore from the identified snapshot. Precision shows in the "
                     "avoided alternatives: the newest copy reinstates the attack, "
                     "an over-cautious old copy discards weeks of legitimate work, "
-                    "and the spread between them is the value. Pairs with the "
+                    "and the spread between them is the value. Achieved recovery "
+                    "point: 134 h (illustrative), so ~5.5 days of writes are still "
+                    "lost. Pairs with the "
                     "PowerProtect twin's vault: isolation without detection yields "
                     "an unidentifiable safe copy, detection without isolation "
                     "yields an answer about copies that may be gone."
                 ),
                 expert=(
                     "Restore from the identified point. Avoided: reinstating the "
-                    "attack (newest) and discarding weeks (over-cautious). Pairs "
+                    "attack (newest) and discarding weeks (over-cautious). Achieved "
+                    "RPO 134 h (illustrative). Pairs "
                     "with vault isolation — neither control is sufficient alone."
                 ),
             ),
@@ -572,8 +643,12 @@ def simulate() -> list[DetectState]:
             metadata_alerts=0,
             content_confidence_percent=99,
             last_clean_snapshot=CLEAN_SNAPSHOTS,
+            last_clean_taken_at_hours=_LAST_CLEAN_TAKEN_AT_HOURS,
             elapsed_hours=134,
             cycle_cost=2,
+            verdict="clean-copy-named",
+            recovery_source="array-snapshot",
+            recovery_point_age_hours=BASELINE_RECOVERY_POINT_AGE_HOURS,
         ),
         DetectState(
             step=8,
@@ -584,7 +659,8 @@ def simulate() -> list[DetectState]:
                     "The system is back, from a copy whose integrity was "
                     "established rather than assumed, and the next saved copy is "
                     "taken against a baseline someone can vouch for. The lasting "
-                    "change is not the recovery but the routine: content analysis "
+                    "change is not the recovery but the routine: content analysis, "
+                    "which used to be started by hand, "
                     "now runs continuously against new copies, so the gap between "
                     "damage and discovery — which is the number that decides how "
                     "much an incident costs — shrinks from days to the length of "
@@ -596,7 +672,8 @@ def simulate() -> list[DetectState]:
                     "The volume is back, from a copy whose integrity was "
                     "established rather than assumed, and the next snapshot is "
                     "taken against a baseline someone can vouch for. The lasting "
-                    "change is the routine, not the recovery: content analysis now "
+                    "change is the routine, not the recovery: content analysis, "
+                    "on demand until now, "
                     "runs continuously against new snapshots, so the interval "
                     "between corruption and discovery — the number that decides "
                     "what an incident costs — shrinks from days to one scan. This "
@@ -608,7 +685,8 @@ def simulate() -> list[DetectState]:
                     "established rather than assumed, and the next snapshot is "
                     "taken against a baseline someone can vouch for. The "
                     "lasting change is not the recovery but the routine: "
-                    "content analysis now runs continuously against new "
+                    "content analysis, run on demand until now, runs "
+                    "continuously against new "
                     "snapshots, so the interval between corruption and "
                     "discovery — which is the number that decides how much an "
                     "incident costs — shrinks from days to the length of one "
@@ -619,15 +697,16 @@ def simulate() -> list[DetectState]:
                 technical=(
                     "Restored from a copy with established rather than assumed "
                     "integrity; the next snapshot baselines against something "
-                    "vouched for. The durable change is operational — continuous "
-                    "content analysis against new snapshots collapses the "
+                    "vouched for. The durable change is operational — content "
+                    "analysis moves from on-demand to continuous against new "
+                    "snapshots, which collapses the "
                     "corruption-to-discovery interval from days to one scan period. "
                     "130 hours elapsed, of which five days preceded any reason to "
                     "look."
                 ),
                 expert=(
-                    "Restored from an established-integrity copy; continuous "
-                    "scanning thereafter collapses corruption-to-discovery from "
+                    "Restored from an established-integrity copy; scanning moves "
+                    "from on-demand to continuous, which collapses corruption-to-discovery from "
                     "days to one scan period. 130 h elapsed, ~5 d of it "
                     "pre-suspicion."
                 ),
@@ -638,6 +717,10 @@ def simulate() -> list[DetectState]:
             metadata_alerts=0,
             content_confidence_percent=99,
             last_clean_snapshot=CLEAN_SNAPSHOTS,
+            last_clean_taken_at_hours=_LAST_CLEAN_TAKEN_AT_HOURS,
             elapsed_hours=138,
+            verdict="clean-copy-named",
+            recovery_source="array-snapshot",
+            recovery_point_age_hours=BASELINE_RECOVERY_POINT_AGE_HOURS,
         ),
     ]

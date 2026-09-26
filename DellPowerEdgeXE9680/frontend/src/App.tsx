@@ -71,6 +71,9 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<ServerAnatomy | null>(null);
   const [trace, setTrace] = useState<PowerOnState[]>([]);
+  const [intro, setIntro] = useState<{ title: string; body: string } | null>(
+    null,
+  );
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -106,6 +109,7 @@ export function App() {
       .then(([an, po]) => {
         setAnatomy(an);
         setTrace(po.trace);
+        setIntro({ title: po.introTitle, body: po.intro });
         if (!hashApplied.current) {
           hashApplied.current = true;
           const s = initialStepFromHash(po.trace);
@@ -303,18 +307,8 @@ export function App() {
       {page === "poweron" && (
         <>
           <div className="an-hero">
-            <h2>What happens when an 8-GPU HGX server powers on</h2>
-            <p>
-              The XE9680 is the machine xAI's Colossus was first built from:
-              eight SXM GPUs on one HGX baseboard, in a box that fits a
-              standard rack. The host boots first — a GPU server is still a
-              server — then the eight accelerators wake and the fans ramp to
-              hold them on air. The NVSwitch complex fuses the eight into one
-              NVLink domain, atomically, and there the domain stops: the
-              chassis wall is the boundary. Then eight NICs train, one per
-              GPU, onto the fabric that scales past it. Play the trace and
-              watch each stage light up the hardware it runs on.
-            </p>
+            <h2>{intro?.title ?? ""}</h2>
+            <p>{intro?.body ?? ""}</p>
             <button
               className="primary poweron-tour-link"
               onClick={() => setPage("tour")}
@@ -342,8 +336,11 @@ export function App() {
                 Highlighted blocks are the parts doing work at this step.
                 Watch the two eight-counters: GPUs-in-domain stays at zero
                 through bring-up, snaps to 8 at the fuse, and never grows
-                again — then NICs-on-the-fabric climbs to 8, one per GPU,
-                because scale past the chassis wall is the network's job.
+                again — then NICs-on-the-fabric (the network cards at the rear)
+                climbs to 8, one per GPU, because scale past the chassis wall
+                is the network's job. The trace shows the two in that order to
+                separate inside from outside; neither waits on the other in a
+                real server.
                 Click a block to pin what it is; the full tour lives under
                 Inside the server.
               </div>

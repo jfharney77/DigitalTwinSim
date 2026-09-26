@@ -115,6 +115,38 @@
       "text": [
         "Retention is the ratio's engine"
       ]
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "How long can the branch box remember?",
+        "The alarm that came late"
+      ]
+    },
+    {
+      "hash": "#lab=branch-box-memory",
+      "name": "lab-branch-box-memory",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

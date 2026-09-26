@@ -120,3 +120,37 @@ def test_recovery_flows_from_the_vault():
         active = set(s.active_regions)
         assert "dd-vault" in active and "recovery-host" in active
         assert "gap" in active and "dd-prod" in active
+
+
+def test_the_scan_verdict_is_visible_before_recovery_relies_on_it():
+    """Recovery's prose says the team restores from a copy CyberSense scanned
+    and did not flag. The counters have to show that verdict: nothing is
+    scanned before the scan step, the count never falls, flagged never exceeds
+    scanned, and at recovery at least one scanned copy is unflagged."""
+    trace = simulate()
+    phases = [s.phase for s in trace]
+    scan_at = phases.index("scan")
+    for s in trace[:scan_at]:
+        assert (s.copies_scanned, s.copies_flagged) == (0, 0), s.phase
+    assert trace[scan_at].copies_scanned >= 1
+    scanned = [s.copies_scanned for s in trace]
+    assert scanned == sorted(scanned)
+    for s in trace:
+        assert 0 <= s.copies_flagged <= s.copies_scanned, s.phase
+    recover = trace[phases.index("recover")]
+    assert recover.copies_scanned - recover.copies_flagged >= 1
+
+
+def test_the_scan_is_costliest_but_not_longest_by_the_clock():
+    """The prose calls the scan the most expensive operation, not the longest:
+    by elapsed hours the month of backups and the restore both take longer."""
+    trace = simulate()
+    hours = {
+        s.phase: s.elapsed_hours - trace[i - 1].elapsed_hours
+        for i, s in enumerate(trace) if i
+    }
+    assert hours["scan"] == 4  # the "about four hours" the descriptions quote
+    assert hours["dedupe"] > hours["scan"] and hours["recover"] > hours["scan"]
+    attack = next(s for s in trace if s.phase == "attack")
+    scan = next(s for s in trace if s.phase == "scan")
+    assert attack.elapsed_hours - scan.elapsed_hours == 4  # "four hours before"

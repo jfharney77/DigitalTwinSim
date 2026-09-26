@@ -158,8 +158,9 @@ def simulate() -> list[LifecycleState]:
                     "backup is mostly data the appliance has already stored, so it "
                     "keeps pointers plus the day's genuinely new segments: 500 TB "
                     "of logical protection now occupies about 25 TB of flash — 20:1 "
-                    "and climbing, with Dell quoting up to 65:1 on the all-flash "
-                    "appliance. This arithmetic is what makes the vault affordable."
+                    "here; Dell quotes up to 65:1 on the all-flash appliance, a "
+                    "ceiling and not a forecast for this estate. This arithmetic "
+                    "is what makes the vault affordable."
                 ),
                 standard=(
                     "Daily backups pile up for a month, and Data Domain's "
@@ -167,8 +168,8 @@ def simulate() -> list[LifecycleState]:
                     "new backup is mostly data the appliance has already "
                     "stored, so it keeps only pointers plus the day's genuinely "
                     "new segments: 500 TB of logical protection now occupies "
-                    "about 25 TB of flash — 20:1 and climbing (Dell quotes up "
-                    "to 65:1 on the all-flash appliance). This arithmetic is "
+                    "about 25 TB of flash — 20:1 here (Dell quotes up to 65:1 "
+                    "on the all-flash appliance). This arithmetic is "
                     "what makes everything downstream affordable: weeks of "
                     "restore points, fast replication, and a vault that does "
                     "not need a second data center's worth of storage."
@@ -177,13 +178,13 @@ def simulate() -> list[LifecycleState]:
                     "A month of dailies, and variable-length deduplication "
                     "compounds: each backup is predominantly resident data, so only "
                     "pointers plus genuinely novel segments are stored. 500 TB "
-                    "logical at ~25 TB physical — 20:1 and climbing, with up to "
-                    "65:1 quoted on the all-flash generation. The economics of the "
+                    "logical at ~25 TB physical — 20:1 here; Dell quotes up to "
+                    "65:1 on the all-flash generation. The economics of the "
                     "vault depend entirely on this ratio."
                 ),
                 expert=(
                     "A month of dailies: 500 TB logical at ~25 TB physical, 20:1 "
-                    "climbing to a quoted 65:1. Vault economics depend on the "
+                    "here; Dell quotes up to 65:1. Vault economics depend on the "
                     "ratio."
                 ),
             ),
@@ -308,52 +309,67 @@ def simulate() -> list[LifecycleState]:
             label="CyberSense analyzes the vaulted copy",
             description=L(
                 novice=(
-                    "The long stage, and deliberately the longest here. Inside the "
-                    "vault, the analysis software indexes the locked copy and runs "
-                    "machine-learning analytics over what is actually in the files: "
-                    "how random the content looks (encrypted files are "
-                    "statistically distinctive), whether file types are corrupted, "
-                    "whether things were renamed en masse, whether database pages "
-                    "are damaged — over 200 signals, compared against every "
-                    "previous scan. This is how the vault knows not merely that it "
-                    "holds a copy, but that it holds a *good* one."
+                    "Inside the vault, a tool called CyberSense reads the locked "
+                    "copy. Reading every file is the most demanding single job in "
+                    "this story, so the playback lingers here, even though by the "
+                    "clock it takes about four hours (illustrative), far less than "
+                    "the month of backups before it. CyberSense looks for signs of "
+                    "damage: files that suddenly look scrambled, the way encrypted "
+                    "files do, files renamed in bulk, broken databases — more than "
+                    "200 signs in all — and it compares each copy with the ones "
+                    "before it. The question it answers is not 'do we have a "
+                    "copy?' but 'which copy is *clean*?' Ransomware can hide "
+                    "quietly for weeks before it strikes, and this is how you "
+                    "avoid restoring the problem. The counters now show one vault "
+                    "copy scanned and none flagged: this copy is good, and that "
+                    "finding is recorded against it."
                 ),
                 plain=(
-                    "The long stage, and deliberately the longest in this trace. "
-                    "Inside the vault, CyberSense indexes the locked copy and runs "
-                    "machine-learning analytics over content features: entropy "
+                    "The most expensive single operation in this trace, so the "
+                    "playback dwells here; by the clock it is about four hours "
+                    "(illustrative), much shorter than the month of backups before "
+                    "it. Inside the vault, CyberSense indexes the locked copy and "
+                    "runs machine-learning analytics over content features: entropy "
                     "(encrypted files look statistically different from documents), "
                     "file-type corruption, mass renames, database page damage — "
                     "over 200 signals, compared against every previous scan. This "
                     "is how the vault knows it holds not merely a copy but a good "
-                    "one."
+                    "one. The counters now read one vault copy scanned, none "
+                    "flagged."
                 ),
                 standard=(
-                    "The long stage — and deliberately the longest in this "
-                    "trace. Inside the vault, CyberSense indexes the locked "
-                    "copy and runs machine-learning analytics over content "
-                    "features: entropy (encrypted files look statistically "
-                    "different from documents), file-type corruption, mass "
-                    "renames, database page damage — over 200 signals, "
-                    "compared against every previous scan. This is how the "
-                    "vault answers the question that decides a recovery: not "
-                    "'do we have a copy?' but 'which copy is *clean*?' "
-                    "Ransomware that dwelt quietly for weeks is exactly what "
-                    "this pass exists to catch, and each scan's verdict is "
-                    "recorded against that restore point."
+                    "The most expensive single operation in this trace, which "
+                    "is why the playback dwells here — by the clock it is "
+                    "about four hours (illustrative), far shorter than the "
+                    "month of backups before it. Inside the vault, CyberSense "
+                    "indexes the locked copy and runs machine-learning "
+                    "analytics over content features: entropy (encrypted "
+                    "files look statistically different from documents), "
+                    "file-type corruption, mass renames, database page damage "
+                    "— over 200 signals, compared against every previous "
+                    "scan. This is how the vault answers the question that "
+                    "decides a recovery: not 'do we have a copy?' but 'which "
+                    "copy is *clean*?' Ransomware that dwelt quietly for "
+                    "weeks is exactly what this pass exists to catch, and "
+                    "each scan's verdict is recorded against that restore "
+                    "point: the counters now read one vault copy scanned, "
+                    "none flagged."
                 ),
                 technical=(
-                    "Max-dwell stage. CyberSense indexes the locked copy and "
-                    "applies ML analytics across 200+ content features — entropy "
-                    "distribution, file-type integrity, mass rename patterns, "
-                    "database page damage — differenced against every prior scan. "
-                    "The vault's assurance is not that a copy exists but that its "
-                    "contents are intact, which is exactly what the CyberDetect "
-                    "twin covers on primary storage."
+                    "Max-dwell stage: the costliest single operation, not the "
+                    "longest by wall clock (~4 h illustrative). CyberSense indexes "
+                    "the locked copy and applies ML analytics across 200+ content "
+                    "features — entropy distribution, file-type integrity, mass "
+                    "rename patterns, database page damage — differenced against "
+                    "every prior scan. Verdict recorded per restore point: one "
+                    "copy scanned, none flagged. The vault's assurance is not that "
+                    "a copy exists but that its contents are intact, which is "
+                    "exactly what the CyberDetect twin covers on primary storage."
                 ),
                 expert=(
-                    "Max dwell: CyberSense indexes and scores 200+ content features "
-                    "against prior scans. Assurance is content integrity, not copy "
+                    "Max dwell (cost, not wall clock): CyberSense indexes and "
+                    "scores 200+ content features against prior scans; 1 scanned, "
+                    "0 flagged. Assurance is content integrity, not copy "
                     "existence — cf. the CyberDetect twin on primary."
                 ),
             ),
@@ -361,6 +377,8 @@ def simulate() -> list[LifecycleState]:
             logical_tb=500,
             stored_tb=25,
             elapsed_hours=726,
+            copies_scanned=1,
+            copies_flagged=0,
             cycle_cost=5,
         ),
         LifecycleState(
@@ -369,14 +387,15 @@ def simulate() -> list[LifecycleState]:
             label="Ransomware detonates — and the vault isn't there",
             description=L(
                 novice=(
-                    "The bad night. Ransomware that has been quietly waiting in the "
-                    "estate detonates: production data encrypts, the backup "
-                    "catalogue is deleted using stolen administrator credentials, "
-                    "and the production appliance comes under attack from inside "
-                    "the management network. And the vault? The attacker's tooling "
-                    "cannot even establish that it exists. The gap is closed — "
-                    "there is no route, no name to look up, and no credential that "
-                    "would help."
+                    "The bad night. Ransomware that had been hiding in production "
+                    "goes off. It scrambles the computers and databases, deletes "
+                    "the backup software's records using stolen administrator "
+                    "passwords, and attacks the production backup appliance too. "
+                    "Look at the right side of the map: nothing there lights up. "
+                    "The gap is closed, so there is no network route to the vault "
+                    "at all, and the passwords production held are useless, "
+                    "because the vault only ever called out and never listened. "
+                    "What the attack cannot reach, it cannot encrypt."
                 ),
                 plain=(
                     "The bad night. Ransomware that has been dwelling in the estate "
@@ -421,6 +440,8 @@ def simulate() -> list[LifecycleState]:
             logical_tb=500,
             stored_tb=25,
             elapsed_hours=730,
+            copies_scanned=1,
+            copies_flagged=0,
             cycle_cost=2,
         ),
         LifecycleState(
@@ -429,29 +450,44 @@ def simulate() -> list[LifecycleState]:
             label="The vault opens on its own terms — clean copy restores",
             description=L(
                 novice=(
-                    "Recovery runs at the vault's pace, from the vault's side. "
-                    "Inside an isolated clean room, the team uses the analysis "
-                    "verdicts to choose the last provably clean restore point — "
-                    "skipping the recent copies the dwell-time analysis flagged — "
-                    "and rehearses the restore on an isolated host before touching "
-                    "production. Only then does the vault open its connection "
-                    "outward and push the clean copy back."
+                    "Now recovery, and again the vault is in charge. In the clean "
+                    "room, an isolated space inside the vault, the team looks up "
+                    "CyberSense's finding for the copy in the vault: scanned and "
+                    "not flagged, four hours before the attack. The counters show "
+                    "it. If that copy had been flagged, they would have to step "
+                    "back to an older locked copy, which is why a real vault keeps "
+                    "many days of copies; this short story keeps one. They "
+                    "practise the restore on a separate recovery computer first, "
+                    "which is also where they check that the hidden ransomware "
+                    "does not come back along with the data. Only then does the "
+                    "vault open the gap for the second and last time, and push "
+                    "clean data back to a rebuilt production backup appliance. "
+                    "Flash storage makes this hours rather than weeks; Dell quotes "
+                    "up to four times faster restores."
                 ),
                 plain=(
                     "Recovery runs at the vault's pace, from the vault's side. "
                     "Inside the clean room, the team consults CyberSense's verdicts "
-                    "to choose the last provably-clean restore point — skipping the "
-                    "recent copies the dwell-time analysis flagged — and rehearses "
-                    "the restore on the isolated recovery host before touching "
-                    "production. Only then does the vault open its gap outward and "
-                    "push the clean copy back."
+                    "to choose the last provably-clean restore point. Here that is "
+                    "the one vaulted copy, scanned and not flagged four hours "
+                    "before detonation; a flagged copy would send them back to an "
+                    "older locked one, which is why a real vault keeps many days "
+                    "of them. They rehearse the restore on the isolated recovery "
+                    "host, checking that the dormant malware does not return with "
+                    "the data, before touching production. Only then does the "
+                    "vault open its gap outward and push the clean copy back."
                 ),
                 standard=(
                     "Recovery runs at the vault's pace, from the vault's side. "
                     "Inside the clean room, the team consults CyberSense's "
-                    "verdicts to choose the last provably-clean restore point "
-                    "— skipping the recent copies the dwell-time analysis "
-                    "flagged — and rehearses the restore on the isolated "
+                    "verdicts to choose the last provably-clean restore point. "
+                    "In this trace that is the one vaulted copy, scanned and "
+                    "not flagged four hours before detonation; had it been "
+                    "flagged, the team would step back to an older locked "
+                    "copy, which is why a real vault retains many days of "
+                    "them. A clean verdict says the data is not encrypted or "
+                    "corrupted; it does not prove a dormant implant is "
+                    "absent, so the restore is rehearsed on the isolated "
                     "recovery host before touching production. Only then does "
                     "the vault open its gap outward and push the clean data "
                     "back to a rebuilt production Data Domain. The all-flash "
@@ -462,21 +498,28 @@ def simulate() -> list[LifecycleState]:
                 technical=(
                     "Recovery is vault-paced and vault-initiated. In the clean "
                     "room, CyberSense verdicts select the last provably-clean "
-                    "restore point, excluding copies the dwell-time analysis "
-                    "flagged, and the restore is rehearsed on the isolated recovery "
-                    "host before production is touched. Only then does the gap open "
-                    "outward — the second and last time it opens in this trace."
+                    "restore point — here the single vaulted copy, 1 scanned, 0 "
+                    "flagged; a flagged copy would force a step back to an older "
+                    "locked one, hence multi-day vault retention in practice. A "
+                    "clean verdict covers content integrity, not a dormant "
+                    "implant, so the restore is rehearsed on the isolated recovery "
+                    "host before production is touched. Only then does the gap "
+                    "open outward — the second and last time it opens in this "
+                    "trace."
                 ),
                 expert=(
                     "Vault-paced, vault-initiated. Clean-room verdict selects the "
-                    "last provably-clean point; rehearsed on the isolated host, "
-                    "then the gap opens outward — its second and final opening."
+                    "last provably-clean point (here the one copy: 1 scanned, 0 "
+                    "flagged); rehearsed on the isolated host, then the gap opens "
+                    "outward — its second and final opening."
                 ),
             ),
             active_regions=["dd-vault", "recovery-host", "gap", "dd-prod"],
             logical_tb=500,
             stored_tb=25,
             elapsed_hours=744,
+            copies_scanned=1,
+            copies_flagged=0,
             cycle_cost=3,
         ),
         LifecycleState(
@@ -535,5 +578,7 @@ def simulate() -> list[LifecycleState]:
             logical_tb=520,
             stored_tb=26,
             elapsed_hours=768,
+            copies_scanned=1,
+            copies_flagged=0,
         ),
     ]

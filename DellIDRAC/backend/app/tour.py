@@ -97,10 +97,15 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "the server whose only job is to look after the big one. Here "
                     "is how to read the map. The big block in the middle is the "
                     "iDRAC's own processor. The three blocks on the left are slow "
-                    "wires that reach into the server to read its sensors and talk "
-                    "to its processors. The blocks on the right face the outside "
-                    "world: a network port, and tools for seeing the server's "
-                    "screen from far away. For now nothing on this map has power, "
+                    "wires that reach into the server: the top one talks to its "
+                    "processors and its start-up software, the middle one reads "
+                    "its sensors, and the bottom one borrows one of the server's "
+                    "own network ports. Each of those labels carries the "
+                    "engineers' name for the wire in brackets after the plain "
+                    "one. The blocks on the right face the outside "
+                    "world: a network port of the iDRAC's own, and tools for "
+                    "seeing the server's screen from far away. For now nothing "
+                    "on this map has power, "
                     "so there is nothing here anyone could reach, from anywhere."
                 ),
                 standard=(
@@ -140,7 +145,10 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "line called the standby rail. It feeds only the iDRAC's own "
                     "little computer, its memory and its network port. The "
                     "server's main processors get nothing and stay off. That "
-                    "trickle is why a server that is plugged in is never truly off."
+                    "trickle is why a server that is plugged in is never truly off. "
+                    "Engineers call a helper computer like the iDRAC a BMC, short "
+                    "for baseboard management controller, and the power counter "
+                    "here is labelled with that name."
                 ),
                 standard=(
                     "The cords go in and nobody touches the power button. The power "
@@ -220,7 +228,9 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "firmware is rejected here, at the very bottom of the stack; "
                     "only a valid image proceeds, and it anchors the chain that "
                     "goes on to validate BIOS and other firmware. System Lockdown "
-                    "and Secured Component Verification rest on this step. The Fort "
+                    "(a mode that blocks configuration and firmware changes) and "
+                    "Secured Component Verification (a factory-signed hardware "
+                    "inventory checked on arrival) rest on this step. The Fort "
                     "Zero twin calls it the hardware root of trust."
                 ),
                 expert=(
@@ -251,7 +261,7 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "right now."
                 ),
                 standard=(
-                    "The bootloader has initialized the iDRAC's own DDR4 and "
+                    "The bootloader has initialized the iDRAC's own DRAM and "
                     "embedded Linux is up. Now the kernel binds drivers to the "
                     "sideband buses: I2C and PMBus (its power-management variant) "
                     "for sensors, PSUs and DIMMs; eSPI and PECI (the Enhanced "
@@ -263,7 +273,7 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "off, which is the state the host is in right now."
                 ),
                 expert=(
-                    "Linux up in dedicated DDR4. Sideband drivers bound: I2C/PMBus, "
+                    "Linux up in dedicated DRAM. Sideband drivers bound: I2C/PMBus, "
                     "eSPI/PECI, NC-SI. Out-of-band; host CPUs still off."
                 ),
             ),
@@ -301,9 +311,10 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "one, because this engine lives in flash."
                 ),
                 expert=(
-                    "Longest stage (max cycleCost): Lifecycle Controller mounts its "
+                    "Longest stage of the bring-up: Lifecycle Controller mounts its "
                     "flash repository, reconciles inventory, readies deploy, update "
-                    "and config services. F10; zero-touch."
+                    "and config services. Backs F10 Lifecycle Controller and "
+                    "zero-touch provisioning."
                 ),
             ),
             camera=frame("soc", "flash", "dram", pad=3.0),
@@ -358,8 +369,9 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "This is the most important moment in the tour. The iDRAC is "
                     "fully awake. Its monitoring engine reads every sensor over "
                     "the buses on the left, keeps a log of everything that "
-                    "happens, and controls the fan speeds from the temperatures "
-                    "it reads. Its network port on the right stays open, waiting "
+                    "happens, and holds the cooling rules it will use to set the "
+                    "fan speeds once the server is switched on (the fans are still "
+                    "for now). Its network port on the right stays open, waiting "
                     "for an administrator to ask it to switch the server on, "
                     "update its firmware or install an operating system. The big "
                     "server has still never been switched on. The whole time, the "
@@ -372,7 +384,8 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                     "complete and the management plane settles into what it does "
                     "forever after: watching. The monitoring engine samples every "
                     "sensor over the sideband buses, keeps the Lifecycle Log and "
-                    "owns the fan loop, while the NIC holds the web console, "
+                    "holds the thermal policy (fan control is its job once the main "
+                    "rails are up), while the NIC holds the web console, "
                     "Redfish (the standard REST API for server management) and "
                     "virtual media open for a command. The host has never powered "
                     "on, and the BMC domain has drawn only a few watts throughout "
@@ -381,7 +394,7 @@ def build_tour(anatomy: SubsystemMap) -> Tour:
                 ),
                 expert=(
                     "Signature: always-on, out-of-band. Steady-state watch: "
-                    "sensors, Lifecycle Log, fan loop, NIC open. Host never "
+                    "sensors, Lifecycle Log, thermal policy armed, NIC open. Host never "
                     "powered; BMC draw single-digit watts (illustrative). Runs "
                     "while AC is present."
                 ),

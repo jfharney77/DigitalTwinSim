@@ -9,9 +9,12 @@ import {
 } from "./api";
 import { BuildPanel } from "./components/BuildPanel";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
 import { ThermalChassisView } from "./components/ThermalChassisView";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ChassisMap,
@@ -34,7 +37,7 @@ import type {
 // events at the current cursor.
 
 const DEFAULT_CONFIG: ServerConfig = {
-  platform: "xr8000", cpuTdpW: 225, thermalConfig: "standard",
+  platform: "xr8000", cpuTdpW: 205, thermalConfig: "standard",
   dimms: 8, driveType: "ssd", drives: 2, accelsSingleWide: 2,
   ioCardW: 100, psuCount: 1, psuCapacityW: 800, redundancy: "1+0",
 };
@@ -79,6 +82,9 @@ export function App() {
   const [environment, setEnvironment] = useState<Environment>(DEFAULT_ENV);
   const [events, setEvents] = useState<SimEvent[]>([]);
   const [durationS, setDurationS] = useState(900);
+  // Runs open warmed up (settled at the opening load and ambient) unless the
+  // reader unticks it; labs keep the from-ambient start they are graded on.
+  const [warmStart, setWarmStart] = useState(true);
 
   const [result, setResult] = useState<SimResponse | null>(null);
   const [cursor, setCursor] = useState(0);
@@ -87,10 +93,18 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   // Prose-bearing content refetches on level change.
@@ -105,6 +119,10 @@ export function App() {
   }, [level]);
 
   useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+  }, [level]);
+
+  useEffect(() => {
     Promise.all([fetchConfigPresets(), fetchWorkloadPresets()])
       .then(([cp, wp]) => {
         setConfigPresets(cp);
@@ -114,8 +132,8 @@ export function App() {
   }, []);
 
   const scenario: Scenario = useMemo(
-    () => ({ config, workload, environment, durationS, events }),
-    [config, workload, environment, durationS, events],
+    () => ({ config, workload, environment, durationS, events, warmStart }),
+    [config, workload, environment, durationS, events, warmStart],
   );
 
   // Debounced re-simulation on any scenario change.
@@ -197,6 +215,7 @@ export function App() {
     setEnvironment(g.scenario.environment);
     setEvents(g.scenario.events);
     setDurationS(g.scenario.durationS);
+    setWarmStart(g.scenario.warmStart ?? false);
     setCursor(0);
     setRunning(true);
   }, []);
@@ -221,12 +240,67 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
-  const coldStart = () => {
-    setEvents([]);
-    setActiveScenario(null);
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEnvironment(lab.start.environment);
+    setEvents(lab.start.events);
+    setDurationS(lab.start.durationS);
+    setWarmStart(lab.start.warmStart ?? false);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
+  // Restart: drop what the reader did during the run (clicked fans, filter
+  // changes, sags) and play again from t=0. A guided scenario keeps its own
+  // scripted events, so its heat wave or sag still arrives on the rerun, and
+  // the sliders keep whatever the reader has set.
+  const restartRun = () => {
+    setEvents(activeScenario ? activeScenario.scenario.events : []);
     setCursor(0);
     setRunning(true);
   };
+
+  // The filter slider is the state at t=0; a change-the-filter event during
+  // the run overrides it from that moment on.
+  const filterChangedAt = useMemo(() => {
+    const t = state?.t ?? 0;
+    const past = events.filter((e) => e.action === "clean-filter" && e.atS <= t);
+    return past.length ? Math.max(...past.map((e) => e.atS)) : null;
+  }, [events, state]);
 
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.t <= (state?.t ?? 0));
@@ -242,6 +316,15 @@ export function App() {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -252,20 +335,49 @@ export function App() {
       </header>
 
       <div className="an-hero">
-        <h2>The R760's physics, on hostile ground</h2>
-        <p>
-          The same causal chain every server lives by — load makes power,
-          power makes heat, heat spins the fans — with the environment
-          sliders unlocked to where the XR-series actually lives: −25 to
-          65 °C ambient, dust that fouls the filter over sim-months,
-          vibration that taxes spinning drives, and a single-phase feed
-          that browns out. The rated envelopes (−5…55 °C standard, −20…65
-          °C on select extended configs) are Dell's documented numbers;
-          the fouling and vibration rates are labeled estimates. This is
-          a physics companion to the repo's narrative twins, not a
-          service manual.
+        {/* The lead is the backend's leveled anatomy overview (the prose
+            test_leveling.py guards), so the first paragraph on the page
+            reads in the register the reader asked for. The hard-coded
+            text below it is only the pre-fetch fallback. */}
+        <h2>
+          {level <= 2
+            ? "A server built to live outside the data center"
+            : "The R760's physics, on hostile ground"}
+        </h2>
+        {anatomy?.overview ? (
+          <p>{anatomy.overview}</p>
+        ) : (
+          <p>
+            The same causal chain every server lives by — load makes
+            power, power makes heat, heat spins the fans — with the
+            environment sliders unlocked to where the XR-series actually
+            lives: −25 to 65 °C ambient, dust that fouls the filter over
+            sim-months, vibration that taxes spinning drives, and a
+            single-phase feed that browns out.
+          </p>
+        )}
+        <p className="mini">
+          {level <= 2
+            ? "The temperature limits come from Dell's own documents. The dust and vibration rates are our estimates, and they say so wherever they appear. Spinning hard drives are here to be learned from: the real XR8000 and XR4000 take flash memory only. This is a physics model to think with, not a service manual."
+            : "The rated envelopes (−5…55 °C standard, −20…65 °C on select extended configs) are Dell's documented numbers; the fouling and vibration rates are labeled estimates, and the spinning-drive option is a thought experiment — Dell's XR8000 and XR4000 take M.2 flash only. This is a physics companion to the repo's narrative twins, not a service manual."}
         </p>
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         {/* Left — build panel */}
@@ -332,7 +444,23 @@ export function App() {
                   ×{s}
                 </button>
               ))}
-              <button onClick={coldStart}>Reset to cold start</button>
+              <button
+                onClick={restartRun}
+                title="Play again from t=0. Clears what you did during the run; a guided scenario keeps its scripted events."
+              >
+                Restart run
+              </button>
+              <label className="mini warm-toggle" title="Warmed up: the sled has already settled at the opening load and ambient. Off: the run begins with every part at ambient temperature and the fans at their floor.">
+                <input
+                  type="checkbox"
+                  checked={warmStart}
+                  onChange={(e) => {
+                    setWarmStart(e.target.checked);
+                    setCursor(0);
+                  }}
+                />{" "}
+                Start warmed up
+              </label>
               <input
                 type="range"
                 min={0}
@@ -366,9 +494,10 @@ export function App() {
             </div>
           </div>
           <div className="mini footnote">
-            What we don't model: CFD, per-core DVFS, condensation and
-            material brittleness at the cold end (the real reasons for the
-            lower rating), corrosion, filter media chemistry, and the −48 V
+            What we don't model: CFD, per-core DVFS, cold starts (Dell's
+            guide sets 0 °C minimums for the CPU and memory and requires
+            the Heater Manager option to start below +5 °C — the real
+            reason for the lower rating), condensation, corrosion, filter media chemistry, and the −48 V
             DC telecom feed (the sag model is single-phase AC). PSU
             conversion loss vents outside the front-to-back path. The rated
             envelopes are Dell's documented numbers; most other constants
@@ -448,7 +577,13 @@ export function App() {
               </select>
             </label>
             <label className="field">
-              Months since filter service: {environment.filterMonths}
+              Months since filter service: {environment.filterMonths} at the
+              start of the run
+              {filterChangedAt !== null && (
+                <span className="filter-changed">
+                  {" "}· changed at t+{filterChangedAt}s, 0 since
+                </span>
+              )}
               <input
                 type="range" min={0} max={24}
                 value={environment.filterMonths}

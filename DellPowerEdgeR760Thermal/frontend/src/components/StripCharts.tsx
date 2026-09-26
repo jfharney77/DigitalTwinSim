@@ -1,10 +1,11 @@
 import type { SimState } from "../types";
 
 // Strip charts on a shared time axis (spec §7): total power, CPU temp,
-// and fan rpm for the trailing window, so cause-and-effect alignment is
-// visible. Pure SVG — no chart library.
+// and fan rpm from the start of the run to the cursor, so a before/after
+// comparison across a timed event stays on the chart. Pure SVG, no chart
+// library.
 
-const WINDOW_S = 600; // last 10 sim-minutes
+const WINDOW_S = 1800; // longer than any guided scenario
 
 function Path({
   points,
@@ -81,14 +82,21 @@ export function StripCharts({
   const temp: [number, number][] = win.map((s) => [s.t, s.cpuTempC]);
   const rpm: [number, number][] = win.map((s) => [s.t, s.fanRpmPct]);
   const cur = win[win.length - 1];
-  const pMax = Math.max(200, ...power.map(([, y]) => y)) * 1.1;
+  // Wall power autoscales to the run so a change of a few percent is a
+  // visible step, not a flat line; the range is printed in the title.
+  const ys = power.map(([, y]) => y).filter((y) => y > 0);
+  const lo = ys.length ? Math.min(...ys) : 0;
+  const hi = ys.length ? Math.max(...ys) : 200;
+  const pad = Math.max(10, (hi - lo) * 0.1);
+  const pMin = Math.max(0, Math.floor((lo - pad) / 10) * 10);
+  const pMax = Math.ceil((hi + pad) / 10) * 10;
 
   return (
     <div className="an-panel">
       <h2>Strip charts — shared time axis</h2>
       <Chart
-        title="wall power" unit="W" points={power} color="#e8c33d"
-        yMin={0} yMax={pMax}
+        title={`wall power (axis ${pMin}–${pMax} W)`} unit="W" points={power} color="#e8c33d"
+        yMin={pMin} yMax={pMax}
         current={cur ? cur.acPowerW.toFixed(0) : "—"}
       />
       <Chart
@@ -102,7 +110,8 @@ export function StripCharts({
         current={cur ? cur.fanRpmPct.toFixed(0) : "—"}
       />
       <div className="mini">
-        Last {Math.min(WINDOW_S, win.length)} sim-seconds. Watch the order
+        From t+{win.length ? win[0].t : 0}s to the cursor. The wall-power axis
+        zooms to the run, so read its range in the title. Watch the order
         after any change: power first (instant), temperature second (thermal
         mass), fans third (the controller follows the sensors).
       </div>

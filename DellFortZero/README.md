@@ -140,4 +140,5 @@ the other twins.
 
 - [Dell achieves US DoD validation for zero-trust solution (April 2025)](https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~04~dell-technologies-achieves-us-department-of-defense-validation-for-zero-trust-solution.htm)
 - [Dell — Zero Trust](https://www.dell.com/en-us/lp/dt/security-zero-trust)
-- [Dell Technologies Project Fort Zero to transform security](https://investors.delltechnologies.com/news-releases/news-release-details/dell-technologies-project-fort-zero-transform-security)
+- [Dell Technologies Project Fort Zero to transform security (May 2023)](https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2023~05~dell-technologies-project-fort-zero-to-transform-security.htm)
+- [US DoD Zero Trust Strategy (pillars; Target and Advanced levels)](https://dodcio.defense.gov/Portals/0/Documents/Library/DoD-ZTStrategy.pdf)

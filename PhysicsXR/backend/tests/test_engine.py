@@ -90,14 +90,15 @@ def test_heat_balance_at_steady_state():
 # --- The spec's scenarios, as acceptance tests -----------------------------
 
 def test_phoenix_throttles_where_fargo_idles_its_fans():
-    """One config, two climates (the spec's headline scenario): the 48 °C
-    rooftop pins the fans and clips clocks; the −15 °C rooftop leaves the
+    """One config, two climates (the spec's headline scenario): the 52 °C
+    rooftop (48 °C before the CPU tier was corrected to Dell's 205 W
+    platform maximum — the cooler part needs a hotter afternoon to pin) pins the fans and clips clocks; the −15 °C rooftop leaves the
     fans at the floor and the silicon untroubled."""
     phoenix = Scenario(
         config=CELL_SITE, workload=RAN,
         environment=Environment(inlet_c=38, dust="moderate"),
         duration_s=900,
-        events=[SimEvent(at_s=240, action="set-inlet", value=48)],
+        events=[SimEvent(at_s=240, action="set-inlet", value=52)],
     )
     fargo = Scenario(
         config=CELL_SITE, workload=RAN,
@@ -350,3 +351,85 @@ def test_guided_narration_matches_what_the_trace_does():
     assert m_sum.throttle_seconds == 0 and s_sum.throttle_seconds == 0
     assert m_trace[-1].fan_rpm_pct > s_trace[-1].fan_rpm_pct
     assert "throttle" not in g["mountain-site"].question
+
+
+def test_warm_start_opens_on_the_settled_operating_point():
+    """A warm start means the sled has been carrying this load for a while:
+    tick 0 already sits where an event-free run ends up, fans off the floor,
+    no boost window, and the heat identity holds from the first frame."""
+    s = Scenario(config=CELL_SITE, workload=FULL,
+                 environment=Environment(inlet_c=30),
+                 duration_s=300, warm_start=True)
+    trace, log, _ = run(s)
+    first, last = trace[0], trace[-1]
+    assert first.fan_rpm_pct > C("fan_floor_accel_pct")
+    assert abs(first.fan_rpm_pct - last.fan_rpm_pct) < 1.0
+    assert abs(first.cpu_temp_c - last.cpu_temp_c) < 0.5
+    assert abs(first.exhaust_c - last.exhaust_c) < 0.5
+    assert first.cpu_power_w <= CELL_SITE.cpu_tdp_w  # boost long spent
+    assert log == []
+    assert_deterministic(lambda: run(s)[0])
+
+
+def test_the_opening_frames_are_physical():
+    """Guided scenarios open warmed up, and even a cold start at full load
+    through a fouled filter never reports an oven: a part that is still
+    warming keeps its watts, so the exhaust rise stays server-realistic."""
+    from app.presets import GUIDED_SCENARIOS
+
+    for g in GUIDED_SCENARIOS:
+        assert g.scenario.warm_start, g.id
+        trace, _, _ = run(g.scenario)
+        # Settled: the air never leaves hotter than the silicon it cooled.
+        assert trace[0].exhaust_c < max(trace[0].cpu_temp_c, trace[0].accel_temp_c), g.id
+
+    cold = Scenario(
+        config=CELL_SITE, workload=FULL, duration_s=120,
+        environment=Environment(inlet_c=38, dust="heavy", filter_months=6),
+    )
+    trace, _, _ = run(cold)
+    assert trace[0].fan_rpm_pct == C("fan_floor_accel_pct")
+    assert max(s.delta_t_c for s in trace) <= 40
+
+
+def test_the_filter_scenario_tells_the_story_its_narration_tells():
+    """Fans pinned and nothing throttling before the heat wave; the
+    accelerators (not the CPU) throttle within seconds of it, and the log
+    says so at that moment. The clean-filter rerun had fan speed in hand,
+    pins in the same heat wave, and never clips."""
+    from app.presets import GUIDED_SCENARIOS
+
+    sc = next(g for g in GUIDED_SCENARIOS if g.id == "filter-nobody-changed").scenario
+    wave = sc.events[0].at_s
+    trace, log, _ = run(sc)
+    before = trace[:wave]
+    assert all(not s.cpu_throttling and not s.accel_throttling for s in before)
+    assert before[-1].fan_rpm_pct == 100
+    throttle_log = [e for e in log if "throttling engaged" in e.message]
+    assert [e.message for e in throttle_log] == ["Accelerator throttling engaged"]
+    assert wave < throttle_log[0].t <= wave + 15
+    assert not any(s.cpu_throttling for s in trace)
+    assert trace[-1].cpu_temp_c < C("cpu_throttle_c")
+    assert 25 <= trace[-1].accel_perf_lost_pct <= 35
+    assert trace[-1].ac_power_w < before[-1].ac_power_w
+
+    clean = sc.model_copy(update={
+        "environment": sc.environment.model_copy(update={"filter_months": 0})
+    })
+    c_trace, _, c_sum = run(clean)
+    assert 65 <= c_trace[wave - 1].fan_rpm_pct <= 80
+    assert c_trace[-1].fan_rpm_pct == 100
+    assert c_sum.throttle_seconds == 0
+
+
+def test_accelerator_throttle_release_is_logged():
+    s = Scenario(
+        config=CELL_SITE, workload=FULL, duration_s=600, warm_start=True,
+        environment=Environment(inlet_c=30, dust="heavy", filter_months=6),
+        events=[SimEvent(at_s=60, action="set-inlet", value=45),
+                SimEvent(at_s=200, action="set-inlet", value=25)],
+    )
+    trace, log, _ = run(s)
+    msgs = [e.message for e in log]
+    assert "Accelerator throttling released" in msgs
+    assert trace[-1].accel_perf_lost_pct == 0

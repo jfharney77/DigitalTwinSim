@@ -13,8 +13,11 @@ CONSTANTS: dict[str, Constant] = {
     # --- Chunking & the store ---------------------------------------------
     "avg_chunk_kb": Constant(
         value=8.0, unit="KiB",
-        source="Data Domain SISL/variable-length segmenting averages ~8 KB "
-               "segments (Dell DDOS architecture papers) — estimate of the mean",
+        source="Zhu, Li & Patterson, 'Avoiding the Disk Bottleneck in the Data "
+               "Domain Deduplication File System' (USENIX FAST 2008): "
+               "variable-length segments of 4–12 KB, ~8 KB average — "
+               "https://www.usenix.org/legacy/event/fast08/tech/full_papers/zhu/zhu.pdf "
+               "— the mean is used as a modeling estimate",
         estimated=True,
         blurb="Average variable-length segment (chunk) size the chunker emits.",
     ),
@@ -61,8 +64,10 @@ CONSTANTS: dict[str, Constant] = {
     # --- Ingest vs index pressure ------------------------------------------
     "ram_resident_fraction": Constant(
         value=0.05, unit="fraction",
-        source="estimate — SISL-style sampling keeps only a fraction of "
-               "fingerprints RAM-resident; locality prefetch covers the rest",
+        source="estimate — Data Domain's SISL design (FAST 2008) keeps a "
+               "compact summary vector plus a locality-preserved cache in "
+               "RAM rather than the whole index; this fraction is a "
+               "modeling stand-in for that, not a Dell figure",
         estimated=True,
         blurb="Fraction of the fingerprint index that must live in RAM to "
               "keep lookups fast.",
@@ -88,6 +93,22 @@ CONSTANTS: dict[str, Constant] = {
         estimated=True,
         blurb="Capacity fraction where planning alarms fire.",
     ),
+    "capacity_notice_margin_pct": Constant(
+        value=20.0, unit="%",
+        source="estimate — this simulator's rule for when a capacity curve "
+               "has left its trend, set wide enough that a month-end batch "
+               "would not trip it; real growth alerts vary by site",
+        estimated=True,
+        blurb="How far physical must rise above the projected pre-event "
+              "trend before the capacity notice is logged.",
+    ),
+    "capacity_trend_window_days": Constant(
+        value=10.0, unit="days",
+        source="estimate — trailing window used to fit the pre-event trend",
+        estimated=True,
+        blurb="Days of history behind the straight line the capacity "
+              "notice compares against.",
+    ),
 }
 
 
@@ -97,47 +118,63 @@ def value(name: str) -> float:
 
 
 # --- The appliance table -----------------------------------------------------
-# Capacity figures follow the claims the DellPowerProtect narrative twin
-# carries from the Data Domain family data sheet; RAM and ingest are
-# estimates pending a research pass (flagged).
+# Usable capacities are the maxima from Dell's PowerProtect Data Domain
+# family spec sheet (© 2026, checked 2026-09): DD3410 8–40 TB, DD9910
+# 576 TB–2.1 PB, DD9910F 272 TB–1.1 PB. Index RAM and base (pre-Boost)
+# ingest are modeling estimates — Dell publishes only a maximum DD Boost
+# throughput per model, which the sources quote for scale.
+SPEC_SHEET = (
+    "https://www.delltechnologies.com/asset/en-us/products/cyber-resilience/technical-support/dell-powerprotect-data-domain-family-spec-sheet.pdf"
+)
 
 APPLIANCES: dict[str, Appliance] = {
     "dd3410": Appliance(
         id="dd3410",
         name="Data Domain DD3410 (edge/ROBO)",
-        usable_tb=32.0,
+        usable_tb=40.0,
         index_ram_gb=8.0,
         base_ingest_gbps=3.0,
         blurb="The entry appliance — branch offices and small estates. Same "
               "DDOS filesystem, same dedupe, small index RAM: the knee is "
               "easiest to reach here.",
-        source="usable capacity per Data Domain family data sheet (8–32 TBu "
-               "class); RAM and ingest are estimates",
+        source="usable capacity 8–40 TB (maximum used) per Dell PowerProtect "
+               "Data Domain family spec sheet, which also lists up to "
+               "20.7 TB/hr with DD Boost — " + SPEC_SHEET + "; index RAM "
+               "and base ingest are estimates",
         estimated=True,
     ),
     "dd9910": Appliance(
         id="dd9910",
         name="Data Domain DD9910 (disk flagship)",
-        usable_tb=1500.0,
+        usable_tb=2100.0,
         index_ram_gb=192.0,
         base_ingest_gbps=15.0,
-        blurb="The datacenter flagship — petabyte-class usable, multi-tens "
-              "of PB logical after dedupe.",
-        source="capacity class per Data Domain family data sheet; RAM and "
-               "ingest are estimates",
+        blurb="The datacenter flagship — up to 2.1 PB usable; Dell quotes "
+              "up to 158.4 PB logical, a vendor figure that assumes "
+              "typically 75:1 data reduction.",
+        source="usable capacity 576 TB–2.1 PB (maximum used), logical up to "
+               "158.4 PB and up to 130 TB/hr with DD Boost per Dell "
+               "PowerProtect Data Domain family spec sheet — " + SPEC_SHEET
+               + "; index RAM and base ingest are estimates",
         estimated=True,
     ),
     "dd-all-flash": Appliance(
         id="dd-all-flash",
-        name="Data Domain All-Flash (2025 generation)",
-        usable_tb=300.0,
+        name="Data Domain DD9910F (all-flash, 2025)",
+        usable_tb=1100.0,
         index_ram_gb=96.0,
         base_ingest_gbps=20.0,
-        blurb="The all-flash generation (announced September 2025): the "
-              "headline change is restore and replication speed; ingest "
-              "gains too.",
-        source="generation per Dell September 2025 announcement (via the "
-               "DellPowerProtect twin); all figures are estimates",
+        blurb="The all-flash appliance, unveiled at Dell Technologies World "
+              "in May 2025. Dell's headline claims are about getting data "
+              "back out — up to 4x faster restores and 2x faster "
+              "replication than its disk-based systems; the spec sheet "
+              "lists the same maximum DD Boost ingest as the DD9910.",
+        source="usable capacity 272 TB–1.1 PB (maximum used) and up to "
+               "130 TB/hr with DD Boost per Dell PowerProtect Data Domain "
+               "family spec sheet — " + SPEC_SHEET + "; restore and "
+               "replication claims are Dell's own (Dell blog, 20 May 2025 — "
+               "https://www.dell.com/en-us/blog/achieving-cyber-resilience-with-dell-powerprotect/); "
+               "index RAM and base ingest are estimates",
         estimated=True,
     ),
 }

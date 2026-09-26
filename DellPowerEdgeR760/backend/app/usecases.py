@@ -53,7 +53,7 @@ VIRTUALIZATION = UseCase(
             "number, VMs migrated off automatically, and the part swap "
             "happens during business hours. The dual 25 GbE ports carry "
             "VM, storage, and live-migration traffic bonded across two "
-            "top-of-rack switches; the 1500 W PSUs run 1+1 from separate "
+            "top-of-rack switches; the 1400 W PSUs run 1+1 from separate "
             "power feeds, so a failed feed — like a failed fan, drive, or "
             "PSU — is an event in a log, not an incident."
         ),
@@ -103,7 +103,7 @@ VIRTUALIZATION = UseCase(
             ),
         ),
         UseCaseItem(
-            category_id="power", option_id="psu-1500w", qty=2,
+            category_id="power", option_id="psu-1400w", qty=2,
             rationale="1+1 redundant with headroom for full drive growth.",
         ),
         UseCaseItem(
@@ -258,13 +258,14 @@ DATABASE = UseCase(
             "transaction processing) is many small reads and writes with "
             "users waiting on each one, and it inverts the virtualization "
             "logic: per-core speed beats core count. The 5th-gen Gold "
-            "6548Y+ is chosen for clock and its tripled L3 cache — hot "
-            "rows served from cache never touch memory at all — and, just "
+            "6548Y+ is chosen for its higher base clock and faster "
+            "DDR5-5200 memory over the 4th-gen 32-core Golds — and, just "
             "as decisive, because commercial databases are licensed per "
             "core: 64 fast cores can cost less to license than 128 slow "
-            "ones doing the same work. 2 TB of RAM from 64 GB modules at "
-            "one DIMM per channel keeps the working set in memory at full "
-            "DDR5-5600 speed, with 16 slots still empty for growth."
+            "ones doing the same work. 2 TB of RAM from 128 GB modules at "
+            "one DIMM per channel keeps the working set in memory at the "
+            "processor's full DDR5-5200 speed, with 16 slots still empty "
+            "for growth."
         ),
         (
             "Storage is where a database build is conservative on purpose. "
@@ -302,7 +303,7 @@ DATABASE = UseCase(
             ),
         ),
         UseCaseItem(
-            category_id="memory", option_id="rdimm-64gb", qty=32,
+            category_id="memory", option_id="rdimm-128gb", qty=16,
             rationale=(
                 "2 TB keeps the working set in RAM; buffer-cache hit rate "
                 "is the database's real performance knob."
@@ -341,7 +342,7 @@ DATABASE = UseCase(
             ),
         ),
         UseCaseItem(
-            category_id="power", option_id="psu-1500w", qty=2,
+            category_id="power", option_id="psu-1400w", qty=2,
             rationale="Comfortable 1+1 for a CPU/flash build.",
         ),
         UseCaseItem(
@@ -360,7 +361,7 @@ DATABASE = UseCase(
         ),
     ],
     outcomes=[
-        Stat(label="Memory", value="2 TB @ DDR5-5600, 16 slots free"),
+        Stat(label="Memory", value="2 TB @ DDR5-5200, 16 slots free"),
         Stat(label="Commit safety", value="Battery-backed write cache"),
         Stat(label="Licensing", value="Fewer, faster cores"),
         Stat(label="Footprint", value="4U + shelf, ten years ago → 2U"),

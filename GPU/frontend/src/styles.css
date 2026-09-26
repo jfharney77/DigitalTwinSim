@@ -1061,3 +1061,16 @@ label.check input {
   max-width: 100%;
   overflow-x: auto;
 }
+
+/* Live / tour counters strip: a wrapping row of label-over-value pairs. */
+.app.dell .counters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px 20px;
+  margin: 10px 0 12px;
+}
+.app.dell .counters .counter .value {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--dell-text);
+}

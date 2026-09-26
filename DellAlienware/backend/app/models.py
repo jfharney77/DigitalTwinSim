@@ -30,7 +30,10 @@ RegionKind = Literal[
 
 # Contract phase machine: monotonic, never regresses.
 PowerPhase = Literal[
-    "off", "detect", "handshake", "budget", "charge", "boot", "load", "steady"
+    "off", "detect", "handshake", "budget", "charge", "boot", "load", "steady",
+    # Additive: phases only the charging-diagnostics trace reaches
+    # (app/diagnostics.py). The plug-in trace never emits them.
+    "cap", "taper", "heat", "resume", "swap",
 ]
 
 ChargeStage = Literal["idle", "precharge", "cc", "cv", "full"]
@@ -151,6 +154,76 @@ class SimulateResponse(CamelModel):
 
 
 # ---------------------------------------------------------------------------
+# Failure scenario: charging diagnostics (additive — see app/diagnostics.py)
+# ---------------------------------------------------------------------------
+
+# Why the pack is taking less than the full constant-current rate right now.
+# "none" is the only value that means nothing is limiting the charge.
+ChargeLimiter = Literal[
+    "none",         # charging at the full constant-current rate
+    "charge-cap",   # a BIOS charge mode stopped the charge below 100%
+    "taper",        # constant-voltage taper: the cells set the pace
+    "budget",       # the adapter's watts are all going to the silicon
+    "temperature",  # pack over its charge-temperature limit
+    "adapter",      # adapter not recognized: the EC refuses to charge
+    "full",         # charge terminated at 100%
+]
+ChargeMode = Literal["primarily-ac", "standard"]
+TraceScenarioKind = Literal["baseline", "failure"]
+
+
+class DiagnosticState(PowerState):
+    """A PowerState plus what the owner can read off the machine.
+
+    Same energy invariant as its parent. The extra fields are the diagnostic
+    walk's evidence: the BIOS adapter line, the battery status line, the pack temperature, and
+    the single reason the charge is below the constant-current rate.
+    """
+
+    charge_limiter: ChargeLimiter = "none"
+    charge_mode: ChargeMode = "standard"
+    charge_cap_pct: float = Field(default=100.0, ge=0, le=100)
+    pack_temp_c: float = Field(alias="packTempC")
+    adapter_readout: str  # the BIOS "AC Adapter" line
+    battery_readout: str  # the battery status line (BIOS / Windows); names no cause
+    # Region ids drawn in the error colour; a subset of the anatomy's ids.
+    failed_regions: list[str] = Field(default_factory=list)
+
+
+class DiagnosticCheck(CamelModel):
+    """One symptom of the walk: what is seen, what it means, what to do."""
+
+    id: str
+    phase: PowerPhase  # the trace phase that shows it
+    limiter: ChargeLimiter
+    symptom: str
+    readout: str
+    cause: str
+    action: str
+
+
+class TraceScenario(CamelModel):
+    """A playable trace the simulate endpoint can serve (?scenario=<id>)."""
+
+    id: str
+    title: str
+    kind: TraceScenarioKind
+    summary: str
+    phases: list[PowerPhase]
+    hero_label: str
+    checks: list[DiagnosticCheck] = Field(default_factory=list)
+    sources: list["SourceLink"] = Field(default_factory=list)
+    illustrative: str = ""
+
+
+class DiagnosticResponse(SimulateResponse):
+    """SimulateResponse whose trace carries the diagnostic fields."""
+
+    trace: list[DiagnosticState]  # type: ignore[assignment]
+    trace_scenario: TraceScenario
+
+
+# ---------------------------------------------------------------------------
 # Anatomy (mirrors R760/GPU anatomy shape)
 # ---------------------------------------------------------------------------
 
@@ -222,3 +295,7 @@ class UseCase(CamelModel):
     steps: list[UseCaseStep]
     outcome: str
     sources: list[SourceLink] = Field(default_factory=list)
+
+
+TraceScenario.model_rebuild()
+DiagnosticResponse.model_rebuild()

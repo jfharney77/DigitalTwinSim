@@ -4,41 +4,135 @@
       "hash": "",
       "name": "simulator",
       "svg": true,
-      "visible": [".thermal-grid", ".scenario-list button", ".cfg-presets button", "label.cfg-row select", ".event-log", ".gauge-row"],
-      "text": ["Guided scenarios", "Instruments", "Traffic", "Faults & toggles", "worst link", "oversubscription", "fabric power"],
-      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+      "visible": [
+        ".thermal-grid",
+        ".scenario-list button",
+        ".cfg-presets button",
+        "label.cfg-row select",
+        ".event-log",
+        ".gauge-row"
+      ],
+      "text": [
+        "Guided scenarios",
+        "Instruments",
+        "Traffic",
+        "Faults & toggles",
+        "worst link",
+        "oversubscription",
+        "fabric power"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=wire-a-floor",
       "name": "scenario-wire-a-floor",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question"],
-      "text": ["Wire a floor", "PoE demand / budget", "devices powered"],
-      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Wire a floor",
+        "PoE demand / budget",
+        "devices powered"
+      ],
+      "play": {
+        "click": "button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=hash-collision",
       "name": "scenario-hash-collision",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["Hash collision", "Toggle adaptive"],
-      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "Hash collision",
+        "Toggle adaptive"
+      ],
+      "play": {
+        "click": "button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=sharp",
       "name": "scenario-sharp",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["Collectives in the network", "all-reduce rate", "Toggle SHARP"],
-      "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(> h2:text-is('Instruments'))", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "Collectives in the network",
+        "all-reduce rate",
+        "Toggle SHARP"
+      ],
+      "play": {
+        "click": "button:text-is('Explain mode')",
+        "watch": ".an-panel:has(> h2:text-is('Instruments'))",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=gray-failure",
       "name": "scenario-gray-failure",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["Gray failure", "Start a gray failure"],
-      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "Gray failure",
+        "Start a gray failure"
+      ],
+      "play": {
+        "click": "button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Tame the elephants on a power budget",
+        "All-reduce past a gray failure"
+      ]
+    },
+    {
+      "hash": "#lab=elephants-on-a-budget",
+      "name": "lab-elephants-on-a-budget",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

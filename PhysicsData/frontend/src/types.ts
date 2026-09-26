@@ -64,6 +64,7 @@ export interface SimState {
   stageRatesTbh: Record<string, number>;
   stageBacklogsTb: Record<string, number>;
   bottleneck: string;
+  limiter: string;
   throughputTbh: number;
   freshnessLagH: number;
   gpuIdleDueToDataPct: number;

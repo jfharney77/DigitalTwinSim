@@ -9,7 +9,7 @@ Eighth and final app of the physics suite
   and hits a deterministic mismatch every 12th site (16 h + an outage
   each); Blocks pays 1.5 h/site for a tested bundle. The 48 °C heatwave
   drops ~30% of a standard-temp fleet and none of an XR-class one
-  (envelope figures labeled to verify); coverage counts subscribers;
+  (the 55 °C XR ceiling is Dell's published XR8000 rating; the 40 °C standard ceiling is an estimate); coverage counts subscribers;
   updates with N+1 spares keep it — maintenance, not failure, is where
   the nines leak.
 - **Circular Design** — four design checkboxes, then eight accounted

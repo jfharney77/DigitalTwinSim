@@ -1,4 +1,9 @@
+import type { ScenarioId, ScenarioInfo } from "../types";
+
 export function PowerOnControls({
+  scenarios,
+  scenario,
+  onScenario,
   speed,
   running,
   done,
@@ -9,6 +14,9 @@ export function PowerOnControls({
   onStep,
   onReset,
 }: {
+  scenarios: ScenarioInfo[];
+  scenario: ScenarioId;
+  onScenario: (id: ScenarioId) => void;
   speed: number;
   running: boolean;
   done: boolean;
@@ -19,9 +27,46 @@ export function PowerOnControls({
   onStep: () => void;
   onReset: () => void;
 }) {
+  const current = scenarios.find((s) => s.id === scenario);
   return (
     <div className="an-panel">
       <h2>Playback</h2>
+      {scenarios.length > 1 && (
+        <label className="field" style={{ marginBottom: 10 }}>
+          Scenario
+          <select
+            className="scenario-select"
+            value={scenario}
+            onChange={(e) => onScenario(e.target.value as ScenarioId)}
+          >
+            {scenarios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {current && scenario !== "nominal" && (
+        <div className="mini scenario-summary" style={{ marginBottom: 10 }}>
+          {current.summary}
+          {current.sources.length > 0 && (
+            <>
+              {" "}
+              Modelled on:{" "}
+              {current.sources.map((src, i) => (
+                <span key={src.url}>
+                  {i > 0 && ", "}
+                  <a href={src.url} target="_blank" rel="noreferrer" title={src.label}>
+                    {new URL(src.url).hostname.replace(/^www\./, "")} [{i + 1}]
+                  </a>
+                </span>
+              ))}
+              .
+            </>
+          )}
+        </div>
+      )}
       <div className="btnrow">
         {running ? (
           <button className="primary" onClick={onPause}>

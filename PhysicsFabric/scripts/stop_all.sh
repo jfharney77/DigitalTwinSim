@@ -22,6 +22,15 @@ kill_port() {
     local pids
     pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
     for pid in $pids; do
+      # Several twins share this machine, and a neighbour can end up on our
+      # port. Only stop a process that is actually running out of this
+      # component's directory — never kill what this component did not start.
+      local cwd=""
+      cwd="$(readlink -f "/proc/$pid/cwd" 2>/dev/null || true)"
+      if [ -n "$cwd" ] && [ "${cwd#"$ROOT"}" = "$cwd" ]; then
+        echo "Port $port is held by PID $pid running in $cwd — not ours, left alone."
+        continue
+      fi
       kill "$pid" 2>/dev/null || true
       echo "Stopped $label on port $port (PID $pid)."
       stopped=1

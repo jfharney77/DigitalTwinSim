@@ -1,4 +1,4 @@
-import type { FabricAnatomy, FabricRegion, RegionKind } from "../types";
+import type { FabricAnatomy, FabricRegion, LinkStatus, RegionKind } from "../types";
 
 // Data-driven topology renderer: draws whatever regions the backend sends,
 // so a bigger or different fabric is data (anatomy.py), not code — same
@@ -36,7 +36,23 @@ export function FabricView({
   onHover,
   camera,
   regionLook,
+  sick,
+  hot,
 }: {
+  // The saturated leaf-spine link ("<leaf id>:<spine id>") and its load, drawn
+  // in amber so the busiest-link number has a place on the map.
+  hot?: { hotLink: string | null; peakLinkPercent: number } | null;
+  // Failure scenarios: the link under suspicion. It is drawn exactly like
+  // the other links until telemetry has located it — before that the
+  // operator cannot tell it apart either, and marking it early would undo
+  // the lesson (the Cyber Detect twin's `revealed` rule).
+  sick?: {
+    sickLink: string | null;
+    sickLinkStatus: LinkStatus | null;
+    sickLinkLocated: boolean;
+    trafficSteered: boolean;
+    symbolErrorsPerSec: number;
+  } | null;
   anatomy: FabricAnatomy;
   active?: Set<string>;
   selected?: string | null;
@@ -61,6 +77,30 @@ export function FabricView({
   const leaves = anatomy.regions.filter((r) => r.kind === "leaf");
   const endpoints = anatomy.regions.filter((r) => r.kind === "endpoint");
   const mid = (r: FabricRegion) => rx(r) + r.w / 2;
+
+  const faulty =
+    !!sick &&
+    sick.sickLinkLocated &&
+    (sick.symbolErrorsPerSec > 0 || sick.sickLinkStatus !== "up");
+  const sickId = faulty ? sick!.sickLink : null;
+  const sickLeaf = leaves.find((l) => sickId?.startsWith(`${l.id}:`));
+  const sickSpine = spines.find((s) => sickId?.endsWith(`:${s.id}`));
+  // Carrying job traffic: solid. Routed around, shut down or retraining: dashed.
+  const sickCarrying =
+    faulty && sick!.sickLinkStatus === "up" && !sick!.trafficSteered;
+  const sickLabel = !faulty
+    ? ""
+    : sick!.sickLinkStatus === "up"
+      ? sick!.trafficSteered
+        ? "UP · NO TRAFFIC"
+        : "UP · ERRING"
+      : sick!.sickLinkStatus === "admin-down"
+        ? "SHUT DOWN"
+        : "RETRAINING";
+
+  const hotId = hot?.hotLink ?? null;
+  const hotLeaf = leaves.find((l) => hotId?.startsWith(`${l.id}:`));
+  const hotSpine = spines.find((s) => hotId?.endsWith(`:${s.id}`));
 
   // A camera box maps to the same framing scaled down, so the whole-map box
   // reproduces the default viewBox exactly and a tween never jumps.
@@ -190,6 +230,66 @@ export function FabricView({
           </g>
         );
       })}
+      {/* The saturated link, drawn over the blocks in amber with its load. */}
+      {hotLeaf && hotSpine && (
+        <g className="hot-link" pointerEvents="none">
+          <line
+            x1={mid(hotLeaf)}
+            y1={ry(hotLeaf)}
+            x2={mid(hotSpine)}
+            y2={ry(hotSpine) + hotSpine.h}
+            stroke="#e8a33d"
+            strokeWidth={0.7}
+          />
+          <text
+            x={(mid(hotLeaf) + mid(hotSpine)) / 2 + 1.2}
+            y={(ry(hotLeaf) + ry(hotSpine) + hotSpine.h) / 2 - 1}
+            fill="#e8a33d"
+            fontSize={1.5}
+            letterSpacing={0.2}
+            stroke="var(--bg, #0d1320)"
+            strokeWidth={0.5}
+            paintOrder="stroke"
+          >
+            {hot!.peakLinkPercent}% · BUSIEST
+          </text>
+        </g>
+      )}
+      {/* The located sick link, drawn over the blocks (the optics band sits across
+          the uplinks), in the diagram's error colour. */}
+      {sickLeaf && sickSpine && (
+        <g className="sick-link" pointerEvents="none" data-status={sick!.sickLinkStatus ?? ""}>
+          <line
+            x1={mid(sickLeaf)}
+            y1={ry(sickLeaf)}
+            x2={mid(sickSpine)}
+            y2={ry(sickSpine) + sickSpine.h}
+            stroke="var(--core-hot)"
+            strokeWidth={0.6}
+            strokeDasharray={sickCarrying ? undefined : "1.2 1"}
+          />
+          <circle cx={mid(sickLeaf)} cy={ry(sickLeaf)} r={0.8} fill="var(--core-hot)" />
+          <circle
+            cx={mid(sickSpine)}
+            cy={ry(sickSpine) + sickSpine.h}
+            r={0.8}
+            fill="var(--core-hot)"
+          />
+          <text
+            x={(mid(sickLeaf) + mid(sickSpine)) / 2 + 1.2}
+            y={(ry(sickLeaf) + ry(sickSpine) + sickSpine.h) / 2 + 2.4}
+            fill="var(--core-hot)"
+            fontSize={1.5}
+            letterSpacing={0.2}
+            stroke="var(--bg, #0d1320)"
+            strokeWidth={0.5}
+            paintOrder="stroke"
+          >
+            {sickLabel}
+          </text>
+        </g>
+      )}
+
       {/* Orientation: the two-hop path, top to bottom. */}
       <text x={MARGIN} y={H + 2.6} fill="#5a6b82" fontSize={1.7} letterSpacing={0.3}>
         SPINE ↑ — every leaf reaches every spine

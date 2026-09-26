@@ -43,8 +43,8 @@ USE_CASES: list[UseCase] = [
             "endpoint question the organization already knows how to "
             "answer — full-disk encryption, device management, who has the "
             "laptop.",
-            "The configuration follows from that single requirement. Buy "
-            "the full 64 GB pool, because the whole point is to run a model "
+            "The configuration follows from that single requirement. Use "
+            "all 64 GB of the card, because the whole point is to run a model "
             "good enough that people prefer it to no model at all. Size "
             "host memory and the processor for ordinary work, since neither "
             "affects what the card can hold. Then spend the remaining "
@@ -64,7 +64,7 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="npu", option_id="ai100-dual", qty=1,
                 rationale=(
-                    "The full 64 GB pool. A model too small to be trusted "
+                    "Both NPUs and all 64 GB. A model too small to be trusted "
                     "on the task is worse than none, because it will be "
                     "trusted anyway."
                 ),
@@ -101,7 +101,7 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="toolchain", option_id="quantization", qty=1,
                 rationale=(
-                    "Four-bit weights are what make 109B parameters fit — "
+                    "Four-bit (MXINT4) weights are what make 109B parameters fit — "
                     "so the accuracy cost has to be measured on the actual "
                     "task, not assumed from a benchmark."
                 ),
@@ -117,7 +117,7 @@ USE_CASES: list[UseCase] = [
         outcomes=[
             Stat(label="Data leaving the device", value="None, after model load"),
             Stat(label="Model", value="~109B parameters, resident"),
-            Stat(label="Sustained rate", value="~21 tokens/second"),
+            Stat(label="Sustained rate", value="~21 tokens/second (illustrative)"),
             Stat(label="Network required", value="No"),
         ],
     ),
@@ -160,13 +160,14 @@ USE_CASES: list[UseCase] = [
                 category_id="platform", option_id="promax18plus", qty=1,
                 rationale=(
                     "Evaluation sweeps run for hours, so thermal headroom "
-                    "is the difference between finishing and throttling."
+                    "is the difference between finishing and throttling. "
+                    "The 18-inch card option is reported, not confirmed."
                 ),
             ),
             UseCaseItem(
                 category_id="npu", option_id="ai100-dual", qty=1,
                 rationale=(
-                    "The 64 GB pool holds three models at once, which "
+                    "The card's two 32 GB banks hold three models at once, which "
                     "matters more here than holding one enormous one."
                 ),
             ),
@@ -265,8 +266,8 @@ USE_CASES: list[UseCase] = [
                 category_id="npu", option_id="ai100-single", qty=1,
                 rationale=(
                     "A mid-size model handles diagnostics and manual "
-                    "lookup well; the smaller pool keeps cost and draw "
-                    "down."
+                    "lookup well; it fits one NPU's 32 GB, which keeps "
+                    "draw down and leaves the second NPU free."
                 ),
             ),
             UseCaseItem(
@@ -316,7 +317,7 @@ USE_CASES: list[UseCase] = [
         outcomes=[
             Stat(label="Connectivity required on site", value="None"),
             Stat(label="Corpus", value="Model and manuals, resident locally"),
-            Stat(label="On battery", value="Runs at reduced sustained wattage"),
+            Stat(label="On battery", value="Reduced sustained wattage (assumed)"),
             Stat(label="Update path", value="Fleet push when a window opens"),
         ],
     ),

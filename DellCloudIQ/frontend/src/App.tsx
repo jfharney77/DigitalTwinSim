@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchPipeline, fetchTour } from "./api";
+import {
+  HEALTHY,
+  fetchAnatomy,
+  fetchPipeline,
+  fetchScenarios,
+  fetchTour,
+} from "./api";
 import { ArchitecturePage } from "./components/ArchitecturePage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -10,7 +16,12 @@ import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import type { PlatformMap, PipelineState, RegionKind } from "./types";
+import type {
+  PlatformMap,
+  PipelineState,
+  RegionKind,
+  ScenarioInfo,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -39,17 +50,31 @@ function tourStepFromHash(): string | null {
   return m ? m[1] : null;
 }
 
-// Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
-// cursor, or null when the hash matches neither pattern (or names an unknown
-// phase) — in which case playback starts at 0 as before.
+// The pipeline page's hash is a small parameter list: /#step=N, /#phase=<name>,
+// /#scenario=<id>, or a scenario composed with either —
+// /#scenario=connected-no-data&phase=stale. Order does not matter.
+function hashParam(name: string): string | null {
+  const m = window.location.hash.match(
+    new RegExp(`[#&]${name}=([a-z0-9_-]+)(?:&|$)`, "i"),
+  );
+  return m ? m[1] : null;
+}
+
+// Which trace the hash asks for. No scenario= means the healthy pipeline.
+function scenarioFromHash(): string {
+  return hashParam("scenario") ?? HEALTHY;
+}
+
+// Returns the starting cursor, or null when the hash names neither a step nor
+// a known phase — in which case playback starts at 0 as before.
 function initialStepFromHash(states: { phase: string }[]): number | null {
   if (states.length === 0) return null;
-  const h = window.location.hash;
-  const step = h.match(/#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  const step = hashParam("step");
+  if (step !== null && /^\d+$/.test(step))
+    return Math.min(Number(step), states.length - 1);
+  const phase = hashParam("phase");
+  if (phase !== null) {
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
@@ -81,14 +106,27 @@ const KIND_LABEL: Record<RegionKind, string> = {
 export function App() {
   // Deep-linkable pages: /#architecture, /#capabilities, /#usecases, /#tour.
   const [page, setPage] = useState<Page>(pageFromHash);
+  // Which trace is playing: the healthy pipeline or a failure scenario. The
+  // hash is the source of truth, so the picker writes the hash and this follows.
+  const [scenario, setScenario] = useState<string>(scenarioFromHash);
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
   useEffect(() => {
-    // The pipeline page's hash is empty (or a #step=/#phase= deep link), so
-    // "on the page" means "not on any other page" rather than a prefix match.
-    const want = PAGE_HASH[page];
+    // The pipeline page's hash is empty (or a #step=/#phase=/#scenario= deep
+    // link), so "on the page" means "not on any other page" rather than a
+    // prefix match. Coming back to it restores the scenario that was playing.
+    const want =
+      page === "pipeline" && scenarioRef.current !== HEALTHY
+        ? `scenario=${scenarioRef.current}`
+        : PAGE_HASH[page];
     const h = window.location.hash;
-    const onPage = want
-      ? h.startsWith(`#${want}`)
-      : !/^#(architecture|capabilities|usecases|tour)/.test(h);
+    const elsewhere = /^#(architecture|capabilities|usecases|tour)/.test(h);
+    // A scenario deep link may put its parameters in either order
+    // (#phase=stale&scenario=...), so match the parameter, not a prefix.
+    const onPage =
+      page === "pipeline"
+        ? !elsewhere && scenarioFromHash() === scenarioRef.current
+        : h.startsWith(`#${want}`);
     if (!onPage) window.location.hash = want;
     document.body.classList.add("dell-body");
   }, [page]);
@@ -100,6 +138,7 @@ export function App() {
   const [speed, setSpeed] = useState(8);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   const [tour, setTour] = useState<TourResponse | null>(null);
   const [tourError, setTourError] = useState<string | null>(null);
   const tourStart = useRef<string | null>(tourStepFromHash());
@@ -124,18 +163,40 @@ export function App() {
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchPipeline()])
-      .then(([an, po]) => {
+    let stale = false;
+    Promise.all([fetchAnatomy(), fetchPipeline(scenario), fetchScenarios()])
+      .then(([an, po, sc]) => {
+        if (stale) return;
         setAnatomy(an);
         setTrace(po.trace);
+        setScenarios(sc);
         if (!hashApplied.current) {
+          // First load, or a scenario change: the cursor starts where the hash
+          // says, else at the beginning of the new trace.
           hashApplied.current = true;
-          const start = initialStepFromHash(po.trace);
-          if (start !== null) setCursor(start);
+          setCursor(initialStepFromHash(po.trace) ?? 0);
         }
       })
-      .catch((e) => setError(String(e)));
-  }, [level]);
+      .catch((e) => {
+        if (stale) return;
+        if (scenario !== HEALTHY) {
+          // An unknown scenario id in a pasted link: say so, play the healthy trace.
+          setError(`Unknown scenario "${scenario}". Showing the healthy pipeline.`);
+          window.location.hash = "";
+        } else setError(String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [level, scenario]);
+
+  // The guided tour narrates the healthy trace; its cursors index that trace.
+  useEffect(() => {
+    if (page === "tour" && scenario !== HEALTHY) {
+      hashApplied.current = false;
+      setScenario(HEALTHY);
+    }
+  }, [page, scenario]);
 
   // The tour is fetched the first time its page opens, and again when the
   // reading level changes so the narration follows the reader.
@@ -151,7 +212,19 @@ export function App() {
   // link from another page) — not just the hash present on first load.
   useEffect(() => {
     const onHash = () => {
-      setPage(pageFromHash());
+      const nextPage = pageFromHash();
+      setPage(nextPage);
+      if (nextPage === "pipeline") {
+        const next = scenarioFromHash();
+        if (next !== scenarioRef.current) {
+          // A different trace: stop, rewind, and let the fetch place the cursor.
+          stop();
+          hashApplied.current = false;
+          setCursor(0);
+          setScenario(next);
+          return;
+        }
+      }
       const s = initialStepFromHash(trace);
       if (s !== null) {
         stop();
@@ -208,6 +281,12 @@ export function App() {
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speed]);
+
+  const pickScenario = useCallback((id: string) => {
+    window.location.hash = id === HEALTHY ? "" : `scenario=${id}`;
+  }, []);
+  const scenarioInfo = scenarios.find((s) => s.id === scenario) ?? null;
+  const failing = scenario !== HEALTHY;
 
   const selectedRegion =
     anatomy?.regions.find((r) => r.id === regionId) ?? null;
@@ -325,17 +404,13 @@ export function App() {
       {page === "pipeline" && (
         <>
           <div className="an-hero">
-            <h2>How telemetry becomes an insight</h2>
-            <p>
-              CloudIQ has no power button — it is a cloud service. What it does
-              have is a pipeline: your monitored Dell systems collect
-              telemetry, the Secure Connect Gateway ships it one-way to Dell's
-              cloud, machine learning scores health and hunts for anomalies,
-              and when something crosses a line the Health Score drops, the
-              insight surfaces, the AIOps Assistant explains it, and a
-              notification fires. Play the trace and watch each stage light up
-              the part of the platform it runs in.
-            </p>
+            <h2>
+              {failing
+                ? "Connected, but no data arrives"
+                : "How telemetry becomes an insight"}
+            </h2>
+            {/* Leveled prose from /api/scenarios, like the step text below it. */}
+            {scenarioInfo?.intro && <p>{scenarioInfo.intro}</p>}
             <button
               className="primary pipeline-tour-link"
               onClick={() => setPage("tour")}
@@ -350,6 +425,7 @@ export function App() {
                 <PlatformView
                   anatomy={anatomy}
                   active={new Set(state?.activeRegions ?? [])}
+                  failed={new Set(state?.failedRegions ?? [])}
                   selected={regionId}
                   onSelect={setRegionId}
                 />
@@ -360,6 +436,8 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
+                {failing &&
+                  "Blocks outlined in red are blocked or starved at this step; the break itself, marked with a cross, is the company's proxy between the gateway and the cloud. "}
                 Highlighted blocks are the parts doing work at this step.
                 Click a block to pin what it is; the full descriptions live
                 under Architecture, and Guided tour narrates the whole trip.
@@ -378,8 +456,13 @@ export function App() {
               onPause={stop}
               onStep={step}
               onReset={reset}
+              scenario={scenario}
+              scenarios={scenarios}
+              onScenario={pickScenario}
             />
             <PipelineCounters
+              failing={failing}
+              note={scenarioInfo?.note ?? ""}
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
@@ -390,9 +473,35 @@ export function App() {
                 <p className="an-desc">{selectedRegion.description}</p>
               </section>
             )}
+            {failing && scenarioInfo && scenarioInfo.sources.length > 0 && (
+              <section className="an-panel scenario-sources">
+                <h2>What this failure is based on</h2>
+                <p className="mini">{scenarioInfo.summary}</p>
+                <ul>
+                  {scenarioInfo.sources.map((src) => (
+                    <li key={src.url}>
+                      <a href={src.url} target="_blank" rel="noreferrer">
+                        {src.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {anatomy && (
               <section className="legend an-panel">
                 <h2>Blocks</h2>
+                {failing && (
+                  <span>
+                    <i
+                      style={{
+                        background: "#3a1216",
+                        border: "1px dashed var(--dell-error)",
+                      }}
+                    />
+                    blocked or starved at this step
+                  </span>
+                )}
                 {kinds.map((k) => (
                   <span key={k}>
                     <i

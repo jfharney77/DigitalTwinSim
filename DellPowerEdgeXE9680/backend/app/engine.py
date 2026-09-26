@@ -13,8 +13,9 @@ NVSwitch complex soldered to one baseboard, not 5,000 cables — and the
 counter stops at eight because the domain stops at the chassis wall. What
 happens *next* is the point: eight NICs train, one per GPU, and everything
 past eight travels over ordinary Ethernet or InfiniBand. Buy the box again
-and again and the fabric does the rest — which is how xAI's Colossus put
-100,000 GPUs to work in 122 days. Timing and wattage are illustrative but
+and again and the fabric does the rest — which is how xAI's Colossus (built
+from Dell and Supermicro 8-GPU HGX servers) was reported to reach 100,000
+GPUs in 122 days. Timing and wattage are illustrative but
 plausible for a ~11 kW air-cooled 6U server; favor a correct mental model
 over measured numbers (project scope guardrail).
 """
@@ -48,7 +49,7 @@ def simulate() -> list[PowerOnState]:
             description=L(
                 novice=(
                     "The server sits in an ordinary rack, switched off. It is a "
-                    "big machine — six rack units tall, about eighty kilograms — "
+                    "big machine — six rack units tall, over a hundred kilograms — "
                     "but it is still a machine one team can install with a lift: "
                     "slide it in, connect power, plug in the network cables. That "
                     "ordinariness is the point. Unlike the rack-sized system "
@@ -58,7 +59,7 @@ def simulate() -> list[PowerOnState]:
                     "identical ones and install them in parallel."
                 ),
                 plain=(
-                    "The XE9680 sits racked and cabled, dark: a 6U, ~80 kg box "
+                    "The XE9680 sits racked and cabled, dark: a 6U, 100 kg-class box "
                     "in a standard rack, installed with a server lift like any "
                     "other PowerEdge. Power is connected, the eight network "
                     "cables are seated, nothing is on. The contrast with the "
@@ -68,7 +69,7 @@ def simulate() -> list[PowerOnState]:
                 ),
                 standard=(
                     "The XE9680 sits racked and cabled, dark. It is a big "
-                    "server — 6U tall, on the order of 80 kg — but it is still "
+                    "server — 6U tall, up to 114 kg fully loaded — but it is still "
                     "a server: it slides into a standard rack, takes ordinary "
                     "facility power, and needs no factory-integrated cabinet "
                     "and no building water. That ordinariness is the strategy. "
@@ -77,10 +78,12 @@ def simulate() -> list[PowerOnState]:
                     "box keeps its fast fabric entirely inside the chassis, so "
                     "installing a thousand of them is a thousand ordinary rack "
                     "jobs that can happen simultaneously — which is how "
-                    "Colossus stood up 100,000 GPUs in 122 days."
+                    "xAI's Colossus, built from Dell and Supermicro 8-GPU "
+                    "servers, was reported to stand up 100,000 GPUs in 122 "
+                    "days."
                 ),
                 technical=(
-                    "6U, ~80 kg, standard rack, ordinary facility power, no "
+                    "6U, up to ~114 kg, standard rack, ordinary facility power, no "
                     "liquid hookup in the air-cooled configuration. The scale-up "
                     "fabric is confined to the chassis, so deployment "
                     "parallelizes: N boxes are N independent rack-and-cable "
@@ -101,7 +104,10 @@ def simulate() -> list[PowerOnState]:
         PowerOnState(
             step=1,
             phase="power",
-            label="PSUs energize — iDRAC wakes on standby",
+            label=L(
+                standard="PSUs energize — iDRAC wakes on standby",
+                novice="Power supplies switch on — the management chip (iDRAC) wakes first",
+            ),
             description=L(
                 novice=(
                     "Power arrives. The six power supplies at the rear come "
@@ -218,7 +224,10 @@ def simulate() -> list[PowerOnState]:
         PowerOnState(
             step=3,
             phase="gpuinit",
-            label="Eight SXM GPUs wake — fans ramp to a roar",
+            label=L(
+                standard="Eight SXM GPUs wake — fans ramp to a roar",
+                novice="The eight GPUs wake — fans ramp to a roar",
+            ),
             description=L(
                 novice=(
                     "The longest stage, and the loudest. The eight graphics "
@@ -302,7 +311,8 @@ def simulate() -> list[PowerOnState]:
                 plain=(
                     "The NVSwitch chips on the baseboard stitch the eight "
                     "GPUs into one NVLink domain — every GPU can read and "
-                    "write every other's HBM at 900 GB/s, an order of "
+                    "write every other's HBM at 900 GB/s (the H100/H200 "
+                    "figure; Blackwell boards double it), an order of "
                     "magnitude past PCIe, so software addresses something "
                     "close to one large accelerator. The counter snaps 0 → 8 "
                     "atomically, and 8 is where it stops, forever: the fuse "
@@ -313,13 +323,16 @@ def simulate() -> list[PowerOnState]:
                 ),
                 standard=(
                     "The quiet counterpart to the XE9712's grand finale. The "
-                    "NVSwitch chips on the HGX baseboard — the same switch "
-                    "silicon the rack twin fills nine trays with — stitch "
+                    "NVSwitch chips on the HGX baseboard — the same kind of "
+                    "switch silicon the rack twin fills nine trays with, a "
+                    "generation earlier on Hopper boards — stitch "
                     "the eight GPUs into a single NVLink domain: every GPU "
                     "can now read and write every other's HBM directly at "
-                    "900 GB/s, roughly an order of magnitude beyond PCIe, "
+                    "900 GB/s on H100 and H200 boards (1.8 TB/s on "
+                    "Blackwell), roughly an order of magnitude beyond PCIe, "
                     "and software addresses something close to one large "
-                    "accelerator with a terabyte-plus of pooled memory. Two "
+                    "accelerator with 640 GB to 1.4 TB of pooled memory, "
+                    "depending on the baseboard. Two "
                     "things carry this twin's whole argument. The counter "
                     "snaps from zero to eight atomically — a partial domain "
                     "never exists. And eight is where it stops, forever: "
@@ -330,14 +343,16 @@ def simulate() -> list[PowerOnState]:
                 ),
                 technical=(
                     "NVSwitch complex fuses 8× SXM into one NVLink domain: "
-                    "900 GB/s per GPU peer-to-peer HBM access, pooled "
-                    "memory ~1.1–1.5 TB depending on baseboard. Atomic — "
+                    "900 GB/s per GPU peer-to-peer HBM access on H100/H200 "
+                    "(1.8 TB/s on B200), pooled memory 640 GB / 1.1 TB / "
+                    "1.4 TB by baseboard. Atomic — "
                     "gpusInDomain ∈ {0, 8}, asserted; and 8 is a hard "
                     "ceiling, also asserted. Board-level traces, not cable "
                     "training: the fuse is fast because it is small."
                 ),
                 expert=(
-                    "NVSwitch fuse: 8-GPU domain, 900 GB/s/GPU P2P HBM. "
+                    "NVSwitch fuse: 8-GPU domain, 900 GB/s/GPU P2P HBM "
+                    "(H100/H200). "
                     "gpusInDomain ∈ {0, 8}; 8 is the ceiling. Board traces, "
                     "not cables — fast because small."
                 ),
@@ -352,39 +367,69 @@ def simulate() -> list[PowerOnState]:
         PowerOnState(
             step=5,
             phase="fabric",
-            label="Eight NICs train — one per GPU, onto the fabric",
+            label=L(
+                standard="Eight NICs train — one per GPU, onto the fabric",
+                novice="Eight network cards (NICs) connect — one per GPU, to the data-center network",
+            ),
             description=L(
                 novice=(
-                    "Now the box reaches outward. Eight network cards — one "
-                    "for each graphics chip, which is a striking design "
-                    "choice — negotiate their links to the network switch at "
-                    "the top of the rack, each at 400 gigabits per second. "
+                    "Now the box reaches outward. Eight network cards, "
+                    "called NICs — one for each graphics chip, which is a "
+                    "striking design choice — set up their links to the "
+                    "network switch at the top of the rack, each at 400 "
+                    "gigabits per second. That setting-up is what 'training' "
+                    "a link means: the two ends test the cable and agree on "
+                    "a speed. The network they join is called the fabric, "
+                    "meaning the data-center network that ties thousands of "
+                    "servers together. "
                     "The pairing is the whole philosophy of this machine: "
                     "inside the box, chips talk over the board; past the "
                     "box, every chip has its own private on-ramp to the "
                     "data-center network, so eight here can work with eight "
                     "thousand elsewhere without queueing behind each other. "
-                    "In xAI's Colossus, that is about 3.6 terabits of "
-                    "network per server."
+                    "The road out is much narrower than the one inside, "
+                    "though. Mind the units: network speeds are counted in "
+                    "bits and the in-box link in bytes, and a byte is eight "
+                    "bits. Counted the same way, each chip has roughly one "
+                    "ninth as much room past the chassis wall as it has "
+                    "inside it, which is why it matters so much where that "
+                    "wall sits. One more thing: this timeline shows the "
+                    "network cards after the in-box group forms so you can "
+                    "see inside first, then outside. On a real server "
+                    "neither step waits for the other. "
+                    "Eight links make 3.2 terabits per second of GPU networking per "
+                    "server; the servers toured at xAI's Colossus were "
+                    "reported with a ninth link for the host, about 3.6 "
+                    "terabits in all."
                 ),
                 plain=(
-                    "The box reaches outward: eight ConnectX NICs — one per "
+                    "The box reaches outward: eight 400 GbE NICs — one per "
                     "GPU, the pairing that defines this class of machine — "
                     "train their 400 GbE links to the leaf switch, and the "
-                    "nicsUp counter climbs to eight. Each GPU gets a "
+                    "NICs-on-the-fabric counter climbs to eight. Each GPU gets a "
                     "private on-ramp to the data-center fabric (RDMA "
                     "traffic bypasses the host CPU entirely), so all-to-all "
                     "training traffic never queues behind a shared port. "
+                    "Watch the units: NVLink's 900 GB/s (H100/H200) is bytes, both "
+                    "directions added; 400 Gb/s is bits, about 50 GB/s each "
+                    "way and 100 GB/s both ways. Past the wall a GPU has "
+                    "roughly one ninth of what it has inside. The trace "
+                    "shows this step after the fuse to draw that hierarchy; "
+                    "on real hardware the NIC links and the NVLink fuse do "
+                    "not wait on each other. "
                     "This is the step the SN6000 fabric twin receives: "
-                    "~3.6 Tb/s of network per server, Colossus's reported "
-                    "figure."
+                    "8 × 400 GbE is 3.2 Tb/s of GPU networking per server "
+                    "(~3.6 Tb/s was reported at Colossus, counting a ninth "
+                    "host link)."
                 ),
                 standard=(
-                    "Now the box reaches outward. Eight ConnectX NICs — "
+                    "Now the box reaches outward. Eight 400 GbE NICs — "
+                    "ConnectX-7 adapters or BlueField-3 SuperNICs, "
                     "one dedicated to each GPU, the design choice that "
                     "defines this class of machine — train their 400 GbE "
                     "links against the leaf switch at the top of the rack, "
-                    "and the nicsUp counter climbs to eight. One NIC per "
+                    "and the NICs-on-the-fabric counter climbs to eight. "
+                    "One NIC per "
                     "GPU means every accelerator has its own private "
                     "on-ramp to the data-center fabric: remote GPUs read "
                     "and write its memory over RDMA (remote direct memory "
@@ -393,20 +438,42 @@ def simulate() -> list[PowerOnState]:
                     "shared port. This is the hand-off the SN6000 twin "
                     "catches: NVLink carried the conversation inside the "
                     "chassis, and from here outward it rides Ethernet — "
-                    "about 3.6 Tb/s of it per server, which is the number "
-                    "xAI's Colossus reported."
+                    "3.2 Tb/s of it per server for the GPUs. Mind the unit "
+                    "change, because it is what crossing the wall costs. "
+                    "NVLink's 900 GB/s (H100 and H200 boards) is gigabytes, summed over both "
+                    "directions; 400 Gb/s is gigabits, about 50 GB/s each "
+                    "way, 100 GB/s counted the way NVLink counts. Past the "
+                    "wall each GPU has roughly one ninth of the bandwidth "
+                    "it has inside (one eighteenth on a Blackwell board), "
+                    "and that ratio is why where the wall sits is the "
+                    "design decision. The order of these two steps is this "
+                    "twin's drawing of that hierarchy, inside first and "
+                    "outside second. It is not a dependency: on a real "
+                    "server the NIC links can train as soon as the host "
+                    "loads their drivers, often before the NVLink domain "
+                    "is configured. (The roughly "
+                    "3.6 Tb/s reported from xAI's Colossus counts a ninth "
+                    "400 GbE link for the host, on the Supermicro servers "
+                    "that were toured.)"
                 ),
                 technical=(
-                    "8× ConnectX 400 GbE NICs link-train to the leaf — one "
+                    "8× 400 GbE NICs (ConnectX-7 / BlueField-3) link-train to the leaf — one "
                     "per GPU, so per-accelerator RDMA never shares a port. "
-                    "nicsUp 0 → 8; ~3.6 Tb/s per server onto the scale-out "
-                    "fabric (Spectrum-X at Colossus). GPU-to-GPU past the "
-                    "chassis wall is GPUDirect RDMA from here on."
+                    "NICs on the fabric 0 → 8; 3.2 Tb/s of GPU networking per server "
+                    "onto the scale-out fabric (Spectrum-X at Colossus, "
+                    "reported ~3.6 Tb/s with the host's ninth link). GPU-to-GPU past the "
+                    "chassis wall is GPUDirect RDMA from here on: 400 Gb/s "
+                    "is ~50 GB/s per direction (100 GB/s bidirectional) "
+                    "against NVLink4's 900 GB/s bidirectional, about 9:1. "
+                    "Fuse-then-fabric is the trace's ordering, not a gate — "
+                    "real NIC links train at driver load, independent of "
+                    "the NVSwitch fabric manager."
                 ),
                 expert=(
-                    "8× 400 GbE train, 1:1 NIC:GPU, ~3.6 Tb/s/server. "
+                    "8× 400 GbE train, 1:1 NIC:GPU, 3.2 Tb/s/server. "
                     "Past the wall it's GPUDirect RDMA on the scale-out "
-                    "fabric."
+                    "fabric: 100 GB/s bidir vs 900 in-box (H100/H200), ~9:1. Step "
+                    "order is illustrative, not a gate."
                 ),
             ),
             active_regions=_nics() + ["nvswitch", *FANS],
@@ -438,10 +505,10 @@ def simulate() -> list[PowerOnState]:
                     "Burn-in sweeps the box — every GPU, every NVLink path, "
                     "every NIC, every HBM stack under thermal load — and "
                     "then the server registers with the cluster scheduler "
-                    "and accepts jobs at ~11 kW. gpusInDomain still reads "
+                    "and accepts jobs at ~11 kW. The GPUs-in-domain counter still reads "
                     "8: joining a 100,000-GPU cluster did not grow the "
                     "NVLink domain by one. Scale came from the fabric, "
-                    "box by identical box — the Colossus recipe."
+                    "box by identical box — the recipe reported at Colossus."
                 ),
                 standard=(
                     "Health checks and a burn-in workload sweep the box: "
@@ -449,13 +516,15 @@ def simulate() -> list[PowerOnState]:
                     "stack exercised while the fans hold temperature. Then "
                     "the server registers with the cluster scheduler and "
                     "accepts work, drawing on the order of 11 kW at full "
-                    "load. Look at the counters one last time: nicsUp "
-                    "reads eight, and gpusInDomain still reads eight — "
+                    "load. Look at the counters one last time: NICs on "
+                    "the fabric reads eight, and GPUs in NVLink domain "
+                    "still reads eight — "
                     "joining a hundred-thousand-GPU cluster did not grow "
                     "the NVLink domain by a single GPU. That is the whole "
                     "architecture in one line: the domain is the box, the "
                     "cluster is the fabric, and you scale by buying the "
-                    "box again — which is exactly what Colossus did, "
+                    "box again — which is what xAI's Colossus was reported "
+                    "to do, with 8-GPU servers from Dell and Supermicro, "
                     "roughly 12,500 times over."
                 ),
                 technical=(

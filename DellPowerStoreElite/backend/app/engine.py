@@ -3,7 +3,7 @@
 ``simulate()`` returns the deterministic trace of a modernization: an
 existing prior-generation PowerStore serving I/O, a new PowerStore Elite
 appliance waking beside it, the two fusing into one mixed-generation
-cluster over the 200 Gb RDMA interconnect, volumes rebalancing live, and
+cluster over the cluster's Ethernet network, volumes rebalancing live, and
 the old array taking a second role instead of a skip. Same purity rule as
 every twin: no FastAPI, no IO, no timers — the frontend owns the playback
 clock, and each ``JoinState`` is plain data the renderer consumes.
@@ -15,8 +15,13 @@ and writing through every step, ``downtime_seconds`` is pinned at zero,
 and the performance headline (3x) is only realized after cutover — the
 claim is earned by the sequence, not asserted at the start. Timing,
 IOPS and capacity figures are illustrative but shaped by Dell's launch
-materials (3x performance, 6:1 data reduction, 5.8 PB effective per 3U);
-favor a correct mental model over measured numbers (project scope
+materials (3x performance, 6:1 data reduction, 5.8 PB effective per 3U). One
+correction from the 2026-09 fact-check is load-bearing: Elite's 200 Gb RDMA
+"node interconnect" joins the two controller nodes *inside* one appliance
+(cable-free, across the midplane — StorageReview's Gen 3 review); it is not
+the wire between appliances. Appliances in a cluster talk over the Ethernet
+cluster network, so the ``cluster-mesh`` region and the ``mesh`` phase model
+that network, and its speed is illustrative. Favor a correct mental model over measured numbers (project scope
 guardrail).
 """
 
@@ -193,17 +198,17 @@ def simulate() -> list[JoinState]:
                     "the prior array — the compatibility that makes "
                     "mixed-generation clustering possible — on a new "
                     "platform: Intel Xeon Scalable with up to 50% more cores "
-                    "than the 3200T/5500 class, DDR5 memory, PCIe Gen 5 "
-                    "lanes. The dwell here is real: a container-based storage "
+                    "(Dell's comparison: the new 5500 against the 3200T), "
+                    "DDR5 memory, PCIe Gen 5 lanes. The dwell here is real: a container-based storage "
                     "OS coming up on two nodes is the slowest thing the new "
                     "box itself does."
                 ),
                 technical=(
                     "PowerStoreOS boots on both canisters (parallel, "
-                    "lockstep). Platform: Xeon Scalable +50% cores vs "
-                    "3200T/5500, DDR5, Gen 5 fabric. OS-lineage continuity "
+                    "lockstep). Platform: Xeon Scalable +50% cores (5500 vs "
+                    "3200T, Dell), DDR5, Gen 5 fabric. OS-lineage continuity "
                     "is the enabling fact for the mixed-generation join two "
-                    "steps from now. Largest cycle_cost of the *power* "
+                    "steps from now. Longest dwell of the *power* "
                     "phase; the trace-wide maximum belongs to the rebalance."
                 ),
                 expert=(
@@ -225,45 +230,53 @@ def simulate() -> list[JoinState]:
         JoinState(
             step=3,
             phase="power",
-            label="E3 drives and NVRAM online, batteries checked",
+            label="E3 drives and write cache online, batteries checked",
             description=L(
                 novice=(
                     "The Elite finds its own storage: forty slim flash drives "
-                    "in a new, denser shape called E3, plus a few special "
-                    "slots that act as an ultra-fast notepad for incoming "
-                    "writes. It also checks its batteries — not to survive a "
+                    "in a new, denser shape called E3. It also sets aside part "
+                    "of its memory as an ultra-fast notepad for incoming "
+                    "writes, and checks its batteries — not to survive a "
                     "blackout, but to buy just enough seconds during one to "
                     "copy that notepad safely to flash so no write is ever "
-                    "lost. The old array above has had the same insurance "
-                    "policy all along; this is a family trait, not a new "
-                    "feature."
+                    "lost. The old array above keeps the same promise with "
+                    "special notepad drives in its front bay; the promise is "
+                    "a family trait, and only the way of keeping it is new."
                 ),
                 plain=(
-                    "The Elite discovers its 40 low-profile E3 NVMe drives "
-                    "and its NVMe NVRAM write-cache slots, and self-tests the "
-                    "battery backup units that vault cache to flash on power "
-                    "loss. The vaulting contract is inherited from every "
-                    "PowerStore generation — what changed is density: 40 E3 "
-                    "slots in 3U instead of 25 2.5″ slots in 2U."
+                    "The Elite discovers its 40 low-profile E3 NVMe drives, "
+                    "arms its battery-backed write cache, and self-tests the "
+                    "battery backup units that vault that cache to flash on "
+                    "power loss. The vaulting contract is inherited from "
+                    "every PowerStore generation. Two things changed: the "
+                    "cache now lives in battery-backed DDR5 rather than in "
+                    "NVRAM drives, and the bay holds 40 E3 slots in 3U "
+                    "instead of 25 2.5″ slots in 2U."
                 ),
                 standard=(
                     "Drive discovery on the Elite: 40 dual-ported low-profile "
-                    "E3 NVMe slots (QLC or TLC), the NVMe NVRAM write cache, "
-                    "and a BBU self-test — the vault-to-flash insurance "
-                    "carried over from the prior generation. E3 density is "
-                    "the quiet headline: up to 3x the capacity per rack unit, "
-                    "which is how 5.8 PB effective fits in 3U."
+                    "E3 NVMe slots (QLC or TLC), the battery-backed DDR5 "
+                    "write cache that replaces the prior generation's NVRAM "
+                    "drives (as StorageReview describes the design), and a "
+                    "BBU self-test — the vault-to-flash insurance carried "
+                    "over from the prior generation. E3 density is the quiet "
+                    "headline: Dell claims up to 3x the density, which is "
+                    "how 5.8 PB effective fits in 3U."
                 ),
                 technical=(
-                    "Enumeration of 40× dual-ported E3 NVMe (QLC/TLC) plus "
-                    "NVMe NVRAM; BBU self-test arms vault-to-flash. E3 "
-                    "(EDSFF) yields ~3x density over the prior 25× 2.5″ bay. "
+                    "Enumeration of 40× dual-ported E3 NVMe (QLC/TLC); "
+                    "software-defined persistent memory armed (DDR5 "
+                    "presented as NVDIMM, vaulted to M.2 on AC loss — per "
+                    "StorageReview; no NVRAM drives in the bay); BBU "
+                    "self-test. Dell's 3x density figure compares a 9500 at "
+                    "6:1 with a 9200T at 5:1. "
                     "Both nodes see all drives — the dual-ported invariant "
                     "is generation-independent."
                 ),
                 expert=(
-                    "40× E3 NVMe + NVRAM enumerated, BBUs armed. Dual-ported "
-                    "throughout. ~3x density vs 2.5″ bay."
+                    "40× E3 NVMe enumerated, SDPM write cache + BBUs armed. "
+                    "Dual-ported throughout. 3x density (Dell, 9500 vs "
+                    "9200T)."
                 ),
             ),
             active_regions=[
@@ -337,47 +350,59 @@ def simulate() -> list[JoinState]:
         JoinState(
             step=5,
             phase="mesh",
-            label="200 Gb RDMA mesh links the generations",
+            label="The cluster network links the generations",
             description=L(
                 novice=(
-                    "The two generations now wire themselves together over a "
-                    "very fast private link. It uses a technique called RDMA "
-                    "— remote direct memory access — which lets one machine "
-                    "reach straight into the other's memory without either "
-                    "machine's processor having to stop and shuttle the data. "
-                    "Think of two neighboring workshops knocking a door "
-                    "through their shared wall instead of walking deliveries "
-                    "around the block. Every byte of the move that follows "
-                    "will go through this door."
+                    "The two generations now open a working connection to "
+                    "each other over the cluster's own network — ordinary "
+                    "fast Ethernet, running through the switches at the top "
+                    "of the rack, on a network of its own beside the traffic of the "
+                    "people using the storage. Think of two neighboring "
+                    "workshops knocking a door through their shared wall "
+                    "instead of walking deliveries around the block. Every "
+                    "byte of the move that follows will go through this "
+                    "door. (The Elite also has a much faster link of its own "
+                    "inside its case, between its two controllers, but "
+                    "that one never leaves the box.)"
                 ),
                 plain=(
-                    "The appliances link over the new 200 Gb RDMA node "
-                    "interconnect. RDMA (remote direct memory access) moves "
-                    "data between the machines without a CPU round trip on "
-                    "either side — the private freight corridor the live "
-                    "rebalance will run on, and the path failover between "
-                    "generations takes if a node dies."
+                    "The appliances link over the cluster network: Ethernet "
+                    "between the two boxes, through the top-of-rack "
+                    "switches, on its own internal network. It is the "
+                    "corridor the live rebalance will run on. Elite's "
+                    "headline 200 Gb RDMA (remote direct memory access) "
+                    "interconnect is a different wire — it joins the two "
+                    "controller nodes inside the Elite and never leaves the "
+                    "chassis."
                 ),
                 standard=(
-                    "The 200 Gb RDMA node interconnect comes up between the "
-                    "generations — Elite's replacement for the prior "
-                    "generation's slower intra-cluster links. RDMA bypasses "
-                    "both CPUs for bulk transfer, so the coming rebalance "
-                    "taxes neither array's ability to serve hosts. This link "
-                    "is the only new plumbing the modernization required."
+                    "The cluster network comes up between the generations: "
+                    "an Ethernet path through the top-of-rack switches, "
+                    "on its own internal network, which the coming rebalance "
+                    "will run on. It is worth keeping apart from Elite's "
+                    "headline 200 Gb RDMA (remote direct memory access) node "
+                    "interconnect, which joins the two controllers inside "
+                    "one Elite appliance across the midplane — up from 2× "
+                    "10 GbE in the prior generation, by StorageReview's "
+                    "account — and carries mirrored writes, not "
+                    "migrations. The link speed drawn between the "
+                    "appliances here is illustrative."
                 ),
                 technical=(
-                    "200 Gb RDMA interconnect established (vs the prior "
-                    "generation's mezzanine-port intra-cluster network). "
-                    "Zero-copy transfers keep both nodes' cores free for "
-                    "host I/O during the rebalance — the mechanism behind "
-                    "the service-floor invariant. First `cluster-mesh` "
-                    "activation in the trace; asserted inactive before this "
-                    "phase."
+                    "Intra-cluster data network established between the "
+                    "appliances (Ethernet via the ToR pair; speed "
+                    "illustrative). Not the 200 GbE RDMA node interconnect: "
+                    "that is intra-appliance, midplane-routed, dedicated to "
+                    "write ingest (100 GbE on the 1500; 2× 10 GbE in Gen 2, "
+                    "per StorageReview). Migration is background-throttled, "
+                    "which is what the service-floor invariant models. "
+                    "First `cluster-mesh` activation in the trace; asserted "
+                    "inactive before this phase."
                 ),
                 expert=(
-                    "200 Gb RDMA up. Zero-copy bulk path; host-serving cores "
-                    "untouched. Mesh first lights here (asserted)."
+                    "Intra-cluster Ethernet up between appliances (200G RDMA "
+                    "is intra-appliance only). Mesh first lights here "
+                    "(asserted)."
                 ),
             ),
             active_regions=[
@@ -393,13 +418,15 @@ def simulate() -> list[JoinState]:
         JoinState(
             step=6,
             phase="rebalance",
-            label="Volumes rebalance live across the mesh",
+            label="Volumes rebalance live across the cluster network",
             description=L(
                 novice=(
                     "Now the actual move — and it happens while everyone "
-                    "keeps working. Volume by volume, the cluster copies data "
-                    "from the old array's drives to the Elite's, over the "
-                    "private link, in the background. Users notice nothing; "
+                    "keeps working. Volume by volume (a volume is the chunk "
+                    "of storage one application sees as its disk), the cluster "
+                    "copies data from the old array's drives to the Elite's, "
+                    "over the cluster network, in the background, while the old "
+                    "array keeps answering everyone. Users notice nothing; "
                     "at worst the system is a few percent slower during the "
                     "busiest copying, which is the honest price of never "
                     "having to stop. This is by far the longest stage — "
@@ -410,8 +437,9 @@ def simulate() -> list[JoinState]:
                 ),
                 plain=(
                     "Volumes migrate from the prior array's drives to the "
-                    "Elite's, live, over the RDMA mesh. Hosts keep reading "
-                    "and writing throughout; served IOPS dips a few percent "
+                    "Elite's, live, over the cluster network. Hosts keep reading "
+                    "and writing throughout, still through the prior array's "
+                    "ports; served IOPS dips a few percent "
                     "at the peak of the copy — the honest price of never "
                     "stopping — and the downtime counter does not move. It "
                     "is the longest stage of the trace by far, because "
@@ -422,7 +450,11 @@ def simulate() -> list[JoinState]:
                 standard=(
                     "The live rebalance: the cluster drains volumes from the "
                     "prior generation's bay to the Elite's E3 pool across "
-                    "the RDMA mesh, while both arrays keep serving hosts. "
+                    "the cluster network, while the prior array keeps serving "
+                    "hosts through its own ports (the Elite's front end stays "
+                    "dark until cutover). Hosts are mapped and multipathed to "
+                    "the Elite before the first volume moves; that prerequisite "
+                    "is what makes the later cutover a path change. "
                     "IOPS sags slightly under the copy load and recovers — "
                     "the trace's service floor holds — and downtime stays at "
                     "zero. This step carries the largest dwell in the trace, "
@@ -431,17 +463,19 @@ def simulate() -> list[JoinState]:
                     "spend."
                 ),
                 technical=(
-                    "Background volume migration prior→Elite over the RDMA "
-                    "mesh; both generations serve hosts concurrently. Served "
+                    "Background volume migration prior→Elite over the "
+                    "intra-cluster network (PowerStore's internal, "
+                    "appliance-to-appliance migration); hosts stay on the prior "
+                    "front end, with paths to the Elite mapped beforehand. Served "
                     "IOPS dips within the asserted floor (≥85% of baseline) "
-                    "and downtime remains 0. Unique trace-maximum "
-                    "cycle_cost — the honest location of the cost of 'no "
+                    "and downtime remains 0. The single longest stage of the "
+                    "trace — the honest location of the cost of 'no host-side "
                     "migration project' is this stage's duration, and the "
-                    "tests pin it as the single longest."
+                    "tests pin it as the unique maximum."
                 ),
                 expert=(
-                    "Live drain prior→Elite over RDMA. IOPS ≥85% of "
-                    "baseline, downtime 0. Unique max cycle_cost — the cost "
+                    "Live drain prior→Elite over the cluster net. IOPS ≥85% of "
+                    "baseline, downtime 0. Longest stage of the join — the cost "
                     "is duration, never availability."
                 ),
             ),
@@ -529,20 +563,24 @@ def simulate() -> list[JoinState]:
                 plain=(
                     "Host paths cut over to the Elite — transparently, via "
                     "standard multipathing, so the downtime counter still "
-                    "reads zero — and performance triples: up to 3x IOPS and "
-                    "3x network throughput on the launch's 70/30 read/write "
-                    "basis, with Metadata Acceleration serving reads up to "
-                    "70% faster. The claim lands here, after the move, not "
+                    "reads zero — and performance triples: Dell claims up to "
+                    "3x the IOPS and 3x the throughput of the prior "
+                    "generation on a 70/30 read/write mix, and credits "
+                    "PowerStoreOS 5.0's Metadata Acceleration with reads up "
+                    "to 70% faster. The claim lands here, after the move, not "
                     "at the unboxing."
                 ),
                 standard=(
                     "Cutover: multipathing shifts host I/O to the Elite's "
                     "40-port front end with no interruption, and the "
-                    "platform's headline numbers finally engage — up to 3x "
-                    "IOPS and 3x network throughput versus the prior "
-                    "generation (Dell's 70/30 read/write, 8K basis), reads "
-                    "up to 70% faster via Metadata Acceleration, 64 Gb FC "
-                    "and 100 GbE at twice the port count. The trace holds "
+                    "platform's headline numbers finally engage. All are "
+                    "Dell's preliminary internal figures: up to 3x IOPS "
+                    "(1500 against 1200T, 70/30 read/write, 8K blocks), 3x "
+                    "throughput (9500 against 9200T, 1 MB blocks), and reads "
+                    "up to 70% faster from Metadata Acceleration, a "
+                    "PowerStoreOS 5.0 feature Dell measured on a 500T. The "
+                    "ports are 64 Gb FC and 100 GbE, at what Dell calls "
+                    "twice the port count. The trace holds "
                     "the tripling back until this step on purpose: it is a "
                     "property of the modernized estate, not of the box in "
                     "the crate."
@@ -551,14 +589,16 @@ def simulate() -> list[JoinState]:
                     "ALUA/multipath cutover to the Elite front end; no path "
                     "loss, downtime 0. Post-cutover IOPS ≥3x baseline "
                     "(asserted; pre-cutover steps are asserted ≤1.2x — the "
-                    "multiplier is earned by the sequence). Basis per Dell: "
-                    "3x IOPS/throughput at 70/30 R/W, Metadata Acceleration "
-                    "reads +70%, 40 ports @ 64 Gb FC / 100 GbE."
+                    "multiplier is earned by the sequence). Basis per Dell "
+                    "(preliminary internal): 3x IOPS 1500 vs 1200T, 70/30, "
+                    "8K over FC; 3x throughput 9500 vs 9200T, 1 MB; Metadata "
+                    "Acceleration reads +70% (OS 5.0 vs 4.3 on a 500T); up "
+                    "to 40 ports, 64 Gb FC / 100 GbE."
                 ),
                 expert=(
                     "Multipath cutover, downtime 0. IOPS ≥3x baseline here, "
                     "≤1.2x before (both asserted). 40 ports, 64G FC, "
-                    "100 GbE, metadata reads +70%."
+                    "100 GbE, metadata reads +70% (Dell figures)."
                 ),
             ),
             active_regions=[*_ELITE_SERVE, "cluster-mesh"],
@@ -576,40 +616,46 @@ def simulate() -> list[JoinState]:
             description=L(
                 novice=(
                     "And the old array? It does not go in a skip. Still a "
-                    "member of the cluster, it takes a lighter job: holding "
-                    "replica copies, hosting snapshots, serving the test "
-                    "environment. Hardware that was too slow to be the star "
+                    "member of the cluster, it takes a lighter job: hosting "
+                    "snapshots (saved earlier versions of the data) and "
+                    "serving the test environment. Hardware that was too slow to be the star "
                     "is still plenty good as the understudy — and because it "
                     "never left the cluster, giving it that job is a "
                     "settings change, not a project."
                 ),
                 plain=(
                     "The prior array is repurposed, not retired: still a "
-                    "cluster member, now carrying replica copies, snapshots "
+                    "cluster member, now carrying snapshots "
                     "and test workloads. Assigning it that role is a policy "
                     "change inside the cluster it never left — the second "
                     "half of the no-forklift argument."
                 ),
                 standard=(
-                    "The prior generation is repurposed in place: replication "
-                    "target, snapshot host, test estate — lighter roles its "
+                    "The prior generation is repurposed in place: snapshot "
+                    "retention, test and development estate — lighter roles its "
                     "hardware still serves well. Because it never left the "
-                    "cluster, the reassignment is policy, not migration. "
+                    "cluster, the reassignment is policy, not a project. "
+                    "(A replication target is the exception: PowerStore "
+                    "replicates between clusters, so that role means removing "
+                    "the appliance and redeploying it as a remote system.) "
                     "This is the half of the modernization story a spec "
                     "sheet can't show: the refresh cycle stops producing "
                     "decommissioned arrays and starts producing second "
                     "roles."
                 ),
                 technical=(
-                    "Prior appliance reassigned within the cluster: async "
-                    "replication target / snapshot retention / non-prod "
-                    "serving. No data egress, no decommission event. "
+                    "Prior appliance reassigned within the cluster: snapshot "
+                    "retention / non-prod serving. Not a replication target — "
+                    "native replication is cluster-to-cluster, and an in-cluster "
+                    "copy would share the failure domain. No data egress, no "
+                    "decommission event. "
                     "Mixed-generation membership persists to the end of the "
                     "trace — the tests assert the prior array is never "
                     "evicted."
                 ),
                 expert=(
-                    "Prior gen → replica/snapshot/non-prod, in place. No "
+                    "Prior gen → snapshot/non-prod, in place (replication "
+                    "needs a separate cluster). No "
                     "egress, no decommission; membership persists "
                     "(asserted)."
                 ),
@@ -630,7 +676,8 @@ def simulate() -> list[JoinState]:
             description=L(
                 novice=(
                     "The end state: the Elite serves everyone at triple the "
-                    "old speed, the old array keeps the copies safe, and the "
+                    "old speed, the old array keeps the snapshots and test "
+                    "systems, and the "
                     "two run as one system under one screen. Now read the "
                     "counters one last time. Speed: tripled. Capacity: "
                     "nearly six times larger. Downtime: zero seconds, ever. "
@@ -643,7 +690,8 @@ def simulate() -> list[JoinState]:
                     "Steady state: the Elite serves ~3x the baseline with "
                     "built-in AI balancing load and tuning placement "
                     "continuously (Dell claims up to 95% less manual "
-                    "effort); the prior array holds replicas; one cluster, "
+                    "effort); the prior array holds snapshots and test "
+                    "workloads; one cluster, "
                     "two generations, one management pane. Total downtime "
                     "across the entire modernization: zero seconds."
                 ),

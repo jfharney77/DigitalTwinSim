@@ -36,21 +36,31 @@ def validate(scenario: Scenario) -> list[Validation]:
         ))
 
     # Rule 2 — the RTO surprise, stated before the run.
-    rto = C("decision_hours") + cfg.estate_tb * 1000.0 / (cfg.restore_gbps * 3600.0)
+    decide_h = C("decision_hours")
+    move_h = cfg.estate_tb * 1000.0 / (cfg.restore_gbps * 3600.0)
+    rto = decide_h + move_h
+    # Whole-estate restore is the worst case; the model has no partial
+    # restore, so the message says which case the arithmetic covers.
+    terms = (
+        f"≈ {decide_h:.0f} h to decide and validate + ≈ {move_h:.0f} h to "
+        f"move {cfg.estate_tb:g} TB at {cfg.restore_gbps:g} GB/s"
+    )
     if rto > 48:
         out.append(Validation(
             rule_id="rto", level="warning",
             message=(
-                f"Restoring {cfg.estate_tb:g} TB at {cfg.restore_gbps:g} "
-                f"GB/s ≈ {rto:.0f} hours ≈ {rto / 24:.1f} days — before "
-                "anything goes wrong, know that this is the floor."
+                f"Full-estate restore: {terms} ≈ {rto:.0f} hours ≈ "
+                f"{rto / 24:.1f} days, counted from the restore order. "
+                "Known before anything goes wrong. Restoring only the "
+                "damaged volumes would be quicker; this model always "
+                "restores everything."
             ),
             source="spec 05 — the RTO surprise, done as arithmetic",
         ))
     else:
         out.append(Validation(
             rule_id="rto", level="ok",
-            message=f"Full-estate restore ≈ {rto:.0f} h at this throughput.",
+            message=f"Full-estate restore: {terms} ≈ {rto:.0f} h.",
             source="spec 05",
         ))
 

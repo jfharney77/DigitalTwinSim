@@ -1,0 +1,125 @@
+{
+  "params": {
+    "product": [
+      "xe7745",
+      "xe9680",
+      "xe9712"
+    ]
+  },
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "product": "xe9680",
+          "cpuTdpW": 350,
+          "pcieGpus": 8,
+          "pcieGpuTdpW": 450,
+          "psuCapacityW": 2800,
+          "sxmGpuTdpW": 700,
+          "nics": 8,
+          "trays": 18,
+          "shelfCapacityKw": 132,
+          "manifoldCapacityLpm": 200,
+          "coolantSupplyC": 25,
+          "coolantFlowLpm": 120
+        },
+        "workload": {
+          "gpuPct": 100,
+          "cpuPct": 50,
+          "dataFeedPct": 100
+        },
+        "environment": {
+          "inletC": 22
+        },
+        "durationS": 900,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "xe7745",
+          "cpuTdpW": 350,
+          "pcieGpus": 8,
+          "pcieGpuTdpW": 600,
+          "psuCapacityW": 3200,
+          "sxmGpuTdpW": 1000,
+          "nics": 8,
+          "trays": 18,
+          "shelfCapacityKw": 132,
+          "manifoldCapacityLpm": 200,
+          "coolantSupplyC": 25,
+          "coolantFlowLpm": 120
+        },
+        "workload": {
+          "gpuPct": 100,
+          "cpuPct": 50,
+          "dataFeedPct": 100
+        },
+        "environment": {
+          "inletC": 30.0
+        },
+        "durationS": 900,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "xe9680",
+          "cpuTdpW": 350,
+          "pcieGpus": 8,
+          "pcieGpuTdpW": 450,
+          "psuCapacityW": 2800,
+          "sxmGpuTdpW": 700,
+          "nics": 8,
+          "trays": 18,
+          "shelfCapacityKw": 132,
+          "manifoldCapacityLpm": 200,
+          "coolantSupplyC": 25,
+          "coolantFlowLpm": 120
+        },
+        "workload": {
+          "gpuPct": 100,
+          "cpuPct": 50,
+          "dataFeedPct": 60
+        },
+        "environment": {
+          "inletC": 22
+        },
+        "durationS": 900,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "xe9712",
+          "cpuTdpW": 350,
+          "pcieGpus": 8,
+          "pcieGpuTdpW": 450,
+          "psuCapacityW": 2800,
+          "sxmGpuTdpW": 1000,
+          "nics": 8,
+          "trays": 18,
+          "shelfCapacityKw": 132,
+          "manifoldCapacityLpm": 200,
+          "coolantSupplyC": 32,
+          "coolantFlowLpm": 120
+        },
+        "workload": {
+          "gpuPct": 100,
+          "cpuPct": 50,
+          "dataFeedPct": 100
+        },
+        "environment": {
+          "inletC": 22
+        },
+        "durationS": 1200,
+        "events": [
+          {
+            "atS": 300,
+            "action": "degrade-pump",
+            "index": null,
+            "value": 0.75,
+            "workload": null
+          }
+        ]
+      }
+    ]
+  }
+}

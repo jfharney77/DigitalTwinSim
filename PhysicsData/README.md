@@ -7,12 +7,13 @@ one sim-hour, deterministic throughout (noise is a fixed sinusoid mix).
 - **Dell AI Data Platform** — theory of constraints as a sim:
   throughput = min(stage rates), backlog piles up ahead of the
   constraint, freshness lag = backlog ÷ throughput (Little's law in the
-  explain tab), and fixing the bottleneck relocates it (×6 GPU toggle,
-  labeled a claim to verify). The KV-cache offload trades a ~12% token
+  explain tab), and fixing the bottleneck relocates it (×6 GPU toggle —
+  Dell's "up to 6x" May 2026 claim on the analytics engine, an estimate
+  on the process stage). The KV-cache offload trades a ~12% token
   tax for ×4 long-context sessions; GPU-idle-due-to-data is the north
   star — PhysicsCompute's feed slider and PhysicsStorage's Exascale
   gauge, unified.
-- **CloudIQ / APEX AIOps** — the meta-instrument, graded: injected
+- **Dell AIOps (formerly CloudIQ, then APEX AIOps)** — the meta-instrument, graded: injected
   issues are ground truth, so the anomaly k-knob earns
   precision/recall/MTTD scores (same ROC trade as PhysicsResilience's
   sensitivity slider — the rhyme is deliberate). The days-to-full

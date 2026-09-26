@@ -41,9 +41,11 @@ def test_every_region_described():
         assert r.description.strip(), r.id
 
 
-def test_four_cooling_fans():
+def test_three_cooling_fans():
+    # Dell's N3200-ON/E3200-ON Installation Guide: "three pluggable fans" on
+    # every E3200-ON model (the twin originally drew four).
     fans = [r for r in ANATOMY.regions if r.kind == "cooling"]
-    assert len(fans) == 4
+    assert len(fans) == 3
 
 
 def test_two_power_supplies():

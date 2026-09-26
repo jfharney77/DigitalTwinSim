@@ -42,7 +42,8 @@ Backend tests: `cd backend && . .venv/bin/activate && python -m pytest -q`
 
 ## What we don't model
 
-Transfer-time gaps (the ~4 ms line-interactive switchover), harmonics and
+Transfer-time gaps (the few-millisecond line-interactive switchover — APC quotes 6 ms
+typical, 10 ms maximum for Smart-UPS), harmonics and
 true three-phase vector math (phases are treated as three independent
 230 V feeds), PDU metering electronics (~5 W), battery internal resistance
 and depth-of-discharge limits, generator interaction, and per-outlet
@@ -56,5 +57,8 @@ UI badges estimate-derived readouts.
   (switched, metered-by-outlet; 1- and 3-phase) — dell.com listings,
   checked 2026-08.
 - NEC 210.19/210.20 — the 80% continuous-load rule.
-- IEEE 1188 / IEEE 535 practice — the VRLA aging rule of thumb (applied
-  as an exact doubling per +10 °C; labeled estimate).
+- IEEE 1188 — the 80%-of-nameplate VRLA replacement line.
+- Schneider Electric/APC FAQ FA158934 — VRLA batteries last 3–5 years and
+  life halves per +8 °C; other vendors quote +10 °C, which the model
+  applies as an exact doubling (labeled estimate).
+- APC FAQ FA343797 — 8–10 year expected Li-ion life (vendor claim).

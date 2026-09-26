@@ -37,14 +37,16 @@ def validate(scenario: Scenario) -> list[Validation]:
                 f"this build asks for {cfg.drive_count}. (Real arrays add "
                 "expansion shelves — this sim models one enclosure.)"
             ),
-            source="Dell PowerVault ME5 spec sheet — enclosure drive counts",
+            source="Dell PowerVault ME5000 spec sheet — ME5012 12 × 3.5-inch, "
+                   "ME5024 24 × 2.5-inch bays",
         ))
     else:
         out.append(Validation(
             rule_id="slots", level="ok",
             message=f"{cfg.drive_count} drives fit the {cfg.model}'s "
                     f"{max_drives} slots.",
-            source="Dell PowerVault ME5 spec sheet — enclosure drive counts",
+            source="Dell PowerVault ME5000 spec sheet — ME5012 12 × 3.5-inch, "
+                   "ME5024 24 × 2.5-inch bays",
         ))
 
     # Rule 2 — RAID minimum member counts (and evenness for RAID 10).
@@ -82,6 +84,33 @@ def validate(scenario: Scenario) -> list[Validation]:
             rule_id="raid-members", level="ok",
             message=f"RAID {cfg.raid_level} group of {group_n} is legal.",
             source="RAID arithmetic — member minimums",
+        ))
+
+    # Rule 2b — the drive catalog. The sim lets any size ride any drive
+    # type (the rebuild arithmetic is the lesson), but says so when the
+    # combination is not one Dell sells.
+    catalog_note = None
+    if cfg.drive_type == "hdd-10k" and cfg.drive_tb > 2:
+        catalog_note = (
+            f"Dell's ME5 10k SAS drives top out at 2.4 TB; a {cfg.drive_tb} "
+            "TB 10k spindle is illustrative, not a part you can order."
+        )
+    elif cfg.drive_type == "hdd-7.2k" and cfg.model == "ME5024":
+        catalog_note = (
+            "Dell lists 7.2k NL-SAS for the ME5 as 3.5-inch drives (4–22 "
+            "TB); the ME5024's 24 bays are 2.5-inch, so this build is "
+            "illustrative. The ME5012 is the 3.5-inch enclosure."
+        )
+    elif cfg.drive_type == "ssd" and cfg.drive_tb > 8:
+        catalog_note = (
+            f"Dell's ME5 SSDs top out at 7.68 TB; a {cfg.drive_tb} TB SSD "
+            "is illustrative, not a part you can order."
+        )
+    if catalog_note:
+        out.append(Validation(
+            rule_id="drive-catalog", level="warning",
+            message=catalog_note,
+            source="Dell PowerVault ME5000 spec sheet — storage media list",
         ))
 
     # Rule 3 — big drives on single-parity RAID: the rebuild-window rule.
@@ -122,7 +151,8 @@ def validate(scenario: Scenario) -> list[Validation]:
                 "runs write-through (nowhere to mirror it). One fault "
                 "takes the array offline — the sim will demonstrate."
             ),
-            source="Dell ME5 — arrays ship dual-controller for this reason",
+            source="Dell ME5000 spec sheet — 2U models support single or dual "
+                   "controllers; dual is what buys failover",
         ))
 
     # Rule 6 — offered load vs what the build can carry (warn, don't

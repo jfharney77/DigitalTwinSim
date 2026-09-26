@@ -47,7 +47,11 @@ export function ChassisView({
   selected,
   onSelect,
   onToggleFan,
+  redundancy,
+  psuCount,
 }: {
+  redundancy: string;
+  psuCount: number;
   anatomy: ChassisMap;
   state: SimState | null;
   deadFans: Set<number>;
@@ -61,6 +65,15 @@ export function ChassisView({
   const H = anatomy.height + 2 * MARGIN;
   const rx = (r: ChassisRegion) => r.x + MARGIN;
   const ry = (r: ChassisRegion) => r.y + MARGIN;
+  // PSU slots populate 1, 4, 2, 5, 3, 6 (Dell's rule, mirrored from the
+  // engine's PSU_POPULATION_ORDER). Feed letters follow the active policy:
+  // grid splits slots 1-3 / 4-6 across A / B, every other policy hangs the
+  // whole pool off feed A in this model.
+  const populatedPsus = new Set([0, 3, 1, 4, 2, 5].slice(0, psuCount));
+  const psuLabel = (i: number) =>
+    !populatedPsus.has(i)
+      ? `PSU ${i + 1} · empty`
+      : `PSU ${i + 1}·${redundancy === "grid" && i >= 3 ? "B" : "A"}`;
   const rpm = state?.fanRpmPct ?? 0;
   const flowClass = rpm > 66 ? "flow-fast" : rpm > 33 ? "flow-mid" : "flow-slow";
 
@@ -98,9 +111,11 @@ export function ChassisView({
         const bayIdx = isBay ? Number(r.id.split("-")[1]) - 1 : -1;
         const empty = isBay && emptyBays.has(bayIdx);
         const isPsu = r.kind === "power";
+        const psuIdx = isPsu ? Number(r.id.split("-")[1]) : -1;
+        const psuEmpty = isPsu && !populatedPsus.has(psuIdx);
         const psuDark =
           isPsu && state ? state.regionTemps[r.id] <= state.inletC + 0.2 : false;
-        const fill = dead || empty ? "#20242a" : tempColor(temp);
+        const fill = dead || empty || psuEmpty ? "#20242a" : tempColor(temp);
         const hot = state?.hottestSlot === bayIdx + 1 && isBay && !empty;
         return (
           <g
@@ -119,10 +134,11 @@ export function ChassisView({
                 isSel ? "var(--accent)"
                 : dead ? "#c8281e"
                 : hot ? "#e8c33d"
+                : empty || psuEmpty ? "#5a6b82"
                 : "#0d1420"
               }
               strokeWidth={isSel || hot ? 0.6 : 0.3}
-              strokeDasharray={empty ? "1.5 1" : undefined}
+              strokeDasharray={empty || psuEmpty ? "1.5 1" : undefined}
               opacity={dead || (isPsu && psuDark) ? 0.85 : 1}
             />
             {/* Bay labels rotated vertical (tall thin slots). */}
@@ -160,11 +176,11 @@ export function ChassisView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h / 2 + 0.7}
                 textAnchor="middle"
-                fill={dead ? "#e07b6a" : "#0d1420"}
+                fill={dead ? "#e07b6a" : psuEmpty ? "#5a6b82" : "#0d1420"}
                 fontSize={Math.min(1.8, (r.w - 1) / (r.label.length * 0.62))}
                 fontWeight={600}
               >
-                {dead ? "✕ dead" : r.label}
+                {dead ? "✕ dead" : isPsu ? psuLabel(psuIdx) : r.label}
               </text>
             )}
           </g>

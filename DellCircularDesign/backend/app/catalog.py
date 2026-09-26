@@ -46,7 +46,7 @@ CATALOG: list[CatalogCategory] = [
                     "shredded battery material — and comes back at real "
                     "cost in energy and reagents. Dell reports more than "
                     "95 million pounds of recycled and renewable "
-                    "material flowing into products in a year; the "
+                    "material in its fiscal-2024 products; the "
                     "number is real, and most of its mass is the easy "
                     "fraction."
                 ),

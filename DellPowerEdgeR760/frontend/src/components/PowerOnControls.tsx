@@ -41,8 +41,11 @@ export function PowerOnControls({
       note={
         <>
           The sequence is a fixed trace computed by the backend; Run only plays
-          it back. Step walks one event at a time — longer real-world stages
-          (memory training, drive spin-up) dwell on screen longer.
+          it back. Step walks one event at a time — and Run holds the longer
+          steps on screen longer, in the order the seconds the counter prints
+          put them, so memory training sits there while the short stages flick
+          past. The dwell is a rank, not a scale: a step that takes ten times
+          as long does not sit there ten times as long.
         </>
       }
     />

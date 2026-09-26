@@ -88,7 +88,7 @@ def simulate() -> list[PipelineState]:
                     "On their normal cycle the monitored systems gather telemetry — "
                     "health, capacity, performance counters, configuration, and "
                     "logs. Storage and servers collect through their embedded "
-                    "SupportAssist client or the OpenManage Enterprise plugin; "
+                    "SupportAssist client or the OpenManage Enterprise AIOps plugin; "
                     "switches, Connectrix, and VMware collect through the on-site "
                     "AIOps Collector, a small read-only virtual machine. Nothing "
                     "has left the data centre yet."
@@ -97,7 +97,7 @@ def simulate() -> list[PipelineState]:
                     "On their normal cycle, the monitored systems gather telemetry "
                     "— health, capacity, performance counters, configuration, and "
                     "logs. Storage and servers collect through their embedded "
-                    "SupportAssist client or the OpenManage Enterprise plugin; "
+                    "SupportAssist client or the OpenManage Enterprise AIOps plugin; "
                     "switches, Connectrix, and VMware collect through the on-site "
                     "AIOps Collector, a small read-only virtual machine. Nothing "
                     "leaves the data center yet."
@@ -105,7 +105,7 @@ def simulate() -> list[PipelineState]:
                 technical=(
                     "Scheduled collection: health, capacity, performance counters, "
                     "configuration, logs. Storage and servers via embedded "
-                    "SupportAssist or the OpenManage Enterprise plugin; switches, "
+                    "SupportAssist or the OpenManage Enterprise AIOps plugin; switches, "
                     "Connectrix, and VMware via the on-site AIOps Collector, a "
                     "read-only VM. Nothing egresses at this step."
                 ),
@@ -130,36 +130,39 @@ def simulate() -> list[PipelineState]:
                     "The gateway bundles the measurements and opens an encrypted "
                     "connection outward to Dell's cloud. The direction matters more "
                     "than anything else in this step: the connection is outbound "
-                    "and one-way, so Dell's cloud can never reach back into your "
-                    "network. That single property is what makes cloud-based "
+                    "only, always started from your side, so Dell's cloud can never "
+                    "open a connection into your network. That single property is what makes cloud-based "
                     "analysis of on-site equipment acceptable to security teams."
                 ),
                 plain=(
                     "The Secure Connect Gateway batches the telemetry and opens a "
                     "one-way, encrypted outbound connection to Dell's cloud on port "
-                    "443. The direction matters: the link is outbound and "
-                    "one-directional, so Dell's cloud can never reach back into "
-                    "your network — the property that makes a cloud-analyzed, "
+                    "443. The direction matters: the link is always started from "
+                    "inside and the telemetry travels one way, so Dell's cloud can "
+                    "never open a connection into your network — the property that makes a cloud-analyzed, "
                     "on-premises fleet acceptable to security teams."
                 ),
                 standard=(
                     "The Secure Connect Gateway batches the telemetry and opens a "
                     "one-way, encrypted (TLS) outbound connection to Dell's cloud "
-                    "on port 443. The direction matters: the link is outbound and "
-                    "one-directional, so Dell's cloud can never reach back into "
-                    "your network — the property that makes a cloud-analyzed, "
+                    "on port 443. The direction matters: the link is "
+                    "outbound-initiated and the telemetry one-directional, so "
+                    "Dell's cloud can never open a connection into your network "
+                    "— the property that makes a cloud-analyzed, "
                     "on-prem fleet acceptable to security teams."
                 ),
                 technical=(
                     "Secure Connect Gateway batches and egresses over TLS/443, "
-                    "outbound-initiated and unidirectional. The directionality is "
-                    "the security property: no inbound path exists from the cloud "
-                    "into the estate, which is what makes cloud analytics over "
+                    "outbound-initiated, telemetry unidirectional. The "
+                    "directionality is the security property: no inbound-initiated "
+                    "path exists from the cloud into the estate (remote-support "
+                    "sessions, if permitted, ride the same outbound tunnel under "
+                    "Policy Manager control), which is what makes cloud analytics over "
                     "on-premises infrastructure approvable."
                 ),
                 expert=(
-                    "SCG batches, egresses TLS/443, outbound-only and "
-                    "unidirectional. No inbound path — the property that makes "
+                    "SCG batches, egresses TLS/443, outbound-initiated, telemetry "
+                    "unidirectional. No inbound-initiated path — the property that makes "
                     "cloud analytics approvable."
                 ),
             ),
@@ -281,13 +284,14 @@ def simulate() -> list[PipelineState]:
             label="A risk crosses threshold",
             description=L(
                 novice=(
-                    "The models flag something: a latency anomaly on a storage "
-                    "pool, a capacity forecast saying it will be full in about ten "
-                    "weeks, and a security finding where a setting has drifted away "
-                    "from the approved baseline. The affected system's health score "
-                    "drops, weighted by how serious each finding is. This is the "
-                    "moment traditional monitoring would still be waiting for "
-                    "someone to complain."
+                    "The models find three things at once. A storage pool is "
+                    "answering more slowly than it normally does. At the current "
+                    "rate, that pool will be full in about ten weeks. And a "
+                    "security setting has drifted away from the approved "
+                    "baseline. The affected system's health score drops, with the "
+                    "more serious findings counting for more. Nothing has broken "
+                    "yet and no user has noticed anything: older monitoring would "
+                    "still be waiting for somebody to ring up and complain."
                 ),
                 plain=(
                     "The models flag something: a latency anomaly on a storage "
@@ -333,12 +337,13 @@ def simulate() -> list[PipelineState]:
             label="Insight surfaces in the app",
             description=L(
                 novice=(
-                    "The findings appear in the application, in a browser and on a "
-                    "phone: a lowered health score with a description of the "
-                    "problem, a capacity forecast on the dashboard, a view naming "
-                    "the workload that is causing the contention, and a security "
-                    "alert. Dashboards and reports update so that an operator sees "
-                    "the fleet and a manager sees the summary."
+                    "The findings appear in the application, in a web browser and "
+                    "on a phone: a lowered health score with a note explaining the "
+                    "problem, a forecast on the dashboard showing when the pool "
+                    "fills, a view naming the workload that is stealing "
+                    "performance from the others, and a security alert. Dashboards "
+                    "and reports update too, so an operator sees the whole estate "
+                    "and a manager sees the summary."
                 ),
                 plain=(
                     "The findings appear in the CloudIQ app — in the browser and on "
@@ -392,7 +397,7 @@ def simulate() -> list[PipelineState]:
                     "The AIOps Assistant, which is generative AI, restates the "
                     "finding in ordinary language. Ask it why the score fell and it "
                     "draws on two sources at once — Dell's support knowledge base "
-                    "of more than 133,000 resources, and the live state of this "
+                    "of more than 133,000 articles and manuals (Dell's figure), and the live state of this "
                     "specific environment, which Dell calls Infrastructure Context "
                     "Awareness. The answer names the affected pool, the likely "
                     "cause, and what to do. A number on a dashboard turns into a "
@@ -401,7 +406,7 @@ def simulate() -> list[PipelineState]:
                 standard=(
                     "The generative-AI AIOps Assistant puts the finding in plain "
                     "language. Asked why the score dropped, it answers from both "
-                    "Dell's support knowledge (133,000+ resources) and this "
+                    "Dell's support knowledge (133,000+ articles, Dell's figure) and this "
                     "environment's actual state — Infrastructure Context Awareness "
                     "— naming the pool, the likely cause, and the recommended "
                     "remediation. A dashboard reading becomes a next step without "
@@ -409,7 +414,7 @@ def simulate() -> list[PipelineState]:
                 ),
                 technical=(
                     "The AIOps Assistant renders the finding conversationally, "
-                    "grounded in both Dell's support corpus (133,000+ resources) "
+                    "grounded in both Dell's support corpus (133,000+ KB articles, Dell's figure) "
                     "and the live environment state via Infrastructure Context "
                     "Awareness — naming the affected pool, probable cause, and "
                     "remediation. Converts a dashboard reading into an action "
@@ -431,55 +436,85 @@ def simulate() -> list[PipelineState]:
         PipelineState(
             step=8,
             phase="notify",
-            label="Notify, integrate, remediate",
+            label="Notify and integrate; a later collection shows the fix",
             description=L(
                 novice=(
                     "The insight leaves the platform. An email and a phone alert go "
                     "out, a ticket is opened automatically in the organization's "
                     "service-management system, and an automated process is "
-                    "triggered — all through the interfaces that connect this "
-                    "platform to the tools teams already use. As the fixes take "
-                    "effect, the health score recovers. Note that it does not go "
-                    "all the way back to where it started, and that is honest: the "
-                    "estate has learned something about itself."
+                    "triggered. All of that happens within seconds, and the health "
+                    "score is still 71: opening a ticket fixes nothing. People and "
+                    "their own tools then do the repair on the equipment. The "
+                    "platform only watches, and changes nothing there itself. The "
+                    "score is worked out again only when the next batch of "
+                    "measurements arrives after the repair. That is why the clock "
+                    "on this step jumps by about an hour, and why the whole "
+                    "collection path lights up again alongside the notification: "
+                    "what you are watching is a second cycle running end to end. "
+                    "The later batch shows "
+                    "the drifted setting put back and the slow storage pool "
+                    "relieved, and the score reads 88. It is not 100, because the "
+                    "storage that is filling up is still filling up. The timing "
+                    "and both scores are illustrative."
                 ),
                 plain=(
                     "The insight leaves CloudIQ. An email and mobile alert go out, "
-                    "a ServiceNow ticket is opened over the ITSM integration, and a "
-                    "webhook drives an automation — all via the REST API and "
-                    "webhooks that connect the platform to the tools teams already "
-                    "run. As remediation begins, the Health Score recovers. Note it "
-                    "recovers above the low-water mark but not to 100, which is "
-                    "deliberate honesty."
+                    "a ticket is opened in ServiceNow through the ITSM (IT service "
+                    "management) integration, and a webhook starts an automation, "
+                    "all within seconds and with the Health Score still at 71. A "
+                    "ticket does not move the score. The team and its own tools "
+                    "then fix the estate; CloudIQ changes nothing there. The score "
+                    "is recalculated from the next collection after the fix, shown "
+                    "here about an hour later — which is why the collection path "
+                    "lights again beside the notification, a second cycle running "
+                    "end to end: the security setting is back and "
+                    "the noisy workload is rebalanced, so it reads 88. The capacity "
+                    "forecast is still open, so it is not 100. Timing and scores "
+                    "are illustrative."
                 ),
                 standard=(
                     "The insight leaves CloudIQ. An email and mobile alert go out, "
                     "a ServiceNow ticket is opened over the ITSM integration, and a "
-                    "webhook drives an automation — all via the REST API and "
-                    "webhooks that connect AIOps to the tools teams already run. As "
-                    "remediation begins (reclaim capacity, rebalance the noisy "
-                    "workload, re-apply the security setting), the Health Score "
-                    "recovers. The loop from telemetry to action is closed — the "
-                    "point of the whole platform."
+                    "webhook drives an automation, all via the REST API and "
+                    "webhooks that connect AIOps to the tools teams already run. "
+                    "That takes seconds, and the Health Score is still 71: a "
+                    "notification is not a fix. The team and its automations then "
+                    "act on the estate through their own tools (re-apply the "
+                    "security setting, rebalance the noisy workload); CloudIQ "
+                    "itself changes nothing there. The score is recomputed only "
+                    "from a later collection, so this step's clock jumps about an "
+                    "hour and the collection path lights again beside the "
+                    "notification — a second cycle, collected, shipped, ingested "
+                    "and scored: with two of the three findings cleared and the capacity "
+                    "forecast still open, it reads 88, above the low-water mark "
+                    "and below 100. Timing and scores are illustrative."
                 ),
                 technical=(
                     "Egress of the insight: email and mobile notification, "
                     "ServiceNow ticket via the ITSM integration, and webhook-driven "
-                    "automation over the REST API. Health Score recovers as "
-                    "remediation proceeds — above the low-water mark, below 100, "
-                    "which the engine asserts. Telemetry flow remains one-way "
-                    "throughout, also asserted."
+                    "automation over the REST API, within seconds and with the "
+                    "score unchanged at 71. Remediation happens out of band, by "
+                    "the customer's own tooling; CloudIQ has no write path into "
+                    "the estate. The Health Score is recomputed from the next "
+                    "collection after the fix (about an hour on, illustrative), "
+                    "which is the second cycle lit across the whole path here: "
+                    "drift and latency findings cleared, capacity forecast open, "
+                    "88. Above the low-water mark and below 100, which the "
+                    "engine tests assert, as they do one-way telemetry flow."
                 ),
                 expert=(
                     "Insight egress: notification, ITSM ticket, webhook automation "
-                    "over REST. Score recovers above low-water, below 100 — "
-                    "asserted, as is one-way flow."
+                    "over REST; score still 71. Remediation is out of band. Next "
+                    "post-fix collection (~1 h on, illustrative) recomputes to 88: "
+                    "above low-water, below 100, capacity finding open — the "
+                    "second cycle is what the whole path lights for. Asserted, "
+                    "as is one-way flow."
                 ),
             ),
-            active_regions=["action"],
+            active_regions=[*_SOURCES, "gateway", "ingest", "analytics", "insight", "action"],
             progress_percent=100,
             health_score=88,
-            data_points=48000,
-            elapsed_seconds=128,
+            data_points=96000,
+            elapsed_seconds=3728,
         ),
     ]

@@ -295,5 +295,21 @@ ANATOMY = ClusterAnatomy(
             label="OneFS architectural overview (Dell Info Hub)",
             url="https://infohub.delltechnologies.com/en-us/l/high-availability-and-data-protection-with-dell-powerscale-scale-out-nas/onefs-architectural-overview-1/",
         ),
+        SourceLink(
+            label="Dell PowerScale OneFS technical overview (white paper, April 2026) — 252-node limit, three-node and four-node-chassis minimums, protocols, +4n protection",
+            url="https://www.delltechnologies.com/asset/en-us/products/storage/industry-market/h10719-wp-powerscale-onefs-technical-overview.pdf",
+        ),
+        SourceLink(
+            label="Dell PowerScale with pNFS (Dell blog, November 2025)",
+            url="https://www.dell.com/en-us/blog/dell-powerscale-with-pnfs-parallel-performance-for-ai/",
+        ),
+        SourceLink(
+            label="Dell Lightning File System — positioned as Tier 0 beside PowerScale, not on OneFS",
+            url="https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/lightning-file-system",
+        ),
+        SourceLink(
+            label="Dell's AI story electrified by Lightning (Blocks & Files, March 2026)",
+            url="https://www.blocksandfiles.com/ai-ml/2026/03/16/dells-ai-story-electrified-by-lightning/5209387",
+        ),
     ],
 )

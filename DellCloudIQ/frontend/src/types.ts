@@ -67,7 +67,19 @@ export type PipelinePhase =
   | "detect"
   | "surface"
   | "assist"
-  | "notify";
+  | "notify"
+  // The "connected, but no data" failure scenario's own phases.
+  | "register"
+  | "handshake"
+  | "blocked"
+  | "starved"
+  | "stale"
+  | "repair"
+  | "backfill"
+  | "resume";
+
+// "no-data": nothing has arrived, so there is no score to show (a grey dash).
+export type ScoreState = "fresh" | "no-data";
 
 export interface PipelineState {
   step: number;
@@ -80,10 +92,28 @@ export interface PipelineState {
   dataPoints: number;
   elapsedSeconds: number;
   cycleCost: number;
+  // Additive, for failure scenarios; the healthy trace carries the defaults.
+  failedRegions: string[];
+  scoreState: ScoreState;
+  minutesWithoutData: number;
+  backlogPoints: number;
 }
 
 export interface PipelineResponse {
   trace: PipelineState[];
+  scenario: string;
+}
+
+export interface ScenarioInfo {
+  id: string;
+  name: string;
+  summary: string;
+  // The pipeline page's opening paragraph and the counters note, leveled.
+  intro: string;
+  note: string;
+  heroField: string;
+  phases: string[];
+  sources: SourceLink[];
 }
 
 export interface CatalogOption {

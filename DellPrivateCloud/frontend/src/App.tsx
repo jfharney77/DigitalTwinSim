@@ -48,7 +48,9 @@ const PAGE_HASH: Record<Page, string> = {
   tour: "tour",
 };
 
-// Deep-link into the guided tour: /#tour/<stepId>. Read once, at load.
+// Deep-link into the guided tour: /#tour/<stepId>. Read at load, and
+// again on every hashchange — pasting a second tour link into an open tab
+// must move the player, not leave it on the beat it was already showing.
 function tourStepFromHash(): string | null {
   const m = window.location.hash.match(/^#tour\/([a-z0-9-]+)$/i);
   return m ? m[1] : null;
@@ -82,6 +84,10 @@ export function App() {
   const [tour, setTour] = useState<TourResponse | null>(null);
   const [tourError, setTourError] = useState<string | null>(null);
   const tourStart = useRef<string | null>(tourStepFromHash());
+  // Bumped when a #tour/<stepId> link changes in an already-open tab, so the
+  // player remounts on the step the reader asked for instead of sitting on
+  // whichever beat it was already showing.
+  const [tourRemount, setTourRemount] = useState(0);
 
   const timer = useRef<number | null>(null);
   // Apply a #step=/#phase= deep link only on the first successful load — a
@@ -176,6 +182,11 @@ export function App() {
   useEffect(() => {
     const onHash = () => {
       setPage(pageFromHash());
+      const stepId = tourStepFromHash();
+      if (stepId !== null && stepId !== tourStart.current) {
+        tourStart.current = stepId;
+        setTourRemount((n) => n + 1);
+      }
       const start = initialStepFromHash(traceRef.current);
       if (start !== null) {
         stop();
@@ -255,6 +266,7 @@ export function App() {
           )}
           {tour && anatomy && (
             <TourPlayer
+              key={`tour-${tourRemount}`}
               tour={tour.tour}
               layers={tour.layers}
               bounds={{ width: tour.mapWidth, height: tour.mapHeight }}
@@ -291,15 +303,15 @@ export function App() {
                   {state && (
                     <>
                       <p className="tour-trace">
-                        Cloud trace: <strong>{state.label}</strong> · t+
-                        {state.elapsedMinutes}m (illustrative)
+                        Cloud trace: <strong>{state.label}</strong> · stage
+                        ends t+{state.elapsedMinutes}m (illustrative)
                       </p>
                       {/* The figures the narration asks the reader to watch. */}
                       <p className="tour-trace">
                         Compute {state.computeUnits} · storage{" "}
                         {state.storageTb} TB · hypervisors{" "}
                         {state.hypervisorsActive} · workloads {state.workloads}
-                        {" "}· control planes {state.controlPlanes} · workload
+                        {" "}· control planes {state.controlPlanes} · service
                         downtime {state.workloadDowntimeSeconds}s
                       </p>
                     </>
@@ -322,7 +334,7 @@ export function App() {
           <div className="an-hero">
             <h2>You can change your mind</h2>
             <p>
-              This repo's VxRail twin models the opposite bargain.
+              The VxRail twin models the opposite bargain.
               Hyperconverged infrastructure fused compute and storage into
               one node and bought real simplicity with that coupling — but
               you scale in fixed ratios whether or not the ratio suits you,
@@ -331,7 +343,7 @@ export function App() {
               simplicity, because one control plane now does what the fused
               node used to. Play the trace and watch two moments: storage
               doubles without a single server being added, and a second
-              hypervisor appears without a workload noticing or an operator
+              hypervisor appears without a service going down or an operator
               gaining a second console.
             </p>
             <button
@@ -365,7 +377,7 @@ export function App() {
                 <em>storage added</em>, compare the two pool figures in the
                 panel: capacity doubles and the compute count does not move.
                 At <em>migration</em>, a second slot lights while the
-                workload count, the downtime counter, and the control-plane
+                workload count, the service downtime counter, and the control-plane
                 count all hold still. Click a block to pin what it is; the
                 full map lives under Inside the stack.
               </div>

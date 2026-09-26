@@ -1,4 +1,4 @@
-export function Legend() {
+export function Legend({ failure = false }: { failure?: boolean }) {
   return (
     <div className="an-panel">
       <h2>Flows</h2>
@@ -19,6 +19,12 @@ export function Legend() {
           <i style={{ background: "var(--flow-off)" }} />
           Idle path (no power moving)
         </div>
+        {failure && (
+          <div>
+            <i className="failed-swatch" />
+            Part stopping the charge (too hot, or not recognized)
+          </div>
+        )}
       </div>
     </div>
   );

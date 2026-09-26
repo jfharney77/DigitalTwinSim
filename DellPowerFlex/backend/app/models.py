@@ -25,8 +25,8 @@ path — and why ``tests/test_anatomy.py`` checks that the one coordinating
 component in the picture is the smallest thing in it.
 
 The consequence worth building a twin for is what happens when a node dies.
-In a controller array the surviving controller performs the rebuild: one
-device reading, one device writing, hours of degraded exposure. Here every
+In a controller array the rebuild runs through one controller pair, whose
+fixed budget caps the rate however many drives share the work. Here every
 surviving node rebuilds a sliver of the lost data simultaneously, from
 every other node — so rebuild time *falls* as the cluster grows.
 ``rebuild_participants`` equals ``nodes_online`` during the rebuild, never a
@@ -122,7 +122,8 @@ class ClusterState(CamelModel):
     """One step in the life of a pool; pure data the renderer consumes.
 
     ``rebuild_participants`` is the field this twin exists for. In a
-    controller array it would be 1, whatever the cluster size. Here it
+    controller array the analogous number, controller pairs whose budget
+    bounds the rebuild, is 1 whatever the array's size. Here it
     equals the number of surviving nodes, which is why recovery gets
     faster — not slower — as the system grows.
     """

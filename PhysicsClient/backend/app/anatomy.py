@@ -92,11 +92,24 @@ def _common_laptop_regions(npu: bool) -> list[DeviceRegion]:
             ),
         ),
         DeviceRegion(
-            id="board", kind="board", label="Board / VR",
+            id="board", kind="board", label=L(
+                standard="Board / VR",
+                novice="Board / power regulation",
+            ),
             x=74, y=21, w=24, h=12,
-            description=(
-                "Motherboard and voltage regulation — the fixed platform "
-                "power (display included in the model's base term)."
+            description=L(
+                standard=(
+                    "Motherboard and voltage regulation (VR — the circuits "
+                    "that step the battery voltage down for the chips). In "
+                    "this model it is the fixed platform term, display "
+                    "included: it barely moves with load."
+                ),
+                novice=(
+                    "The main board and the parts that step the battery "
+                    "voltage down for the chips. Its power draw barely "
+                    "changes, whatever the machine is doing — the screen is "
+                    "counted here too."
+                ),
             ),
         ),
         DeviceRegion(
@@ -122,9 +135,12 @@ def _common_laptop_regions(npu: bool) -> list[DeviceRegion]:
             id="npu", kind="npu", label="NPU card",
             x=86, y=21, w=12, h=12,
             description=(
-                "The discrete NPU (Qualcomm AI-100-class) — a third "
-                "compute engine competing for the same shared thermal "
-                "budget. Its pitch is not speed but efficiency: tokens "
+                "The discrete NPU (Qualcomm AI 100 PC Inference Card: "
+                "two NPUs, 64 GB of its own memory) — a third compute "
+                "engine competing for the same shared thermal budget. "
+                "On the shipping Dell Pro Max 16 Plus the card takes "
+                "the discrete GPU's slot; this model keeps both so the "
+                "comparison runs on one machine. Its pitch is not speed but efficiency: tokens "
                 "per joule several times the GPU's, which is the "
                 "difference between inference that spins the fans and "
                 "inference the meeting room cannot hear."
@@ -213,7 +229,10 @@ PROMAX = DeviceMap(
             "far more work per unit of battery, and it does it almost "
             "silently. This simulator lets you run the same AI job on "
             "all three engines and watch speed, heat, noise, and "
-            "battery drain differ."
+            "battery drain differ. One liberty to know about: the "
+            "real machine is sold with either the graphics chip or the "
+            "AI card, not both. The simulator fits both so the "
+            "comparison is fair."
         ),
         standard=(
             "The Pro Max Plus interior: the gaming laptop's layout with "
@@ -225,18 +244,29 @@ PROMAX = DeviceMap(
             "battery drain. The NPU loses the speed race to the GPU "
             "and wins efficiency by a wide margin — which is the whole "
             "argument for putting a dedicated inference engine in a "
-            "portable machine."
+            "portable machine. A modeling liberty: on the shipping Dell "
+            "Pro Max 16 Plus the Qualcomm card occupies the discrete "
+            "GPU's slot, so a real unit has one or the other; the "
+            "simulator keeps both in one chassis so the A/B runs on "
+            "identical cooling."
         ),
         expert=(
             "Workstation register: PL1-sustained + acoustics over "
             "burst. Discrete AI-100-class NPU as third budget claimant; "
             "tokens/joule is the instrument. NPU: slower than GPU, "
             "several× better per joule, near-silent. Same skin/battery "
-            "mechanics as the gaming chassis."
+            "mechanics as the gaming chassis. Shipping SKU: NPU card "
+            "replaces the dGPU; both kept here for the A/B."
         ),
     ),
     regions=_common_laptop_regions(npu=True),
     sources=[
+        {"label": "Dell — Reimagining AI: discrete NPU power with Dell Pro Max (64 GB AI memory, ~120B parameters)",
+         "url": "https://www.dell.com/en-us/blog/reimagining-ai-discrete-npu-power-with-dell-pro-max/"},
+        {"label": "StorageReview — Dell Pro Max 16 Plus with Qualcomm AIC100 review (96 Wh battery, 165/280 W adapters, measured tokens/s)",
+         "url": "https://www.storagereview.com/review/dell-pro-max-16-plus-with-qualcomm-aic100-review-excellent-workstation-experimental-accelerator"},
+        {"label": "Laptop Mag — the card takes the discrete GPU's slot; reported 75 W TDP",
+         "url": "https://www.laptopmag.com/laptops/dells-new-laptop-ditches-gpu-for-npu"},
         {"label": "physics_specs/07-client-devices.md (this repo)",
          "url": "../physics_specs/07-client-devices.md"},
         {"label": "DellProMaxPlus twin — the on-device inference data path",
@@ -340,9 +370,22 @@ ALIENWARE_DESKTOP = DeviceMap(
             description="M.2 slots under the GPU.",
         ),
         DeviceRegion(
-            id="board", kind="board", label="Board / VR",
+            id="board", kind="board", label=L(
+                standard="Board / VR",
+                novice="Board / power regulation",
+            ),
             x=42, y=50, w=18, h=8,
-            description="Motherboard, VRs, lighting — the fixed platform term.",
+            description=L(
+                standard=(
+                    "Motherboard, voltage regulators, lighting — the fixed "
+                    "platform term."
+                ),
+                novice=(
+                    "The main board, the parts that step the supply voltage "
+                    "down for the chips, and the lighting. Its power draw "
+                    "barely changes, whatever the machine is doing."
+                ),
+            ),
         ),
         DeviceRegion(
             id="psu", kind="power", label="PSU",

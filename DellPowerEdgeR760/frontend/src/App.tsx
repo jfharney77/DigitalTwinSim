@@ -95,6 +95,7 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<ChassisAnatomy | null>(null);
   const [trace, setTrace] = useState<PowerOnState[]>([]);
+  const [intro, setIntro] = useState("");
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -133,6 +134,7 @@ export function App() {
       .then(([an, po]) => {
         setAnatomy(an);
         setTrace(po.trace);
+        setIntro(po.intro ?? "");
         if (!hashApplied.current) {
           hashApplied.current = true;
           const start = initialStepFromHash(po.trace);
@@ -226,6 +228,18 @@ export function App() {
   const kinds = anatomy
     ? ([...new Set(anatomy.regions.map((r) => r.kind))] as RegionKind[])
     : [];
+
+  // Which step is the longest, by the durations the counter prints. The
+  // engine pins memory training as the strict maximum, so the readout can
+  // say so on the step itself rather than leaving the reader to compare
+  // fifteen numbers by hand (the sibling iDRAC twin labels its own).
+  const longestStep = trace.reduce(
+    (best, s, i) => {
+      const took = s.elapsedSeconds - (trace[i - 1]?.elapsedSeconds ?? 0);
+      return took > best.took ? { index: i, took } : best;
+    },
+    { index: -1, took: -1 },
+  ).index;
 
   return (
     <div className="app dell">
@@ -336,14 +350,8 @@ export function App() {
         <>
           <div className="an-hero">
             <h2>What happens when you plug it in</h2>
-            <p>
-              From AC to a running OS: a 2U server never goes straight from
-              cold to booting — standby power wakes a small management
-              computer (iDRAC) first, and only then can the host power on,
-              train its memory, enumerate PCIe, and hand off to an OS. Play
-              the trace and watch each stage light up the hardware it runs
-              on.
-            </p>
+            {/* Leveled prose, served with the trace (engine.INTRO). */}
+            <p>{intro}</p>
             <button
               className="primary poweron-tour-link"
               onClick={() => setPage("tour")}
@@ -391,6 +399,10 @@ export function App() {
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
+              previousElapsedSeconds={
+                cursor > 0 ? (trace[cursor - 1]?.elapsedSeconds ?? 0) : 0
+              }
+              longest={cursor === longestStep}
             />
             {selectedRegion && (
               <section className="an-panel">

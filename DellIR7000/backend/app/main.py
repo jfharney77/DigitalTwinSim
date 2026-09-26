@@ -11,6 +11,7 @@ from .catalog import CATALOG
 from .engine import simulate
 from .leveling import leveled, leveled_all
 from .models import CatalogCategory, RackAnatomy, ThermalResponse, UseCase
+from .pagecopy import PAGE_COPY
 from .tour import TOUR_RESPONSE
 from .usecases import USE_CASES
 
@@ -27,7 +28,7 @@ def get_anatomy(level: int = Level) -> RackAnatomy:
 
 @app.get("/api/thermal", response_model=ThermalResponse)
 def get_thermal(level: int = Level) -> ThermalResponse:
-    return leveled(ThermalResponse(trace=simulate()), level)
+    return leveled(ThermalResponse(trace=simulate(), page_copy=PAGE_COPY), level)
 
 
 @app.get("/api/catalog", response_model=list[CatalogCategory])

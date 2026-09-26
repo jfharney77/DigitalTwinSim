@@ -25,7 +25,9 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "standby_w": Constant(
         value=0.3, unit="W",
-        source="Dell U2723QE spec / EPREL label — standby 0.3 W",
+        source="Dell U2723QE product page tech specs — standby 0.3 W "
+        "(off mode 0.2 W); the UP3221Q user's guide lists 0.2 W standby, "
+        "shared here as one class value",
         estimated=False,
         blurb="Standby draw with the panel asleep and USB wake armed.",
     ),
@@ -37,7 +39,8 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "hub_max_w": Constant(
         value=90, unit="W",
-        source="Dell U2723QE — USB-C power delivery up to 90 W",
+        source="Dell U2723QE product page — USB-C upstream power delivery "
+        "up to 90 W; the UP3221Q's Thunderbolt 3 upstream is also 90 W",
         estimated=False,
         blurb="Maximum USB-C power delivery to a docked laptop.",
     ),
@@ -48,8 +51,10 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "hdr_boost": Constant(
         value=2.5, unit="× SDR backlight max", source="estimate — the "
-        "UP3221Q's 1000-nit HDR peak over its ~400-nit SDR sustained, as a "
-        "luminance-proportional LED power ratio",
+        "UP3221Q's 1000 cd/m² DisplayHDR 1000 peak (Dell product page) over "
+        "an assumed ~400 cd/m² SDR working ceiling, as a "
+        "luminance-proportional LED power ratio; the 400 is the model's "
+        "assumption, not a Dell figure",
         estimated=True,
         blurb="How far the lit zones overdrive during an HDR highlight.",
     ),
@@ -68,8 +73,10 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "edge_backlight_max_w": Constant(
         value=29.0, unit="W",
-        source="estimate — derived so electronics + backlight at full "
-        "brightness ≈ the U2723QE's ~38 W on-mode label figure",
+        source="estimate — sized so electronics + backlight reach ~38 W "
+        "at 100% brightness. Dell publishes 25.9 W on-mode for the U2723QE, "
+        "measured at the test luminance rather than full brightness; the "
+        "~38 W full-brightness figure is the model's, not Dell's",
         estimated=True,
         blurb="Edge-lit LED strip power at 100% brightness.",
     ),
@@ -89,13 +96,15 @@ CONSTANTS: dict[str, Constant] = {
     "mini_backlight_max_w": Constant(
         value=55.0, unit="W",
         source="estimate — derived so electronics + full-field backlight ≈ "
-        "the UP3221Q's ~70 W operational figure",
+        "the UP3221Q's 68.3 W on-mode figure (Dell UP3221Q user's guide; "
+        "its nameplate maximum is 380 W with every port loaded)",
         estimated=True,
         blurb="Full-array mini-LED power with every zone at 100%.",
     ),
     "mini_zones": Constant(
         value=2000, unit="zones",
-        source="Dell UP3221Q — 2,000 mini-LED local-dimming zones",
+        source="Dell UP3221Q product page — 2,000 mini-LED local-dimming "
+        "zones, VESA DisplayHDR 1000",
         estimated=False,
         blurb="Independently dimmable backlight zones.",
     ),
@@ -123,31 +132,39 @@ CONSTANTS: dict[str, Constant] = {
     # --- Lifetime carbon ------------------------------------------------------
     "embodied_edge_kg": Constant(
         value=422, unit="kgCO2e",
-        source="Dell S2722QC PCF datasheet — 638 kg total, use phase 33.8%; "
-        "the non-use remainder (manufacturing 57.8% + transport + EoL) as a "
-        "27-inch 4K class proxy",
+        source="Dell S2722QC PCF datasheet (Sept 2022) — mean 638 kgCO2e "
+        "± 167, use phase 33.8%; the non-use remainder (manufacturing 57.8% "
+        "+ transport 7.5% + EoL 0.9%) as a 27-inch 4K class proxy. "
+        "https://www.delltechnologies.com/asset/en-us/products/electronics-and-accessories/technical-support/dell-s2722qc-monitor-pcf-datasheet.pdf",
         estimated=False,
         blurb="Embodied carbon (manufacturing + transport + end-of-life), "
               "27-inch class.",
     ),
     "embodied_mini_kg": Constant(
         value=516, unit="kgCO2e",
-        source="Dell P3424WE PCF datasheet — 777 kg total, use phase 33.6%; "
-        "non-use remainder as the 32-inch premium-panel class proxy",
+        source="Dell P3424WE PCF datasheet (Nov 2022) — mean 777 kgCO2e "
+        "± 198, use phase 33.6%, 6-year life; non-use remainder as the "
+        "large-premium-panel proxy. The P3424WE is a 34-inch curved "
+        "ultrawide, not a mini-LED panel — Dell publishes no PCF for the "
+        "UP3221Q, so this is the nearest class, not the SKU. "
+        "https://www.delltechnologies.com/asset/en-us/products/electronics-and-accessories/technical-support/dell-p3424we-monitor-pcf-datasheet.pdf",
         estimated=False,
         blurb="Embodied carbon (manufacturing + transport + end-of-life), "
               "32-inch mini-LED class.",
     ),
     "laptop_total_kg": Constant(
         value=241, unit="kgCO2e",
-        source="Dell Latitude 7490 carbon footprint whitepaper — 241 kgCO2e",
+        source="Dell Latitude 7490 carbon footprint datasheet — 241 kgCO2e "
+        "± 53, 4-year life. "
+        "https://i.dell.com/sites/csdocuments/CorpComm_Docs/en/carbon-footprint-latitude-7490.pdf",
         estimated=False,
         blurb="A business laptop's lifetime footprint, for the contrast.",
     ),
     "laptop_use_pct": Constant(
-        value=20, unit="%",
-        source="Dell Latitude PCF whitepapers — manufacturing ~64–81%, "
-        "use phase roughly a fifth",
+        value=12, unit="%",
+        source="Dell Latitude E7440 carbon footprint whitepaper — use 12%, "
+        "manufacturing 78%, transport 10% of 276 kgCO2e. "
+        "https://i.dell.com/sites/doccontent/corporate/corp-comm/en/Documents/PCF-WP-E7440.pdf",
         estimated=False,
         blurb="Share of a business laptop's footprint that is use-phase.",
     ),

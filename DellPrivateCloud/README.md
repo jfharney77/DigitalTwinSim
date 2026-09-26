@@ -2,8 +2,8 @@
 
 A digital twin of **Dell Private Cloud** — compute, storage, and networking
 pooled and scaled separately under one control plane, with the hypervisor as
-a swappable layer: VMware, Red Hat, Nutanix (added February 2026), or
-Microsoft.
+a swappable layer: VMware, Red Hat, Nutanix AHV (added 10 February 2026), or
+Microsoft Azure Local (announced for June 2026).
 
 The direct counterargument to this repo's **VxRail** twin, and meant to be
 read alongside it.
@@ -17,15 +17,15 @@ bought real, substantial simplicity with that coupling. The price was paid
 in two currencies:
 
 - **Fixed ratios.** Capacity is added by adding nodes, and a node brings
-  processors and memory whether or not anyone wanted them. Estates routinely
-  end up owning a third more of one resource than they will ever use —
+  processors and memory whether or not anyone wanted them (once the drive
+  bays are full). Estates commonly end up owning a surplus of one resource —
   racked, licensed, powered, and depreciating.
 - **Lock-in.** The software stack that performs the magic is the stack you
   are married to for the life of the estate.
 
 Disaggregation un-buys the coupling and keeps most of the simplicity,
 because a single control plane now provides what the fused node used to.
-Dell cites research that **52% of IT leaders are weighing multiple
+Dell cites Gartner research (September 2024) that **52% of IT leaders are weighing multiple
 hypervisors** specifically to reduce lock-in, which is a fairly direct
 summary of what the last few years taught the market.
 
@@ -40,7 +40,7 @@ compromise stopped being necessary.
 - **The estate** (`/`) — a private cloud built from separate pools, running
   120 workloads, then growing *one* resource, then acquiring a second
   hypervisor beside the first. Storage doubles without a single server being
-  added; a second hypervisor arrives without a workload noticing or an
+  added; a second hypervisor arrives without a service going down or an
   operator gaining a second console.
 - **Inside the stack** (`/#anatomy`) — control plane over workloads over
   four identical hypervisor slots over three separate resource pools.
@@ -101,7 +101,9 @@ the other twins.
 - **One control plane regardless of hypervisor count** — two hypervisors,
   one console. Otherwise "we support both" means "we will sell you both
   problems".
-- **The workloads never notice** — zero downtime on every step, and the
+- **The workloads never notice** — zero *service-level* downtime on every
+  step (each VM takes a scheduled cutover restart at `switch`; the prose says
+  so, and the zero is illustrative), and the
   workload count is constant through both the expansion and the migration.
 - **The hypervisor is a choice, not a foundation** — no hypervisor is
   present on every step, and acquiring a second one moves nothing beneath
@@ -147,4 +149,6 @@ component.
 - [Dell — why Dell Private Cloud outperforms HCI](https://www.dell.com/en-us/blog/rethinking-infrastructure-why-dell-private-cloud-outperforms-hci/)
 - [Dell Private Cloud and HCI solutions](https://www.dell.com/en-us/shop/private-cloud-and-hci-solutions/sc/private-cloud-solutions)
 - [Dell unveils disaggregated infrastructure strategy (Computer Weekly)](https://www.computerweekly.com/news/366624041/Dell-unveils-disaggregated-infrastructure-strategy)
-- [Dell Private Cloud expands choice with Nutanix support](https://www.hpcwire.com/bigdatawire/this-just-in/dell-private-cloud-expands-choice-with-nutanix-support/)
+- [Dell — Dell Private Cloud expands choice with Nutanix support (10 Feb 2026)](https://www.dell.com/en-us/blog/dell-private-cloud-expands-choice-with-nutanix-support/)
+- [Dell — data center announcements, 19 May 2026 (Azure Local June 2026; Nutanix with PowerStore July 2026)](https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-reimagines-the-modern-data-center-for-the-ai-era.htm)
+- [Dell — private cloud announcements, 24 Sep 2025 (PowerStore, PowerFlex, PowerMax)](https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~09~dell-technologies-data-center-breakthroughs-power-smarter-faster-and-more-secure-private-clouds.htm)

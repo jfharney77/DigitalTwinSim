@@ -34,8 +34,8 @@
       "hash": "#scenario=scale-out-rebuild",
       "name": "scenario-scale-out-rebuild",
       "svg": true,
-      "visible": [".scenario-narration"],
-      "text": ["Fail a node", "Add 5 nodes"]
+      "visible": [".scenario-card .scenario-narration", ".scenario-card .scenario-question"],
+      "text": ["Fail a node", "Add 5 nodes", "Replay scenario", "Rebuild complete after"]
     },
     {
       "hash": "#scenario=immutable-bucket",
@@ -51,6 +51,21 @@
       "visible": [".scenario-narration"],
       "text": ["GPU idle due to data"],
       "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(h2:text-is('Instruments'))", "times": 1 }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [".lab-panel", ".lab-list button"],
+      "text": ["Size for the survivor's worst hour", "the burst has to fit the pipe", "Win the rebuild race"]
+    },
+    {
+      "hash": "#lab=size-for-the-survivor",
+      "name": "lab-size-for-the-survivor",
+      "svg": true,
+      "visible": [".lab-goal", ".lab-run"],
+      "text": ["Run and grade"],
+      "play": { "click": ".lab-run", "watch": ".lab-results", "times": 1 }
     }
   ]
 }

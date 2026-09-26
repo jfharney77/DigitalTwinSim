@@ -1,16 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchLifecycle, fetchTour } from "./api";
+import {
+  DEFAULT_SCENARIO,
+  fetchAnatomy,
+  fetchLifecycle,
+  fetchScenarios,
+  fetchTour,
+} from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
 import { SiteView } from "./components/SiteView";
 import { LifecycleControls } from "./components/LifecycleControls";
 import { LifecycleCounters } from "./components/LifecycleCounters";
+import { CleaningCounters } from "./components/CleaningCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import type { LifecycleState, RegionKind, SiteAnatomy } from "./types";
+import type {
+  LifecycleState,
+  RegionKind,
+  ScenarioInfo,
+  SiteAnatomy,
+  TraceState,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -41,13 +54,28 @@ function tourStepFromHash(): string | null {
 
 // #step=N / #phase=<name> deep-links start playback at a chosen step; both
 // fall through pageFromHash() and land on the default page.
+// #scenario=<id> picks the trace and composes with either:
+// #scenario=cleaning-gc&phase=pinned.
+function hashParams(): URLSearchParams {
+  const h = window.location.hash.replace(/^#/, "");
+  return new URLSearchParams(h.includes("=") ? h : "");
+}
+
+function scenarioFromHash(): string {
+  const id = hashParams().get("scenario");
+  return id && /^[a-z0-9-]+$/i.test(id) ? id : DEFAULT_SCENARIO;
+}
+
 function initialStepFromHash(states: { phase: string }[]): number | null {
-  const h = window.location.hash;
-  const step = h.match(/^#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/^#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  if (states.length === 0) return null;
+  const p = hashParams();
+  const step = p.get("step");
+  if (step !== null && /^\d+$/.test(step)) {
+    return Math.min(Number(step), states.length - 1);
+  }
+  const phase = p.get("phase");
+  if (phase !== null && /^[a-z0-9_-]+$/i.test(phase)) {
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
@@ -64,12 +92,23 @@ export function App() {
     const onPage = want
       ? h.startsWith(`#${want}`)
       : !/^#(anatomy|components|usecases|tour)/.test(h);
-    if (!onPage) window.location.hash = want;
+    if (!onPage) {
+      window.location.hash =
+        page === "lifecycle" && scenarioRef.current !== DEFAULT_SCENARIO
+          ? `scenario=${scenarioRef.current}`
+          : want;
+    }
     document.body.classList.add("dell-body");
   }, [page]);
 
   const [anatomy, setAnatomy] = useState<SiteAnatomy | null>(null);
-  const [trace, setTrace] = useState<LifecycleState[]>([]);
+  const [trace, setTrace] = useState<TraceState[]>([]);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
+  const [scenario, setScenario] = useState<string>(scenarioFromHash);
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
+  const traceRef = useRef<TraceState[]>([]);
+  traceRef.current = trace;
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -98,34 +137,80 @@ export function App() {
 
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
+  // The guided tour narrates the attack-and-recovery trace, so it always
+  // plays against that one whatever the lifecycle page has selected.
+  const activeScenario = page === "tour" ? DEFAULT_SCENARIO : scenario;
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchLifecycle()])
-      .then(([an, lc]) => {
+    let stale = false;
+    Promise.all([
+      fetchAnatomy(),
+      fetchLifecycle(activeScenario),
+      fetchScenarios(),
+    ])
+      .then(([an, lc, sc]) => {
+        if (stale) return;
         setAnatomy(an);
         setTrace(lc.trace);
+        setScenarios(sc);
+        setError(null);
         if (!hashApplied.current) {
           hashApplied.current = true;
-          const s = initialStepFromHash(lc.trace);
-          if (s !== null) setCursor(s);
+          setCursor(initialStepFromHash(lc.trace) ?? 0);
         }
       })
-      .catch((e) => setError(String(e)));
-  }, [level]);
+      .catch((e) => {
+        if (!stale) setError(String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [level, activeScenario]);
 
-  // Follow in-app hash links (the use-case page's "Go deeper" buttons, a
-  // pasted #phase=/#step= link) — without this the page never changes.
+  // The picker: a new scenario starts from its first step. The hash is
+  // rewritten in place so the address bar holds the link to share.
+  const chooseScenario = useCallback(
+    (id: string) => {
+      stop();
+      setCursor(0);
+      setRegionId(null);
+      setScenario(id);
+      window.history.replaceState(
+        null,
+        "",
+        id === DEFAULT_SCENARIO
+          ? window.location.pathname + window.location.search
+          : `#scenario=${id}`,
+      );
+    },
+    [stop],
+  );
+
+  // Follow the hash after load: in-app links (the use-case page's "Go
+  // deeper" buttons), the back button, and a pasted #scenario=/#phase=/#step=
+  // link all change the hash without remounting the app.
   useEffect(() => {
     const onHash = () => {
-      setPage(pageFromHash());
-      const s = trace.length > 0 ? initialStepFromHash(trace) : null;
-      if (s !== null) {
+      const nextPage = pageFromHash();
+      setPage(nextPage);
+      const next = scenarioFromHash();
+      if (nextPage === "lifecycle" && next !== scenarioRef.current) {
+        // A different scenario: reset, and let the fetch apply #phase=/#step=
+        // against the trace it brings back.
         stop();
-        setCursor(s);
+        setCursor(0);
+        hashApplied.current = false;
+        setScenario(next);
+        return;
+      }
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stop();
+        setCursor(start);
       }
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-  }, [trace, stop]);
+  }, [stop]);
 
   // The tour is fetched the first time its page opens, and again when the
   // reading level changes (the narration is leveled prose).
@@ -138,6 +223,8 @@ export function App() {
   }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
+  const scenarioInfo = scenarios.find((s) => s.id === scenario) ?? null;
+  const isCleaning = page === "lifecycle" && scenario !== DEFAULT_SCENARIO;
   const done = cursor >= trace.length - 1 && trace.length > 0;
 
   const run = useCallback(() => {
@@ -289,6 +376,12 @@ export function App() {
                       Logical {state.logicalTb} TB · stored {state.storedTb} TB
                     </p>
                   )}
+                  {state && (state.copiesScanned ?? 0) > 0 && (
+                    <p className="tour-trace">
+                      Vault copies scanned {state.copiesScanned} · flagged{" "}
+                      {state.copiesFlagged}
+                    </p>
+                  )}
                   {selectedRegion && (
                     <div>
                       <h2>{selectedRegion.label}</h2>
@@ -305,18 +398,30 @@ export function App() {
       {page === "lifecycle" && (
         <>
           <div className="an-hero">
+            {isCleaning ? (
+              <>
+                <h2>{scenarioInfo?.title ?? "Free space keeps shrinking"}</h2>
+                <p>
+                  {scenarioInfo?.summary} Play the trace and watch the stored
+                  figure: it falls in the two cleaning steps and nowhere else.
+                </p>
+              </>
+            ) : (
+              <>
             <h2>The life of a backup — through an attack and back</h2>
-            <p>
-              This twin follows the data, not a machine. An estate backs up
-              to a PowerProtect Data Domain, deduplication collapses
-              hundreds of terabytes into a few, and a copy crosses a
-              briefly-open air gap into a Cyber Recovery vault where it is
-              locked immutable and scanned by CyberSense. Then the part
-              every design decision assumed: ransomware detonates in
-              production — and finds the vault simply is not there. Play
-              the trace and watch the gap open only when the vault opens
-              it.
-            </p>
+                <p>
+                  {scenarioInfo?.intro ||
+                    "This twin follows the data, not a machine. An estate " +
+                      "backs up to a PowerProtect Data Domain, deduplication " +
+                      "collapses hundreds of terabytes into a few tens, and a " +
+                      "copy crosses a briefly-open air gap into a Cyber " +
+                      "Recovery vault where it is locked immutable and scanned " +
+                      "by CyberSense. Then ransomware detonates in production " +
+                      "and finds the vault simply is not there. Play the trace " +
+                      "and watch the gap open only when the vault opens it."}
+                </p>
+              </>
+            )}
             <button
               className="primary lifecycle-tour-link"
               onClick={() => setPage("tour")}
@@ -331,6 +436,7 @@ export function App() {
                 <SiteView
                   anatomy={anatomy}
                   active={new Set(state?.activeRegions ?? [])}
+                  failed={new Set(state?.failedRegions ?? [])}
                   selected={regionId}
                   onSelect={setRegionId}
                 />
@@ -340,19 +446,31 @@ export function App() {
                   <strong>{state.label}.</strong> {state.description}
                 </div>
               )}
+              {isCleaning ? (
+                <div className="mini an-hint">
+                  Highlighted blocks are the parts doing work at this step. A
+                  block in an alert condition is drawn in red with a dashed
+                  outline. The air gap lights once, when replication catches
+                  up, and the vault opens it. Click a block to pin what it is.
+                </div>
+              ) : (
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Watch the air gap: it lights only during replication and
-                recovery — both opened from the vault side — and at the
-                attack step the entire right half of the map stays dark.
-                Click a block to pin what it is. Inside the vault describes
-                every block, and Guided tour narrates the whole story.
-              </div>
+                  Highlighted blocks are the parts doing work at this step.
+                  Watch the air gap: it lights only during replication and
+                  recovery — both opened from the vault side — and at the
+                  attack step the entire right half of the map stays dark.
+                  Click a block to pin what it is. Inside the vault describes
+                  every block, and Guided tour narrates the whole story.
+                </div>
+              )}
             </div>
           </div>
 
           <aside className="controls">
             <LifecycleControls
+              scenarios={scenarios}
+              scenario={scenario}
+              onScenario={chooseScenario}
               speed={speed}
               running={running}
               done={done}
@@ -363,11 +481,21 @@ export function App() {
               onStep={step}
               onReset={reset}
             />
-            <LifecycleCounters
-              state={state}
-              stepIndex={cursor}
-              stepCount={trace.length}
-            />
+            {isCleaning ? (
+              <CleaningCounters
+                state={state}
+                stepIndex={cursor}
+                stepCount={trace.length}
+                scenario={scenarioInfo}
+              />
+            ) : (
+              <LifecycleCounters
+                state={state as LifecycleState | null}
+                stepIndex={cursor}
+                stepCount={trace.length}
+                note={scenarioInfo?.countersNote}
+              />
+            )}
             {selectedRegion && (
               <section className="an-panel">
                 <h2>{selectedRegion.label}</h2>

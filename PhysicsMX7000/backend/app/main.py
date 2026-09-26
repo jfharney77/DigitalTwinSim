@@ -7,11 +7,16 @@ read."""
 
 from __future__ import annotations
 
+from fastapi import HTTPException
+
 from twinkit.api import Level, make_app
+from twinkit.labs import Lab, LabResult
 
 from .anatomy import ANATOMY
 from .constants import CONSTANTS, PSU_CURVE_SOURCE, PSU_EFFICIENCY_CURVE
 from .engine import simulate
+# Graded labs (docs/LAB_PATTERN.md). app/labs.py is pure; this is its HTTP edge.
+from .labs import LABS, LABS_BY_ID, grade_scenario
 from .leveling import leveled, leveled_all
 from .models import (
     ChassisMap,
@@ -91,3 +96,19 @@ def get_simulate() -> SimResponse:
     from .presets import EIGHT_COMPUTE, STEADY
 
     return _run(Scenario(config=EIGHT_COMPUTE, workload=STEADY))
+
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    """The graded labs: goal, criteria, hints and start scenario. Reference
+    solutions and gaming attempts stay server-side and are never served."""
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    """Run the learner's scenario through the engine and grade the trace.
+    Resolution to a reading level happens here and only here."""
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(status_code=404, detail=f"unknown lab {lab_id!r}")
+    return leveled(grade_scenario(lab_id, scenario), level)

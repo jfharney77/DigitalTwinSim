@@ -38,6 +38,7 @@ export function ComparePanel({
   a,
   b,
   deltas,
+  note,
 }: {
   aName: string;
   bName: string;
@@ -46,6 +47,7 @@ export function ComparePanel({
   a: number[];
   b: number[];
   deltas: DeltaRow[];
+  note?: string;
 }) {
   const W = 260;
   const H = 60;
@@ -84,6 +86,11 @@ export function ComparePanel({
           );
         })}
       </div>
+      {note && (
+        <div className="mini" style={{ marginTop: 6 }}>
+          {note}
+        </div>
+      )}
     </div>
   );
 }

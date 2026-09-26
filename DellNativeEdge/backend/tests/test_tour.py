@@ -58,7 +58,7 @@ def test_the_signature_step_pins_the_one_human_action():
     cursor = STEPS[SIGNATURE_STEP_ID].trace_cursor
     state = trace[cursor]
     assert state.phase == "power"
-    assert state.label == "Power and a network cable — the only human action"
+    assert state.label == "Power and a network cable — the only on-site action"
     assert state.operator_actions == 1
     assert all(s.operator_actions == 0 for s in trace[:cursor])
     assert all(s.operator_actions == 1 for s in trace[cursor:])

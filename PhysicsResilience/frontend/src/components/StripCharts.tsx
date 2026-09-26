@@ -92,7 +92,7 @@ export function StripCharts({
             current={cur ? cur.corruptedTb.toFixed(1) : "—"}
           />
           <Chart
-            title="RPO — clean-point age" unit="h"
+            title="newest clean copy age" unit="h"
             series={[{ points: rpo, color: "#e8c33d" }]}
             yMin={0} yMax={rMax}
             current={cur ? cur.lastCleanPointAgeH.toFixed(0) : "—"}
@@ -117,7 +117,7 @@ export function StripCharts({
       )}
       <div className="mini">
         {product !== "fortzero"
-          ? "Scrub the timeline: the area under the corruption curve before containment is the blast radius, and the RPO strip shows the moment retained copies quietly became worthless."
+          ? "Scrub the timeline: the height the corruption curve reaches at containment is the blast radius, and the clean-copy-age strip shows the moment retained copies quietly became worthless."
           : "Scrub the timeline: the solid line is what one hostile identity can reach, and the dashed line is the unused grants that quietly widen it until an access review clears them."}
       </div>
     </div>

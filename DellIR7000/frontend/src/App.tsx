@@ -10,7 +10,7 @@ import { LevelControl } from "./components/LevelControl";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
 import { useLevel } from "./level";
-import type { RackAnatomy, RegionKind, ThermalState } from "./types";
+import type { PageCopy, RackAnatomy, RegionKind, ThermalState } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -74,6 +74,8 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<RackAnatomy | null>(null);
   const [trace, setTrace] = useState<ThermalState[]>([]);
+  // The page's own prose rides on the thermal response so it follows the level.
+  const [pageCopy, setPageCopy] = useState<PageCopy | null>(null);
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -108,6 +110,7 @@ export function App() {
       .then(([an, th]) => {
         setAnatomy(an);
         setTrace(th.trace);
+        setPageCopy(th.pageCopy ?? null);
         if (!hashApplied.current) {
           hashApplied.current = true;
           const s = initialStepFromHash(th.trace);
@@ -317,14 +320,8 @@ export function App() {
           <div className="an-hero">
             <h2>What happens when a liquid-cooled rack comes to life</h2>
             <p>
-              Nothing in this twin boots — the plot is physics. A
-              quarter-megawatt rack is a small hydraulic plant, and it is
-              commissioned like one: fill the loop and pull the air out,
-              start the pumps, leak-check and verify flow through every
-              branch, bring the rear-door heat exchanger online — and only
-              then let the IT load arrive. From that moment one law runs the
-              show: heat in equals heat out, on every step, exactly. Play
-              the trace and watch the books balance.
+              {pageCopy?.intro ??
+                "A liquid-cooled rack is commissioned before it carries load: fill, pump, verify, then heat. From then on heat in equals heat out, on every step, exactly."}
             </p>
             <button
               className="primary thermal-tour-link"
@@ -350,12 +347,8 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Watch the loop prove itself empty — fill, pump, verify —
-                before any heat exists, and watch the heat-balance panel
-                once load arrives: liquid plus air always equals the IT
-                load. Click a block to pin what it is; every block is
-                described under Inside the loop.
+                {pageCopy?.hint ??
+                  "Highlighted blocks are the parts doing work at this step. Click a block to pin what it is."}
               </div>
             </div>
           </div>
@@ -371,11 +364,13 @@ export function App() {
               onPause={stop}
               onStep={step}
               onReset={reset}
+              note={pageCopy?.playbackNote}
             />
             <ThermalCounters
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
+              note={pageCopy?.balanceNote}
             />
             {selectedRegion && (
               <section className="an-panel">

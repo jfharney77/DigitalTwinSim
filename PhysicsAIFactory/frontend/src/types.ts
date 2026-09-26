@@ -112,6 +112,7 @@ export interface SimState {
   failuresCum: number;
   costUsdM: number;
   regionStatus: Record<string, number>;
+  limitingRegions: string[];
 }
 
 export interface LogEntry {
@@ -164,6 +165,7 @@ export interface FactoryMap {
   height: number;
   regions: FactoryRegion[];
   overview: string;
+  intro: string;
   sources: { label: string; url: string }[];
 }
 

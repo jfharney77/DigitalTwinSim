@@ -77,6 +77,21 @@ CONSTANTS: dict[str, Constant] = {
         source="estimate — spec 04: manual stack install = days", estimated=True,
         blurb="Standing the same workload up by hand.",
     ),
+    "second_stack_patch_overhead_auto": Constant(
+        value=0.25, unit="fraction of one stack's patch hours",
+        source=(
+            "estimate — a shared control plane runs the second stack's "
+            "update wave; the extra is one more compatibility check"
+        ),
+        estimated=True,
+        blurb="Extra patch work a second stack adds under one automated control plane.",
+    ),
+    "second_stack_patch_overhead_manual": Constant(
+        value=1.0, unit="fraction of one stack's patch hours",
+        source="estimate — two stacks patched by hand are two separate jobs",
+        estimated=True,
+        blurb="Extra patch work a second stack adds when operations are manual.",
+    ),
     "admin_capacity_h_day": Constant(
         value=16, unit="h/day",
         source="estimate — a two-person platform team's realistic ops budget",
@@ -106,8 +121,11 @@ CONSTANTS: dict[str, Constant] = {
         blurb="Outage when a bad change reaches production without a test gate.",
     ),
     "update_days": Constant(
-        value=30, unit="days", source="spec 04 — updates are released monthly",
-        estimated=False,
+        value=30, unit="days", source=(
+            "estimate — spec 04's modeling cadence (monthly); real release "
+            "cadences vary by product and are not strictly monthly"
+        ),
+        estimated=True,
         blurb="Days between software updates arriving.",
     ),
     # --- APEX economics (spec 04: the lesson is the shape, not the price) ----
@@ -118,7 +136,13 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "asvc_overage_per_vm_month": Constant(
         value=45, unit="$/VM/month above base",
-        source="estimate — overage premium ~1.5×", estimated=True,
+        source=(
+            "estimate — generic overage premium ~1.5×; not Dell's rate card "
+            "(Dell states APEX Infrastructure / Flex on Demand uses a single "
+            "rate with no overage fees: dell.com/en-us/dt/payment-solutions/"
+            "flexible-consumption/flex-on-demand.htm)"
+        ),
+        estimated=True,
         blurb="Rate for usage above the committed base.",
     ),
     "capex_per_vm_month": Constant(

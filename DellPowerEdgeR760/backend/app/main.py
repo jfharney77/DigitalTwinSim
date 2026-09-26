@@ -8,7 +8,7 @@ from twinkit.tour import TourResponse
 
 from .anatomy import ANATOMY
 from .catalog import CATALOG
-from .engine import simulate
+from .engine import INTRO, simulate
 from .leveling import leveled, leveled_all
 from .models import CatalogCategory, ChassisAnatomy, PowerOnResponse, UseCase
 from .tour import TOUR_RESPONSE
@@ -27,7 +27,7 @@ def get_anatomy(level: int = Level) -> ChassisAnatomy:
 
 @app.get("/api/poweron", response_model=PowerOnResponse)
 def get_poweron(level: int = Level) -> PowerOnResponse:
-    return leveled(PowerOnResponse(trace=simulate()), level)
+    return leveled(PowerOnResponse(intro=INTRO, trace=simulate()), level)
 
 
 @app.get("/api/catalog", response_model=list[CatalogCategory])

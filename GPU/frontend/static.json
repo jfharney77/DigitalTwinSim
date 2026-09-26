@@ -1,0 +1,418 @@
+{
+ "skip": [
+  "/api/live"
+ ],
+ "params": {
+  "lesson": [
+   "01_hello_thread",
+   "02_vector_add",
+   "03_block_size",
+   "04_matmul_naive",
+   "05_matmul_tiled",
+   "06_bandwidth",
+   "07_bigger_dies",
+   "07_bigger_dies_blackwell"
+  ],
+  "asProfile": [
+   "Generic-128",
+   "Generic-512",
+   "RTX-4060-Laptop",
+   "H100-SXM",
+   "B300-Blackwell-Ultra",
+   "RTX-5090",
+   "MI300X"
+  ]
+ },
+ "postBodies": {
+  "/api/simulate": [
+   {
+    "profile": {
+     "name": "Generic-128",
+     "sm": {
+      "rows": 2,
+      "cols": 4
+     },
+     "coresPerSM": {
+      "rows": 4,
+      "cols": 4
+     },
+     "memory": {
+      "stacks": 2,
+      "label": "HBM"
+     },
+     "hasL2Bus": true,
+     "bandwidth": {
+      "bytesPerCycle": 8,
+      "macsPerCycle": 4
+     },
+     "maxThreadsPerSm": 1536,
+     "maxBlocksPerSm": 24,
+     "warpSize": 32,
+     "tensor": null,
+     "dieId": null,
+     "power": {
+      "idleW": 10.0,
+      "laneW": 0.5,
+      "byteW": 2.0
+     },
+     "link": null
+    },
+    "workload": {
+     "kind": "matmul",
+     "N": 4,
+     "M": 0,
+     "K": 0,
+     "dtype": "fp32",
+     "seed": 0,
+     "tileSize": 2,
+     "doubleBuffer": false,
+     "steps": 1,
+     "blockSize": 0,
+     "execution": "cuda",
+     "gpus": 1
+    }
+   },
+   {
+    "profile": {
+     "name": "Generic-512",
+     "sm": {
+      "rows": 4,
+      "cols": 4
+     },
+     "coresPerSM": {
+      "rows": 4,
+      "cols": 8
+     },
+     "memory": {
+      "stacks": 4,
+      "label": "HBM"
+     },
+     "hasL2Bus": true,
+     "bandwidth": {
+      "bytesPerCycle": 8,
+      "macsPerCycle": 4
+     },
+     "maxThreadsPerSm": 1536,
+     "maxBlocksPerSm": 24,
+     "warpSize": 32,
+     "tensor": null,
+     "dieId": null,
+     "power": {
+      "idleW": 10.0,
+      "laneW": 0.5,
+      "byteW": 2.0
+     },
+     "link": null
+    },
+    "workload": {
+     "kind": "matmul",
+     "N": 4,
+     "M": 0,
+     "K": 0,
+     "dtype": "fp32",
+     "seed": 0,
+     "tileSize": 2,
+     "doubleBuffer": false,
+     "steps": 1,
+     "blockSize": 0,
+     "execution": "cuda",
+     "gpus": 1
+    }
+   },
+   {
+    "profile": {
+     "name": "RTX-4060-Laptop",
+     "sm": {
+      "rows": 4,
+      "cols": 6
+     },
+     "coresPerSM": {
+      "rows": 8,
+      "cols": 16
+     },
+     "memory": {
+      "stacks": 2,
+      "label": "GDDR6 128-bit"
+     },
+     "hasL2Bus": true,
+     "bandwidth": {
+      "bytesPerCycle": 4,
+      "macsPerCycle": 8
+     },
+     "maxThreadsPerSm": 1536,
+     "maxBlocksPerSm": 24,
+     "warpSize": 32,
+     "tensor": {
+      "unitsPerSM": 4,
+      "mmaM": 16,
+      "mmaN": 16,
+      "mmaK": 16,
+      "multipliers": {
+       "fp16": 4.0,
+       "int8": 8.0,
+       "fp8": 8.0
+      }
+     },
+     "dieId": null,
+     "power": {
+      "idleW": 5.0,
+      "laneW": 0.02,
+      "byteW": 3.0
+     },
+     "link": null
+    },
+    "workload": {
+     "kind": "matmul",
+     "N": 4,
+     "M": 0,
+     "K": 0,
+     "dtype": "fp32",
+     "seed": 0,
+     "tileSize": 2,
+     "doubleBuffer": false,
+     "steps": 1,
+     "blockSize": 0,
+     "execution": "cuda",
+     "gpus": 1
+    }
+   },
+   {
+    "profile": {
+     "name": "H100-SXM",
+     "sm": {
+      "rows": 12,
+      "cols": 11
+     },
+     "coresPerSM": {
+      "rows": 4,
+      "cols": 8
+     },
+     "memory": {
+      "stacks": 5,
+      "label": "HBM3"
+     },
+     "hasL2Bus": true,
+     "bandwidth": {
+      "bytesPerCycle": 16,
+      "macsPerCycle": 16
+     },
+     "maxThreadsPerSm": 2048,
+     "maxBlocksPerSm": 32,
+     "warpSize": 32,
+     "tensor": {
+      "unitsPerSM": 4,
+      "mmaM": 16,
+      "mmaN": 16,
+      "mmaK": 16,
+      "multipliers": {
+       "fp16": 4.0,
+       "bf16": 4.0,
+       "int8": 8.0,
+       "fp8": 8.0
+      }
+     },
+     "dieId": "gh100",
+     "power": {
+      "idleW": 60.0,
+      "laneW": 0.13,
+      "byteW": 6.0
+     },
+     "link": {
+      "label": "NVLink4",
+      "bytesPerCycle": 4
+     }
+    },
+    "workload": {
+     "kind": "matmul",
+     "N": 4,
+     "M": 0,
+     "K": 0,
+     "dtype": "fp32",
+     "seed": 0,
+     "tileSize": 2,
+     "doubleBuffer": false,
+     "steps": 1,
+     "blockSize": 0,
+     "execution": "cuda",
+     "gpus": 1
+    }
+   },
+   {
+    "profile": {
+     "name": "B300-Blackwell-Ultra",
+     "sm": {
+      "rows": 10,
+      "cols": 16
+     },
+     "coresPerSM": {
+      "rows": 4,
+      "cols": 8
+     },
+     "memory": {
+      "stacks": 8,
+      "label": "HBM3e"
+     },
+     "hasL2Bus": true,
+     "bandwidth": {
+      "bytesPerCycle": 24,
+      "macsPerCycle": 12
+     },
+     "maxThreadsPerSm": 2048,
+     "maxBlocksPerSm": 32,
+     "warpSize": 32,
+     "tensor": {
+      "unitsPerSM": 4,
+      "mmaM": 16,
+      "mmaN": 16,
+      "mmaK": 16,
+      "multipliers": {
+       "fp16": 4.0,
+       "bf16": 4.0,
+       "fp8": 8.0,
+       "fp4": 16.0
+      }
+     },
+     "dieId": "gb300",
+     "power": {
+      "idleW": 90.0,
+      "laneW": 0.22,
+      "byteW": 8.0
+     },
+     "link": {
+      "label": "NVLink5",
+      "bytesPerCycle": 8
+     }
+    },
+    "workload": {
+     "kind": "matmul",
+     "N": 4,
+     "M": 0,
+     "K": 0,
+     "dtype": "fp32",
+     "seed": 0,
+     "tileSize": 2,
+     "doubleBuffer": false,
+     "steps": 1,
+     "blockSize": 0,
+     "execution": "cuda",
+     "gpus": 1
+    }
+   },
+   {
+    "profile": {
+     "name": "RTX-5090",
+     "sm": {
+      "rows": 10,
+      "cols": 17
+     },
+     "coresPerSM": {
+      "rows": 4,
+      "cols": 8
+     },
+     "memory": {
+      "stacks": 2,
+      "label": "GDDR7 512-bit"
+     },
+     "hasL2Bus": true,
+     "bandwidth": {
+      "bytesPerCycle": 8,
+      "macsPerCycle": 22
+     },
+     "maxThreadsPerSm": 1536,
+     "maxBlocksPerSm": 24,
+     "warpSize": 32,
+     "tensor": {
+      "unitsPerSM": 4,
+      "mmaM": 16,
+      "mmaN": 16,
+      "mmaK": 16,
+      "multipliers": {
+       "fp16": 4.0,
+       "int8": 8.0,
+       "fp8": 8.0
+      }
+     },
+     "dieId": "gb202",
+     "power": {
+      "idleW": 30.0,
+      "laneW": 0.093,
+      "byteW": 5.0
+     },
+     "link": null
+    },
+    "workload": {
+     "kind": "matmul",
+     "N": 4,
+     "M": 0,
+     "K": 0,
+     "dtype": "fp32",
+     "seed": 0,
+     "tileSize": 2,
+     "doubleBuffer": false,
+     "steps": 1,
+     "blockSize": 0,
+     "execution": "cuda",
+     "gpus": 1
+    }
+   },
+   {
+    "profile": {
+     "name": "MI300X",
+     "sm": {
+      "rows": 16,
+      "cols": 19
+     },
+     "coresPerSM": {
+      "rows": 4,
+      "cols": 4
+     },
+     "memory": {
+      "stacks": 8,
+      "label": "HBM3"
+     },
+     "hasL2Bus": true,
+     "bandwidth": {
+      "bytesPerCycle": 16,
+      "macsPerCycle": 24
+     },
+     "maxThreadsPerSm": 2048,
+     "maxBlocksPerSm": 32,
+     "warpSize": 64,
+     "tensor": {
+      "unitsPerSM": 4,
+      "mmaM": 16,
+      "mmaN": 16,
+      "mmaK": 16,
+      "multipliers": {
+       "fp16": 4.0,
+       "bf16": 4.0,
+       "int8": 8.0,
+       "fp8": 8.0
+      }
+     },
+     "dieId": "mi300x",
+     "power": {
+      "idleW": 65.0,
+      "laneW": 0.121,
+      "byteW": 6.0
+     },
+     "link": null
+    },
+    "workload": {
+     "kind": "matmul",
+     "N": 4,
+     "M": 0,
+     "K": 0,
+     "dtype": "fp32",
+     "seed": 0,
+     "tileSize": 2,
+     "doubleBuffer": false,
+     "steps": 1,
+     "blockSize": 0,
+     "execution": "cuda",
+     "gpus": 1
+    }
+   }
+  ]
+ }
+}

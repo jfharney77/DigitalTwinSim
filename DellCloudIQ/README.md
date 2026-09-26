@@ -1,7 +1,7 @@
 # CloudIQ / Dell AIOps — inside the platform
 
-A digital-twin web app for **CloudIQ** (rebranded **Dell AIOps**, part of APEX
-AIOps) — Dell's cloud-native AIOps observability SaaS. It follows the same
+A digital-twin web app for **CloudIQ** (renamed APEX AIOps Infrastructure Observability in 2024,
+then **Dell AIOps** in 2025) — Dell's cloud-native AIOps observability SaaS. It follows the same
 pattern as the hardware twins in this repo (`GPU/`, `DellPowerStore/`, ...): a
 pure FastAPI engine that emits a deterministic trace as data, and a React/Vite
 frontend (Dell clean-design skin) that plays it back.
@@ -16,10 +16,13 @@ way the iDRAC and PowerSwitch twins adapted theirs:
 - The **"power-on trace"** is the **lifecycle of telemetry becoming an
   actionable insight** (`idle → collect → transmit → ingest → analyze →
   detect → surface → assist → notify`). The signature **Health Score** starts
-  at 100, drops when a risk is detected, and recovers as remediation begins.
+  at 100, drops when a risk is detected, and recovers only when a later
+  collection shows the issue cleared (the final step's clock jumps about an hour;
+  a ticket does not move the score).
 
 Written for a technically skilled reader new to AIOps: what CloudIQ observes,
-how telemetry reaches Dell's cloud (one-way, via the Secure Connect Gateway),
+how telemetry reaches Dell's cloud (one-way, over an outbound-initiated
+Secure Connect Gateway connection),
 what the machine learning does with it, and what real workflows look like.
 
 ## Run
@@ -42,7 +45,8 @@ taken, run the backend elsewhere and point Vite at it:
 - **Pipeline** — play the telemetry-to-insight trace; the architecture blocks
   light up per step (collect → Secure Connect Gateway → cloud ingest → ML
   analyze → detect → surface → AIOps Assistant → notify). Watch the Health
-  Score drop when a risk is detected and recover after remediation.
+  Score drop when a risk is detected and recover at a later collection, after
+  the fix.
 - **Architecture** (`#architecture`) — the annotated platform diagram;
   hover/click each block (monitored systems, gateway, ingest, ML analytics,
   cybersecurity, insights & app, AIOps Assistant, notify & integrate).
@@ -53,6 +57,58 @@ taken, run the backend elsewhere and point Vite at it:
 - **Use cases** (`#usecases`) — predict/prevent a capacity shortfall, find and
   fix a performance anomaly (noisy neighbor), and watch cybersecurity posture
   across the fleet — each with the capabilities it leans on.
+
+## Failure scenario: connected, but no data
+
+The onboarding failure people report most (see the Dell Community thread "OME
+not updating anything to APEX AIOps" in `RESEARCH_ASSETS.md`): the system says
+connected and nothing arrives. Pick it from the Scenario menu on the Pipeline
+page, or deep-link it. The link composes with the phase and step links:
+`/#scenario=connected-no-data`, `/#scenario=connected-no-data&phase=stale`,
+`/#scenario=connected-no-data&step=3`.
+
+The trace (`backend/app/scenarios.py`, pure and AST-checked like the engine):
+`register → handshake → collect → blocked → starved → stale → repair → backfill
+→ analyze → resume`. A new array is registered, the Secure Connect Gateway
+passes its own connection test, and the customer's outbound proxy refuses the
+telemetry upload (Dell's connectivity uses more than one port and destination;
+which one is refused here is illustrative). Failing blocks are
+drawn dashed in the error colour. The counter to watch is **minutes without
+data**.
+
+What it copies from the real product, with sources served by
+`GET /api/scenarios` and shown under the counters:
+
+- A system with no delivered telemetry has no Health Score. CloudIQ draws a
+  grey dash, and a grey number means "connectivity issue, uncertain score".
+  It is never green (CloudIQ detailed review, H15691).
+- CloudIQ's Connectivity view defines Connected as successfully sending data,
+  a stricter claim than the gateway's own status. A system that has never sent
+  sits under Not Set Up, known from the install-base record; Lost Connection
+  is for systems that were sending and stopped (same paper). The cloud does
+  not infer this failure from missed sends. The stale step dwells because
+  onboarding can take up to an hour (KB 000181685), so a grey dash is a fault
+  only after that, and the listing is passive: someone has to look.
+- The causes and the fix are on the customer side: blocked outbound 443, a
+  proxy rule, DNS, or collection disabled on the array (Dell KB 000181685; a
+  gateway port change does the same to the Collector, KB 000196110). Dell's
+  cloud has no inbound path, so it cannot repair this itself.
+
+Invariants (`backend/tests/test_scenarios.py`): analytics, cybersecurity, the
+Assistant and notifications never run while the cloud holds no data from the
+system; the score state is `no-data` and never in the green band until a score
+has been computed from delivered telemetry; the stale step is the unique
+longest stage and lights only the app; collected = delivered + backlog on
+every step; the repair step lights only customer-side blocks; and the healthy
+trace is byte-identical in every original field (pinned by hash).
+
+Illustrative: every count and timing, and the full backfill in particular.
+How much a system or gateway retains while egress is blocked varies by
+product, and a long real outage can leave a gap in the charts.
+
+API: `GET /api/pipeline?scenario=connected-no-data` (no parameter returns the
+healthy trace, as before; an unknown id is a 404) and `GET /api/scenarios`.
+The guided tour narrates the healthy trace only.
 
 See `initial_spec.md` for architecture, data models, and invariants. Content
 is grounded in Dell's AIOps product page and support docs, cited in the

@@ -91,3 +91,12 @@ def test_coverage_is_reported_and_the_ends_are_not_empty():
     assert counts[3] == len(registry())
     assert counts[1] > 0, "no novice-level prose authored"
     assert counts[5] > 0, "no expert-level prose authored"
+
+
+def test_the_page_intro_is_levelled():
+    from app.presets import INTRO
+
+    novice, standard = leveled(INTRO, 1).text, leveled(INTRO, 3).text
+    assert novice != standard
+    for term in ("SXM", "Redfish", "ṁ", "DC"):
+        assert term not in novice, f"novice intro still carries {term!r}"

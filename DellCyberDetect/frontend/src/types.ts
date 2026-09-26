@@ -76,12 +76,36 @@ export interface DetectState {
   metadataAlerts: number;
   contentConfidencePercent: number;
   lastCleanSnapshot: number;
+  // When the named copy was taken (illustrative clock); null until named.
+  lastCleanTakenAtHours: number | null;
   elapsedHours: number;
   cycleCost: number;
+  // Additive, for failure scenarios (defaults on the baseline trace).
+  snapshotsExpired: number;
+  verdict: "" | "clean-copy-named" | "no-clean-copy-on-array";
+  recoverySource: "" | "array-snapshot" | "powerprotect-vault";
+  recoveryPointAgeHours: number;
+  failedRegions: string[];
 }
 
 export interface DetectResponse {
   trace: DetectState[];
+  scenario: string;
+}
+
+export interface ScenarioInfo {
+  id: string;
+  name: string;
+  summary: string;
+  heroLabel: string;
+  heroValue: string;
+  retentionHours: number;
+  sources: SourceLink[];
+  // Leveled page copy for the incident page under this scenario.
+  heading: string;
+  intro: string;
+  mapNote: string;
+  countersNote: string;
 }
 
 export interface CatalogOption {

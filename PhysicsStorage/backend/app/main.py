@@ -6,10 +6,12 @@ from __future__ import annotations
 from fastapi import HTTPException, Query
 
 from twinkit.api import Level, make_app
+from twinkit.labs import Lab, LabResult
 
 from .anatomy import MAPS
 from .constants import CONSTANTS
 from .engine import simulate
+from .labs import LABS, LABS_BY_ID, grade_scenario
 from .media import MEDIA
 from .leveling import leveled, leveled_all
 from .models import (
@@ -99,3 +101,18 @@ def post_simulate(scenario: Scenario) -> SimResponse:
 def get_simulate() -> SimResponse:
     """Default scenario (PowerStore, OLTP) — the GET liveness probe."""
     return _run(Scenario(config=POWERSTORE_2, workload=OLTP))
+
+
+# --- Graded labs (docs/LAB_PATTERN.md) --------------------------------------
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    """The labs only — reference solutions never leave the server."""
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(404, f"unknown lab {lab_id}")
+    return leveled(grade_scenario(lab_id, scenario), level)

@@ -133,7 +133,10 @@ ANATOMY = LifecycleMap(
                 "delivers: aluminium, steel, copper, cobalt, lithium, "
                 "and plastics, part virgin and part recovered. Dell "
                 "reports more than 95 million pounds of recycled and "
-                "renewable material flowing into products in a year — a "
+                "renewable material in its fiscal-2024 products (and 52 "
+                "million kilograms, about 17% of product content, on the "
+                "wider fiscal-2025 measure that also counts reduced-"
+                "carbon material) — a "
                 "real number worth stating precisely: recycled content "
                 "is easiest in steel and plastics, where recovery "
                 "chains are decades old, and hardest in the rare "
@@ -167,7 +170,8 @@ ANATOMY = LifecycleMap(
             x=26, y=2, w=16, h=9,
             flows_to=["manufacture", "deployment"],
             description=(
-                "The solved corner: about 97% of Dell packaging comes "
+                "The solved corner: Dell reports about 97% of its "
+                "packaging (97.6%, its own analysis, June 2026) comes "
                 "from recycled or renewable material — cardboard, "
                 "moulded fibre, ocean-bound plastics. It feeds both "
                 "manufacture and the shipment out to deployment, and it "
@@ -250,7 +254,10 @@ ANATOMY = LifecycleMap(
                 "though the mass balances, and the trace is tested to "
                 "attempt this path before the reclaim path. In this "
                 "cohort it carries the majority of the mass: 6,200 kg "
-                "of the ten tonnes goes back to work."
+                "of the ten tonnes goes back to work. That split is "
+                "illustrative, and it is the well-run case: across "
+                "everything Dell collected in fiscal 2025, the company "
+                "reports 89% recycled and 11% reused or resold."
             ),
         ),
         LifecycleRegion(
@@ -295,8 +302,8 @@ ANATOMY = LifecycleMap(
     ],
     stats=[
         Stat(label="Shape", value="A loop with two returns and one measured leak"),
-        Stat(label="Recycled & renewable input", value="95M+ lbs into products in a year (Dell)"),
-        Stat(label="Packaging", value="~97% recycled or renewable material"),
+        Stat(label="Recycled & renewable input", value="95M+ lbs into FY24 products (Dell-reported)"),
+        Stat(label="Packaging", value="~97% recycled or renewable material (Dell-reported)"),
         Stat(label="Largest lever", value="Service-life extension, not recycling"),
         Stat(label="Preferred return", value="Refurbish — reuse beats reclamation"),
         Stat(label="This cohort's leak", value="450 kg of 10,000 (4.5%) — stated, not hidden"),
@@ -322,8 +329,12 @@ ANATOMY = LifecycleMap(
             url="https://www.dell.com/en-us/lp/dt/sustainable-devices",
         ),
         SourceLink(
-            label="Dell blog — repair, reuse, recycle: the circular economy in action",
-            url="https://www.dell.com/en-in/blog/repair-reuse-recycle-the-circular-economy-in-action/",
+            label="Dell blog — circular design gives e-waste a second life",
+            url="https://www.dell.com/en-us/blog/circular-design-gives-e-waste-a-second-life/",
+        ),
+        SourceLink(
+            label="Dell — FY25 impact by the numbers (sustainable materials, collection and reuse rates)",
+            url="https://www.delltechnologies.com/asset/en-ie/solutions/business-solutions/briefs-summaries/dell-technologies-fy25-impact-by-the-numbers.pdf",
         ),
     ],
 )

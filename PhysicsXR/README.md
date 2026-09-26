@@ -49,19 +49,39 @@ IO); the playback clock lives in the frontend.
 - **Vibration taxes HDDs and spares SSDs** — a performance tax, not a
   failure event.
 - The rated envelopes (−5…55 °C standard, −20…65 °C select extended) are
-  pinned as *documented, not estimated* constants.
+  pinned as *documented, not estimated* constants — as are the XR8000's
+  205 W CPU ceiling (195 W in the 65 °C classes), its eight DIMM slots,
+  and the altitude derating (from 900 m; 1 °C per 80 m in the −5…55 °C
+  class, 1 °C per 58 m in the extended class).
 
 ## Honesty
 
-Sourced facts: the −5…55 °C standard and −20…65 °C extended envelopes,
-NEBS Level 3 / MIL-STD-810H positioning, the altitude derating note
-(Dell XR spec sheet, XR8000 Technical Guide, Dell Info Hub thermal
-article — cited in `/api/anatomy` sources). Everything else — fouling
-rates, vibration derates, fan curves, PSU input margins — is an estimate
-and is labeled as such in `backend/app/constants.py`, through to the UI.
+Sourced facts (fact-checked 2026-09 against the Dell XR-Series spec sheet,
+Jan 2026 Rev. A01, the XR8000 spec sheet, and the XR8000r/XR8610t/XR8620t
+Technical Guide — all cited in `/api/anatomy` sources): the −5…55 °C
+standard envelope; the −20…65 °C extended envelope, which Dell offers only
+on the 2U XR8620t sled with CPUs to 195 W, dual extended-temperature PSUs,
+and the Heater Manager option for cold starts; "MIL-STD tested and NEBS
+Level 3" positioning (Dell's wording — the XR8000 guide itself lists only
+the telco standards); the 205 W CPU maximum and its 125/150/185/205 W SKU
+classes; eight DDR5 slots per XR8000 sled and four DDR4 per XR4000 sled;
+four fans in the 1U sled; altitude derating from 900 m. Everything else —
+fouling rates, vibration derates, fan curves, PSU input margins, XR4000 CPU
+wattage classes — is an estimate and is labeled as such in
+`backend/app/constants.py`, through to the UI.
 
-**What we don't model:** CFD; per-core DVFS; condensation and material
-brittleness at the cold end (the real reasons the lower rating exists);
+**Where the model is a composite, not a Dell sled:** the real XR8000 and
+XR4000 take M.2 flash only, so the HDD build is a thought experiment; the
+XR8000's dust filter is an optional chassis bezel (otherwise Dell asks the
+cabinet to filter); its two PSUs live in the chassis and feed up to four
+sleds; and its AC supplies are 1400 W (1050 W at 100–120 V) and 1800 W
+(200–240 V only) — the 800 W and 1100 W units are −48 V DC. The sim keeps
+one sled, one AC feed, and PSU sizes as classes.
+
+**What we don't model:** CFD; per-core DVFS; cold starts (Dell's guide
+gives the CPU, chipset, and DIMMs 0 °C minimums and forbids a cold start
+below +5 °C without Heater Manager — the real reason the lower rating
+exists); condensation;
 corrosion; filter media chemistry; the −48 V DC telecom feed (the sag
 model is single-phase AC); acoustics. Correct relationships and orders
 of magnitude, not a service manual.

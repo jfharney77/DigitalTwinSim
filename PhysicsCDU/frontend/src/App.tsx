@@ -9,9 +9,12 @@ import {
 } from "./api";
 import { ControlPanel } from "./components/ControlPanel";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { LoopView } from "./components/LoopView";
 import { StripCharts } from "./components/StripCharts";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   CduConfig,
@@ -84,9 +87,17 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   // Prose-bearing content refetches on level change.
@@ -98,6 +109,7 @@ export function App() {
         setExplains(ex);
       })
       .catch((e) => setError(String(e)));
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
   }, [level]);
 
   useEffect(() => {
@@ -130,7 +142,7 @@ export function App() {
     return () => {
       if (debounce.current !== null) clearTimeout(debounce.current);
     };
-  }, [scenario]);
+  }, [scenario, level]);
 
   const trace = result?.trace ?? [];
   const state = trace[cursor] ?? null;
@@ -204,8 +216,54 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEnvironment(lab.start.environment);
+    setEvents(lab.start.events);
+    setDurationS(lab.start.durationS);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const coldStart = () => {
-    setEvents([]);
+    // Inside a lab the scripted disturbance (a chiller trip, a pump failure)
+    // is part of the problem, so Reset returns to the lab's events rather
+    // than deleting them. The UI has no other way to rebuild a timed recovery.
+    setEvents(labsOpen && activeLab ? activeLab.start.events : []);
     setActiveScenario(null);
     setCursor(0);
     setRunning(true);
@@ -225,10 +283,19 @@ export function App() {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
-            ? `t+${state.t}s · ${state.heatRemovedKw.toFixed(0)} kW moved · cap ${state.capPct.toFixed(0)}%`
+            ? `t+${state.t}s · ${state.heatRemovedKw.toFixed(0)} kW moved · cap ${config.policy === "uncoordinated" ? "off" : `${state.capPct.toFixed(0)}%`}`
             : "—"}
         </span>
         <LevelControl />
@@ -252,6 +319,22 @@ export function App() {
           labeled an estimate.
         </p>
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         {/* Left — build panel + guided scenarios */}
@@ -285,6 +368,12 @@ export function App() {
                   <p key={i}>{p}</p>
                 ))}
                 <p className="scenario-question">? {activeScenario.question}</p>
+                {activeScenario.answer && (
+                  <details className="scenario-answer" key={activeScenario.id}>
+                    <summary>Show the answer</summary>
+                    <p>{activeScenario.answer}</p>
+                  </details>
+                )}
               </div>
             )}
           </div>
@@ -359,13 +448,31 @@ export function App() {
             </div>
           </div>
           <div className="mini footnote">
+            {level <= 2 ? (
+              <>
+                This is a simplified model. It leaves out several real
+                effects, and nearly every number in it is an estimate rather
+                than a measurement — the backend's constants table says which
+                is which. The biggest simplification: the gap between the
+                facility water and the coolant is about 30 K here, where a
+                real exchanger runs 2–5 K, so do not size a plant from it.
+              </>
+            ) : (
+          <>
             What we don't model: NTU heat-exchanger integration, pump heat
             into the coolant, filter fouling, glycol aging, water-side
-            economizer dynamics, leak events (the IRC's headline feature —
-            a detection story, not a thermodynamics one), and CFD anywhere.
-            The C7000/PowerRack/IRC shipped in 2026; press-release depth is
-            what's public, so nearly every constant is an estimate and says
+            economizer dynamics, tray-level self-throttling (a tray bank here
+            is either at full speed or tripped off, so the uncoordinated mode
+            is a worst case; real trays slow their own clocks before a hard
+            trip), a realistic heat-exchanger approach (this model's is about
+            30 K at rated load where real plate exchangers run 2–5 K, set so
+            the 220 kW class binds on 17 °C water), leak events (the IRC's headline feature —
+            a detection story, not a thermodynamics one), and CFD (computational fluid dynamics) anywhere.
+            The C7000 and PowerRack were announced in May 2026 (the IRC in
+            November 2025); press-release depth is what's public, so nearly every constant is an estimate and says
             so in the backend's table.
+          </>
+            )}
           </div>
         </div>
 
@@ -391,7 +498,10 @@ export function App() {
           <div className="an-panel">
             <h2>Environment</h2>
             <label className="field">
-              Facility supply {environment.facilitySupplyC} °C
+              Facility supply {environment.facilitySupplyC} °C at start
+              {state && state.facSupplyC !== environment.facilitySupplyC
+                ? ` · now ${state.facSupplyC.toFixed(0)} °C after a timed event`
+                : ""}
               <input
                 type="range" min={8} max={45} value={environment.facilitySupplyC}
                 onChange={(e) =>
@@ -399,11 +509,14 @@ export function App() {
                 }
               />
               <span className="mini">
-                ASHRAE classes: W32 ≤32 °C · W45 ≤45 °C
+                ASHRAE classes: W32 ≤32 °C · W40 ≤40 °C · W45 ≤45 °C. Dell states the C7000 accepts up to 40 °C.
               </span>
             </label>
             <label className="field">
-              Room dew point {environment.dewPointC} °C
+              Room dew point {environment.dewPointC} °C at start
+              {state && Math.abs(state.secSupplyC - state.dewMarginC - environment.dewPointC) > 0.05
+                ? ` · now ${(state.secSupplyC - state.dewMarginC).toFixed(0)} °C after a timed event`
+                : ""}
               <input
                 type="range" min={2} max={28} value={environment.dewPointC}
                 onChange={(e) =>
@@ -411,7 +524,9 @@ export function App() {
                 }
               />
               <span className="mini">
-                The mixing valve holds supply ≥ dew point + 2 K.
+                {level <= 2
+                  ? "Pipes colder than the dew point sweat, so the CDU's mixing valve keeps the coolant at least 2 degrees above it."
+                  : "The mixing valve holds coolant supply ≥ dew point + 2 K."}
               </span>
             </label>
             <div className="btnrow">
@@ -441,8 +556,18 @@ export function App() {
               </button>
             </div>
           </div>
-          <Instruments state={state} explains={explains} explainOn={explainOn} />
-          <StripCharts trace={trace} cursor={cursor} />
+          <Instruments
+            state={state}
+            explains={explains}
+            explainOn={explainOn}
+            policy={config.policy}
+            level={level}
+          />
+          <StripCharts
+            trace={trace}
+            cursor={cursor}
+            capOff={config.policy === "uncoordinated"}
+          />
         </div>
       </div>
     </div>

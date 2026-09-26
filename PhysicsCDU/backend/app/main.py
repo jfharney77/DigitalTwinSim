@@ -7,11 +7,15 @@ something to read."""
 
 from __future__ import annotations
 
+from fastapi import HTTPException
+
 from twinkit.api import Level, make_app
+from twinkit.labs import Lab, LabResult
 
 from .anatomy import ANATOMY
 from .constants import CONSTANTS
 from .engine import simulate
+from .labs import LABS, LABS_BY_ID, grade_scenario
 from .leveling import leveled, leveled_all
 from .models import (
     ConfigPreset,
@@ -67,10 +71,11 @@ def get_explain(level: int = Level) -> list[Explain]:
     return leveled_all(EXPLAINS, level)
 
 
-def _run(scenario: Scenario) -> SimResponse:
+def _run(scenario: Scenario, level: int = 3) -> SimResponse:
     trace, log, summary = simulate(scenario)
     return SimResponse(
-        validations=validate(scenario),
+        # Rule messages carry reading levels; the trace is numbers.
+        validations=leveled_all(validate(scenario), level),
         trace=trace,
         log=log,
         summary=summary,
@@ -78,14 +83,30 @@ def _run(scenario: Scenario) -> SimResponse:
 
 
 @app.post("/api/simulate", response_model=SimResponse)
-def post_simulate(scenario: Scenario) -> SimResponse:
-    return _run(scenario)
+def post_simulate(scenario: Scenario, level: int = Level) -> SimResponse:
+    return _run(scenario, level)
 
 
 @app.get("/api/simulate", response_model=SimResponse)
-def get_simulate() -> SimResponse:
+def get_simulate(level: int = Level) -> SimResponse:
     """The default scenario (Standard build, full-tilt workload) — for
     liveness checks and a zero-click first paint."""
     from .presets import FULL_TILT, STANDARD
 
-    return _run(Scenario(config=STANDARD, workload=FULL_TILT))
+    return _run(Scenario(config=STANDARD, workload=FULL_TILT), level)
+
+
+# --- Graded labs (docs/LAB_PATTERN.md) ---------------------------------------
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    """The labs — goals, criteria, hints, start scenarios. Reference
+    solutions stay server-side."""
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(status_code=404, detail=f"no lab {lab_id!r}")
+    return leveled(grade_scenario(lab_id, scenario), level)

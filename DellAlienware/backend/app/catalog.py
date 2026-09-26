@@ -35,7 +35,8 @@ M18_R2 = LaptopProfile(
         "sustained power budget NVIDIA lets the GPU draw) RTX 4090 Laptop "
         "and a 157 W-peak i9 at full tilt, which is why it ships with 280 W "
         "or 360 W adapters where an ultrabook ships with 65 W. The 97 Wh "
-        "battery is the largest US airlines allow in the cabin."
+        "battery sits just under the 100 Wh limit airlines apply to "
+        "laptop batteries without special approval."
     ),
     adapters=[
         AdapterOption(
@@ -75,24 +76,6 @@ M18_R2 = LaptopProfile(
             ),
         ),
         AdapterOption(
-            id="usbc-100",
-            name="100 W USB-C PD (budget-limited)",
-            watts=100,
-            connector="usbc",
-            voltage=20.0,
-            amps=5.0,
-            recognized=True,
-            description=(
-                "A 100 W USB Power Delivery charger on the Thunderbolt "
-                "port. USB-C negotiates its contract digitally (no PSID "
-                "pin needed), so the laptop recognizes it — but 100 W is "
-                "under half what even light gaming draws on this machine. "
-                "It will trickle-charge an idle laptop; under load the "
-                "battery carries most of the deficit and drains while "
-                "plugged in. Travel fallback, not a power supply."
-            ),
-        ),
-        AdapterOption(
             id="barrel-unknown",
             name="280 W barrel · damaged ID pin",
             watts=280,
@@ -117,10 +100,11 @@ M18_R2 = LaptopProfile(
 # Alienware 18 Area-51 — the post-rebrand 18-inch flagship (2025)
 # ---------------------------------------------------------------------------
 # Dell retired the m-/x-series names in the 2025 rebrand; the 18 Area-51 is
-# the m18's successor. CPU/GPU wattages and the battery figure below are
-# representative of the class ([inferred] where Dell hasn't published the
-# exact number) — per the project's scope guardrails, mental model over
-# spec-sheet precision.
+# the m18's successor. Battery (6-cell 96 Wh, 11.7 V), the 280/360 W barrel
+# adapters, and USB PD charging support come from Dell's AA18250 owner's
+# manual; the 175 W TGP / 280 W total-platform figure is Dell's launch claim
+# as reported by trade press (see anatomy.py sources). cpu_max_w is Intel's
+# maximum turbo power for the part, not a Dell-published sustained figure.
 
 AREA51_18 = LaptopProfile(
     id="area51-18",
@@ -130,18 +114,20 @@ AREA51_18 = LaptopProfile(
     cpu_max_w=160,
     gpu="GeForce RTX 5090 Laptop",
     gpu_tgp_w=175,
-    battery=Battery(wh=96.0, cells=6, voltage=11.4, express_charge=True),
+    battery=Battery(wh=96.0, cells=6, voltage=11.7, express_charge=True),
     default_adapter_id="barrel-360",
     idle_w=28,
     anatomy_id="area51-18",
     description=(
         "The 2025 flagship that replaced the m18 when Dell retired the "
         "m-/x-series names. Same recipe, new generation: Intel Core Ultra "
-        "200HX silicon, RTX 50-series graphics up to a 175 W TGP RTX 5090, "
-        "and 'Cryo-chamber' cooling — the rebrand's evolution of the "
-        "vapor-chamber-plus-heat-pipe stack. The AC power path is "
-        "unchanged: 19.5 V barrel input, 1-Wire adapter identification, "
-        "and hybrid battery supplement under peak load."
+        "200HX silicon, RTX 50-series graphics up to a 175 W TGP RTX 5090 "
+        "(Dell's figure), and 'Cryo-chamber' cooling — the rebrand's "
+        "evolution of the vapor-chamber-plus-heat-pipe stack. The AC "
+        "power path carries over: 19.5 V barrel input, 1-Wire adapter "
+        "identification, and hybrid battery supplement under peak load. "
+        "New here is USB Power Delivery charging on the Thunderbolt "
+        "ports, which the m18 R2 lacked."
     ),
     adapters=[
         AdapterOption(
@@ -173,6 +159,27 @@ AREA51_18 = LaptopProfile(
                 "CPU+GPU burn overshoots its budget and the battery "
                 "supplements the difference, draining slowly while "
                 "plugged in."
+            ),
+        ),
+        AdapterOption(
+            id="usbc-100",
+            name="100 W USB-C PD (budget-limited)",
+            watts=100,
+            connector="usbc",
+            voltage=20.0,
+            amps=5.0,
+            recognized=True,
+            description=(
+                "A 100 W USB Power Delivery charger on a Thunderbolt port. "
+                "Dell's owner's manual lists USB PD charging as supported "
+                "on this machine (at least 90 W to run and charge, 100 W "
+                "for ExpressCharge) — the m18 R2 before it had no USB-C "
+                "charging input at all. USB-C negotiates its contract "
+                "digitally (no PSID pin needed), so the laptop recognizes "
+                "it, but 100 W is under half what even light gaming draws "
+                "here. It charges an idle or powered-off laptop; under "
+                "load the battery carries most of the deficit and drains "
+                "while plugged in. Travel fallback, not a power supply."
             ),
         ),
         AdapterOption(

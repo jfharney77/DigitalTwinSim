@@ -112,7 +112,7 @@ GUIDED_SCENARIOS = [
                 ),
                 standard=(
                     "48 °C for 3 days against the two envelopes: "
-                    "XR-class (ceiling ~55 °C, to verify) loses "
+                    "XR-class (rated to 55 °C per Dell) loses "
                     "nothing; standard (~40 °C) loses ~30% of sites "
                     "for the duration plus MTTR, and coverage — "
                     "counted in subscribers — dips accordingly. "

@@ -75,7 +75,7 @@ def test_the_signature_step_pins_the_fuse():
     i = STEPS[SIGNATURE_STEP_ID].trace_cursor
     state = trace[i]
     assert state.phase == "fused"
-    assert state.label == "One NVLink domain — 72 GPUs become one accelerator"
+    assert state.label == "One NVLink domain — every one of 72 GPUs reaches every other"
     assert state.gpus_in_domain == 72
     assert trace[i - 1].gpus_in_domain == 0, "the fuse must be the 0 -> 72 step"
 

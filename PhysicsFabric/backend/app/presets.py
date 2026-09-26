@@ -85,7 +85,7 @@ GUIDED_SCENARIOS = [
                 ),
                 standard=(
                     "The campus preset: 57 PoE devices ≈ 90% of the "
-                    "740 W budget (the rule that binds before port "
+                    "illustrative 740 W budget (the rule that binds before port "
                     "count — spec 03's E3200 headline). At t=180 s a "
                     "PSU fails: budget halves, and the shed order "
                     "(phones → cameras → APs) executes. Watch "
@@ -122,8 +122,9 @@ GUIDED_SCENARIOS = [
                     "there is simply half the road."
                 ),
                 standard=(
-                    "A LAG member fails at t=180 s: a ~2 s STP-class "
-                    "outage (delivered drops to zero — the log admits "
+                    "An uplink fails at t=180 s: a ~2 s rapid-STP-class "
+                    "outage (an estimate; a healthy LACP bundle fails "
+                    "over faster — delivered drops to zero, the log admits "
                     "it), then the survivor at doubled utilization. "
                     "At the 9 a.m. demand level that lands the link "
                     "near the queue-onset knee: same 1/(1−ρ) curve as "
@@ -322,38 +323,57 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "At three minutes, one link begins silently "
-                    "losing one packet in a thousand. No alarm "
-                    "sounds. Every status light stays green — look at "
-                    "the status readout, it will not budge. But the "
-                    "flows crossing that link slow to a crawl as "
-                    "they endlessly re-send, and the flow-completion "
-                    "gauge quietly triples. This is the failure mode "
-                    "that ruins weeks: nothing is down, and "
-                    "something is very wrong. Only trend-watching "
-                    "telemetry catches it — which is the whole "
-                    "argument for the observability app next door."
+                    "At three minutes (t=180 s), one link begins "
+                    "silently losing one packet in a thousand. No "
+                    "alarm sounds, and the status readout stays green "
+                    "for the rest of the run. Even the row labeled "
+                    "drops (switch-reported) stays at 0, because that "
+                    "row is the switches' own count and the switches "
+                    "do not notice this loss. The damage shows "
+                    "elsewhere. FCT, short for flow completion time, "
+                    "is how long one 64 MB transfer takes to finish; "
+                    "it more than doubles, from about 0.7 ms to about "
+                    "1.7 ms. The flows crossing the sick link keep "
+                    "re-sending lost packets and lose about 35% of "
+                    "their useful traffic (the affected flows row). "
+                    "They are only one eighth of this fabric, so the "
+                    "delivered gauge slips just 4%. Nothing is down, "
+                    "and something is wrong. Only software that "
+                    "watches how these numbers change over time "
+                    "catches it, which is the job of the PhysicsData "
+                    "app in this repo."
                 ),
                 standard=(
-                    "The gray-failure toggle at t=180 s: 0.1% silent "
-                    "loss on one link. status-all-green stays true "
-                    "for the rest of the run — asserted in the tests, "
-                    "adversarial-twin style — while goodput on "
-                    "affected flows collapses ~35% (retransmit "
-                    "arithmetic) and FCT multiplies. The device's "
-                    "self-report and the user's experience have "
-                    "parted company; PhysicsData's anomaly feed "
-                    "exists to reunite them. Note even the event log "
-                    "only admits what happened in parentheses."
+                    "At t=180 s one link starts silently losing 0.1% "
+                    "of its packets. The status light stays green for "
+                    "the rest of the run, and the switch-reported "
+                    "drops row stays at 0, because the switches do "
+                    "not count this loss. Flow completion time (FCT) "
+                    "for a 64 MB transfer more than doubles, from "
+                    "about 0.7 ms to about 1.7 ms. Goodput, the "
+                    "useful traffic left after retransmissions, falls "
+                    "about 35% on the flows crossing the sick link "
+                    "(the affected flows row). Those flows are one "
+                    "leaf's share, one eighth of this fabric, so "
+                    "fabric-wide delivery falls only about 4%. The "
+                    "fabric's self-report and the user's experience "
+                    "have parted company, and the event log admits "
+                    "what happened only in parentheses. Catching this "
+                    "takes telemetry that watches trends, which is "
+                    "what the PhysicsData app's anomaly feed models. "
+                    "Penalty figures are estimates."
                 ),
                 expert=(
-                    "0.1% loss: green ∧ goodput −35% ∧ FCT ×3+ — "
-                    "both asserted. Telemetry-or-nothing. The "
-                    "observability app's opening argument."
+                    "0.1% silent loss on one link: status green, "
+                    "switch-reported drops 0, affected-flow goodput "
+                    "−35% (fabric-wide −4.4% at 8 leaves), FCT ×2.4. "
+                    "Tests assert green, penalty > 0 and FCT > ×1.5. "
+                    "Estimates. Trend telemetry or nothing: "
+                    "PhysicsData's opening argument."
                 ),
             ),
         ],
-        question="What does the status light say at t=400 — and what does the FCT gauge say?",
+        question="At t=400 s, what does the status light say, and what do the FCT (64 MB) and affected flows rows read compared with t=100 s?",
         scenario=Scenario(
             config=SN6000_ADAPTIVE, workload=STEADY, duration_s=600,
             events=[SimEvent(at_s=180, action="gray-failure")],
@@ -502,7 +522,9 @@ EXPLAINS = [
                 "~18 W per 800G pluggable × hundreds of ports ≈ the "
                 "ASIC's own draw — the toggle makes the fabric-power "
                 "instrument jump, which is the whole lesson. CPO "
-                "(~6 W/port) is why the SN6000 generation offers it, "
+                "(~6 W/port; both figures are estimates — Dell's "
+                "datasheet claims 5x better power efficiency for the "
+                "co-packaged models) is why the SN6000 generation offers it, "
                 "and why the liquid-cooling option follows: the "
                 "power you save still has to not-exist somewhere."
             ),
@@ -513,3 +535,104 @@ EXPLAINS = [
         ),
     ),
 ]
+
+
+# --- Explain entries the graded labs cite (app/labs.py) ---------------------
+# Appended rather than inlined so the list above stays as it was authored.
+
+EXPLAINS += [
+    Explain(
+        id="sharp",
+        title="Collectives in the network",
+        equation="all-reduce = delivered × collective share × 1.8 with SHARP;  link bytes × (1 − 0.5 × collective share)",
+        inputs=["collective share", "SHARP on/off", "link bytes", "all-reduce rate"],
+        explanation=L(
+            novice=(
+                "When many GPUs train one model they keep adding their "
+                "numbers together — a step called all-reduce. Normally "
+                "every number crosses the network to be added at a GPU. "
+                "SHARP lets the InfiniBand switches do the adding while "
+                "the data passes through, so about half of those bytes "
+                "never need to travel, and the adding finishes about 1.8 "
+                "times faster. Less traffic on the wires, more useful "
+                "work done: the two counters move in opposite directions. "
+                "Both figures are estimates in this model."
+            ),
+            standard=(
+                "SHARP aggregates in the switch ASICs: the collective "
+                "share of traffic puts half as many bytes on the links "
+                "(relief 0.5) and completes 1.8× faster (both modeled "
+                "estimates). Fabric bytes fall while the effective "
+                "all-reduce rate rises — the counters cross. It is an "
+                "InfiniBand-personality feature; on Ethernet the "
+                "collective share rides the links at full weight."
+            ),
+            expert=(
+                "In-network reduction: link relief 0.5 × collective "
+                "share, speedup 1.8 (estimates). Bytes down, all-reduce up."
+            ),
+        ),
+    ),
+    Explain(
+        id="gray-failure",
+        title="The gray failure",
+        equation="goodput = delivered × (1 − 35% ÷ leaves);  FCT × 2.4;  status = green",
+        inputs=["silent 0.1% loss", "affected share 1 ÷ leaves", "goodput", "FCT", "status lights"],
+        explanation=L(
+            novice=(
+                "A gray failure is a link that is not down, just slightly "
+                "broken: it quietly loses one packet in a thousand. No "
+                "alarm fires and every status light stays green. But the "
+                "flows that cross it keep re-sending and slowing down, "
+                "and they lose about 35% of their useful speed. Those "
+                "flows are the ones on one leaf switch, so the share of "
+                "the whole fabric that suffers is one divided by the "
+                "number of leaves. What you offered and what arrived "
+                "stop being the same number, and nothing tells you."
+            ),
+            standard=(
+                "One link silently loses 0.1%. Flows crossing it — a "
+                "1 ÷ leaves share of the fabric — lose 35% of goodput to "
+                "retransmission, and the flow-completion-time proxy "
+                "rises ×2.4, while every device status stays green. The "
+                "fabric-wide goodput tax is therefore 35% ÷ leaves: more "
+                "leaves dilute the blast radius. Penalty figures are "
+                "estimates."
+            ),
+            expert=(
+                "0.1% silent loss → −35% goodput on a 1/leaves share; "
+                "FCT ×2.4; status green. Tax = 35%/L (estimates)."
+            ),
+        ),
+    ),
+]
+
+# --- Page introduction -----------------------------------------------------
+
+INTRO = L(
+    novice=(
+        "A network fabric is the set of switches and cables that carries "
+        "traffic between computers. This page runs three of them, and you "
+        "watch where traffic backs up and what each one does about it. "
+        "Start with a guided scenario below. In every one, the number to "
+        "watch is the busiest single link, because one full link slows "
+        "everything that crosses it even when the average looks fine."
+    ),
+    standard=(
+        "One flow-level engine, three answers to congestion: the E3200 "
+        "campus tree (where the PoE budget binds before the ports do), "
+        "the SN6000 AI Ethernet fabric (hash collisions, adaptive "
+        "routing, PFC losslessness, and an optics power ledger), and the "
+        "Quantum-X800, whose credit-based InfiniBand cannot express a "
+        "drop and whose switches do the collective's math in flight. "
+        "Oversubscription is arithmetic, the queue curve is the same "
+        "1/(1−ρ) knee the PhysicsStorage app draws, and the worst link, "
+        "not the average, is always the story."
+    ),
+    expert=(
+        "Flow-level engine, three personalities: E3200 (PoE-bound campus "
+        "tree), SN6000 (ECMP collisions, adaptive routing, PFC, optics "
+        "ledger), Quantum-X800 (credit flow control, SHARP). "
+        "Oversubscription, the 1/(1−ρ) knee, worst link over mean."
+    ),
+)

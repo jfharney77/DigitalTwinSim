@@ -123,10 +123,89 @@ class LifecycleState(CamelModel):
     elapsed_hours: int
     # UI dwell ticks; long stages (the CyberSense scan) get more.
     cycle_cost: int = 1
+    # CyberSense's verdicts so far: vaulted copies it has scanned, and how
+    # many of those it flagged as damaged. Zero until the scan step; recovery
+    # needs at least one scanned copy that was not flagged. (The cleaning
+    # scenario does not tell this story and leaves both at zero.)
+    copies_scanned: int = 0
+    copies_flagged: int = 0
 
 
 class LifecycleResponse(CamelModel):
     trace: list[LifecycleState]
+
+
+# --- Failure scenario: cleaning / garbage collection -----------------------
+#
+# A second trace served beside the happy path (``?scenario=cleaning-gc``).
+# It extends ``LifecycleState`` by subclassing, so the happy path's wire
+# format does not gain a single key.
+
+CleaningPhase = Literal[
+    "steady",   # weeks in, the production appliance comfortably under its limit
+    "expire",   # retention expires old backups; nothing physical comes back
+    "ingest",   # new backups keep landing; used space keeps climbing
+    "alert",    # the space-usage alert fires
+    "clean",    # the scheduled cleaning (garbage collection) cycle runs
+    "pinned",   # cleaning returned less than the estimate; find what holds the rest
+    "release",  # drain replication lag, expire the stale snapshot; the lock stays
+    "reclean",  # a second clean returns what was released
+    "settled",  # steady again; locked data waits out its lock
+]
+
+
+class CleaningState(LifecycleState):
+    """One step of the cleaning scenario. The extra fields are a capacity
+    ledger that closes on every step:
+
+    ``stored_tb == live_tb + reclaimable_tb + held_by_replication_tb
+    + held_by_snapshot_tb + held_by_lock_tb``
+    """
+
+    phase: CleaningPhase  # type: ignore[assignment]
+    # Usable capacity of the production appliance's active tier, terabytes.
+    capacity_tb: int
+    # Physical space still referenced by backups the catalog retains.
+    live_tb: int
+    # Dead space the next cleaning cycle can really return.
+    reclaimable_tb: int
+    # Dead to the backup catalog, but still referenced on the appliance:
+    held_by_replication_tb: int  # by a replication snapshot not yet synced
+    held_by_snapshot_tb: int     # by a snapshot nobody expired
+    held_by_lock_tb: int         # by Retention Lock; the delete was refused
+    # What the appliance reports as "Cleanable" - an estimate, per Dell.
+    cleanable_tb: int
+    # Physical space cleaning has returned so far (cumulative).
+    reclaimed_tb: int
+    # Days until the Retention Lock on the held copies ends.
+    lock_days_left: int
+    clean_running: bool = False
+    # Regions in an alert condition at this step; drawn in the error colour.
+    failed_regions: list[str] = Field(default_factory=list)
+    # Alert text the administrator would see: Dell's space-usage alert
+    # wording, carrying this scenario's illustrative threshold.
+    alerts: list[str] = Field(default_factory=list)
+
+
+class CleaningResponse(CamelModel):
+    scenario: str
+    trace: list[CleaningState]
+
+
+class ScenarioInfo(CamelModel):
+    """One selectable trace on the lifecycle endpoint."""
+
+    id: str
+    title: str
+    summary: str
+    hero: str  # the number to watch
+    is_failure: bool
+    # Page prose for the lifecycle page, leveled like everything else: the
+    # paragraph under the heading, and the note under the counters. Empty
+    # means the page keeps its own wording.
+    intro: str = ""
+    counters_note: str = ""
+    sources: list[SourceLink] = Field(default_factory=list)
 
 
 class CatalogOption(CamelModel):

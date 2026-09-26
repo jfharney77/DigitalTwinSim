@@ -31,9 +31,15 @@ const KIND_ACTIVE_FILL: Record<RegionKind, string> = {
   observability: "#24452e",
 };
 
+// A failed region: the skin's error token for the outline, and a dark red
+// fill and a lightened label so both stay legible on the dark diagram.
+const FAILED_FILL = "#3a1014";
+const FAILED_TEXT = "#ff8a96";
+
 export function PlatformView({
   anatomy,
   active,
+  failed,
   selected,
   onSelect,
   onHover,
@@ -42,6 +48,9 @@ export function PlatformView({
 }: {
   anatomy: PlatformMap;
   active?: Set<string>;
+  // Regions that failed (a quarantined endpoint). Drawn in the error colour
+  // whether or not the step lights them, because a quarantine persists.
+  failed?: Set<string>;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
@@ -85,6 +94,7 @@ export function PlatformView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const isFailed = failed?.has(r.id) ?? false;
         const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
@@ -94,15 +104,26 @@ export function PlatformView({
         const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.05;
         const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.05;
         const fontSize = hSize;
-        const stroke = isSel
-          ? "var(--accent)"
-          : isActive
+        const stroke = isFailed
+          ? "var(--dell-error)"
+          : isSel || isActive
             ? "var(--accent)"
             : style.stroke;
+        const textFill = isFailed
+          ? FAILED_TEXT
+          : isSel || isActive
+            ? "var(--accent)"
+            : style.text;
         return (
           <g
             key={r.id}
-            className={isActive ? "an-region region-active" : "an-region"}
+            className={[
+              "an-region",
+              isActive ? "region-active" : "",
+              isFailed ? "region-failed" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             style={
               look
                 ? {
@@ -124,16 +145,36 @@ export function PlatformView({
               width={r.w}
               height={r.h}
               rx={0.8}
-              fill={isActive ? KIND_ACTIVE_FILL[r.kind] : style.fill}
+              fill={
+                isFailed
+                  ? FAILED_FILL
+                  : isActive
+                    ? KIND_ACTIVE_FILL[r.kind]
+                    : style.fill
+              }
               stroke={stroke}
-              strokeWidth={isSel || isActive ? 0.5 : 0.25}
+              strokeWidth={isSel || isActive || isFailed ? 0.5 : 0.25}
+              strokeDasharray={isFailed ? "1.2 0.7" : undefined}
             />
+            {isFailed && r.h > 6 && (
+              <text
+                className="region-failed-tag"
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 1.2}
+                textAnchor="middle"
+                fill={FAILED_TEXT}
+                fontSize={Math.min(1.3, (r.w - 1) / 7)}
+                letterSpacing={0.15}
+              >
+                QUARANTINED
+              </text>
+            )}
             {showVLabel && (
               <text
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h / 2}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={textFill}
                 fontSize={vSize}
                 letterSpacing={0.2}
                 transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
@@ -146,7 +187,7 @@ export function PlatformView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + (r.h < 6 ? r.h / 2 + fontSize * 0.35 : 2.6)}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={textFill}
                 fontSize={fontSize}
                 letterSpacing={0.12}
               >
@@ -164,7 +205,7 @@ export function PlatformView({
         fontSize={1.7}
         letterSpacing={0.3}
       >
-        THE ESTATE — sites with no IT staff
+        ONE SITE OF HUNDREDS — four devices, no IT staff
       </text>
       <text
         x={W - MARGIN}

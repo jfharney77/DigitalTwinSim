@@ -3,14 +3,22 @@ use cases, and narrated tour. All content is static data + a pure engine — no 
 
 from __future__ import annotations
 
+from fastapi import HTTPException
+
 from twinkit.api import Level, make_app
 from twinkit.tour import TourResponse
 
 from .anatomy import ANATOMY
 from .catalog import CATALOG
-from .engine import simulate
+from .engine import SCENARIOS, simulate
 from .leveling import leveled, leveled_all
-from .models import CatalogCategory, PowerOnResponse, RackAnatomy, UseCase
+from .models import (
+    CatalogCategory,
+    PowerOnResponse,
+    RackAnatomy,
+    ScenarioInfo,
+    UseCase,
+)
 from .tour import TOUR_RESPONSE
 from .usecases import USE_CASES
 
@@ -26,8 +34,20 @@ def get_anatomy(level: int = Level) -> RackAnatomy:
 
 
 @app.get("/api/poweron", response_model=PowerOnResponse)
-def get_poweron(level: int = Level) -> PowerOnResponse:
-    return leveled(PowerOnResponse(trace=simulate()), level)
+def get_poweron(level: int = Level, scenario: str = "nominal") -> PowerOnResponse:
+    """The power-on trace. ``?scenario=coolant-fault`` serves the failure
+    trace; with no parameter this is the nominal bring-up, as before."""
+    if scenario not in {s.id for s in SCENARIOS}:
+        raise HTTPException(status_code=404, detail=f"unknown scenario {scenario!r}")
+    return leveled(
+        PowerOnResponse(trace=simulate(scenario), scenario=scenario), level
+    )
+
+
+@app.get("/api/scenarios", response_model=list[ScenarioInfo])
+def get_scenarios(level: int = Level) -> list[ScenarioInfo]:
+    """The selectable traces, with the sources each failure is modelled on."""
+    return leveled_all(SCENARIOS, level)
 
 
 @app.get("/api/catalog", response_model=list[CatalogCategory])

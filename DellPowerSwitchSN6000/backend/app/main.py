@@ -3,14 +3,22 @@ use cases, and narrated tour. All content is static data + a pure engine — no 
 
 from __future__ import annotations
 
+from fastapi import HTTPException, Query
+
 from twinkit.api import Level, make_app
 from twinkit.tour import TourResponse
 
 from .anatomy import ANATOMY
 from .catalog import CATALOG
-from .engine import simulate
 from .leveling import leveled, leveled_all
-from .models import CatalogCategory, FabricAnatomy, FabricResponse, UseCase
+from .models import (
+    CatalogCategory,
+    FabricAnatomy,
+    FabricResponse,
+    Scenario,
+    UseCase,
+)
+from .scenarios import HEALTHY, SCENARIOS, TRACES
 from .tour import TOUR_RESPONSE
 from .usecases import USE_CASES
 
@@ -26,8 +34,25 @@ def get_anatomy(level: int = Level) -> FabricAnatomy:
 
 
 @app.get("/api/fabric", response_model=FabricResponse)
-def get_fabric(level: int = Level) -> FabricResponse:
-    return leveled(FabricResponse(trace=simulate()), level)
+def get_fabric(
+    level: int = Level,
+    scenario: str = Query(HEALTHY, description="A scenario id from /api/scenarios"),
+) -> FabricResponse:
+    """The fabric trace. Without ``?scenario=`` this is the healthy bring-up,
+    exactly as before; ``?scenario=gray-link`` is the failure trace."""
+    produce = TRACES.get(scenario)
+    if produce is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"unknown scenario {scenario!r}; see /api/scenarios",
+        )
+    return leveled(FabricResponse(trace=produce(), scenario=scenario), level)
+
+
+@app.get("/api/scenarios", response_model=list[Scenario])
+def get_scenarios(level: int = Level) -> list[Scenario]:
+    """The selectable traces, healthy first, each failure with its sources."""
+    return leveled_all(SCENARIOS, level)
 
 
 @app.get("/api/catalog", response_model=list[CatalogCategory])

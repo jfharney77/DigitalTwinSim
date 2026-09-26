@@ -1,3 +1,4 @@
+import { LIMITER_LABEL } from "./DiagnosticReadout";
 import type { ChargeStage, PowerState, Regime, Summary } from "../types";
 
 const CHARGE_STAGE_LABEL: Record<ChargeStage, string> = {
@@ -21,17 +22,29 @@ function w(v: number | undefined): string {
 export function PowerCounters({
   state,
   summary,
+  heroLabel,
   stepIndex,
   stepCount,
 }: {
   state: PowerState | null;
   summary: Summary | null;
+  heroLabel: string | null; // set on a failure trace
   stepIndex: number;
   stepCount: number;
 }) {
   return (
     <div className="an-panel">
       <h2>Telemetry</h2>
+      {heroLabel && (
+        <div className="stat hero-stat">
+          <span>{heroLabel}</span>
+          <span
+            className={(state?.failedRegions ?? []).length > 0 ? "diag-bad" : ""}
+          >
+            {state ? LIMITER_LABEL[state.chargeLimiter ?? "none"] : "—"}
+          </span>
+        </div>
+      )}
       <div className="stat">
         <span>step</span>
         <span>{stepCount > 0 ? `${stepIndex + 1} / ${stepCount}` : "—"}</span>
@@ -62,6 +75,12 @@ export function PowerCounters({
         <span>charge stage</span>
         <span>{state ? CHARGE_STAGE_LABEL[state.chargeStage] : "—"}</span>
       </div>
+      {heroLabel && (
+        <div className="stat">
+          <span>battery temperature</span>
+          <span>{state?.packTempC !== undefined ? `${state.packTempC} °C` : "—"}</span>
+        </div>
+      )}
       <div className="stat">
         <span>CPU package</span>
         <span>{w(state?.cpuW)}</span>
@@ -98,14 +117,16 @@ export function PowerCounters({
             <span>battery at end</span>
             <span>{Math.round(summary.endBatteryPct * 10) / 10}%</span>
           </div>
-          <div className="stat">
-            <span>time to 80%</span>
-            <span>
-              {summary.minutesTo80Pct === null
-                ? "not charging"
-                : `≈${Math.round(summary.minutesTo80Pct)} min`}
-            </span>
-          </div>
+          {heroLabel === null && (
+            <div className="stat">
+              <span>time to 80%</span>
+              <span>
+                {summary.minutesTo80Pct === null
+                  ? "not charging"
+                  : `≈${Math.round(summary.minutesTo80Pct)} min`}
+              </span>
+            </div>
+          )}
           {summary.notes.length > 0 && (
             <ul className="notes">
               {summary.notes.map((n, i) => (

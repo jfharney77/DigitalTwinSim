@@ -600,3 +600,23 @@ label.field.cfg-row, .cfg-row { display: flex; flex-direction: row; align-items:
 .flow-mid line { animation: flowdash 1.5s linear infinite; }
 .flow-fast line { animation: flowdash 0.6s linear infinite; }
 @keyframes flowdash { to { stroke-dashoffset: -9; } }
+
+/* Per-sled power list in Instruments: eight rows, click to edit a sled. */
+.app.dell .sled-list { margin: 2px 0 4px 10px; }
+.app.dell .sled-row {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 3px 4px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.app.dell .sled-row:hover { background: rgba(6, 114, 203, 0.06); }
+.app.dell .sled-row.active { background: rgba(6, 114, 203, 0.1); font-weight: 600; }
+.app.dell .sled-picker { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
+.app.dell .sled-picker button { min-width: 30px; padding: 3px 0; }
+.app.dell div.field { font-size: 11px; color: var(--txt-dim); margin-top: 8px; }

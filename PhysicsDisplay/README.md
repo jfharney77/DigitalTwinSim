@@ -16,7 +16,9 @@ The tests pin both halves.
 Around that sit three honest satellites:
 
 - **The hub is most of the nameplate.** The "220 W maximum" monitor is a
-  ~38 W display plus a 90 W USB-C laptop charger with conversion loss.
+  display of a few tens of watts (Dell lists 25.9 W on-mode; the model
+  reaches ~38 W at full brightness) plus a 90 W USB-C laptop charger
+  with conversion loss.
   Delivered watts leave over the cable: `heat = DC − delivered`, asserted
   per tick alongside the suite's power-balance identity
   (`electronics + backlight + delivered + loss = DC`, `AC = DC ÷ η`).
@@ -27,8 +29,8 @@ Around that sit three honest satellites:
   datasheets (27″ and 32″ class proxies), use-phase computed from the
   scenario's duty cycle and grid intensity, with the Circular Design
   closure rule as pytest: embodied + use = lifetime, shares sum to 100.
-  The instructive contrast with a laptop (use-phase ≈ 20% of lifetime,
-  per Dell's Latitude PCF whitepapers) is also a test: at desk duty the
+  The instructive contrast with a laptop (use-phase 12% of lifetime,
+  per Dell's Latitude E7440 PCF whitepaper) is also a test: at desk duty the
   monitor's use share must exceed it. The portfolio version of this
   ledger is `DellCircularDesign/initial_spec.md`.
 
@@ -70,15 +72,24 @@ Panel aging and LED lumen depreciation, ambient-light sensors, per-zone
 halo/blooming optics, pixel-level content (four content profiles stand in
 for real frames), power-factor behavior at the wall, and disposal
 logistics beyond the PCF end-of-life figure. Backlight maxima are
-estimates derived from Dell's published on-mode figures (U2723QE ~38 W
-on-mode, 220 W max, 0.3 W standby; UP3221Q ~70 W operational); embodied
-carbon uses the nearest published PCF class (S2722QC, P3424WE) as a proxy,
-not a per-SKU figure. Every constant carries a source tag; readouts that
+estimates sized against Dell's published figures (U2723QE 25.9 W on-mode,
+220 W max, 0.3 W standby; UP3221Q 68.3 W on-mode, 380 W max) — the model's
+~38 W full-brightness figure for the 27-inch class is its own estimate, as
+is the ~400 cd/m² SDR ceiling behind the HDR boost. Embodied carbon uses
+the nearest published PCF class as a proxy, not a per-SKU figure: the
+S2722QC (27-inch 4K) and the P3424WE (a 34-inch curved ultrawide standing
+in for the 32-inch mini-LED, which has no published PCF). Both classes are
+modeled as fanless; the UP3221Q's internal cooling was not verified
+against a Dell document. Every constant carries a source tag; readouts that
 derive from estimates are badged in the UI.
 
 ## Sources
 
-- Dell U2723QE product page & EPREL energy label (power figures)
-- Dell UP3221Q product page (2,000 mini-LED zones, ~70 W operational)
-- Dell Product Carbon Footprint datasheets: S2722QC, P3424WE (monitor
-  embodied/use splits); Latitude PCF whitepapers (the laptop contrast)
+- Dell U2723QE product page (25.9 W on-mode, 220 W max, 0.3 W standby,
+  90 W USB-C PD)
+- Dell UP3221Q product page (2,000 mini-LED zones, DisplayHDR 1000) and
+  user's guide (68.3 W on-mode, 380 W max)
+- Dell Product Carbon Footprint datasheets: S2722QC (638 kgCO2e, use
+  33.8%), P3424WE (777 kgCO2e, use 33.6%); Latitude 7490 datasheet
+  (241 kgCO2e) and Latitude E7440 whitepaper (use 12%) for the laptop
+  contrast

@@ -31,9 +31,16 @@ const KIND_ACTIVE_FILL: Record<RegionKind, string> = {
   action: "#3a451a",
 };
 
+// A failing region: the stroke and cross use the skin's error token; the fill
+// and label are its dark-panel tints, since the token itself is too dark to
+// read as text on the diagram.
+const FAILED_FILL = "#3a1216";
+const FAILED_TEXT = "#ff9aa5";
+
 export function PlatformView({
   anatomy,
   active,
+  failed,
   selected,
   onSelect,
   onHover,
@@ -42,6 +49,10 @@ export function PlatformView({
 }: {
   anatomy: PlatformMap;
   active?: Set<string>;
+  // Regions blocked or starved at this step (failure scenarios): drawn in the
+  // error colour with a dashed outline, whether or not they are also active.
+  // The break itself is marked on the gateway-to-cloud link, below.
+  failed?: Set<string>;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the tooltip; null on leave.
@@ -65,6 +76,22 @@ export function PlatformView({
       }`
     : `0 0 ${W} ${H + 4}`;
 
+  // The break marker, derived from region kinds so the layout stays data:
+  // drawn on the link between the gateway and cloud ingest while any block is
+  // blocked or starved.
+  const gw = anatomy.regions.find((r) => r.kind === "gateway");
+  const ing = anatomy.regions.find((r) => r.kind === "ingest");
+  const breakAt =
+    failed && failed.size > 0 && gw && ing
+      ? {
+          x1: rx(gw) + gw.w,
+          x2: rx(ing),
+          cx: (rx(gw) + gw.w + rx(ing)) / 2,
+          y: ry(gw) + gw.h / 2,
+          top: Math.min(ry(gw), ry(ing)),
+        }
+      : null;
+
   return (
     <svg
       viewBox={viewBox}
@@ -85,6 +112,7 @@ export function PlatformView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const isFailed = failed?.has(r.id) ?? false;
         const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
@@ -95,7 +123,9 @@ export function PlatformView({
         const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.05;
         const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.05;
         const fontSize = hSize;
-        const stroke = isSel
+        const stroke = isFailed
+          ? "var(--dell-error)"
+          : isSel
           ? "var(--accent)"
           : isActive
             ? "var(--accent)"
@@ -103,7 +133,11 @@ export function PlatformView({
         return (
           <g
             key={r.id}
-            className={isActive ? "an-region region-active" : "an-region"}
+            className={
+              "an-region" +
+              (isActive ? " region-active" : "") +
+              (isFailed ? " region-failed" : "")
+            }
             style={
               look
                 ? {
@@ -125,16 +159,29 @@ export function PlatformView({
               width={r.w}
               height={r.h}
               rx={0.8}
-              fill={isActive ? KIND_ACTIVE_FILL[r.kind] : style.fill}
+              fill={
+                isFailed
+                  ? FAILED_FILL
+                  : isActive
+                    ? KIND_ACTIVE_FILL[r.kind]
+                    : style.fill
+              }
               stroke={stroke}
-              strokeWidth={isSel || isActive ? 0.5 : 0.25}
+              strokeWidth={isFailed ? 0.6 : isSel || isActive ? 0.5 : 0.25}
+              strokeDasharray={isFailed ? "1.4 0.8" : undefined}
             />
             {showVLabel && (
               <text
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h / 2}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={
+                  isFailed
+                    ? FAILED_TEXT
+                    : isSel || isActive
+                      ? "var(--accent)"
+                      : style.text
+                }
                 fontSize={vSize}
                 letterSpacing={0.2}
                 transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
@@ -147,7 +194,13 @@ export function PlatformView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + (r.h < 6 ? r.h / 2 + fontSize * 0.35 : 2.6)}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={
+                  isFailed
+                    ? FAILED_TEXT
+                    : isSel || isActive
+                      ? "var(--accent)"
+                      : style.text
+                }
                 fontSize={fontSize}
                 letterSpacing={0.12}
               >
@@ -157,6 +210,39 @@ export function PlatformView({
           </g>
         );
       })}
+      {breakAt && (
+        // Where the upload actually stops: the customer's own proxy, which is
+        // not a block on this map. It sits on the gateway-to-cloud link, so the
+        // picture does not blame the two blocks the prose clears. The cross
+        // keeps the state from resting on colour alone.
+        <g className="link-break" pointerEvents="none">
+          <line
+            x1={breakAt.x1}
+            y1={breakAt.y}
+            x2={breakAt.x2}
+            y2={breakAt.y}
+            stroke="var(--dell-error)"
+            strokeWidth={0.45}
+            strokeDasharray="0.8 0.6"
+          />
+          <path
+            d={`M ${breakAt.cx - 1.1} ${breakAt.y - 1.1} l 2.2 2.2 m 0 -2.2 l -2.2 2.2`}
+            stroke="var(--dell-error)"
+            strokeWidth={0.55}
+            fill="none"
+          />
+          <text
+            x={breakAt.cx}
+            y={breakAt.top - 1.2}
+            textAnchor="middle"
+            fill={FAILED_TEXT}
+            fontSize={1.4}
+            letterSpacing={0.1}
+          >
+            upload refused at the company proxy
+          </text>
+        </g>
+      )}
       {/* Orientation: telemetry flows in from the left, insights out to the right. */}
       <text
         x={MARGIN}

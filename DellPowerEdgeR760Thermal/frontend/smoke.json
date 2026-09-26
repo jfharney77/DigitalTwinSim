@@ -4,25 +4,92 @@
       "hash": "",
       "name": "simulator",
       "svg": true,
-      "visible": [".thermal-grid", ".scenario-list button", ".cfg-presets button", "label.cfg-row select"],
-      "text": ["Guided scenarios", "Instruments", "total DC power", "FRONT (cold)"],
-      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+      "visible": [
+        ".thermal-grid",
+        ".scenario-list button",
+        ".cfg-presets button",
+        "label.cfg-row select"
+      ],
+      "text": [
+        "Guided scenarios",
+        "Instruments",
+        "total DC power",
+        "FRONT (cold)"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=kill-a-fan",
       "name": "scenario-kill-a-fan",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question"],
-      "text": ["Kill a fan", "fan power (overhead)"],
-      "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration",
+        ".scenario-question"
+      ],
+      "text": [
+        "Kill a fan",
+        "fan power (overhead)"
+      ],
+      "play": {
+        "click": "button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=350w-problem",
       "name": "scenario-350w-problem",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration"],
-      "text": ["The 350 W problem", "350 W CPUs above 27"],
-      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+      "visible": [
+        ".scenario-list button.active",
+        ".scenario-narration"
+      ],
+      "text": [
+        "The 350 W problem",
+        "350 W CPUs above 27"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Find the PSU sweet spot",
+        "Lose a fan, keep the clocks"
+      ]
+    },
+    {
+      "hash": "#lab=psu-sweet-spot",
+      "name": "lab-psu-sweet-spot",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

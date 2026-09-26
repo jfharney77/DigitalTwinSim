@@ -71,7 +71,7 @@ export function BuildPanel({
           }
         >
           <option value="grid">Grid (two feeds)</option>
-          <option value="n+1">N+1 (one feed)</option>
+          <option value="n+1">N+1 / PSU redundancy (one feed)</option>
           <option value="none">None</option>
         </select>
       </Row>

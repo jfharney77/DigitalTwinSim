@@ -57,7 +57,7 @@ export function BuildPanel({
           ))}
         </select>
       </Row>
-      <Row label={`${scaleOut ? "Nodes" : p === "powermax" ? "Bricks" : "Appliances"} (${config.units})`}>
+      <Row label={`${scaleOut ? "Nodes" : p === "powermax" ? "Node pairs" : "Appliances"} (${config.units})`}>
         <input
           type="range" min={1} max={scaleOut ? 60 : 8} value={config.units}
           onChange={(e) => set({ units: +e.target.value })}

@@ -1,9 +1,13 @@
 # DellPowerFlex — software-defined storage digital twin (sixteenth component)
 
-A digital twin of **Dell PowerFlex** (5.0 Ultra — scalable availability
-engine, erasure coding): shared block storage assembled out of ordinary
-servers' local NVMe, running over ordinary IP, scaling from three nodes to
-more than two thousand and past 240 million IOPS.
+A digital twin of **Dell PowerFlex**: shared block storage assembled out of
+ordinary servers' local NVMe, running over ordinary IP. Dell has quoted the
+mesh-mirrored generations (through 4.x, the scheme this trace models) from
+three nodes to more than two thousand and up to 240 million IOPS. PowerFlex
+5.0 (the "Ultra" release, announced May 2025, available October 2025)
+replaces mirroring with dual-parity erasure coding (2+2 or 8+2, the Scalable
+Availability Engine); it is greenfield only, and its spec sheet lists a
+five- or eleven-node minimum and 128 storage nodes per system.
 
 The third storage twin in this repo, and the one that argues with the other
 two. PowerStore and PowerMax are controller architectures; this is what
@@ -118,6 +122,13 @@ the other twins.
 ## Sources
 
 - [Dell PowerFlex — software-defined infrastructure](https://www.dell.com/en-us/shop/powerflex/sf/powerflex)
-- [Dell PowerFlex technical overview — rebuild](https://www.dell.com/support/manuals/en-us/scaleio/flex-software-to-45x/rebuild)
+- [Dell PowerFlex 4.5.x technical overview — rebuild](https://www.dell.com/support/manuals/en-us/scaleio/flex-software-to-45x/rebuild)
 - [Introducing Dell PowerFlex 5.0 Ultra (WWT)](https://www.wwt.com/blog/introducing-dell-powerflex-5-dot-0-ultra-a-new-era-in-software-defined-storage)
-- [Dell Technologies reimagines the modern data center for the AI era (May 2026)](https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-reimagines-the-modern-data-center-for-the-ai-era.htm)
+- [Dell PowerFlex 5.0 specification sheet](https://www.delltechnologies.com/asset/en-us/products/storage/technical-support/powerflex-5-0-specification-sheet.pdf)
+- [Dell PowerFlex 5.0.x technical overview — erasure coding](https://www.dell.com/support/manuals/en-us/scaleio/flex-software-to-5x/powerflex-erasure-coding?guid=guid-ef733bab-fe61-4c70-a063-41886438868a&lang=en-us)
+- [End storage tradeoffs at scale with PowerFlex (Dell blog, September 2025)](https://www.dell.com/en-us/blog/end-storage-tradeoffs-at-scale-with-powerflex/)
+- [Dell refreshes storage lines (Blocks & Files, September 2025)](https://blocksandfiles.com/2025/09/24/dell-refreshes-power-storage/)
+- [Dell Technologies PowerFlex (Wikipedia — the 3 to 2,000+ node, 240 million IOPS figures)](https://en.wikipedia.org/wiki/Dell_Technologies_PowerFlex)
+
+The May 2026 Dell data-center press release previously cited here does not
+mention PowerFlex and was removed.

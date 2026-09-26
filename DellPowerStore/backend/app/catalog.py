@@ -4,8 +4,9 @@ Like the chassis anatomy, the catalog is data, not code. ``region_ids`` tie
 each category to the floorplan regions it slots into, so the UI can light
 up "where it lives". ``details`` are written for a technically skilled
 reader who is new to storage arrays — Dell jargon is spelled out on first
-use. Figures follow Dell's PowerStore spec sheet; treat them as
-product-literature numbers, not benchmarks.
+use. Figures follow Dell's PowerStore Gen 2 spec sheet and the
+"Introduction to the Platform" white paper (H18149), both linked from the
+anatomy sources; treat them as product-literature numbers, not benchmarks.
 """
 
 from __future__ import annotations
@@ -30,9 +31,10 @@ CATALOG: list[CatalogCategory] = [
                 name="PowerStore 500T",
                 summary="Entry model for smaller sites and edge deployments.",
                 details=(
-                    "The smallest tier: fewer cores and less DRAM per node, "
-                    "and two NVMe NVRAM drives instead of four. Same "
-                    "PowerStoreOS, same always-on data reduction, same "
+                    "The smallest tier: one Xeon per node instead of two (24 "
+                    "cores and 192 GB per appliance on Dell's spec sheet), "
+                    "and no NVMe NVRAM drives at all, so all 25 front slots "
+                    "take data drives. Same PowerStoreOS, same always-on data reduction, same "
                     "dual-node availability — the ceiling is performance "
                     "and capacity, not features. A common choice where the "
                     "workload is real but modest: a branch site, a small "
@@ -47,8 +49,9 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "The volume model: a comfortable fit for consolidated "
                     "virtualization, file serving, and departmental "
-                    "databases. Steps up cores, DRAM, and NVRAM over the "
-                    "500T, which raises both IOPS headroom and how much "
+                    "databases. Steps up to two Xeons per node (40 cores and "
+                    "384 GB per appliance) and adds a mirrored pair of NVRAM "
+                    "write-cache drives over the 500T, which raises both IOPS headroom and how much "
                     "inline deduplication/compression the nodes can do "
                     "without breaking a sweat."
                 ),
@@ -56,11 +59,12 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="model-3200t",
                 name="PowerStore 3200T",
-                summary="Mid-range tier; the first with the full 4-NVRAM complement.",
+                summary="Mid-range tier: more cores and twice the memory of the 1200T.",
                 details=(
-                    "From the 3200T up, each appliance carries four NVMe "
-                    "NVRAM write-cache drives, doubling write-cache "
-                    "bandwidth. Suits heavier virtualization estates and "
+                    "64 cores and 768 GB per appliance on Dell's spec sheet, "
+                    "with the same two NVMe NVRAM write-cache drives as the "
+                    "1200T. Also sold as the 3200Q, which takes lower-cost "
+                    "QLC flash instead of TLC. Suits heavier virtualization estates and "
                     "OLTP databases where sustained write latency matters "
                     "as much as peak reads."
                 ),
@@ -70,7 +74,9 @@ CATALOG: list[CatalogCategory] = [
                 name="PowerStore 5200T",
                 summary="Performance tier for consolidation at scale.",
                 details=(
-                    "High core counts and large DRAM per node make this the "
+                    "96 cores and 1,152 GB per appliance, and the first tier "
+                    "with four NVMe NVRAM write-cache drives rather than "
+                    "two. High core counts and large DRAM make this the "
                     "usual answer for consolidating many mixed workloads "
                     "onto one appliance — hundreds of VMs, multiple "
                     "databases, and file shares at once, with data "
@@ -83,8 +89,8 @@ CATALOG: list[CatalogCategory] = [
                 name="PowerStore 9200T",
                 summary="Top tier: maximum IOPS, bandwidth, and capacity per appliance.",
                 details=(
-                    "The flagship: the most cores, DRAM, and front-end "
-                    "bandwidth per node. Where sub-millisecond latency "
+                    "The flagship of this generation: 112 cores and 2,560 GB "
+                    "per appliance, with four NVRAM drives. Where sub-millisecond latency "
                     "under heavy concurrent load is the requirement — "
                     "large OLTP estates, analytics staging, or serving as "
                     "the anchor appliance of a four-appliance cluster."
@@ -98,8 +104,9 @@ CATALOG: list[CatalogCategory] = [
         blurb=(
             "All 25 front slots speak PCIe — there are no spinning disks or "
             "SAS SSDs anywhere in the data path. Capacity SSDs populate up "
-            "to 21 slots in the base enclosure (the last four are reserved "
-            "for NVRAM), and drives can be added one at a time."
+            "to 21 slots in the base enclosure (slots 21 through 24 are "
+            "reserved for NVRAM on every model but the 500T), and drives can "
+            "be added one at a time."
         ),
         limits="Minimum 6 drives; up to 21 capacity SSDs in the base enclosure",
         region_ids=["drive-bay"],
@@ -133,9 +140,11 @@ CATALOG: list[CatalogCategory] = [
                 name="7.68 TB NVMe TLC SSD",
                 summary="Capacity-per-slot sweet spot for consolidation.",
                 details=(
-                    "Doubles the capacity per slot; with always-on 4:1 data "
-                    "reduction, a dozen of these can present well over 300 "
-                    "TB effective. The typical choice when consolidating "
+                    "Doubles the capacity per slot; at the 5:1 reduction "
+                    "Dell guarantees on reducible data, less the share that "
+                    "drive-failure protection takes, a dozen of these can "
+                    "present around 370 TB effective (illustrative; real "
+                    "ratios depend on the data). The typical choice when consolidating "
                     "many workloads onto one appliance."
                 ),
             ),
@@ -153,16 +162,18 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="drive-sed",
-                name="Self-encrypting drive (SED) variants",
-                summary="FIPS-capable encryption at the drive, key-managed by the array.",
+                name="FIPS-validated self-encrypting drives",
+                summary="Every drive self-encrypts; FIPS 140 validated drives are the option.",
                 details=(
-                    "Each capacity point is available as a self-encrypting "
-                    "drive: the drive encrypts every block in hardware and "
-                    "the array manages the keys (Data at Rest Encryption). "
-                    "Performance is unchanged — the crypto is in the drive "
-                    "controller — and a decommissioned drive is unreadable "
-                    "the moment its key is destroyed. Note: an appliance is "
-                    "all-SED or all-non-SED, decided at first configuration."
+                    "Every PowerStore drive is a self-encrypting drive "
+                    "(SED): it encrypts every block in hardware and the "
+                    "array, or an external KMIP key manager, holds the keys "
+                    "(Data at Rest Encryption). Performance is unchanged — "
+                    "the crypto is in the drive controller — and a "
+                    "decommissioned drive is unreadable the moment its key "
+                    "is destroyed. What you choose at order time is whether "
+                    "the drives are FIPS 140-2 or 140-3 Level 2 validated, "
+                    "which regulated buyers may need."
                 ),
             ),
         ],
@@ -171,18 +182,18 @@ CATALOG: list[CatalogCategory] = [
         id="nvram",
         name="NVRAM write cache",
         blurb=(
-            "The last four front slots hold dedicated NVMe NVRAM drives — "
-            "the non-volatile write cache. Keeping write cache on its own "
+            "The last front slots (21 through 24) hold dedicated NVMe NVRAM "
+            "drives — the non-volatile write cache. Keeping write cache on its own "
             "devices, rather than in battery-backed DRAM alone, is what "
             "lets a tiny battery protect every acknowledged write."
         ),
-        limits="2 NVRAM drives on 500T/1200T; 4 on 3200T and above",
+        limits="None on 500T; 2 NVRAM drives on 1200T/3200T; 4 on 5200T/9200T",
         region_ids=["nvram"],
         options=[
             CatalogOption(
                 id="nvram-dual",
-                name="2× NVMe NVRAM (500T · 1200T)",
-                summary="Mirrored pair of write-cache drives on the entry tiers.",
+                name="2× NVMe NVRAM (1200T · 3200T)",
+                summary="Mirrored pair of write-cache drives on the mid tiers.",
                 details=(
                     "Writes are acknowledged once they land in NVRAM with "
                     "both nodes able to reach them — mirrored, so a single "
@@ -194,13 +205,16 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="nvram-quad",
-                name="4× NVMe NVRAM (3200T and up)",
+                name="4× NVMe NVRAM (5200T · 9200T)",
                 summary="Doubled write-cache lanes for the performance tiers.",
                 details=(
                     "Four NVRAM devices double the cache bandwidth and let "
                     "heavy write bursts — database checkpoints, VM storms "
                     "— drain without queuing at the cache. This is a fixed "
-                    "attribute of the model tier, not a field upgrade."
+                    "attribute of the model tier, not a field upgrade. The "
+                    "entry 500T has no NVRAM drives; Dell's platform white "
+                    "paper says its internal M.2 device holds the vaulted "
+                    "cache data instead."
                 ),
             ),
         ],
@@ -222,7 +236,7 @@ CATALOG: list[CatalogCategory] = [
                 summary="24 more NVMe slots, cabled to both nodes.",
                 details=(
                     "A 2U shelf with 24 NVMe slots, attached over dedicated "
-                    "back-end links to both nodes so the dual-path rule "
+                    "100 GbE back-end links to both nodes so the dual-path rule "
                     "holds for every drive in the system. Three shelves "
                     "take one appliance past 90 drives. Scale-up adds "
                     "capacity but not compute — when the controllers "
@@ -326,21 +340,13 @@ CATALOG: list[CatalogCategory] = [
                 name="4-port 32 Gb Fibre Channel",
                 summary="The classic SAN fabric: FC-SCSI and FC-NVMe.",
                 details=(
-                    "Four ports of 32 Gb Fibre Channel, speaking both "
+                    "Four ports of 32 Gb Fibre Channel (also runs at 16 Gb), "
+                    "the fastest FC option on this generation — 64 Gb FC "
+                    "arrives with the later PowerStore Elite. It speaks both "
                     "traditional SCSI-over-FC and NVMe-over-FC on the same "
                     "port. The default in shops with an existing FC SAN — "
                     "dedicated fabric, lossless by design, and mature "
                     "multipathing on every OS."
-                ),
-            ),
-            CatalogOption(
-                id="iomod-64gfc",
-                name="4-port 64 Gb Fibre Channel",
-                summary="Latest-generation FC for new SAN builds.",
-                details=(
-                    "Doubles per-port FC bandwidth for new fabrics; "
-                    "backward-compatible with 32/16 Gb switches, so it's a "
-                    "future-proofing pick as much as a performance one."
                 ),
             ),
         ],
@@ -393,11 +399,14 @@ CATALOG: list[CatalogCategory] = [
         options=[
             CatalogOption(
                 id="psu-platinum",
-                name="Hot-swap PSU pair (Platinum efficiency)",
+                name="Hot-swap PSU pair (1800 W or 2100 W)",
                 summary="Redundant supplies sized for a fully loaded enclosure.",
                 details=(
-                    "80 PLUS Platinum-rated supplies; either one alone can "
-                    "carry the whole enclosure, drives included. Replacing "
+                    "Two redundant supplies, 1800 W or 2100 W each depending "
+                    "on model (the 9200T takes only the 2100 W part, and the "
+                    "1800 W part needs 200–240 V power). Dell's spec sheet "
+                    "puts a fully populated 5200T at about 1.4 kW in typical "
+                    "conditions, so the pair has headroom to spare. Replacing "
                     "one is an online operation — slide out, slide in — "
                     "with the array serving I/O throughout. There is no "
                     "PSU sizing exercise as on a server: the pair ships "
@@ -420,14 +429,16 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="sw-data-reduction",
                 name="Inline deduplication & compression",
-                summary="Always-on data reduction, 4:1 guaranteed under Dell's program.",
+                summary="Always-on data reduction, 5:1 guaranteed under Dell's program.",
                 details=(
                     "Every write is deduplicated (identical blocks stored "
                     "once) and compressed before it reaches flash — "
                     "inline, not as a later cleanup pass, and with no off "
-                    "switch. Dell contractually guarantees 4:1 reduction "
-                    "on typical workloads, which is why effective-capacity "
-                    "math is quoted at 4× raw."
+                    "switch. Dell's Future-Proof Program guarantees 5:1 "
+                    "reduction on reducible data for this generation, and "
+                    "the spec sheet's effective-capacity figures assume the "
+                    "same 5:1 average. Already-compressed or encrypted data "
+                    "will not reduce, guarantee or no."
                 ),
             ),
             CatalogOption(
@@ -488,15 +499,18 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="sw-security",
-                name="Anomaly & ransomware detection",
-                summary="PowerStoreOS watches I/O patterns for encryption-like behavior.",
+                name="Secure snapshots & ransomware detection",
+                summary="Snapshots an attacker cannot delete, plus Dell Cyber Detect to find the clean one.",
                 details=(
-                    "Recent PowerStoreOS releases analyze write entropy and "
-                    "access patterns to flag ransomware-like activity, and "
-                    "pair it with hardened snapshot policies so a "
-                    "known-good restore point survives an attack. Not a "
-                    "substitute for host security — a last line inside the "
-                    "storage layer."
+                    "PowerStoreOS includes immutable, secure snapshots: once "
+                    "taken they cannot be changed or deleted before their "
+                    "retention expires, so a known-good restore point "
+                    "survives an attack. Detection is a separate product, "
+                    "Dell Cyber Detect, which reads snapshot content to "
+                    "find ransomware corruption; Dell announced it for "
+                    "PowerStore in 2026 and states 99.99% accuracy, a "
+                    "vendor figure. Not a substitute for host security — a "
+                    "last line inside the storage layer."
                 ),
             ),
         ],
@@ -527,7 +541,7 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="mgmt-cloudiq",
-                name="CloudIQ / APEX AIOps",
+                name="CloudIQ (now Dell AIOps)",
                 summary="Dell's cloud monitoring: fleet health, capacity forecasting, anomaly alerts.",
                 details=(
                     "The array phones telemetry home to Dell's cloud "
@@ -565,16 +579,19 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="prot-bbu",
                 name="Battery backup units (vault power)",
-                summary="Seconds of ride-through to flush cache on AC loss — not a UPS.",
+                summary="Brief hold-up so the write cache can save itself on AC loss — not a UPS.",
                 details=(
                     "Each node's BBU exists for one scenario: AC "
                     "disappears with dirty data in cache. The battery "
-                    "powers the node just long enough to 'vault' — flush "
-                    "cached writes to non-volatile NVMe NVRAM — then the "
-                    "node shuts down cleanly. On power return the array "
+                    "powers the NVRAM drive slots and the node's management "
+                    "controller just long enough for the NVRAM drives to "
+                    "'vault' — copy their volatile contents into flash "
+                    "inside the same drive — then the system powers off. "
+                    "Dell says each BBU holds enough charge for several "
+                    "back-to-back power failures. On power return the array "
                     "replays the vault and no acknowledged write is "
-                    "missing. BBUs self-test on every boot and "
-                    "periodically after."
+                    "missing. The power-on trace here shows a battery check "
+                    "as the first gate; that sequencing is illustrative."
                 ),
             ),
             CatalogOption(

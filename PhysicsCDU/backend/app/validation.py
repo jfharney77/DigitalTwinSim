@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from .constants import value as C
 from .engine import bank_heat_kw, pump_flow_lpm
+from .leveling import L
 from .models import Scenario, Validation
 
 
@@ -86,12 +87,30 @@ def validate(scenario: Scenario) -> list[Validation]:
     if worst > rated:
         out.append(Validation(
             rule_id="hx-sizing", level="warning",
-            message=(
-                f"Worst-case rack heat ≈ {worst:.0f} kW exceeds the "
-                f"CDU's {rated:.0f} kW class. Nothing explodes — the "
-                "supply temperature floats up until the IRC sheds load "
-                "(or, uncoordinated, until tray banks trip). Watch the "
-                "cap gauge."
+            message=L(
+                standard=(
+                    f"Worst-case rack heat ≈ {worst:.0f} kW exceeds the "
+                    f"CDU's {rated:.0f} kW class. Nothing explodes — the "
+                    "coolant supply temperature floats up until the IRC "
+                    "(Integrated Rack Controller) sheds load, or, "
+                    "uncoordinated, until tray banks trip. Watch the "
+                    "IRC cap readout."
+                ),
+                novice=(
+                    f"At full speed this rack makes about {worst:.0f} kW "
+                    f"of heat, more than the {rated:.0f} kW the cooling "
+                    "box is built to move. Nothing breaks. The coolant "
+                    "runs warmer until the rack controller (the "
+                    "Integrated Rack Controller, IRC) slows the "
+                    "computers a little. With the controller off, banks "
+                    "of computers shut themselves down instead. Watch "
+                    "the 'speed limit' readout: 100% means no slowdown."
+                ),
+                expert=(
+                    f"Worst case ≈ {worst:.0f} kW > {rated:.0f} kW class: "
+                    "supply floats until the IRC caps (or banks trip, "
+                    "uncoordinated)."
+                ),
             ),
             source="Dell DTW 2026 announcement — C7000 220 kW class; "
                    "warn, don't block",
@@ -115,14 +134,30 @@ def validate(scenario: Scenario) -> list[Validation]:
             ),
             source="ASHRAE W-class envelopes",
         ))
+    elif env.facility_supply_c > C("c7000_max_facility_c"):
+        out.append(Validation(
+            rule_id="facility-class", level="warning",
+            message=(
+                f"Facility supply {env.facility_supply_c:g} °C is above "
+                f"the {C('c7000_max_facility_c'):g} °C facility-water "
+                "inlet Dell states the C7000 supports. The simulator "
+                "will run it; the product is not rated for it."
+            ),
+            source="Dell PowerRack blog, May 2026 — C7000 facility water "
+                   "up to 40 °C (vendor claim); warn, don't block",
+        ))
     elif env.facility_supply_c > C("ashrae_w32_c"):
         out.append(Validation(
             rule_id="facility-class", level="warning",
             message=(
                 f"Facility supply {env.facility_supply_c:g} °C is a "
-                "W45-class warm-water design: efficient (no chillers), "
+                "W40-class warm-water design: efficient (no chillers), "
                 "but the approach temperature comes straight off your "
-                "silicon margin."
+                "silicon margin. This model's approach is about 30 K at "
+                "rated load where a real plate exchanger runs 2–5 K, so "
+                "a full rack will not ride water this warm here; a real "
+                "C7000's tighter exchanger is what Dell's 40 °C figure "
+                "rests on."
             ),
             source="ASHRAE W-class envelopes",
         ))
@@ -145,12 +180,33 @@ def validate(scenario: Scenario) -> list[Validation]:
     if cfg.policy == "uncoordinated":
         out.append(Validation(
             rule_id="policy", level="warning",
-            message=(
-                "Uncoordinated mode: no rack-level policy — each tray "
-                "bank self-protects on its own firmware trip. On a "
-                "warm-water day this becomes a staggered cascade of "
-                "trips instead of a graceful shed. That comparison is "
-                "the point of this twin; run both."
+            message=L(
+                standard=(
+                    "Uncoordinated mode: no rack-level policy, so the "
+                    "IRC cap reads 'off' and each tray bank self-protects "
+                    "on its own firmware trip. On a warm-water day this "
+                    "becomes a staggered cascade of trips instead of a "
+                    "graceful shed. The model's trays are trip-only: "
+                    "real trays throttle their own clocks before a hard "
+                    "trip, so read this mode as the worst case. Run both."
+                ),
+                novice=(
+                    "The rack controller is switched off, so nothing "
+                    "slows the computers down together and the speed "
+                    "limit reads 'off'. Each bank of computers looks "
+                    "after only itself: when its chips get too hot it "
+                    "shuts off completely. On a warm-water day the banks "
+                    "shut off one after another instead of all slowing a "
+                    "little. In this model a bank is either at full "
+                    "speed or off. Real computers also slow themselves "
+                    "first, so this is the worst case. Run both modes "
+                    "and compare."
+                ),
+                expert=(
+                    "Uncoordinated: cap off, per-bank firmware trip only "
+                    "(no local throttling modeled — worst case). Warm "
+                    "water → staggered trip cascade, not a shed."
+                ),
             ),
             source="estimate — the IRC's coordinated-response claim, "
                    "inverted",

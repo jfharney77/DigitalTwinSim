@@ -75,10 +75,64 @@ export interface LifecycleState {
   storedTb: number;
   elapsedHours: number;
   cycleCost: number;
+  // CyberSense's verdicts so far; both zero until the scan step.
+  copiesScanned: number;
+  copiesFlagged: number;
 }
 
 export interface LifecycleResponse {
   trace: LifecycleState[];
+}
+
+// The cleaning (garbage collection) failure scenario. Its states extend the
+// happy path's with a capacity ledger; see backend/app/cleaning.py.
+export type CleaningPhase =
+  | "steady"
+  | "expire"
+  | "ingest"
+  | "alert"
+  | "clean"
+  | "pinned"
+  | "release"
+  | "reclean"
+  | "settled";
+
+export interface CleaningFields {
+  capacityTb: number;
+  liveTb: number;
+  reclaimableTb: number;
+  heldByReplicationTb: number;
+  heldBySnapshotTb: number;
+  heldByLockTb: number;
+  cleanableTb: number;
+  reclaimedTb: number;
+  lockDaysLeft: number;
+  cleanRunning: boolean;
+  failedRegions: string[];
+  alerts: string[];
+}
+
+// One playable step of either trace: the ledger fields are present only in
+// the cleaning scenario.
+export type TraceState = Omit<LifecycleState, "phase"> & {
+  phase: LifecyclePhase | CleaningPhase;
+} & Partial<CleaningFields>;
+
+export interface TraceResponse {
+  scenario?: string;
+  trace: TraceState[];
+}
+
+export interface ScenarioInfo {
+  id: string;
+  title: string;
+  summary: string;
+  hero: string;
+  isFailure: boolean;
+  // Leveled page prose for the lifecycle page; empty keeps the page's own.
+  intro: string;
+  countersNote: string;
+  sources: SourceLink[];
 }
 
 export interface CatalogOption {

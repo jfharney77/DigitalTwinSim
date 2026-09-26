@@ -30,9 +30,14 @@ const KIND_ACTIVE_FILL: Record<RegionKind, string> = {
   sensor: "#2b3a54",
 };
 
+// A failed block: dark red under a dashed stroke in the error token.
+const FAILED_FILL = "#3a1216";
+
 export function BlockView({
   anatomy,
   active,
+  failed,
+  failedTag = "FAILED",
   selected,
   onSelect,
   onHover,
@@ -41,6 +46,9 @@ export function BlockView({
 }: {
   anatomy: SubsystemMap;
   active?: Set<string>;
+  // Failure scenario: blocks drawn in the error colour (--dell-error).
+  failed?: Set<string>;
+  failedTag?: string;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
@@ -85,6 +93,7 @@ export function BlockView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const isFailed = failed?.has(r.id) ?? false;
         const look = regionLook?.(r.id);
         // Fit the label to the block: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
@@ -95,7 +104,9 @@ export function BlockView({
         const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.0;
         const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.0;
         const fontSize = hSize;
-        const stroke = isSel
+        const stroke = isFailed
+          ? "var(--dell-error)"
+          : isSel
           ? "var(--accent)"
           : isActive
             ? "var(--accent)"
@@ -103,7 +114,10 @@ export function BlockView({
         return (
           <g
             key={r.id}
-            className={isActive ? "an-region region-active" : "an-region"}
+            className={
+              (isActive ? "an-region region-active" : "an-region") +
+              (isFailed ? " region-failed" : "")
+            }
             style={
               look
                 ? {
@@ -125,10 +139,30 @@ export function BlockView({
               width={r.w}
               height={r.h}
               rx={0.8}
-              fill={isActive ? KIND_ACTIVE_FILL[r.kind] : style.fill}
+              fill={
+                isFailed
+                  ? FAILED_FILL
+                  : isActive
+                    ? KIND_ACTIVE_FILL[r.kind]
+                    : style.fill
+              }
               stroke={stroke}
-              strokeWidth={isSel || isActive ? 0.5 : 0.25}
+              strokeWidth={isFailed ? 0.7 : isSel || isActive ? 0.5 : 0.25}
+              strokeDasharray={isFailed ? "1.6 0.8" : undefined}
             />
+            {isFailed && (
+              <text
+                className="region-failed-tag"
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 1.2}
+                textAnchor="middle"
+                fill="var(--dell-error)"
+                fontSize={Math.min(1.3, r.w / 10)}
+                letterSpacing={0.1}
+              >
+                {failedTag}
+              </text>
+            )}
             {showVLabel && (
               <text
                 x={rx(r) + r.w / 2}
@@ -147,7 +181,13 @@ export function BlockView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + (r.h < 6 ? r.h / 2 + fontSize * 0.35 : 2.6)}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={
+                  isFailed
+                    ? "#ff8a92"
+                    : isSel || isActive
+                      ? "var(--accent)"
+                      : style.text
+                }
                 fontSize={fontSize}
                 letterSpacing={0.12}
               >

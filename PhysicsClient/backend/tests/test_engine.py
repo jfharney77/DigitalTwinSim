@@ -284,3 +284,53 @@ def test_a_game_reads_out_as_fps_and_an_llm_as_tokens():
     npu, _, _ = run(Scenario(config=PROMAX_NPU,
                              workload=Workload(npu_pct=100), duration_s=120))
     assert npu[-1].active_engine == "npu"
+
+
+# --- The three-engines scenario shows what its narration asks about --------
+
+def _three_engines():
+    from app.presets import GUIDED_SCENARIOS
+    g = next(x for x in GUIDED_SCENARIOS if x.id == "three-engines")
+    return g, run(g.scenario)
+
+
+def test_three_engines_log_names_each_leg_and_each_fade():
+    _, (trace, log, _) = _three_engines()
+    messages = {e.t: e.message for e in log}
+    assert messages[400] == "Workload changed: local LLM on the GPU"
+    assert messages[800] == "Workload changed: local LLM on the NPU"
+    fades = [e for e in log if e.message.startswith("Boost window over")]
+    assert [("PL1" in e.message, "TGP" in e.message) for e in fades] == [
+        (True, False), (False, True),
+    ], "the CPU fade and the GPU fade are both named; no limiter is silent"
+    # The GPU's early drop is the boost window, not a thermal clamp.
+    assert not any(s.gpu_throttling for s in trace)
+
+
+def test_three_engines_loudest_leg_is_readable_on_the_noise_instrument():
+    """The question asks which engine is loudest: the rounded dB(A) the
+    instrument prints must actually differ between the legs."""
+    _, (trace, _, _) = _three_engines()
+    cpu, gpu, npu = trace[399], trace[799], trace[1199]
+    assert round(gpu.noise_dba) >= round(cpu.noise_dba) + 3
+    assert round(gpu.noise_dba) >= round(npu.noise_dba) + 3
+    assert gpu.fan_rpm_pct > 35 and npu.fan_rpm_pct <= 21
+
+
+def test_system_tokens_per_joule_is_the_battery_side_ratio():
+    """Engine tok/J flatters the NPU (about 1.9x the GPU); on system watts
+    the lead is about 1.3x. Both are served so the screen can show both."""
+    _, (trace, _, _) = _three_engines()
+    for s in trace:
+        if s.active_engine:
+            assert abs(s.system_tokens_per_joule - s.tokens_per_s / s.system_power_w) < 1e-3
+            assert s.system_tokens_per_joule < s.tokens_per_joule
+    gpu, npu = trace[799], trace[1199]
+    assert 1.8 < npu.tokens_per_joule / gpu.tokens_per_joule < 2.0
+    assert 1.2 < npu.system_tokens_per_joule / gpu.system_tokens_per_joule < 1.4
+
+
+def test_no_region_reads_below_ambient():
+    _, (trace, _, _) = _three_engines()
+    for s in trace:
+        assert min(s.region_temps.values()) >= 22.0 - 1e-6, (s.t, s.region_temps)

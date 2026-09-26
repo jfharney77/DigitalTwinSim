@@ -178,6 +178,7 @@ class SimState(CamelModel):
     cost_usd_m: float              # cumulative $M spent (energy + amortization)
     # Region id → 0–100 activity/health, for the factory diagram painting.
     region_status: dict[str, float]
+    limiting_regions: list[str] = Field(default_factory=list)
 
 
 class LogEntry(CamelModel):
@@ -233,6 +234,7 @@ class FactoryMap(CamelModel):
     height: float
     regions: list[FactoryRegion]
     overview: str
+    intro: str = ""
     sources: list[dict[str, str]] = Field(default_factory=list)
 
 

@@ -188,7 +188,8 @@ GUIDED_SCENARIOS = [
         ],
         question=(
             "The prediction missed by what fraction — and what single "
-            "maintenance action would have corrected it?"
+            "measurement, which the next scenario runs, would have "
+            "corrected it?"
         ),
         scenario=Scenario(
             config=OLD_BATTERIES, environment=Environment(), duration_s=900,

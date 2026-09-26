@@ -26,22 +26,27 @@ CATALOG: list[CatalogCategory] = [
             "serves both roles — what differs is which ports face down to "
             "endpoints and which face up to spines."
         ),
-        limits="Up to 409.6 Tb/s switching capacity; 1.6 Tb/s ports",
+        limits="Up to 409.6 Tb/s switching capacity; 800 Gb/s ports (spec sheet)",
         region_ids=_SPINE_REGIONS + _LEAF_REGIONS,
         options=[
             CatalogOption(
                 id="sw-sn6000",
                 name="Dell PowerSwitch SN6000",
-                summary="Spectrum-6 silicon: 1.6 Tb/s ports, up to 2,048 breakout connections.",
+                summary="Spectrum-6 silicon: 800 Gb/s ports, up to 2,048 breakout connections.",
                 details=(
                     "The SN6000 series is Dell's Spectrum-6-based Ethernet "
                     "switch for AI, announced with the March 2026 AI "
-                    "Factory expansion and globally available from July. It "
-                    "delivers up to 409.6 Tb/s of switching capacity with "
-                    "1.6 Tb/s ports and up to 2,048 breakout connections, "
-                    "sized for GPU-cluster scale-out in middle-of-row and "
-                    "end-of-row designs, with liquid cooling and "
-                    "co-packaged optics as options."
+                    "Factory expansion and globally available from July. Per "
+                    "Dell's spec sheet the series has four models, all with "
+                    "800 Gb/s ports on 102.4 Tb/s Spectrum-6 chips: the "
+                    "air-cooled SN6600 and liquid-cooled SN6600-LD (128 "
+                    "ports on pluggable optics), the SN6810-LD (128 ports, "
+                    "co-packaged optics), and the four-chip SN6800-LD, "
+                    "which reaches 409.6 Tb/s across 512 ports and up to "
+                    "2,048 breakout connections at 200 Gb/s. Dell's "
+                    "announcement calls the series 1.6 Tb/s; that is the "
+                    "pair of 800 Gb/s ports in each connector cage, not a "
+                    "single port's speed."
                 ),
             ),
             CatalogOption(
@@ -96,7 +101,7 @@ CATALOG: list[CatalogCategory] = [
                     "uplink bandwidth on a leaf. Enterprise networks "
                     "happily run 3:1 or worse because ordinary traffic is "
                     "bursty and uncorrelated. AI traffic is the opposite — "
-                    "synchronized and all-to-all — so the design target is "
+                    "synchronized, with every GPU taking part — so the design target is "
                     "at or near 1:1. Getting this wrong is expensive and "
                     "quiet: the cluster works, and simply never reaches the "
                     "scaling efficiency it was bought for."
@@ -168,7 +173,7 @@ CATALOG: list[CatalogCategory] = [
         id="optics",
         name="Optics & cabling",
         blurb=(
-            "At 1.6 Tb/s per port, optics become a leading share of the "
+            "At 800 Gb/s per port, optics become a leading share of the "
             "fabric's power draw and failure rate."
         ),
         limits="Pluggable transceivers or co-packaged optics",
@@ -182,10 +187,12 @@ CATALOG: list[CatalogCategory] = [
                     "CPO moves the optical engine from a pluggable module "
                     "at the faceplate onto the switch package beside the "
                     "silicon, shortening the electrical path the signal "
-                    "must survive. The payoff at 1.6 Tb/s is substantial "
-                    "power and signal-integrity savings, plus thousands "
-                    "fewer pluggable modules to fail across a large "
-                    "cluster. The trade is serviceability: an optical fault "
+                    "must survive. The payoff is power and signal-integrity "
+                    "savings, plus thousands fewer pluggable modules to "
+                    "fail across a large cluster; the spec sheet states "
+                    "NVIDIA's claim of 5x higher power efficiency and 10x "
+                    "greater reliability than pluggable-transceiver "
+                    "switches. The trade is serviceability: an optical fault "
                     "is no longer a module swap."
                 ),
             ),
@@ -253,13 +260,13 @@ CATALOG: list[CatalogCategory] = [
             "The traffic pattern that dominates training — and the trick of "
             "doing some of the arithmetic inside the network."
         ),
-        limits="In-network reduction where the fabric supports it",
+        limits="Host-side collectives on Ethernet; in-network reduction is InfiniBand-only",
         region_ids=_SPINE_REGIONS,
         options=[
             CatalogOption(
                 id="col-sharp",
-                name="In-network reduction (SHARP)",
-                summary="Switches sum gradients in flight instead of shipping them all.",
+                name="In-network reduction (SHARP) — InfiniBand only",
+                summary="Switches sum gradients in flight. Not offered on this Ethernet fabric.",
                 details=(
                     "SHARP performs part of a collective's arithmetic "
                     "inside the switch: rather than every rank sending its "
@@ -268,7 +275,11 @@ CATALOG: list[CatalogCategory] = [
                     "That cuts both the traffic volume and the number of "
                     "synchronization rounds — an unusually direct case of a "
                     "network doing computation because moving the data is "
-                    "more expensive than the arithmetic itself."
+                    "more expensive than the arithmetic itself. NVIDIA "
+                    "offers SHARP on Quantum InfiniBand and NVLink "
+                    "switches, not on Spectrum-X Ethernet, so it is listed "
+                    "here as the thing choosing the SN6000 gives up; the "
+                    "Quantum-X800 twin shows it working."
                 ),
             ),
             CatalogOption(
@@ -302,7 +313,10 @@ CATALOG: list[CatalogCategory] = [
                 name="Liquid-cooled SN6000",
                 summary="Cold plates on the switch silicon, served by the rack's loop.",
                 details=(
-                    "Spectrum-6 at full capacity is dense enough to justify "
+                    "Three of the four SN6000 models (the -LD variants) are "
+                    "liquid-cooled and take 48-54 V DC from the rack "
+                    "busbar, per the spec sheet. Spectrum-6 is dense "
+                    "enough to justify "
                     "the same cold-plate treatment the GPUs get, fed by the "
                     "facility loop this repo's IR7000 twin models. Beyond "
                     "the thermal argument, liquid cooling removes the "
@@ -316,7 +330,9 @@ CATALOG: list[CatalogCategory] = [
                 name="Air-cooled SN6000",
                 summary="Conventional front-to-back airflow for rows that are not liquid-ready.",
                 details=(
-                    "The conventional option, appropriate where the row is "
+                    "The SN6600: a 3U, AC-powered, air-cooled switch with "
+                    "128 ports of 800 Gb/s on pluggable optics. "
+                    "Appropriate where the row is "
                     "air-cooled anyway or where the switch sits in a "
                     "networking rack outside the liquid-cooled compute "
                     "block. Middle-of-row and end-of-row designs often land "
@@ -339,13 +355,15 @@ CATALOG: list[CatalogCategory] = [
         options=[
             CatalogOption(
                 id="mgmt-nos",
-                name="Network OS (SmartFabric OS10 / SONiC)",
+                name="Network OS (Enterprise SONiC / Cumulus Linux)",
                 summary="Disaggregated network operating system on open hardware.",
                 details=(
                     "As with the E3200 twin, the switch hardware and its "
-                    "operating system are chosen separately: Dell "
-                    "SmartFabric OS10 or Enterprise SONiC, the open-source "
-                    "NOS that hyperscalers standardized on. For AI fabrics "
+                    "operating system are chosen separately. Dell's spec "
+                    "sheet lists two for the SN6000: Enterprise SONiC "
+                    "Distribution by Dell Technologies, built on the "
+                    "open-source NOS that hyperscalers standardized on, "
+                    "and NVIDIA Cumulus Linux. For AI fabrics "
                     "SONiC is common, partly because operators want the "
                     "same software across a fleet from multiple hardware "
                     "vendors."

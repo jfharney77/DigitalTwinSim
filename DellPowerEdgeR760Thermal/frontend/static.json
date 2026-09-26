@@ -1,0 +1,130 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "sockets": 2,
+          "cpuTdpW": 250,
+          "heatsink": "high-performance",
+          "fanKit": "standard",
+          "dimms": 16,
+          "chassis": "24x2.5",
+          "drives": 8,
+          "gpusDoubleWide": 0,
+          "accelsSingleWide": 0,
+          "ioCardW": 25,
+          "psuCount": 2,
+          "psuCapacityW": 1400,
+          "redundancy": "1+1"
+        },
+        "workload": {
+          "cpuPct": 60,
+          "memPct": 75,
+          "storagePct": 70,
+          "gpuPct": 0
+        },
+        "environment": {
+          "inletC": 22,
+          "altitudeM": 0,
+          "recirculationPct": 0,
+          "blockedIntakePct": 0
+        },
+        "durationS": 900,
+        "events": []
+      },
+      {
+        "config": {
+          "sockets": 2,
+          "cpuTdpW": 250,
+          "heatsink": "high-performance",
+          "fanKit": "standard",
+          "dimms": 16,
+          "chassis": "24x2.5",
+          "drives": 8,
+          "gpusDoubleWide": 0,
+          "accelsSingleWide": 0,
+          "ioCardW": 25,
+          "psuCount": 2,
+          "psuCapacityW": 1400,
+          "redundancy": "1+1"
+        },
+        "workload": {
+          "cpuPct": 60,
+          "memPct": 75,
+          "storagePct": 70,
+          "gpuPct": 0
+        },
+        "environment": {
+          "inletC": 22,
+          "altitudeM": 0,
+          "recirculationPct": 0,
+          "blockedIntakePct": 0
+        },
+        "durationS": 600,
+        "events": []
+      },
+      {
+        "config": {
+          "sockets": 2,
+          "cpuTdpW": 250,
+          "heatsink": "high-performance",
+          "fanKit": "standard",
+          "dimms": 16,
+          "chassis": "24x2.5",
+          "drives": 8,
+          "gpusDoubleWide": 0,
+          "accelsSingleWide": 0,
+          "ioCardW": 25,
+          "psuCount": 2,
+          "psuCapacityW": 1400,
+          "redundancy": "1+1"
+        },
+        "workload": {
+          "cpuPct": 60,
+          "memPct": 75,
+          "storagePct": 70,
+          "gpuPct": 0
+        },
+        "environment": {
+          "inletC": 35.0,
+          "altitudeM": 0,
+          "recirculationPct": 0,
+          "blockedIntakePct": 0
+        },
+        "durationS": 600,
+        "events": []
+      },
+      {
+        "config": {
+          "sockets": 2,
+          "cpuTdpW": 250,
+          "heatsink": "high-performance",
+          "fanKit": "standard",
+          "dimms": 16,
+          "chassis": "24x2.5",
+          "drives": 8,
+          "gpusDoubleWide": 0,
+          "accelsSingleWide": 0,
+          "ioCardW": 25,
+          "psuCount": 2,
+          "psuCapacityW": 1400,
+          "redundancy": "1+1"
+        },
+        "workload": {
+          "cpuPct": 100,
+          "memPct": 80,
+          "storagePct": 10,
+          "gpuPct": 0
+        },
+        "environment": {
+          "inletC": 35.0,
+          "altitudeM": 0,
+          "recirculationPct": 0,
+          "blockedIntakePct": 0
+        },
+        "durationS": 900,
+        "events": []
+      }
+    ]
+  }
+}

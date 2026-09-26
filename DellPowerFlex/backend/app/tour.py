@@ -141,9 +141,8 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                 standard=(
                     "The camera is on the gap between the fabric and the "
                     "servers. In a controller array, like the PowerStore and "
-                    "PowerMax twins in this repo, a controller row sits here and "
-                    "every byte crosses it. In PowerFlex the row is empty, and "
-                    "the map's own tests keep anything from being drawn in it. "
+                    "PowerMax twins elsewhere here, a controller row sits here and "
+                    "every byte crosses it. In PowerFlex the row is empty. "
                     "The nodes find each other over IP and elect a metadata "
                     "manager (MDM) to hold the map of what will live where. "
                     "Manager, not controller: it decides placement and referees "
@@ -187,12 +186,11 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "across all six nodes. No node holds a whole volume; every "
                     "node holds a piece of every volume. The protection engine "
                     "lights because the redundant copies are being laid down. "
-                    "Most twins in this repo dwell longest on a recovery-like "
-                    "stage; this one dwells on the build so that the repair "
-                    "later can be short. The scatter is the prepayment."
+                    "The scatter is slow so that the repair later can be fast: "
+                    "it is the prepayment."
                 ),
                 expert=(
-                    "Max-dwell stage: capacity chunked and mirrored across all "
+                    "Longest stage by design: capacity chunked and mirrored across all "
                     "nodes; no node holds a whole volume. The scatter prepays the "
                     "rebuild."
                 ),
@@ -205,16 +203,19 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
         ),
         TourStep(
             id="coordinator-dark",
-            title="Steady I/O with the manager dark",
+            title="Steady reads and writes, with the manager dark",
             script=L(
                 novice=(
-                    "Now real work arrives. Each client was handed the map of "
+                    "Now real work arrives — reading and writing, which storage "
+                    "people call I/O, short for input and output. Each client "
+                    "was handed the map of "
                     "where the chunks live, so it talks straight to the servers "
                     "that hold its data, all of them at once, with nothing in "
                     "between. There is no queue in front of one special machine, "
                     "so the total speed is the sum of what the servers can do. "
-                    "This small pool runs about 1.8 million operations per second "
-                    "in this illustrative timeline; Dell quotes up to 240 million "
+                    "In this illustrative timeline each server handles about 300 "
+                    "thousand operations per second, so this small pool of six "
+                    "runs about 1.8 million; Dell quotes up to 240 million "
                     "for a very large one. Now look at the corner: the metadata "
                     "manager has gone dark. It handed out the map and stepped out "
                     "of the way."
@@ -223,17 +224,17 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "Load arrives. Each client holds the chunk map, so it "
                     "addresses every node directly and at once; there is no "
                     "controller queue and no shared path, and aggregate "
-                    "throughput is simply the sum of the servers. This pool runs "
+                    "throughput is simply the sum of the servers. Six nodes at "
+                    "300 thousand each make this pool's "
                     "about 1.8 million IOPS (input/output operations per second, "
                     "illustrative); Dell's published ceiling for a large pool is "
                     "240 million. Notice the corner: the metadata manager is dark "
-                    "during steady I/O, and a test pins that, because a "
-                    "coordinator in the data path would be a controller by "
-                    "another name."
+                    "during steady I/O, because a coordinator in the data path "
+                    "would be a controller by another name."
                 ),
                 expert=(
                     "Steady I/O: full client-to-node fan-out, throughput sums "
-                    "across nodes (~1.8M IOPS illustrative, 240M at scale). MDM "
+                    "across nodes (6 x 300k = ~1.8M IOPS illustrative; Dell quotes 240M at scale). MDM "
                     "dark, out of the data path."
                 ),
             ),
@@ -255,8 +256,11 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "feel a pause. Here the clients simply stop talking to one "
                     "address and carry on with the other five, because a second "
                     "copy of everything node 6 held was already on those five. "
-                    "Speed dips a little, to about 90 percent of normal in this "
-                    "illustrative timeline, and never stops. Protection has really fallen, "
+                    "Requests that were on their way to node 6 wait a few seconds "
+                    "and go to the other copy instead. Speed falls by the lost "
+                    "server's share, one sixth, to 1.5 million operations per "
+                    "second in this illustrative timeline, and never reaches "
+                    "zero. Protection has really fallen, "
                     "though: some chunks now have only one copy, and a second "
                     "failure before the repair would lose data."
                 ),
@@ -266,16 +270,21 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "feel. Here the clients drop one address and keep going "
                     "against the other five, because the second copy of "
                     "everything node 6 held was already resident there. "
-                    "Throughput dips, to about 90 percent of steady in this "
-                    "illustrative trace, and never stops. Protection has "
+                    "Requests in flight to node 6 wait out a timeout of a few "
+                    "seconds and are retried against the other copy. Throughput "
+                    "dips by the lost node's share, one sixth, to 1.5 million "
+                    "IOPS in this illustrative trace, and never reaches zero. "
+                    "Protection has "
                     "genuinely fallen: chunks that had two copies now have one, "
                     "so the metadata manager and the protection engine wake to "
                     "decide the repair."
                 ),
                 expert=(
-                    "Node loss: no failover event, clients drop an address. "
-                    "IOPS ~0.9x, never zero. Redundancy single-copy; MDM and "
-                    "protection engine engage."
+                    "Node loss: no controller failover; I/O to the dead node's "
+                    "chunks stalls for a timeout (seconds) until the MDM cluster "
+                    "remaps, below this trace's resolution. IOPS 5/6 (1.5M), never "
+                    "zero. Redundancy single-copy; MDM and protection engine "
+                    "engage."
                 ),
             ),
             # Whole map: the clients carrying on are half of this beat.
@@ -306,10 +315,14 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "survivors. So the rebuild is many-to-many: each survivor "
                     "reconstructs a fifth of the loss, reading from the other "
                     "four, simultaneously. The mesh drawn between the nodes is "
-                    "that traffic. The twin's central test pins it: nodes "
-                    "rebuilding equals nodes online, never a subset. In a "
-                    "controller array that number is one at any scale. Client "
-                    "I/O keeps running above 70 percent of steady throughout."
+                    "that traffic. The rebuild-participants counter shows it: "
+                    "nodes rebuilding equals nodes online, never a subset. A "
+                    "controller array also spreads a drive rebuild over many "
+                    "drives, but all of it runs through one controller pair, "
+                    "and that pair's fixed budget caps the rate at any scale. "
+                    "Here the budget grows with the survivors. Client I/O "
+                    "gives a little to the rebuild load and stays above 70 "
+                    "percent of steady throughout."
                 ),
                 expert=(
                     "Many-to-many rebuild: rebuild participants == nodes online "
@@ -330,31 +343,52 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                 novice=(
                     "Every chunk has its full protection again, now spread over "
                     "five servers instead of six. Nothing came back from a backup, "
-                    "no spare drive was used up, and nobody was woken in the "
-                    "night. Now run the arithmetic forward. In a hundred-server "
-                    "pool, a hundred servers would each rebuild a hundredth of a "
-                    "lost machine, so the repair would be roughly twenty times "
-                    "faster than here, in a pool twenty times smaller. Recovery "
+                    "no spare drive was swapped in, and nobody was woken in the "
+                    "night. The new copies went into empty space the pool keeps "
+                    "in reserve, about one server's worth; a pool filled past "
+                    "that reserve would stay under-protected until space was "
+                    "added. Now run the arithmetic forward. In a hundred-server "
+                    "pool about a hundred survivors would each rebuild a "
+                    "hundredth of the lost machine. That is twenty times more "
+                    "helpers than the five here, so the repair would be roughly "
+                    "twenty times faster. Recovery "
                     "gets quicker as the system grows, the reverse of how storage "
                     "normally ages. That is also why building the pool, not "
-                    "repairing it, was the long stage."
+                    "repairing it, was the long stage. The arithmetic does not go "
+                    "on forever, though: in a real pool the repair is deliberately "
+                    "held back so it does not eat the speed the clients are still "
+                    "using, and past a certain size the network, not the number of "
+                    "helpers, decides how fast it can go."
                 ),
                 standard=(
                     "Full protection is back, redistributed across five nodes "
-                    "instead of six: no backup restored, no spare consumed, no "
-                    "one paged. Now scale the arithmetic. In a hundred-node pool "
-                    "a hundred nodes each rebuild a hundredth, so recovery is "
+                    "instead of six: no backup restored, no spare drive swapped "
+                    "in, no one paged. The rebuild landed in spare capacity the "
+                    "pool keeps reserved, about one node's worth; a pool filled "
+                    "past that reserve stays degraded until capacity is added. "
+                    "Now scale the arithmetic. In a hundred-node pool about a "
+                    "hundred survivors share the same job, so recovery is "
                     "roughly twenty times faster than with the five survivors "
                     "here. "
                     "Rebuild time falls as the pool grows, the reverse of how "
                     "storage usually ages, and it is why the scatter, not the "
-                    "repair, held the longest dwell. Real pools run from three "
-                    "nodes to past two thousand."
+                    "repair, was the longest stage. The one-over-n arithmetic "
+                    "holds until something else binds: PowerFlex throttles "
+                    "rebuild and rebalance traffic on purpose so the repair does "
+                    "not eat the front-end I/O — the dip to 1,380k a step ago is "
+                    "that throttle at work — and at large scale the fabric and "
+                    "the spare capacity's write bandwidth bind before the count "
+                    "of participants does. Dell has quoted mirrored "
+                    "pools from three nodes to past two thousand."
                 ),
                 expert=(
-                    "Redundancy restored on n-1 from existing capacity. MTTR "
-                    "scales ~1/n: 100 nodes rebuild ~20x faster than 5. Scatter, "
-                    "not repair, holds max dwell. 3 to 2,000+ nodes."
+                    "Redundancy restored on n-1 into reserved spare capacity (~one "
+                    "node's worth; without it, degraded until capacity is added). "
+                    "MTTR scales ~1/n: 100 nodes rebuild ~20x faster than 5 — "
+                    "until the rebuild QoS throttle or the fabric binds (the "
+                    "throttle is the 1,380k dip), and spare-capacity write "
+                    "bandwidth caps it at scale. "
+                    "Scatter, not repair, is the longest stage. Dell-quoted: 3 to 2,000+ nodes."
                 ),
             ),
             camera=whole_map(anatomy),
@@ -369,8 +403,8 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
             script=L(
                 novice=(
                     "Back to ordinary work, one server short. Losing a machine "
-                    "cost a little speed for a few minutes and needed nobody's "
-                    "attention. The same trick handles the pleasant version of "
+                    "cost that machine's share of the speed, which comes back when "
+                    "a replacement is added, and needed nobody's attention. The same trick handles the pleasant version of "
                     "the story: to replace ageing hardware, add new servers, let "
                     "the pool spread onto them, then take the old ones out, with "
                     "everything running the whole time. The health data flows to "
@@ -380,8 +414,9 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "same sequence step by step."
                 ),
                 standard=(
-                    "Steady again, one server short. The episode cost some "
-                    "throughput for a few minutes and no one's attention. The "
+                    "Steady again, one server short. The episode cost one "
+                    "node's share of the throughput, which returns when a "
+                    "replacement is added, and no one's attention. The "
                     "same rebalance machinery turns a hardware refresh into a "
                     "background task: add nodes, let the pool rebalance, remove "
                     "the old ones, hosts running throughout. Telemetry feeds the "
@@ -392,7 +427,7 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "removes it. Pool in motion walks the same trace step by step."
                 ),
                 expert=(
-                    "Steady on n-1. Refresh via add, rebalance, drain, remove; "
+                    "Steady on n-1 at 5/6 throughput. Refresh via add, rebalance, drain, remove; "
                     "no host-visible events. Telemetry to CloudIQ. The controller "
                     "twins harden the centre; this deletes it."
                 ),

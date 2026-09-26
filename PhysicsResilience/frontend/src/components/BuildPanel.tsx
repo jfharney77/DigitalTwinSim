@@ -68,7 +68,7 @@ export function BuildPanel({
               onChange={(e) => set({ backupEveryH: +e.target.value })}
             />
           </Row>
-          <Row label={`Retention (${config.retentionCopies} copies)`}>
+          <Row label={`Retention (keep ${config.retentionCopies} copies)`}>
             <input
               type="range" min={1} max={90} value={config.retentionCopies}
               onChange={(e) => set({ retentionCopies: +e.target.value })}

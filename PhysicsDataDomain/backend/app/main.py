@@ -89,3 +89,26 @@ def get_simulate() -> SimResponse:
     from .presets import THIRTY_FULLS
 
     return _run(THIRTY_FULLS)
+
+
+# --- Graded labs (docs/LAB_PATTERN.md) ---------------------------------------
+# app/labs.py is pure; this is its HTTP edge, and the only place lab prose is
+# resolved to a reading level. Reference solutions never leave the server.
+from fastapi import HTTPException  # noqa: E402
+from twinkit.labs import Lab, LabResult  # noqa: E402
+
+from .labs import LABS, LABS_BY_ID, grade_scenario  # noqa: E402
+
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    """The graded labs: goal, criteria, hints and start scenario."""
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    """Run the learner's scenario through the engine and grade the trace."""
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(status_code=404, detail=f"unknown lab {lab_id!r}")
+    return leveled(grade_scenario(lab_id, scenario), level)

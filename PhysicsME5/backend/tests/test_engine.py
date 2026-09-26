@@ -79,7 +79,7 @@ def test_capacity_arithmetic_closes_exactly():
 
 def test_raid10_capacity_is_half_and_r6_is_n_minus_2():
     _, usable10, _, _ = capacity_ledger(R10_PERF)
-    assert usable10 == 24 // 2 * 4
+    assert usable10 == 24 // 2 * R10_PERF.drive_tb  # 2 TB: 10k SAS tops out at 2.4 TB
     _, usable6, _, _ = capacity_ledger(R6_CAPACITY)
     assert usable6 == (12 - 1 - 2) * 20  # 12 drives, 1 spare, dual parity
 
@@ -313,3 +313,49 @@ def test_guided_flash_ceiling_moves_from_drives_to_controller():
     one = next(st for st in trace if st.t == 301)
     assert both.saturated and both.served_kiops > C("ctrl_cap_kiops")
     assert abs(one.served_kiops - C("ctrl_cap_kiops")) < 1.0
+
+
+def test_risk_gauge_prices_remaining_tolerance_not_the_raid_label():
+    """RAID 6 with two members out stands where RAID 5 with one out stands:
+    the gauge must rise at the second failure and must not decay while a
+    missing member has no rebuild running or queued."""
+    trace, _, _ = run(_guided("second-failure"))
+    by_t = {st.t: st for st in trace}
+    before, after = by_t[1440], by_t[1500]
+    assert before.drives_failed == 1 and after.drives_failed == 2
+    assert after.risk_index > before.risk_index
+    assert after.risk_index == 100.0
+    # Uncovered until the replacement arrives at t+2940: pinned, no decay.
+    assert all(by_t[t].risk_index == 100.0 for t in range(1500, 2940, 60))
+    # Tolerance returns when the first rebuild completes; the gauge falls.
+    one_out = [st for st in trace if st.t > 2940 and st.drives_failed == 1]
+    assert one_out and max(st.risk_index for st in one_out) < 50
+    # The run is long enough for the window to close on screen.
+    assert trace[-1].drives_failed == 0 and trace[-1].risk_index == 0
+
+
+def test_uncovered_member_does_not_decay_with_the_clock():
+    cfg = R6_CAPACITY.model_copy(update={"spares": 0})
+    s = Scenario(
+        config=cfg,
+        workload=Workload(offered_kiops=0.4, read_pct=60, block_kb=64),
+        duration_min=6000, tick_minutes=60,
+        events=[SimEvent(at_min=60, action="fail-drive", index=3)],
+    )
+    trace, _, _ = run(s)
+    risks = {st.risk_index for st in trace if st.degraded}
+    assert len(risks) == 1 and risks.pop() > 0
+
+
+def test_write_penalty_scenario_measures_exactly_three_on_screen():
+    """The guided scenario must show the 3x its narration claims."""
+    base = _guided("write-penalty")
+    assert base.workload.read_pct == 0
+
+    def writes(level: str) -> float:
+        sc = base.model_copy(update={
+            "config": base.config.model_copy(update={"raid_level": level})})
+        trace, _, _ = run(sc)
+        return trace[-1].served_write_kiops
+
+    assert abs(writes("10") - 3 * writes("6")) < 0.005

@@ -78,8 +78,46 @@ export interface PowerOnState {
   cycleCost: number;
 }
 
+// Failure scenarios extend the state additively: a power-on state carries
+// none of these, a failover state carries all of them.
+export type FailoverPhase =
+  | "online"
+  | "fault"
+  | "failover"
+  | "degraded"
+  | "rejoin"
+  | "resync"
+  | "rebalance"
+  | "restored";
+
+export interface FailoverFields {
+  failedRegions: string[];
+  ackedWritesLost: number;
+  ioPercent: number;
+  nodesServing: number;
+  nodeBLoadPercent: number;
+  optimizedPathsPercent: number;
+  writesMirrored: boolean;
+  nodeAJoined: boolean;
+}
+
+export type TraceState = Omit<PowerOnState, "phase"> & {
+  phase: PowerPhase | FailoverPhase;
+} & Partial<FailoverFields>;
+
+export interface ScenarioInfo {
+  id: string;
+  name: string;
+  summary: string;
+  heroMetric: string;
+  basis: string;
+  sources: SourceLink[];
+}
+
 export interface PowerOnResponse {
-  trace: PowerOnState[];
+  trace: TraceState[];
+  // Present on failure scenarios only.
+  scenario?: ScenarioInfo;
 }
 
 export interface CatalogOption {

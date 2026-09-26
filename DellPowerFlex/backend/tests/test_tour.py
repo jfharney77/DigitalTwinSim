@@ -161,16 +161,19 @@ def test_every_beat_frames_what_it_lights():
 
 
 def test_the_numbers_in_the_scripts_are_the_traces_numbers():
-    """The scripts quote ~1.8M IOPS steady, ~90% at the failure and above
-    70% during the rebuild; those are the pinned trace steps' own values."""
+    """The scripts quote ~1.8M IOPS steady, one sixth lost at the failure
+    (1.5M) and above 70% during the rebuild; those are the pinned trace
+    steps' own values."""
     trace = simulate()
     steady = trace[STEPS["coordinator-dark"].trace_cursor]
     failure = trace[STEPS["a-node-dies"].trace_cursor]
     rebuild = trace[STEPS["every-survivor-rebuilds"].trace_cursor]
     assert steady.iops_thousands == 1800
     assert "1.8 million" in STEPS["coordinator-dark"].script
-    assert round(failure.iops_thousands / steady.iops_thousands, 2) == 0.90
-    assert "90 percent" in STEPS["a-node-dies"].script
+    assert failure.iops_thousands * 6 == steady.iops_thousands * 5
+    assert failure.iops_thousands == 1500
+    assert "one sixth" in STEPS["a-node-dies"].script
+    assert "1.5 million" in STEPS["a-node-dies"].script
     assert rebuild.iops_thousands / steady.iops_thousands > 0.70
     assert "70 percent" in STEPS["every-survivor-rebuilds"].script
     assert failure.protected_percent < 100

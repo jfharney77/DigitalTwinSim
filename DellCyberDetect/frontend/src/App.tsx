@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchDetect, fetchTour } from "./api";
+import { fetchAnatomy, fetchDetect, fetchScenarios, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -11,7 +11,12 @@ import { emph } from "./components/Emph";
 import { useLevel } from "./level";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import type { DetectAnatomy, DetectState, RegionKind } from "./types";
+import type {
+  DetectAnatomy,
+  DetectState,
+  RegionKind,
+  ScenarioInfo,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -46,17 +51,71 @@ function tourStepFromHash(): string | null {
 
 // #step=N / #phase=<name> deep-links start playback at a chosen step; both
 // fall through pageFromHash() and land on the default page.
+// #scenario=<id> picks the incident and composes with either:
+// #scenario=dwell-exceeds-retention&phase=verdict.
+const BASELINE = "baseline";
+
+function hashParams(): URLSearchParams {
+  const h = window.location.hash.replace(/^#/, "");
+  return new URLSearchParams(h.includes("=") ? h : "");
+}
+
+function scenarioFromHash(): string {
+  const id = hashParams().get("scenario");
+  return id && /^[a-z0-9-]+$/i.test(id) ? id : BASELINE;
+}
+
 function initialStepFromHash(states: { phase: string }[]): number | null {
   if (states.length === 0) return null;
-  const h = window.location.hash;
-  const step = h.match(/^#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/^#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  const p = hashParams();
+  const step = p.get("step");
+  if (step !== null && /^\d+$/.test(step)) {
+    return Math.min(Number(step), states.length - 1);
+  }
+  const phase = p.get("phase");
+  if (phase !== null && /^[a-z0-9_-]+$/i.test(phase)) {
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
+}
+
+// Status lines drawn inside the conclusion blocks in a failure scenario,
+// where the static labels ("the date", "the named copy") no longer fit.
+// True while the verdict stands and the array still holds no clean copy. It
+// stops being true at the end, when a fresh snapshot has been taken and
+// checked: the old verdict is history by then, not the state of the array.
+function noCleanCopyNow(state: DetectState | null): boolean {
+  return (
+    !!state &&
+    state.verdict === "no-clean-copy-on-array" &&
+    state.snapshotsTaken - state.snapshotsExpired - state.snapshotsCorrupted ===
+      0
+  );
+}
+
+// The two conclusion blocks are named for the incident that ends with a
+// named copy ("the date", "the named copy"). In a scenario where none was
+// found, those labels would contradict the trace under them.
+function regionLabels(state: DetectState | null): Record<string, string> {
+  if (!state || state.verdict !== "no-clean-copy-on-array") return {};
+  return {
+    verdict: "Forensic report — the answer",
+    recovery: "Recovery — not from this array",
+  };
+}
+
+function regionNotes(state: DetectState | null): Record<string, string> {
+  if (!state || state.verdict !== "no-clean-copy-on-array") return {};
+  return {
+    verdict: noCleanCopyNow(state)
+      ? "no clean copy on this array"
+      : "found none, so recovery went off-array",
+    recovery:
+      state.recoverySource === "powerprotect-vault"
+        ? "source: PowerProtect vault, off-array"
+        : "nothing here to restore from",
+  };
 }
 
 export function App() {
@@ -68,13 +127,18 @@ export function App() {
     // #anatomy. Pages may append their own segments (#anatomy/<id>,
     // #usecases/<id>, #step=N, #phase=<name>).
     if (pageFromHash() !== page) {
-      window.location.hash = PAGE_HASH[page];
+      window.location.hash =
+        page === "incident" && scenarioRef.current !== BASELINE
+          ? `scenario=${scenarioRef.current}`
+          : PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
   }, [page]);
 
   const [anatomy, setAnatomy] = useState<DetectAnatomy | null>(null);
   const [trace, setTrace] = useState<DetectState[]>([]);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
+  const [scenario, setScenario] = useState<string>(scenarioFromHash);
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -90,6 +154,8 @@ export function App() {
   // Apply the #step=/#phase= deep-link only on the first load — a
   // reading-level refetch must not yank the cursor back.
   const hashApplied = useRef(false);
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const traceRef = useRef<DetectState[]>([]);
@@ -105,19 +171,48 @@ export function App() {
 
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
+  // The guided tour narrates the baseline incident, so it always plays
+  // against that trace whatever the incident page has selected.
+  const activeScenario = page === "tour" ? BASELINE : scenario;
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchDetect()])
-      .then(([an, det]) => {
+    let stale = false;
+    Promise.all([fetchAnatomy(), fetchDetect(activeScenario), fetchScenarios()])
+      .then(([an, det, sc]) => {
+        if (stale) return;
         setAnatomy(an);
         setTrace(det.trace);
+        setScenarios(sc);
+        setError(null);
         if (!hashApplied.current) {
           hashApplied.current = true;
-          const s = initialStepFromHash(det.trace);
-          if (s !== null) setCursor(s);
+          setCursor(initialStepFromHash(det.trace) ?? 0);
         }
       })
-      .catch((e) => setError(String(e)));
-  }, [level]);
+      .catch((e) => {
+        if (!stale) setError(String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [level, activeScenario]);
+
+  // The picker: a new incident starts from its first step. The hash is
+  // rewritten in place so the link in the address bar is the one to share.
+  const chooseScenario = useCallback(
+    (id: string) => {
+      stop();
+      setCursor(0);
+      setScenario(id);
+      window.history.replaceState(
+        null,
+        "",
+        id === BASELINE
+          ? window.location.pathname + window.location.search
+          : `#scenario=${id}`,
+      );
+    },
+    [stop],
+  );
 
   // The tour is fetched the first time its page opens, and again when the
   // reading level changes (the narration is leveled prose).
@@ -173,7 +268,18 @@ export function App() {
   // change the hash without remounting the app.
   useEffect(() => {
     const onHash = () => {
-      setPage(pageFromHash());
+      const nextPage = pageFromHash();
+      setPage(nextPage);
+      const next = scenarioFromHash();
+      if (nextPage === "incident" && next !== scenarioRef.current) {
+        // A different incident: reset, and let the fetch apply #phase=/#step=
+        // against the trace it brings back.
+        stop();
+        setCursor(0);
+        hashApplied.current = false;
+        setScenario(next);
+        return;
+      }
       const start = initialStepFromHash(traceRef.current);
       if (start !== null) {
         stop();
@@ -192,6 +298,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speed]);
 
+  const scenarioInfo = scenarios.find((x) => x.id === scenario) ?? null;
   const selectedRegion =
     anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const snapshotLabels = (anatomy?.regions ?? [])
@@ -315,20 +422,10 @@ export function App() {
       {page === "incident" && (
         <>
           <div className="an-hero">
-            <h2>It reads the data, not the metadata</h2>
-            <p>
-              Almost every ransomware defence watches descriptions of data
-              rather than data: did extensions change, did entropy spike,
-              was there a mass rename, is the I/O rate unusual. Those are
-              cheap to measure, which is exactly why attackers stopped
-              triggering them — encrypt slowly, preserve extensions,
-              imitate a busy Tuesday, and every one of those detectors
-              stays quiet. What cannot be disguised is whether a file still
-              means anything. Play the trace and watch four snapshots get
-              ruined while the alert counter never leaves zero. Then watch
-              what the analysis produces: not an alert, but a{" "}
-              <em>date</em>.
-            </p>
+            {/* Heading and intro come from the selected scenario, so they
+                describe the trace beside them and follow the reading level. */}
+            <h2>{scenarioInfo?.heading || "It reads the data, not the metadata"}</h2>
+            <p>{scenarioInfo ? emph(scenarioInfo.intro) : null}</p>
             <button
               className="primary poweron-tour-link"
               onClick={() => setPage("tour")}
@@ -346,6 +443,19 @@ export function App() {
                   corruptedCount={state?.snapshotsCorrupted ?? 0}
                   revealed={(state?.contentConfidencePercent ?? 0) > 0}
                   namedClean={state?.lastCleanSnapshot ?? -1}
+                  failed={new Set(state?.failedRegions ?? [])}
+                  notes={regionNotes(state)}
+                  labels={regionLabels(state)}
+                  noCleanCopy={noCleanCopyNow(state)}
+                  removedCount={
+                    state && state.verdict === "no-clean-copy-on-array"
+                      ? Math.max(
+                          0,
+                          snapshotLabels.length -
+                            (state.snapshotsTaken - state.snapshotsExpired),
+                        )
+                      : 0
+                  }
                   selected={regionId}
                   onSelect={setRegionId}
                 />
@@ -355,22 +465,39 @@ export function App() {
                   <strong>{state.label}.</strong> {emph(state.description)}
                 </div>
               )}
-              <div className="mini an-hint">
-                Pause on the <em>detectors silent</em> step and look at the
-                timeline. Every snapshot is drawn identically, because at
-                that moment they genuinely are indistinguishable — four of
-                them are ruined and nothing visible from outside says
-                which. That is the position an administrator is actually
-                in. The copies only turn red once the analysis has read the
-                bytes inside them, and only then can a marker be placed on
-                the last clean one. Click a block to pin what it is; the
-                full tour lives under Inside the detection.
-              </div>
+              {scenarioInfo && scenarioInfo.id !== BASELINE && (
+                <div className="mini an-hint">
+                  <strong>{scenarioInfo.name}.</strong> {scenarioInfo.summary}{" "}
+                  The per-copy results and the vault recovery follow Dell and
+                  Index Engines documentation; the hours, counts and the
+                  seven-day retention window are illustrative.
+                </div>
+              )}
+              {scenarioInfo && (
+                <div className="mini an-hint">{emph(scenarioInfo.mapNote)}</div>
+              )}
+              {scenarioInfo && scenarioInfo.sources.length > 0 && (
+                <div className="mini an-hint">
+                  <strong>Sources</strong>
+                  <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                    {scenarioInfo.sources.map((src) => (
+                      <li key={src.url}>
+                        <a href={src.url} target="_blank" rel="noreferrer">
+                          {src.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 
           <aside className="controls">
             <DetectControls
+              scenarios={scenarios}
+              scenario={scenario}
+              onScenario={chooseScenario}
               speed={speed}
               running={running}
               done={done}
@@ -386,6 +513,7 @@ export function App() {
               stepIndex={cursor}
               stepCount={trace.length}
               snapshotLabels={snapshotLabels}
+              scenario={scenarioInfo}
             />
             {selectedRegion && (
               <section className="an-panel">

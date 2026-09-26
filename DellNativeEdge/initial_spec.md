@@ -8,8 +8,8 @@ products; the Pro Max Plus was built first.
 ## Subject
 
 **Dell NativeEdge** — Dell's edge operations software platform (2023,
-2.0 in 2024, AI updates through 2026; now also marketed as the basis of
-Dell Distributed Private Cloud). It manages estates of servers,
+2.0 in 2024, AI updates through 2026; renamed Dell Distributed Private
+Cloud in May 2026). It manages estates of servers,
 workstations, gateways, and desktops deployed *outside* a datacenter:
 factory floors, retail branches, substations, ships, hospitals.
 

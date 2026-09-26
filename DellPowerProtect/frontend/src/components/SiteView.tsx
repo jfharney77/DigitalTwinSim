@@ -28,9 +28,17 @@ const KIND_ACTIVE_FILL: Record<RegionKind, string> = {
   mgmt: "#2e3370",
 };
 
+// The shared error token (packages/twin-ui tokens.css). The label uses a
+// lighter tint of it, because the token itself is too dark to read on the
+// diagram's dark fill.
+const ERROR = "var(--dell-error, #ce1126)";
+const ERROR_TEXT = "#ff8a96";
+const FAILED_FILL = "#3a1218";
+
 export function SiteView({
   anatomy,
   active,
+  failed,
   selected,
   onSelect,
   onHover,
@@ -39,6 +47,9 @@ export function SiteView({
 }: {
   anatomy: SiteAnatomy;
   active?: Set<string>;
+  // Regions in an alert condition (failure scenarios): drawn in the error
+  // colour with a dashed outline, so they never read as ordinary activity.
+  failed?: Set<string>;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
@@ -62,6 +73,29 @@ export function SiteView({
       }`
     : `0 0 ${W} ${H + 4}`;
 
+  // The orientation labels tell a newcomer which half is which, so a zoomed
+  // camera must not clip them. Zoomed in, they ride the bottom corners of the
+  // frame, scaled with it, and each shows only while its half is in view.
+  const zoom = camera ? camera.h / anatomy.height : 1;
+  const zoomed = !!camera && zoom < 0.999;
+  const gap = anatomy.regions.find((r) => r.kind === "gap");
+  const gapLeft = gap ? gap.x + MARGIN : W / 2;
+  const gapRight = gap ? gap.x + gap.w + MARGIN : W / 2;
+  const viewLeft = camera ? camera.x : 0;
+  const viewRight = camera ? camera.x + camera.w + 2 * MARGIN : W;
+  const viewBottom = camera
+    ? camera.y + camera.h + (2 * MARGIN + 4) * zoom
+    : H + 4;
+  const labelY = zoomed ? viewBottom - 1.4 * zoom : H + 2.6;
+  const labelSize = 1.7 * zoom;
+  const showProduction = !zoomed || viewLeft < gapLeft - 4;
+  const showVault = !zoomed || viewRight > gapRight + 4;
+  // Only one half in view: the short name fits whatever the frame width.
+  const vaultLabel =
+    zoomed && showProduction && camera!.w < anatomy.width * 0.75
+      ? "VAULT"
+      : "CYBER RECOVERY VAULT — BEYOND THE GAP";
+
   return (
     <svg
       viewBox={viewBox}
@@ -82,6 +116,7 @@ export function SiteView({
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
         const isActive = active?.has(r.id) ?? false;
+        const isFailed = failed?.has(r.id) ?? false;
         const look = regionLook?.(r.id);
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
@@ -91,7 +126,9 @@ export function SiteView({
         const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.05;
         const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.05;
         const fontSize = hSize;
-        const stroke = isSel
+        const stroke = isFailed
+          ? ERROR
+          : isSel
           ? "var(--accent)"
           : isActive
             ? "var(--accent)"
@@ -99,7 +136,10 @@ export function SiteView({
         return (
           <g
             key={r.id}
-            className={isActive ? "an-region region-active" : "an-region"}
+            className={
+              (isActive ? "an-region region-active" : "an-region") +
+              (isFailed ? " region-failed" : "")
+            }
             style={
               look
                 ? {
@@ -121,16 +161,37 @@ export function SiteView({
               width={r.w}
               height={r.h}
               rx={0.8}
-              fill={isActive ? KIND_ACTIVE_FILL[r.kind] : style.fill}
+              fill={
+                isFailed
+                  ? FAILED_FILL
+                  : isActive
+                    ? KIND_ACTIVE_FILL[r.kind]
+                    : style.fill
+              }
               stroke={stroke}
-              strokeWidth={isSel || isActive ? 0.5 : 0.25}
+              strokeWidth={isFailed ? 0.7 : isSel || isActive ? 0.5 : 0.25}
+              strokeDasharray={isFailed ? "1.6 0.9" : undefined}
             />
+            {isFailed && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 1.4}
+                textAnchor="middle"
+                fill={ERROR_TEXT}
+                fontSize={1.5}
+                letterSpacing={0.2}
+              >
+                SPACE ALERT
+              </text>
+            )}
             {showVLabel && (
               <text
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h / 2}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={
+                  isFailed ? ERROR_TEXT : isSel || isActive ? "var(--accent)" : style.text
+                }
                 fontSize={vSize}
                 letterSpacing={0.2}
                 transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
@@ -143,7 +204,9 @@ export function SiteView({
                 x={rx(r) + r.w / 2}
                 y={ry(r) + (r.h < 6 ? r.h / 2 + fontSize * 0.35 : 2.6)}
                 textAnchor="middle"
-                fill={isSel || isActive ? "var(--accent)" : style.text}
+                fill={
+                  isFailed ? ERROR_TEXT : isSel || isActive ? "var(--accent)" : style.text
+                }
                 fontSize={fontSize}
                 letterSpacing={0.12}
               >
@@ -154,19 +217,39 @@ export function SiteView({
         );
       })}
       {/* Orientation: production on the left, the vault beyond the gap. */}
-      <text x={MARGIN} y={H + 2.6} fill="#5a6b82" fontSize={1.7} letterSpacing={0.3}>
-        PRODUCTION
-      </text>
-      <text
-        x={W - MARGIN}
-        y={H + 2.6}
-        textAnchor="end"
-        fill="#5a6b82"
-        fontSize={1.7}
-        letterSpacing={0.3}
-      >
-        CYBER RECOVERY VAULT — BEYOND THE GAP
-      </text>
+      {zoomed && (showProduction || showVault) && (
+        <rect
+          x={viewLeft}
+          y={labelY - 2.2 * zoom}
+          width={viewRight - viewLeft}
+          height={3.6 * zoom}
+          fill="#0d1420"
+          opacity={0.85}
+        />
+      )}
+      {showProduction && (
+        <text
+          x={zoomed ? viewLeft + MARGIN * zoom : MARGIN}
+          y={labelY}
+          fill="#5a6b82"
+          fontSize={labelSize}
+          letterSpacing={0.3 * zoom}
+        >
+          PRODUCTION
+        </text>
+      )}
+      {showVault && (
+        <text
+          x={zoomed ? viewRight - MARGIN * zoom : W - MARGIN}
+          y={labelY}
+          textAnchor="end"
+          fill="#5a6b82"
+          fontSize={labelSize}
+          letterSpacing={0.3 * zoom}
+        >
+          {vaultLabel}
+        </text>
+      )}
     </svg>
   );
 }

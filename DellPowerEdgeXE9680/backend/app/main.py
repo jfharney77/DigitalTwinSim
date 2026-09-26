@@ -6,7 +6,7 @@ from __future__ import annotations
 from twinkit.api import Level, make_app
 from twinkit.tour import TourResponse
 
-from .anatomy import ANATOMY
+from .anatomy import ANATOMY, POWERON_INTRO, POWERON_INTRO_TITLE
 from .catalog import CATALOG
 from .engine import simulate
 from .leveling import leveled, leveled_all
@@ -27,7 +27,14 @@ def get_anatomy(level: int = Level) -> ServerAnatomy:
 
 @app.get("/api/poweron", response_model=PowerOnResponse)
 def get_poweron(level: int = Level) -> PowerOnResponse:
-    return leveled(PowerOnResponse(trace=simulate()), level)
+    return leveled(
+        PowerOnResponse(
+            trace=simulate(),
+            intro_title=POWERON_INTRO_TITLE,
+            intro=POWERON_INTRO,
+        ),
+        level,
+    )
 
 
 @app.get("/api/catalog", response_model=list[CatalogCategory])

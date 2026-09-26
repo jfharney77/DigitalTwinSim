@@ -360,8 +360,11 @@ CATALOG: list[CatalogCategory] = [
                     "that range."
                 ),
                 details=(
-                    "A cluster starts at three nodes and grows one node "
-                    "at a time to 252, with capacity and performance "
+                    "A cluster starts at three all-flash nodes, or one "
+                    "four-node chassis of hybrid or archive nodes, and "
+                    "grows to 252 — all-flash a node at a time, "
+                    "chassis-based nodes a pair at a time — with "
+                    "capacity and performance "
                     "scaling together because every node brings compute "
                     "and network alongside its drives. The number that "
                     "does not change across that entire range is the "
@@ -517,7 +520,7 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="aiops",
-                name="Fleet observability (APEX AIOps / CloudIQ)",
+                name="Fleet observability (Dell AIOps, formerly CloudIQ)",
                 summary=(
                     "Cloud-based analytics across every cluster you run."
                 ),

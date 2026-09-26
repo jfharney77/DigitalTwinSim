@@ -95,6 +95,45 @@ def test_gpu_idle_reflects_serving_shortfall():
     assert fed[-1].gpu_idle_due_to_data_pct < 5
 
 
+def test_the_starvation_warning_and_the_idle_gauge_agree():
+    """The validation rule and the gauge use one expression: a warning
+    means the gauge opens above zero, and no warning means it opens at zero."""
+    from app.presets import GUIDED_SCENARIOS
+    from app.validation import validate
+
+    for demand in (8, 10, 11, 12, 16, 30, 40):
+        sc = Scenario(
+            config=PIPELINE_CPU,
+            workload=DEFAULT_WL.model_copy(update={"gpu_read_demand_tbh": demand}),
+            duration_h=48,
+        )
+        warned = any(v.rule_id == "starvation" for v in validate(sc))
+        first = run(sc)[0][1].gpu_idle_due_to_data_pct
+        assert warned == (first > 0), (demand, warned, first)
+
+    guided = next(g for g in GUIDED_SCENARIOS if g.id == "find-the-bottleneck")
+    assert any(v.rule_id == "starvation" for v in validate(guided.scenario))
+    trace = run(guided.scenario)[0]
+    assert trace[1].gpu_idle_due_to_data_pct > 20, "the shortfall must be visible"
+
+
+def test_the_limiter_names_what_sets_the_pace():
+    """process binds, then index while the backlog drains, then the
+    sources: once nothing is full the limiter is 'arrival', even though
+    the slowest stage is still index."""
+    from app.presets import GUIDED_SCENARIOS
+
+    guided = next(g for g in GUIDED_SCENARIOS if g.id == "find-the-bottleneck")
+    trace = run(guided.scenario)[0]
+    assert trace[60].limiter == "process" and trace[60].throughput_tbh == 6
+    assert trace[130].limiter == "index" and trace[130].throughput_tbh == 15
+    end = trace[-1]
+    assert end.bottleneck == "index" and end.limiter == "arrival"
+    assert end.throughput_tbh == guided.scenario.workload.raw_arrival_tbh
+    assert sum(end.stage_backlogs_tb.values()) == 0
+    assert 0 < end.gpu_idle_due_to_data_pct < trace[60].gpu_idle_due_to_data_pct
+
+
 def test_kv_offload_quadruples_sessions_for_a_token_tax():
     trace, log, _ = run(
         Scenario(

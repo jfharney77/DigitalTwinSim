@@ -16,7 +16,11 @@ What the model exists to teach — sharing:
 * **The PSU pool is a policy, not a pair.** Grid redundancy splits the
   PSUs across two AC feeds and survives losing a whole feed; N+1 guards
   against a PSU failing but puts every PSU on one feed, so a feed loss is
-  lights-out. The difference is a config toggle and a scenario.
+  lights-out. The difference is a config toggle and a scenario. Slot
+  wiring follows Dell's technical guide: Grid A is PSU slots 1–3, Grid B
+  is slots 4–6, and slots populate in the order 1, 4, 2, 5, 3, 6 so the
+  two grids stay even. (Dell's own name for the N+1 policy is "PSU
+  redundancy"; one-feed wiring for it is this model's simplification.)
 * **Composability**: a storage sled has no workload of its own — its
   drive activity follows the compute sled that owns it, and reassignment
   is a timed event, not a recable.
@@ -46,7 +50,7 @@ SLED_COUNT = 8
 
 
 def psu_efficiency(load_fraction: float) -> float:
-    """Piecewise-linear interpolation over the Titanium-class curve."""
+    """Piecewise-linear interpolation over the Platinum-class curve."""
     pts = PSU_EFFICIENCY_CURVE
     if load_fraction <= pts[0][0]:
         return pts[0][1]
@@ -57,12 +61,24 @@ def psu_efficiency(load_fraction: float) -> float:
     return pts[-1][1]
 
 
+# Dell MX7000 Technical Guide, "PSU redundancy and population rules":
+# slots populate in the order 1, 4, 2, 5, 3, 6 (zero-based here), which
+# keeps Grid A (slots 1–3) and Grid B (slots 4–6) evenly filled.
+PSU_POPULATION_ORDER: tuple[int, ...] = (0, 3, 1, 4, 2, 5)
+
+
+def populated_psu_slots(cfg: ChassisConfig) -> list[int]:
+    """Zero-based PSU slots holding a supply, in slot order."""
+    return sorted(PSU_POPULATION_ORDER[: cfg.psu_count])
+
+
 def psu_feed(index: int, cfg: ChassisConfig) -> str:
-    """Which AC feed a PSU hangs off. Grid redundancy alternates PSUs
-    across feeds A/B; every other policy puts the whole pool on feed A —
-    which is exactly why a whole-feed loss defeats it."""
+    """Which AC feed a PSU slot hangs off. Under grid redundancy slots
+    1–3 are Grid A and slots 4–6 are Grid B (Dell's wiring); every other
+    policy puts the whole pool on feed A in this model — which is exactly
+    why a whole-feed loss defeats it."""
     if cfg.redundancy == "grid":
-        return "A" if index % 2 == 0 else "B"
+        return "A" if index < 3 else "B"
     return "A"
 
 
@@ -130,7 +146,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
 
     def alive_psu_count() -> int:
         return sum(
-            1 for i in range(cfg.psu_count)
+            1 for i in populated_psu_slots(cfg)
             if i not in dead_psus and feed_up[psu_feed(i, cfg)]
         )
 
@@ -147,13 +163,25 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                     loads[ev.index] = ev.load.model_copy()
                     log.append(LogEntry(
                         t=t, severity="info",
-                        message=f"Sled {ev.index + 1} workload changed",
+                        message=(
+                            f"Sled {ev.index + 1} workload set to CPU "
+                            f"{ev.load.cpu_pct:.0f}% · memory "
+                            f"{ev.load.mem_pct:.0f}% · storage "
+                            f"{ev.load.storage_pct:.0f}%"
+                        ),
                     ))
             elif ev.action == "set-all-load" and ev.load is not None:
                 for i in range(SLED_COUNT):
                     loads[i] = ev.load.model_copy()
-                log.append(LogEntry(t=t, severity="info",
-                                    message="All sled workloads changed"))
+                log.append(LogEntry(
+                    t=t, severity="info",
+                    message=(
+                        f"All sled workloads set to CPU "
+                        f"{ev.load.cpu_pct:.0f}% · memory "
+                        f"{ev.load.mem_pct:.0f}% · storage "
+                        f"{ev.load.storage_pct:.0f}%"
+                    ),
+                ))
             elif ev.action == "kill-fan" and ev.index is not None:
                 if 0 <= ev.index < fan_count and ev.index not in dead_fans:
                     dead_fans.add(ev.index)
@@ -168,7 +196,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                                         message=f"Fan {ev.index + 1} replaced"))
             elif ev.action == "kill-psu":
                 alive = [
-                    i for i in range(cfg.psu_count)
+                    i for i in populated_psu_slots(cfg)
                     if i not in dead_psus and feed_up[psu_feed(i, cfg)]
                 ]
                 if alive:
@@ -182,7 +210,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 if feed_up[feed]:
                     feed_up[feed] = False
                     on_feed = sum(
-                        1 for i in range(cfg.psu_count) if psu_feed(i, cfg) == feed
+                        1 for i in populated_psu_slots(cfg) if psu_feed(i, cfg) == feed
                     )
                     log.append(LogEntry(
                         t=t, severity="critical" if on_feed == cfg.psu_count else "warning",
@@ -384,9 +412,10 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             region_temps[f"fan-{i}"] = round(
                 env.inlet_c if i in dead_fans else fan_air, 1
             )
+        populated = populated_psu_slots(cfg)
         for i in range(6):
             up = (
-                powered_on and i < cfg.psu_count
+                powered_on and i in populated
                 and i not in dead_psus and feed_up[psu_feed(i, cfg)]
             )
             region_temps[f"psu-{i}"] = round(exhaust if up else env.inlet_c, 1)

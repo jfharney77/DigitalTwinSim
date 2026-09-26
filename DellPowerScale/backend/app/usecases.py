@@ -110,7 +110,7 @@ USE_CASES: list[UseCase] = [
         ],
         outcomes=[
             Stat(label="Namespaces", value="One, at every size"),
-            Stat(label="Growth increment", value="One node"),
+            Stat(label="Growth increment", value="A pair of archive nodes"),
             Stat(label="Migrations to expand", value="Zero"),
             Stat(label="Archive downtime", value="None — expansion is a background task"),
         ],
@@ -217,8 +217,8 @@ USE_CASES: list[UseCase] = [
         id="ai-corpus",
         title="The file tier under an AI factory's training corpus",
         summary=(
-            "The namespace beneath the Exascale rack's parallel file "
-            "system — a corpus that grows for years without ever being "
+            "The namespace beside the Exascale rack's parallel scratch "
+            "tier — a corpus that grows for years without ever being "
             "reorganized."
         ),
         narrative=[
@@ -230,9 +230,14 @@ USE_CASES: list[UseCase] = [
             "twins: DellExascale covers the throughput half, where the "
             "Lightning File System hands clients a layout and lets them "
             "read from every data server at once. This twin covers the "
-            "half underneath — Lightning runs on OneFS, and the "
-            "namespace it parallelizes is the single file system "
-            "described here.",
+            "other half. Lightning is a separate file system, not OneFS: "
+            "Dell positions it as Tier 0 scratch for the run itself, and "
+            "PowerScale as the home for the rest of the data's life — "
+            "ingest, curation, archive. The corpus lives in the single "
+            "namespace described here and is staged to the scratch tier "
+            "when a run needs it. OneFS also serves parallel NFS (pNFS) "
+            "itself, announced in November 2025, for clients that read "
+            "the corpus in place.",
             "The namespace half matters because a corpus's enemy is "
             "reorganization. Datasets that move break the manifests, "
             "loaders, and provenance records that point at them; a "
@@ -244,7 +249,8 @@ USE_CASES: list[UseCase] = [
             "reads continue, as this twin's rebalance step insists.",
             "The fan-out matters even at this layer. Every node serves "
             "the whole namespace, so preprocessing jobs, tokenizers, and "
-            "the parallel file system above are never queued behind one "
+            "the staging jobs that feed the scratch tier are never "
+            "queued behind one "
             "head — the same refusal of a choke point that DellPowerFlex "
             "makes for block storage and the SN6000 twin's fabric makes "
             "for the network between them.",
@@ -260,8 +266,9 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="onefs", option_id="onefs-os", qty=1,
                 rationale=(
-                    "Lightning parallelizes OneFS — this namespace is "
-                    "the layer that twin's layouts point into."
+                    "The corpus's system of record: Lightning is the "
+                    "scratch tier beside it, and OneFS is where the data "
+                    "lives between runs."
                 ),
             ),
             UseCaseItem(
@@ -309,7 +316,7 @@ USE_CASES: list[UseCase] = [
         ],
         outcomes=[
             Stat(label="Corpus reorganizations", value="Zero, by construction"),
-            Stat(label="Namespace under Lightning", value="This one"),
+            Stat(label="Where the corpus lives between runs", value="This namespace"),
             Stat(label="Growth during training", value="Non-disruptive"),
             Stat(label="Paths broken by expansion", value="None"),
         ],

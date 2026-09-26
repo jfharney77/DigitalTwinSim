@@ -102,7 +102,9 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "day. The row of boxes underneath is a timeline of "
                     "snapshots: saved point-in-time copies of that volume, "
                     "oldest on the left and newest on the right. Seven places "
-                    "are drawn. So far three copies have been taken, and every "
+                    "are drawn, numbered 1 to 7; the T-4 beside a number means "
+                    "four copies before the newest. So far three copies have "
+                    "been taken, the other four places are still to be filled, and every "
                     "one of them can be restored. Notice that they all look "
                     "exactly alike. That sameness is the whole problem this "
                     "tour is about."
@@ -113,15 +115,18 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "volume that applications write to. The middle row is a "
                     "timeline of snapshots, point-in-time copies of that volume, "
                     "oldest on the left and newest on the right. Seven positions "
-                    "are drawn; three copies exist so far, and all three are "
+                    "are drawn, numbered oldest first (T-n is n snapshots before "
+                    "the newest); three copies exist so far, one every 30 hours "
+                    "in this illustrative trace, and all three are "
                     "restorable. They are also indistinguishable from each "
                     "other, and from the copies still to come. That uniformity "
                     "is the problem."
                 ),
                 expert=(
                     "Cyber Detect on PowerStore/PowerMax. Production volume on "
-                    "top, snapshot timeline below, oldest left. Three restorable "
-                    "copies, all externally identical."
+                    "top, snapshot timeline below, oldest left. Seven slots, "
+                    "three filled so far (one every 30 h, illustrative); the "
+                    "three restorable copies are externally identical."
                 ),
             ),
             camera=whole_map(anatomy),
@@ -145,7 +150,8 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "Nothing has been scrambled yet, so the three copies on the "
                     "array are still good and recovering would be easy. Nobody "
                     "knows anything is wrong. The timings here are "
-                    "illustrative: about three days in."
+                    "illustrative, and the wait is squeezed to about a day so "
+                    "the story fits."
                 ),
                 standard=(
                     "An intruder is inside, through a stolen credential, an "
@@ -156,12 +162,13 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "imitate it. Nothing is encrypted yet, so the three "
                     "snapshots on the array are clean and recovery would be "
                     "easy. Nobody knows there is anything to recover from. "
-                    "About 72 hours in; timings are illustrative."
+                    "The trace compresses the wait to about a day; timings are "
+                    "illustrative."
                 ),
                 expert=(
                     "Initial access, pre-encryption. Dwell: discovery, backup "
                     "enumeration, baselining. No encryption yet; snapshots "
-                    "1-3 clean. t+72 h, illustrative."
+                    "1-3 clean. t+24 h, compressed, illustrative."
                 ),
             ),
             # The older end of the timeline; the newer copies sit off to the
@@ -208,9 +215,9 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                 ),
                 expert=(
                     "Four of seven snapshots corrupted, metadata "
-                    "alerts zero. Slow encryption, extensions kept, gradual "
-                    "entropy, normal I/O. Only byte-level reading separates "
-                    "them."
+                    "alerts zero. Slow encryption, extensions kept, entropy "
+                    "held under the statistical threshold, normal I/O. Only "
+                    "byte-level reading separates them."
                 ),
             ),
             camera=frame("array", *all_snaps),
@@ -224,12 +231,16 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
             title="Opening every copy and reading it",
             script=L(
                 novice=(
+                    "Somebody reports records that will not open, and the "
+                    "administrator starts the content check by hand; it was not "
+                    "on a timetable before this. "
                     "Now the product does the slow, unglamorous work. It opens "
                     "the files and database pages inside every snapshot and "
                     "reads what is actually there: not the names, not the "
                     "dates, not how fast things changed, but the contents "
                     "themselves. An attacker can make a file look ordinary from "
-                    "every angle except one, whether it still makes sense. This "
+                    "every angle, but it is far harder to make a scrambled file "
+                    "still make sense when it is opened. This "
                     "is by far the longest stage of the whole incident, and "
                     "that cost is exactly what you are paying for. It happens "
                     "on the storage array itself, so there is no waiting for "
@@ -237,18 +248,25 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "looks the same, because nothing has been scored yet."
                 ),
                 standard=(
-                    "Content inspection opens files and database pages inside "
+                    "An application team reports unreadable records and the "
+                    "administrator runs content inspection on demand; it was "
+                    "not scheduled before this incident. It opens files and "
+                    "database pages inside "
                     "every snapshot and reads what is there. Not the name, the "
                     "extension, the timestamp or the rate of change: the bytes. "
                     "It is by some distance the longest stage in the trace, and "
                     "the expense is the product. Metadata is a description the "
-                    "attacker also controls; content is not. It runs on the "
+                    "attacker also controls; whether the content is still a "
+                    "valid file or database page is far harder to fake. It "
+                    "runs on the "
                     "array against local snapshots, so there is no replication "
                     "lag to wait out first. Until the reading has been scored, "
                     "the timeline still looks uniform."
                 ),
                 expert=(
-                    "Byte-level inspection of every snapshot, on-array; longest "
+                    "Admin-initiated on a user report; nothing was scheduled. "
+                    "Byte-level inspection of every snapshot (format and "
+                    "structure validity per file and DB page), on-array; longest "
                     "stage. No replication lag. Timeline still unrevealed, "
                     "nothing scored."
                 ),
@@ -317,7 +335,8 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "Here is what the whole process produces, and it is not an "
                     "alarm. By now everyone knows there has been an attack, so "
                     "'you have ransomware' is not news. The answer is a date: "
-                    "snapshot 3, labelled T-4 on the map, is the last copy "
+                    "snapshot 3, the box marked 3 · T-4 on the map, saved at "
+                    "t+0h on this example clock, is the last copy "
                     "whose contents are proven intact, and everything from "
                     "snapshot 4 onward carries the damage. A marker lands on "
                     "that copy. It is older than the first ruined one, and the "
@@ -327,8 +346,9 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "every byte had been read."
                 ),
                 standard=(
-                    "The deliverable is a date, not an alert. Snapshot 3, "
-                    "labelled T-4 on the map, is the last copy whose contents "
+                    "The deliverable is a date, not an alert. Snapshot 3, the "
+                    "box marked 3 · T-4 on the map, taken at t+0h on this "
+                    "illustrative clock, is the last copy whose contents "
                     "are provably intact; everything from snapshot 4 onward "
                     "carries the corruption. It is strictly older than the "
                     "first corrupted copy, as it must be, since a false "
@@ -339,7 +359,7 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "did."
                 ),
                 expert=(
-                    "Verdict: snapshot 3 (T-4) last provably clean, strictly "
+                    "Verdict: snapshot 3 (T-4, taken t+0h) last provably clean, strictly "
                     "before the first corruption. A recovery point with "
                     "evidence, not an alert."
                 ),
@@ -360,7 +380,9 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "would bring the attack straight back. A copy from months "
                     "ago is not used just to be safe either, because that would "
                     "throw away months of honest work. The gap between those "
-                    "two choices is what a precise answer is worth. Dell "
+                    "two choices is what a precise answer is worth. It is not "
+                    "free: snapshot 3 is 134 hours old, so about five and a half "
+                    "days of work is still lost (example figures). Dell "
                     "PowerProtect, which has its own twin in this collection, "
                     "is the other half: a locked vault, cut off from the "
                     "network, that makes sure a good copy survives. A vault "
@@ -373,7 +395,9 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "newest, which would reinstate the attack; not one from "
                     "three months ago chosen out of caution, which would "
                     "discard three months of legitimate work. The gap between "
-                    "those is what precision is worth. The PowerProtect twin "
+                    "those is what precision is worth. It is not free: the "
+                    "restored data is 134 hours old (illustrative), about five "
+                    "and a half days of writes lost. The PowerProtect twin "
                     "covers the other half: an isolated vault behind an "
                     "operational air gap, immutably locked. Isolation without "
                     "detection leaves a safe copy you cannot identify; "
@@ -382,7 +406,8 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                 ),
                 expert=(
                     "Restore from snapshot 3: not newest (reinfects), not "
-                    "ancient (loses work). Pairs with the PowerProtect vault: "
+                    "ancient (loses work). Achieved RPO 134 h, illustrative. "
+                    "Pairs with the PowerProtect vault: "
                     "isolation keeps a copy, detection names it."
                 ),
             ),
@@ -399,7 +424,8 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                 novice=(
                     "Back to the whole picture. The volume is running again "
                     "from a copy whose health was proven rather than assumed. "
-                    "The lasting change is the routine: content checking now "
+                    "The lasting change is the routine: content checking, which "
+                    "used to be started by hand, now "
                     "runs on every new snapshot, so the gap between damage and "
                     "discovery shrinks from days to the length of one scan, and "
                     "that gap decides how much an attack costs. On this "
@@ -413,7 +439,8 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "copy whose integrity was established rather than assumed, "
                     "and the next snapshot is taken against a baseline someone "
                     "can vouch for. The lasting change is routine: content "
-                    "analysis now runs continuously on new snapshots, "
+                    "analysis, on demand until now, runs continuously on new "
+                    "snapshots, "
                     "shrinking the interval between corruption and discovery "
                     "from days to one scan. On this illustrative timeline the "
                     "verdict arrived about 130 hours in, almost all of it "
@@ -421,7 +448,8 @@ def build_tour(anatomy: DetectAnatomy) -> Tour:
                     "same trace step by step."
                 ),
                 expert=(
-                    "Restored to a verified baseline; continuous scanning cuts "
+                    "Restored to a verified baseline; scanning moves from "
+                    "on-demand to continuous, which cuts "
                     "detection latency to one scan. Verdict at ~130 h, "
                     "illustrative, mostly unseen dwell."
                 ),

@@ -143,6 +143,38 @@
         "watch": ".playback-row button.primary",
         "times": 1
       }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Make dark mode pay",
+        "The greener control-room panel"
+      ]
+    },
+    {
+      "hash": "#lab=dark-mode-that-pays",
+      "name": "lab-dark-mode-that-pays",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

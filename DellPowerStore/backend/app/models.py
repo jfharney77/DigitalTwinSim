@@ -101,6 +101,57 @@ class PowerOnResponse(CamelModel):
     trace: list[PowerOnState]
 
 
+# --- Failure scenarios -------------------------------------------------------
+# A scenario is a second pure trace over the same chassis map. ``PowerOnState``
+# is extended only additively: ``FailoverState`` subclasses it, so the power-on
+# trace's wire shape is untouched and the happy path stays byte-identical.
+
+FailoverPhase = Literal[
+    "online", "fault", "failover", "degraded",
+    "rejoin", "resync", "rebalance", "restored",
+]
+
+
+class FailoverState(PowerOnState):
+    """One step of the node-loss scenario: a ``PowerOnState`` plus the numbers
+    the failure is about. All percentages are illustrative."""
+
+    phase: FailoverPhase  # type: ignore[assignment]
+    # Region ids that are down at this step; the UI draws them in the error
+    # colour. Never overlaps ``active_regions``.
+    failed_regions: list[str] = Field(default_factory=list)
+    # The hero counter: host writes that were acknowledged and then lost.
+    # It exists to be zero.
+    acked_writes_lost: int = 0
+    # Host I/O served, as a percentage of the rate before the fault.
+    io_percent: int = Field(ge=0, le=100)
+    nodes_serving: int = Field(ge=0, le=2)
+    # How busy node B is. Headroom is what is left of it.
+    node_b_load_percent: int = Field(ge=0, le=100)
+    # Share of volumes whose hosts are on an active/optimized path.
+    optimized_paths_percent: int = Field(ge=0, le=100)
+    # Every acknowledged write sits on a mirrored pair of NVRAM drives.
+    writes_mirrored: bool = True
+    # Node A is a cluster member again (heartbeat back over the interconnect).
+    node_a_joined: bool = True
+
+
+class ScenarioInfo(CamelModel):
+    id: str
+    name: str
+    summary: str
+    # The one number the scenario is about, in the UI's words.
+    hero_metric: str
+    # What is sourced and what is not.
+    basis: str
+    sources: list[SourceLink] = Field(default_factory=list)
+
+
+class FailoverResponse(CamelModel):
+    scenario: ScenarioInfo
+    trace: list[FailoverState]
+
+
 class CatalogOption(CamelModel):
     id: str
     name: str

@@ -53,7 +53,8 @@ def test_the_signature_step_pins_the_congestion_step():
     the busiest link at >=95% and zero packets dropped."""
     state = simulate()[STEPS[SIGNATURE_STEP_ID].trace_cursor]
     assert state.phase == "congestion"
-    assert state.label.startswith("Incast")
+    assert state.label.startswith("Congestion")
+    assert state.hot_link is not None
     assert state.peak_link_percent >= 95
     assert state.dropped_packets == 0
 

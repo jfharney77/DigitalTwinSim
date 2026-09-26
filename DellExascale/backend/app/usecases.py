@@ -16,8 +16,8 @@ USE_CASES: list[UseCase] = [
         title="Feeding an eight-rack AI factory",
         summary=(
             "576 GPUs read their corpus in parallel and checkpoint in "
-            "bursts; Lightning's fan-out keeps them fed at ~6 TB/s while "
-            "the metadata server stays out of the way."
+            "bursts; Lightning's fan-out keeps them fed at up to 6 TB/s "
+            "per rack, by Dell's figure, while metadata stays out of the way."
         ),
         narrative=[
             (
@@ -37,8 +37,8 @@ USE_CASES: list[UseCase] = [
                 "parallel access is for. Each client fetches a layout once "
                 "and then pulls stripes from every data server at the same "
                 "time, so aggregate bandwidth is the sum of the servers — "
-                "roughly 6 TB/s per rack — rather than any controller's "
-                "ceiling, and the metadata server never becomes the "
+                "up to 6 TB/s per rack by Dell's claim — rather than any "
+                "controller's ceiling, and metadata never becomes the "
                 "chokepoint no matter how many clients mount. GPUDirect "
                 "puts the bytes in GPU memory without a host-CPU bounce. "
                 "For checkpoints the same striping runs in reverse: "
@@ -89,7 +89,7 @@ USE_CASES: list[UseCase] = [
             ),
         ],
         outcomes=[
-            Stat(label="Read bandwidth", value="~6 TB/s per rack, aggregate"),
+            Stat(label="Read bandwidth", value="Up to 6 TB/s per rack (Dell's claim)"),
             Stat(label="Metadata in path", value="Once per layout — then never"),
             Stat(label="Checkpoint", value="Parallel writes across every server"),
             Stat(label="Corpus staging", value="None — object tier is in the rack"),
@@ -100,8 +100,8 @@ USE_CASES: list[UseCase] = [
         title="HPC centre replacing a legacy parallel file system",
         summary=(
             "A research site swaps an aging Lustre-style deployment for "
-            "Lightning — standards-based pNFS means no proprietary client "
-            "module chasing every kernel upgrade."
+            "PowerScale with parallel NFS — standards-based pNFS means no "
+            "proprietary client module chasing every kernel upgrade."
         ),
         narrative=[
             (
@@ -116,15 +116,17 @@ USE_CASES: list[UseCase] = [
                 "small file operations can slow the whole cluster."
             ),
             (
-                "Why Lightning fits: it delivers parallel performance "
-                "through pNFS, a standard, so ordinary Linux clients mount "
+                "Why PowerScale's pNFS fits: it delivers parallel performance "
+                "through a standard, so ordinary Linux clients mount "
                 "it with the in-tree NFS client — no module to rebuild, no "
                 "kernel version matrix. The parallel path is the same one "
                 "the AI groups need, and the conventional NFS and SMB "
                 "namespace on the same OneFS foundation serves the "
                 "traditional users who just want a home directory. One "
-                "system, two access personalities, and no migration between "
-                "them because it is the same data."
+                "system, two ways in, and no migration between them "
+                "because it is the same data. The Lightning File System "
+                "would be faster, but it brings back a vendor client, "
+                "the cost this centre is trying to retire."
             ),
             (
                 "The operational argument closed it: the centre's staff "
@@ -144,7 +146,7 @@ USE_CASES: list[UseCase] = [
                 ),
             ),
             UseCaseItem(
-                category_id="parallel", option_id="par-lightning", qty=1,
+                category_id="parallel", option_id="par-pnfs", qty=1,
                 rationale="Parallel throughput for simulation and AI on the same data.",
             ),
             UseCaseItem(
@@ -182,8 +184,9 @@ USE_CASES: list[UseCase] = [
         id="consolidate",
         title="Consolidating three storage silos into one rack",
         summary=(
-            "An enterprise collapses a block array, a NAS, and an object "
-            "store into a single Exascale rack — and stops copying "
+            "An enterprise collapses a NAS and an object store into a "
+            "single Exascale rack, with block to follow when Dell ships "
+            "PowerFlex on it — and stops copying "
             "petabytes between them to start any AI project."
         ),
         narrative=[
@@ -198,10 +201,12 @@ USE_CASES: list[UseCase] = [
                 "job can read it at a tolerable speed."
             ),
             (
-                "Why Exascale fits: it puts all four access patterns — "
-                "PowerFlex block, PowerScale and Lightning file, "
-                "ObjectScale object — in one rack with one control plane. "
-                "The databases keep their block volumes, the shared "
+                "Why Exascale fits: it puts PowerScale file, Lightning "
+                "parallel file, and ObjectScale object in one rack under "
+                "one license, and Dell targets PowerFlex block as a "
+                "fourth personality in the first half of 2027. Until then "
+                "the databases keep their block volumes on PowerFlex "
+                "beside the rack; the shared "
                 "namespace keeps working, and the corpus becomes readable "
                 "at parallel speed where it already sits. That deleted "
                 "copy step is usually the single biggest schedule win, "
@@ -220,11 +225,11 @@ USE_CASES: list[UseCase] = [
         config=[
             UseCaseItem(
                 category_id="platform", option_id="plat-exascale", qty=1,
-                rationale="One rack, one control plane, replacing three silos.",
+                rationale="One rack and one control plane: file and object now, block once PowerFlex joins.",
             ),
             UseCaseItem(
                 category_id="block", option_id="blk-powerflex", qty=1,
-                rationale="The databases keep first-class block storage in the same footprint.",
+                rationale="Block for the databases: standalone PowerFlex now, an Exascale personality once Dell ships it (targeted 1H 2027).",
             ),
             UseCaseItem(
                 category_id="object", option_id="obj-objectscale", qty=1,
@@ -248,10 +253,10 @@ USE_CASES: list[UseCase] = [
             ),
         ],
         outcomes=[
-            Stat(label="Silos replaced", value="Block + NAS + object → one rack"),
+            Stat(label="Silos replaced", value="NAS + object now; block when PowerFlex joins (planned 2027)"),
             Stat(label="Pipeline staging copy", value="Eliminated"),
             Stat(label="Capacity view", value="One forecast across all engines"),
-            Stat(label="Footprint", value="Three partly-empty racks → one"),
+            Stat(label="Footprint", value="Three partly-empty racks → one, once block joins (illustrative)"),
         ],
     ),
 ]

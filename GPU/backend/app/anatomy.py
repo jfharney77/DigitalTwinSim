@@ -295,25 +295,29 @@ GH100 = DieAnatomy(
             "multiprocessors — 144 on the full die, 132 enabled on the H100 "
             "SXM part, because some are disabled to improve manufacturing "
             "yield. A split 60 MB cache runs down the middle, three stacks of "
-            "high-bandwidth memory sit on each edge feeding a very wide bus "
-            "at about 3.35 TB/s, and 18 NVLink ports along the bottom carry "
+            "high-bandwidth memory sit on each edge (five of the six are "
+            "switched on in the H100) feeding a very wide bus at about "
+            "3.35 TB/s, and 18 NVLink ports along the bottom carry "
             "traffic to other GPUs."
         ),
         standard=(
             "NVIDIA's Hopper flagship. 8 GPCs (144 SMs on the full die; 132 "
             "enabled on H100 SXM) surround a split 60 MB L2, with three HBM3 "
-            "stacks on each edge feeding a 6144-bit bus (~3.35 TB/s) and 18 "
-            "NVLink 4 ports along the bottom for GPU-to-GPU traffic."
+            "stacks on each edge — a 6144-bit bus on the full die, 5120-bit "
+            "(five stacks, ~3.35 TB/s) on H100 SXM — and 18 NVLink 4 ports "
+            "along the bottom for GPU-to-GPU traffic."
         ),
         technical=(
             "Hopper flagship: 8 GPCs, 144 SMs on the full die and 132 enabled "
             "on H100 SXM, around a split 60 MB L2. Three HBM3 stacks per edge "
-            "on a 6144-bit bus at ~3.35 TB/s; 18 NVLink 4 ports along the "
+            "(6144-bit on the full die; five enabled on H100 SXM for a "
+            "5120-bit bus at ~3.35 TB/s); 18 NVLink 4 ports along the "
             "bottom edge for scale-up traffic."
         ),
         expert=(
             "GH100: 8 GPCs / 144 SMs (132 on H100 SXM), split 60 MB L2, 6× "
-            "HBM3 on a 6144-bit bus at ~3.35 TB/s, 18× NVLink 4."
+            "HBM3 / 6144-bit on die (5× / 5120-bit, ~3.35 TB/s on H100), "
+            "18× NVLink 4."
         ),
     ),
     regions=[
@@ -435,7 +439,7 @@ GA100 = DieAnatomy(
     name="A100 (GA100)",
     vendor="NVIDIA",
     architecture="Ampere",
-    process="TSMC 7N",
+    process="TSMC N7 (7 nm)",
     die_size="826 mm²",
     transistors="54.2 B",
     year=2020,
@@ -686,8 +690,8 @@ AD102 = DieAnatomy(
     ],
     stats=[
         Stat(label="SMs (full / 4090)", value="144 / 128"),
-        Stat(label="FP32 cores", value="18 432"),
-        Stat(label="RT / Tensor cores", value="144 / 576"),
+        Stat(label="FP32 cores (full / 4090)", value="18 432 / 16 384"),
+        Stat(label="RT / Tensor cores (4090)", value="128 / 512 (full die: 144 / 576)"),
         Stat(label="L2 cache", value="96 MB (72 enabled)"),
         Stat(label="Memory", value="24 GB GDDR6X · 1 TB/s"),
         Stat(label="Bus width", value="384-bit"),
@@ -792,7 +796,7 @@ NAVI31 = DieAnatomy(
     vendor="AMD",
     architecture="RDNA 3 (chiplet)",
     process="TSMC 5nm GCD + 6nm MCDs",
-    die_size="300 mm² GCD + 6 × 37 mm² MCD",
+    die_size="~304 mm² GCD + 6 × 37 mm² MCD",
     transistors="57.7 B",
     year=2022,
     width=100,
@@ -881,7 +885,7 @@ NAVI31 = DieAnatomy(
         SourceLink(label="TechPowerUp GPU DB: Navi 31 (die shot)",
                    url="https://www.techpowerup.com/gpu-specs/amd-navi-31.g998"),
         SourceLink(label="Chips and Cheese: RDNA 3 chiplet analysis",
-                   url="https://chipsandcheese.com/p/amds-rdna-3-graphics-architecture"),
+                   url="https://chipsandcheese.com/p/microbenchmarking-amds-rdna-3-graphics-architecture"),
     ],
 )
 
@@ -1184,7 +1188,7 @@ GB202 = DieAnatomy(
     name="RTX 5090 (GB202)",
     vendor="NVIDIA",
     architecture="Blackwell (consumer)",
-    process="TSMC 4NP",
+    process="TSMC 4N",
     die_size="750 mm²",
     transistors="92.2 B",
     year=2025,
@@ -1278,20 +1282,20 @@ GB202 = DieAnatomy(
 
 _GPC_DESC_GB300 = L(
     novice=(
-        "A cluster of roughly 20 SMs (streaming multiprocessors — the GPU's "
-        "processing engines; the exact grouping is unpublished). On this "
+        "A cluster of 20 SMs (streaming multiprocessors — the GPU's "
+        "processing engines; NVIDIA describes eight such clusters). On this "
         "refresh every one of the 160 SMs across both dies is switched on. "
         "The B200 shipped with 148 of 160 as insurance against "
         "manufacturing defects; a year of factory learning made the "
         "insurance unnecessary."
     ),
     standard=(
-        "Blackwell Ultra SM cluster (~20 SMs; NVIDIA has not published the exact "
-        "GPC partitioning). All 160 SMs across both dies are enabled on B300 — "
+        "Blackwell Ultra SM cluster: 20 SMs, one of eight GPCs per NVIDIA's "
+        "Blackwell Ultra blog. All 160 SMs across both dies are enabled on B300 — "
         "the yield learning that shipped B200 at 148 now sells the full die."
     ),
     expert=(
-        "~20-SM cluster; full 160/160 enablement on B300 — B200's 148 was "
+        "20-SM GPC (8 per GPU); full 160/160 enablement on B300 — B200's 148 was "
         "yield insurance, now retired."
     ),
 )
@@ -1374,7 +1378,7 @@ GB300 = DieAnatomy(
             "but manufacturing matured: all 160 streaming multiprocessors "
             "are enabled where B200 shipped 148, and the memory stacks grew "
             "from eight layers to twelve — 288 GB per GPU, half again B200's "
-            "192. The tensor cores also double their 4-bit-float throughput. "
+            "192. NVIDIA also claims about 1.5 times the 4-bit-float throughput. "
             "NVIDIA pitches it at inference on long-running reasoning "
             "models, where resident memory decides what fits."
         ),
@@ -1382,7 +1386,7 @@ GB300 = DieAnatomy(
             "The Blackwell mid-generation refresh: the same two "
             "reticle-limited dies fused by NV-HBI at 10 TB/s, matured — all "
             "160 SMs enabled (B200 ships 148), 12-high HBM3e stacks for "
-            "288 GB (B200: 192), and doubled dense-FP4 tensor throughput. "
+            "288 GB (B200: 192), and ~1.5× dense-FP4 tensor throughput (NVIDIA's figure). "
             "Aimed at reasoning-model inference, where resident capacity "
             "decides what fits. The GB300 NVL72 rack fuses 72 of these, as "
             "the XE9712 twin shows for GB200."
@@ -1423,13 +1427,13 @@ GB300 = DieAnatomy(
         DieRegion(id="l2-b", kind="l2", label="L2 · 63 MB",
                   x=67.5, y=30, w=52.5, h=4.5,
                   description=_L2_DESC_GB),
-        *_gpc_row("gpc-lt", 2, 10, 62.5, 8, 21, "GPC · ~20 SM", _GPC_DESC_GB300,
+        *_gpc_row("gpc-lt", 2, 10, 62.5, 8, 21, "GPC · 20 SM", _GPC_DESC_GB300,
                   photo=P_GB200_BOARD),
-        *_gpc_row("gpc-lb", 2, 10, 62.5, 35.5, 21, "GPC · ~20 SM", _GPC_DESC_GB300,
+        *_gpc_row("gpc-lb", 2, 10, 62.5, 35.5, 21, "GPC · 20 SM", _GPC_DESC_GB300,
                   photo=P_GB200_BOARD),
-        *_gpc_row("gpc-rt", 2, 67.5, 120, 8, 21, "GPC · ~20 SM", _GPC_DESC_GB300,
+        *_gpc_row("gpc-rt", 2, 67.5, 120, 8, 21, "GPC · 20 SM", _GPC_DESC_GB300,
                   photo=P_GB200_BOARD),
-        *_gpc_row("gpc-rb", 2, 67.5, 120, 35.5, 21, "GPC · ~20 SM", _GPC_DESC_GB300,
+        *_gpc_row("gpc-rb", 2, 67.5, 120, 35.5, 21, "GPC · 20 SM", _GPC_DESC_GB300,
                   photo=P_GB200_BOARD),
         DieRegion(id="nvlink", kind="nvlink", label="NVLink 5 × 18",
                   x=2, y=58, w=126, h=4, photo=P_NVLINK_CARDS,
@@ -1438,7 +1442,7 @@ GB300 = DieAnatomy(
     stats=[
         Stat(label="SMs (enabled)", value="160 of 160"),
         Stat(label="FP32 cores", value="20 480"),
-        Stat(label="Dense FP4", value="~15 PFLOPS (~1.5× B200)"),
+        Stat(label="Dense FP4 (NVIDIA claim)", value="~15 PFLOPS (~1.5× B200)"),
         Stat(label="L2 cache", value="126 MB"),
         Stat(label="Memory", value="288 GB HBM3e 12-Hi · 8 TB/s"),
         Stat(label="NVLink 5", value="1.8 TB/s"),
@@ -1449,6 +1453,8 @@ GB300 = DieAnatomy(
                    url="https://www.nvidia.com/en-us/data-center/gb300-nvl72/"),
         SourceLink(label="NVIDIA blog: Blackwell Ultra for the Era of AI Reasoning",
                    url="https://developer.nvidia.com/blog/nvidia-blackwell-ultra-for-the-era-of-ai-reasoning/"),
+        SourceLink(label="NVIDIA blog: Inside Blackwell Ultra (SM / GPC / HBM3e figures)",
+                   url="https://developer.nvidia.com/blog/inside-nvidia-blackwell-ultra-the-chip-powering-the-ai-factory-era/"),
         SourceLink(label="Wikipedia: Blackwell (microarchitecture)",
                    url="https://en.wikipedia.org/wiki/Blackwell_(microarchitecture)"),
     ],
@@ -1596,8 +1602,8 @@ MI300X_DIE = DieAnatomy(
             "eight HBM3 PHYs, Infinity Fabric) with eight 5nm XCDs "
             "3D-stacked on top — 304 CUs, 19,456 SPs. 192 GB HBM3 at "
             "5.3 TB/s. Vertical stacking is AMD's answer to the reticle "
-            "limit where NV-HBI goes sideways; MI300A swaps three XCDs for "
-            "Zen 4 CCDs on the same base."
+            "limit where NV-HBI goes sideways; MI300A swaps two XCDs for "
+            "three Zen 4 CCDs on the same base."
         ),
         expert=(
             "MI300X: 4× IOD (256 MB IC, HBM PHYs, IF) + 8× XCD 3D-stacked, "
@@ -1633,7 +1639,7 @@ MI300X_DIE = DieAnatomy(
         Stat(label="Infinity Cache", value="256 MB (on IODs)"),
         Stat(label="Memory", value="192 GB HBM3 · 5.3 TB/s"),
         Stat(label="Infinity Fabric", value="7 links · ~128 GB/s each"),
-        Stat(label="Matrix FP16", value="1.3 PFLOPS"),
+        Stat(label="Matrix FP16 (peak, AMD)", value="1.3 PFLOPS"),
     ],
     sources=[
         SourceLink(label="AMD CDNA 3 Architecture Whitepaper",

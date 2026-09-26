@@ -59,6 +59,9 @@ export interface SimulateRequest {
 
 // Phase machine (monotonic, never regresses):
 //   off → detect → handshake → budget → charge → boot → load → steady
+// The charging-diagnostics trace (#scenario=charge-taper-diagnostics) runs
+//   off → detect → handshake → budget → charge → cap → taper → load → heat
+//   → resume → swap → steady
 export type PowerPhase =
   | "off"
   | "detect"
@@ -67,7 +70,12 @@ export type PowerPhase =
   | "charge"
   | "boot"
   | "load"
-  | "steady";
+  | "steady"
+  | "cap"
+  | "taper"
+  | "heat"
+  | "resume"
+  | "swap";
 
 export type ChargeStage = "idle" | "precharge" | "cc" | "cv" | "full";
 
@@ -90,6 +98,48 @@ export interface PowerState {
   hybrid: boolean; // true while battery supplements adapter
   stalled: boolean; // true on long stages the UI should dwell on
   cycleCost: number; // dwell weight, >=1
+  // Present only on the charging-diagnostics trace: what the owner can read
+  // off the machine, and the single reason the charge is below the full rate.
+  chargeLimiter?: ChargeLimiter;
+  chargeMode?: ChargeMode;
+  chargeCapPct?: number;
+  packTempC?: number;
+  adapterReadout?: string; // the BIOS "AC Adapter" line
+  batteryReadout?: string; // the battery status line (BIOS / Windows); names no cause
+  failedRegions?: string[]; // drawn in the error colour
+}
+
+export type ChargeLimiter =
+  | "none"
+  | "charge-cap"
+  | "taper"
+  | "budget"
+  | "temperature"
+  | "adapter"
+  | "full";
+export type ChargeMode = "primarily-ac" | "standard";
+
+export interface DiagnosticCheck {
+  id: string;
+  phase: PowerPhase;
+  limiter: ChargeLimiter;
+  symptom: string;
+  readout: string;
+  cause: string;
+  action: string;
+}
+
+// A playable trace (GET /api/scenarios; POST /api/simulate?scenario=<id>).
+export interface TraceScenario {
+  id: string;
+  title: string;
+  kind: "baseline" | "failure";
+  summary: string;
+  phases: PowerPhase[];
+  heroLabel: string;
+  checks: DiagnosticCheck[];
+  sources: SourceLink[];
+  illustrative: string;
 }
 
 export type Regime = "adapter-limited" | "within-budget" | "throttled";
@@ -111,6 +161,7 @@ export interface SimulateResponse {
   adapter: AdapterOption;
   summary: Summary;
   trace: PowerState[];
+  traceScenario?: TraceScenario; // only on a failure trace
 }
 
 // --- Anatomy ---

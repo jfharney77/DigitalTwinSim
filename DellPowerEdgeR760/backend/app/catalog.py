@@ -29,7 +29,7 @@ CATALOG: list[CatalogCategory] = [
                 summary="Entry two-socket part for light, steady workloads.",
                 details=(
                     "12 cores at 2.0 GHz base, 150 W. Silver is Intel's "
-                    "value tier: lower clocks, memory capped at 4400 MT/s, "
+                    "value tier: lower clocks, memory capped at 4000 MT/s, "
                     "fewer inter-socket links. A sensible pick when the "
                     "server's job is file/print, a small hypervisor, or "
                     "network services that never saturate a modern core — "
@@ -53,13 +53,15 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="xeon-gold-6548y-plus",
                 name="Xeon Gold 6548Y+ · 32 cores",
-                summary="5th-gen Gold: same cores, faster memory and cache.",
+                summary="5th-gen Gold: same cores, higher clocks, faster memory.",
                 details=(
-                    "32 cores at 2.5 GHz, 250 W, 5th generation (Emerald "
-                    "Rapids). The '+' parts raise base clocks and triple "
-                    "the L3 cache versus 4th gen, and unlock DDR5-5600. "
-                    "Databases and latency-sensitive services feel the "
-                    "bigger cache more than an extra handful of cores."
+                    "32 cores at 2.5 GHz, 250 W, 60 MB of L3 cache, 5th "
+                    "generation (Emerald Rapids). Against the 4th-gen "
+                    "32-core Golds it raises base clocks and memory speed "
+                    "(DDR5-5200 on this part; DDR5-5600 is reserved for the "
+                    "Platinum tier). Databases and latency-sensitive "
+                    "services feel the faster cores and memory more than an "
+                    "extra handful of cores."
                 ),
             ),
             CatalogOption(
@@ -67,8 +69,9 @@ CATALOG: list[CatalogCategory] = [
                 name="Xeon Platinum 8592+ · 64 cores",
                 summary="Maximum core count: 128 cores across two sockets.",
                 details=(
-                    "64 cores at 1.9 GHz, 350 W — the top of the Emerald "
-                    "Rapids stack. Platinum buys the highest core counts, "
+                    "64 cores at 1.9 GHz, 350 W, 320 MB of L3 cache, "
+                    "DDR5-5600 — the top of the Emerald Rapids stack. "
+                    "Platinum buys the highest core counts, "
                     "fastest UPI links between the two sockets, and the "
                     "full accelerator set (AMX for AI inference on-CPU). "
                     "At 350 W each these mandate the high-performance "
@@ -88,8 +91,9 @@ CATALOG: list[CatalogCategory] = [
             "large modules can share a channel, standard in servers."
         ),
         limits=(
-            "32 slots, up to 8 TB; 5600 MT/s on 5th-gen CPUs (4800 on "
-            "4th-gen), dropping to ~4400 MT/s with 2 DIMMs per channel; "
+            "32 slots, up to 8 TB; up to 5600 MT/s on 5th-gen CPUs (4800 "
+            "on 4th-gen) at 1 DIMM per channel, lower with 2 per channel, "
+            "and never above what the chosen CPU model supports; "
             "16 slots usable per populated socket"
         ),
         region_ids=["dimm-a1", "dimm-a2", "dimm-b1", "dimm-b2"],
@@ -124,7 +128,7 @@ CATALOG: list[CatalogCategory] = [
                 name="64 GB RDIMM",
                 summary="Dense capacity without touching 2 DIMMs per channel.",
                 details=(
-                    "2 TB from just 16 modules — full speed, and 16 empty "
+                    "1 TB from just 16 modules — full speed, and 16 empty "
                     "slots left for growth. The go-to for in-memory "
                     "databases and memory-hungry VM hosts that will expand "
                     "over the server's life."
@@ -207,10 +211,10 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "EDSFF E3.S is the ruler-style flash form factor "
                     "designed for NVMe rather than adapted from disks: "
-                    "better cooling, denser packing. All sixteen attach "
-                    "directly to CPU PCIe Gen5 lanes with no controller in "
-                    "the path — lowest latency, with redundancy handled in "
-                    "software instead of a PERC."
+                    "better cooling, denser packing. In the direct-attach "
+                    "layout all sixteen ride CPU PCIe Gen5 lanes with no "
+                    "controller in the path — lowest latency, with "
+                    "redundancy handled in software instead of a PERC."
                 ),
             ),
         ],
@@ -228,13 +232,14 @@ CATALOG: list[CatalogCategory] = [
         options=[
             CatalogOption(
                 id="nvme-u2-gen4",
-                name="NVMe U.2 SSD (Gen4/Gen5)",
+                name="NVMe U.2 SSD (Gen4)",
                 summary="The performance tier: flash on PCIe lanes.",
                 details=(
                     "U.2 is the 2.5-inch hot-swap package for NVMe flash — "
                     "up to 15.36 TB per drive, hundreds of thousands of "
-                    "IOPS, latency in microseconds. Gen5 doubles Gen4's "
-                    "per-drive bandwidth. The default for databases and "
+                    "IOPS, latency in microseconds. The R760's U.2 bays "
+                    "run at PCIe Gen4; Gen5 drive bandwidth comes with the "
+                    "E3.S chassis. The default for databases and "
                     "any software-defined storage tier."
                 ),
             ),
@@ -432,7 +437,8 @@ CATALOG: list[CatalogCategory] = [
             "cards that rely entirely on the chassis fan wall for airflow."
         ),
         limits=(
-            "Up to 2 double-wide 300 W cards, or up to 6 single-wide; "
+            "Up to 2 double-wide 350 W cards, or up to 6 single-wide 75 W "
+            "cards; "
             "requires high-performance fans and PSUs sized for the draw"
         ),
         region_ids=["riser1", "riser2"],
@@ -443,7 +449,9 @@ CATALOG: list[CatalogCategory] = [
                 summary="Light inference and video at minimal power.",
                 details=(
                     "A low-profile 72 W card needing no extra power "
-                    "cables; up to six fit one R760. Right-sized for "
+                    "cables. The chassis takes up to six single-wide "
+                    "75 W cards; Dell's current GPU matrix qualifies up to "
+                    "four L4s in one R760. Right-sized for "
                     "video transcode, virtual desktop graphics, and "
                     "modest ML inference — the 'sprinkle some GPU on it' "
                     "option."
@@ -462,15 +470,17 @@ CATALOG: list[CatalogCategory] = [
                 ),
             ),
             CatalogOption(
-                id="gpu-h100",
-                name="NVIDIA H100 NVL · 94 GB (double-wide, 400 W)",
-                summary="Top-end AI card for the most demanding inference.",
+                id="gpu-a16",
+                name="NVIDIA A16 · 64 GB (double-wide, 250 W)",
+                summary="Virtual-desktop card: four GPUs on one board.",
                 details=(
-                    "Hopper architecture with HBM3 memory — the card for "
-                    "serving large language models. In an R760 it is "
-                    "usually one or two cards for inference; training at "
-                    "scale moves to purpose-built GPU chassis (XE-series) "
-                    "with more power and cooling headroom."
+                    "Four Ampere GPUs with 16 GB each on a single "
+                    "double-wide card, built to slice into many virtual "
+                    "desktop sessions rather than to run one big model. Two "
+                    "fit an R760. Hopper-class cards such as the H100 NVL "
+                    "(up to 400 W) exceed this chassis's 350 W per-card "
+                    "limit; Dell's GPU matrix places them in the GPU-dense "
+                    "R760xa and the XE-series instead."
                 ),
             ),
         ],
@@ -488,18 +498,19 @@ CATALOG: list[CatalogCategory] = [
         options=[
             CatalogOption(
                 id="psu-800w",
-                name="800 W Titanium",
+                name="800 W Platinum",
                 summary="Entry sizing for CPU-only builds.",
                 details=(
                     "Covers modest dual-socket configurations without "
-                    "GPUs. 80 PLUS Titanium means ~96% efficiency at half "
-                    "load — at datacenter scale the efficiency class is a "
-                    "real line item on the power bill."
+                    "GPUs. 80 PLUS Platinum means about 94% efficiency at "
+                    "half load, Titanium about 96% — at datacenter scale "
+                    "the efficiency class is a real line item on the power "
+                    "bill."
                 ),
             ),
             CatalogOption(
-                id="psu-1500w",
-                name="1500 W Titanium",
+                id="psu-1400w",
+                name="1400 W Platinum",
                 summary="The common choice for loaded two-socket builds.",
                 details=(
                     "Headroom for two high-TDP CPUs, 24 drives, and full "
@@ -522,10 +533,12 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="psu-2800w",
                 name="2800 W Titanium",
-                summary="Maximum: dual 400 W GPUs plus everything else.",
+                summary="Dual 350 W GPUs plus everything else.",
                 details=(
-                    "The top of the range, for the heaviest accelerator "
-                    "configurations while preserving 1+1 redundancy. At "
+                    "The top of the usual range (200–240 V input only; a "
+                    "3200 W unit exists for 277 VAC feeds), for the "
+                    "heaviest accelerator configurations while preserving "
+                    "1+1 redundancy. At "
                     "this level rack power budgeting, not the server, is "
                     "usually the binding constraint."
                 ),
@@ -596,22 +609,25 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="idrac-basic",
                 name="iDRAC9 Basic",
-                summary="Inventory, sensors, and power control.",
+                summary="The floor on Dell's smaller servers, not on this one.",
                 details=(
-                    "The no-cost tier: hardware inventory, health "
-                    "sensors, logs, and remote power on/off over the "
-                    "dedicated management port. Enough for a server that "
-                    "lives down the hall."
+                    "The no-cost tier: web UI, Redfish API, hardware "
+                    "inventory, health sensors, logs, and remote power "
+                    "on/off. Dell makes it the default only on its 100–500 "
+                    "series rack and tower servers; a 600-series-and-up "
+                    "machine like the R760 starts at Express, so Basic is "
+                    "listed here for orientation."
                 ),
             ),
             CatalogOption(
                 id="idrac-express",
                 name="iDRAC9 Express",
-                summary="Adds the web console and Redfish API basics.",
+                summary="The R760's included baseline.",
                 details=(
-                    "The usual minimum for managed environments: full web "
-                    "UI, scriptable Redfish REST API, and firmware update "
-                    "orchestration."
+                    "What every R760 ships with: full web UI, scriptable "
+                    "Redfish REST API, remote RACADM command line, and "
+                    "firmware updates. No remote console or virtual media "
+                    "— those arrive with Enterprise."
                 ),
             ),
             CatalogOption(

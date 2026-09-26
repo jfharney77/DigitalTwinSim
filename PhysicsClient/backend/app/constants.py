@@ -68,6 +68,12 @@ CONSTANTS: dict[str, Constant] = {
         estimated=True,
         blurb="GPU junction-to-air thermal resistance, laptop.",
     ),
+    "gpu_r_th_promax": Constant(
+        value=0.36, unit="K/W",
+        source="estimate — thinner workstation chassis, smaller heat-pipe assembly than the gaming laptop",
+        estimated=True,
+        blurb="GPU junction-to-air thermal resistance, Pro Max Plus.",
+    ),
     "gpu_r_th_desktop": Constant(
         value=0.13, unit="K/W",
         source="estimate — triple-fan desktop card cooler", estimated=True,
@@ -232,9 +238,13 @@ CONSTANTS: dict[str, Constant] = {
     # --- NPU (Pro Max Plus personality, spec 07) --------------------------
     "npu_max_w": Constant(
         value=40, unit="W",
-        source="estimate — spec 07 says 'tens of watts', verify against Dell Pro Max Plus specs",
+        source=(
+            "estimate of typical single-stream inference draw — the Qualcomm "
+            "AI 100 PC Inference Card is reported at a 75 W thermal design "
+            "power (https://www.laptopmag.com/laptops/dells-new-laptop-ditches-gpu-for-npu); Dell publishes no sustained figure"
+        ),
         estimated=True,
-        blurb="Discrete NPU card (Qualcomm AI-100-based) power at full inference load.",
+        blurb="Discrete NPU card (Qualcomm AI 100 PC Inference Card) power at full inference load; reported card TDP is 75 W.",
     ),
     "npu_idle_w": Constant(
         value=3, unit="W", source="estimate", estimated=True,
@@ -243,15 +253,32 @@ CONSTANTS: dict[str, Constant] = {
     # --- Inference engines: tokens/s at full engine power (spec 07) -------
     "tokps_cpu": Constant(
         value=6, unit="tokens/s",
-        source="estimate — ~13B-class local LLM on mobile CPU", estimated=True,
-        blurb="Token rate with the LLM preset running on the CPU.",
+        source=(
+            "estimate — ~13B-class local LLM, 4-bit weights, on a mobile "
+            "CPU; the same model at the same precision is assumed on all "
+            "three engines so the comparison isolates the silicon"
+        ),
+        estimated=True,
+        blurb="Token rate with the LLM preset running on the CPU (~13B-class model, 4-bit weights).",
     ),
     "tokps_gpu": Constant(
-        value=45, unit="tokens/s", source="estimate", estimated=True,
-        blurb="Token rate on the discrete GPU.",
+        value=45, unit="tokens/s",
+        source=(
+            "estimate — same ~13B-class model at 4-bit weights as the CPU "
+            "and NPU legs, so the engine comparison is not a quantization "
+            "comparison"
+        ),
+        estimated=True,
+        blurb="Token rate on the discrete GPU (~13B-class model, 4-bit weights).",
     ),
     "tokps_npu": Constant(
-        value=30, unit="tokens/s", source="estimate", estimated=True,
+        value=30, unit="tokens/s",
+        source=(
+            "estimate — same order as StorageReview's measured ~30 tokens/s "
+            "on Llama 3.1 8B at batch 1 on this card (https://www.storagereview.com/review/dell-pro-max-16-plus-with-qualcomm-aic100-review-excellent-workstation-experimental-accelerator); the 13B-class "
+            "model here is illustrative"
+        ),
+        estimated=True,
         blurb="Token rate on the discrete NPU — slower than the GPU, far better per joule.",
     ),
     # --- FPS proxy --------------------------------------------------------

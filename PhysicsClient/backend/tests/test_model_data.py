@@ -17,6 +17,7 @@ from app.presets import (
     PROMAX_NPU,
     WORKLOAD_PRESETS,
 )
+from app.engine import simulate
 from app.validation import validate
 
 EXPECTED_KINDS = set(get_args(RegionKind))
@@ -73,6 +74,21 @@ def test_over_budget_build_warns():
     assert _findings(AW_LAPTOP_MAX)["budget"] == "warning"
     modest = DeviceConfig(cpu_pl1_w=45, gpu_tgp_w=80)
     assert _findings(modest)["budget"] == "ok"
+
+
+def test_budget_warning_is_scoped_to_runs_that_can_trigger_it():
+    """An inference run loads one engine at a time, so the combined
+    CPU+GPU limit cannot bind — the rule reports ok instead of warning
+    through the whole three-engines scenario."""
+    g = next(x for x in GUIDED_SCENARIOS if x.id == "three-engines")
+    found = {v.rule_id: v for v in validate(g.scenario)}
+    assert found["budget"].level == "ok"
+    assert "one engine at a time" in found["budget"].message
+    trace, _, _ = simulate(g.scenario)
+    assert all(s.pl_state != "budget-limited" for s in trace)
+    gaming = g.scenario.model_copy(update={"events": []})
+    gaming.workload = gaming.workload.model_copy(update={"inference": False})
+    assert {v.rule_id: v.level for v in validate(gaming)}["budget"] == "warning"
 
 
 def test_desktop_psu_oversubscription_warns():

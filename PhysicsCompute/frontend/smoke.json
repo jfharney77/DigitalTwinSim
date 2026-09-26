@@ -169,6 +169,38 @@
         "watch": ".playback-row button.primary",
         "times": 1
       }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Keep the worst seat cool",
+        "Warm water, one pump down"
+      ]
+    },
+    {
+      "hash": "#lab=worst-seat",
+      "name": "lab-worst-seat",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

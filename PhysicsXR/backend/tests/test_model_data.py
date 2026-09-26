@@ -7,6 +7,7 @@ from typing import get_args
 
 from app.anatomy import ANATOMY
 from app.constants import CONSTANTS, PSU_EFFICIENCY_CURVE
+from app.constants import value as C
 from app.models import Environment, RegionKind, Scenario, ServerConfig
 from app.presets import (
     CELL_SITE,
@@ -70,12 +71,45 @@ def test_extended_envelope_is_select_configs_only():
     ok = ServerConfig(platform="xr8000", cpu_tdp_w=185,
                       thermal_config="extended", drive_type="ssd")
     assert _findings(ok)["extended-envelope"] == "ok"
-    too_hot = ok.model_copy(update={"cpu_tdp_w": 250})
+    too_hot = ok.model_copy(update={"cpu_tdp_w": 205})
     assert _findings(too_hot)["extended-envelope"] == "error"
     spinning = ok.model_copy(update={"drive_type": "hdd"})
     assert _findings(spinning)["extended-envelope"] == "error"
     wrong_box = ok.model_copy(update={"platform": "xr4000", "cpu_tdp_w": 100})
     assert _findings(wrong_box)["extended-envelope"] == "error"
+    # Dell's XR8620t restriction table: dual PSUs at 55 °C and above.
+    one_psu = ok.model_copy(update={"psu_count": 1, "redundancy": "1+0"})
+    assert _findings(one_psu)["extended-envelope"] == "error"
+
+
+def test_sourced_platform_limits():
+    """Facts from Dell's XR8000 Technical Guide and the XR-Series spec
+    sheet: 205 W CPU maximum, 195 W in the 65 °C classes, eight DIMM
+    slots at most, derating from 900 m — documented, so not estimates."""
+    from app.models import DIMM_COUNTS, PLATFORM_TDP_TIERS
+
+    assert max(PLATFORM_TDP_TIERS["xr8000"]) == C("xr8000_max_tdp_w") == 205
+    assert C("extended_max_tdp_w") == 195
+    assert max(DIMM_COUNTS) == 8
+    for name in ("xr8000_max_tdp_w", "extended_max_tdp_w", "derate_start_m",
+                 "derate_m_per_c_standard", "derate_m_per_c_extended"):
+        assert not CONSTANTS[name].estimated and "Dell" in CONSTANTS[name].source
+    assert C("derate_start_m") == 900
+    for preset in CONFIG_PRESETS:
+        assert preset.config.dimms <= 8
+
+
+def test_altitude_derate_uses_the_envelope_class():
+    """1 °C per 80 m above 900 m in the −5…55 °C class: 2,500 m takes
+    20 °C off, so 42 °C is over the derated limit and 30 °C is not."""
+    s = Scenario(config=CELL_SITE,
+                 environment=Environment(altitude_m=2500, inlet_c=42))
+    msg = next(v.message for v in validate(s) if v.rule_id == "altitude")
+    assert "35 °C" in msg and "above that derated limit" in msg
+    s = Scenario(config=CELL_SITE,
+                 environment=Environment(altitude_m=2500, inlet_c=30))
+    msg = next(v.message for v in validate(s) if v.rule_id == "altitude")
+    assert "above that derated limit" not in msg
 
 
 def test_ambient_outside_the_envelope_warns_but_runs():

@@ -6,7 +6,7 @@ export type Product = "xe7745" | "xe9680" | "xe9712";
 export const CPU_TDP_TIERS = [250, 300, 350, 400, 500];
 export const PCIE_GPU_TDP = [300, 450, 600];
 export const SXM_GPU_TDP = [700, 1000];
-export const PSU_7745_W = [2400, 2800];
+export const PSU_7745_W = [2900, 3200];
 export const SHELF_KW = [66, 132, 198];
 
 export interface SystemConfig {
@@ -172,6 +172,12 @@ export interface GuidedScenario {
   narration: string[];
   question: string;
   scenario: Scenario;
+  comparePresetId?: string | null;
+}
+
+export interface Intro {
+  title: string;
+  text: string;
 }
 
 export interface Explain {

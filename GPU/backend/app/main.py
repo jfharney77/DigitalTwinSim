@@ -5,7 +5,12 @@ from __future__ import annotations
 import asyncio
 
 from fastapi import Body, HTTPException, Query
-from fastapi.responses import StreamingResponse
+try:
+    from fastapi.responses import StreamingResponse
+except ImportError:  # twinkit.fastapi_stub (static hosting, docs/STATIC_HOSTING.md):
+    # the in-browser engine only declares routes, and /api/live/stream — the
+    # one route that streams — is never served there.
+    StreamingResponse = None  # type: ignore[assignment,misc]
 
 from twinkit.api import Level, make_app
 
@@ -184,6 +189,19 @@ def get_tour_recording(
     except ValueError as e:
         raise HTTPException(status_code=422, detail=f"recording corrupt: {e}")
     return TraceResponse(session_id=lesson_id, trace=trace)
+
+
+
+@app.get("/api/tour/recording", response_model=TraceResponse)
+def get_tour_recording_by_query(
+    lesson: str, asProfile: str | None = None  # noqa: N803 - the wire name
+) -> TraceResponse:
+    """The same recording as ``/api/tour/recordings/{lesson_id}``, addressed by
+    query so the static-hosting builder can snapshot it (it enumerates query
+    parameters, not path parameters — docs/STATIC_HOSTING.md). The parameter is
+    spelled ``asProfile`` rather than aliased because the static dispatcher
+    reads signature names. One implementation: this delegates."""
+    return get_tour_recording(lesson, asProfile)
 
 
 async def _sse_events(sub):

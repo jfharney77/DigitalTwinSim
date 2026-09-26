@@ -21,6 +21,15 @@ export default defineConfig({
         target: process.env.API_TARGET ?? "http://localhost:8046",
         changeOrigin: true,
       },
+      // "Fed by engines" mode reads the composition layer (compose/, :8048),
+      // which runs the detailed twins and carries their outputs in across
+      // tested seams. Optional: with nothing there, the control disables
+      // itself. COMPOSE_TARGET moves it when :8048 is taken.
+      "/compose-api": {
+        target: process.env.COMPOSE_TARGET ?? "http://localhost:8048",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/compose-api/, "/api"),
+      },
     },
   },
 });

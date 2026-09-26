@@ -1,0 +1,319 @@
+{
+  "params": {
+    "product": [
+      "aidataplatform",
+      "cloudiq"
+    ]
+  },
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "product": "aidataplatform",
+          "ingestTbh": 20,
+          "processTbh": 6,
+          "indexTbh": 15,
+          "serveTbh": 30,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "cloudiq",
+          "ingestTbh": 20,
+          "processTbh": 6,
+          "indexTbh": 15,
+          "serveTbh": 30,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "aidataplatform",
+          "ingestTbh": 20.0,
+          "processTbh": 6.0,
+          "indexTbh": 15.0,
+          "serveTbh": 30.0,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "aidataplatform",
+          "ingestTbh": 20.0,
+          "processTbh": 6.0,
+          "indexTbh": 15.0,
+          "serveTbh": 30.0,
+          "gpuProcessing": true,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "aidataplatform",
+          "ingestTbh": 20.0,
+          "processTbh": 6.0,
+          "indexTbh": 15.0,
+          "serveTbh": 30.0,
+          "gpuProcessing": true,
+          "gpuAnalytics": false,
+          "kvOffload": true,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "cloudiq",
+          "ingestTbh": 20,
+          "processTbh": 6,
+          "indexTbh": 15,
+          "serveTbh": 30,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "cloudiq",
+          "ingestTbh": 20,
+          "processTbh": 6,
+          "indexTbh": 15,
+          "serveTbh": 30,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 1.5,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "cloudiq",
+          "ingestTbh": 20,
+          "processTbh": 6,
+          "indexTbh": 15,
+          "serveTbh": 30,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 5.5,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 360,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "cloudiq",
+          "ingestTbh": 20,
+          "processTbh": 6,
+          "indexTbh": 15,
+          "serveTbh": 30,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 480,
+        "events": [
+          {
+            "atH": 48,
+            "action": "inject-capacity",
+            "value": null,
+            "workload": null
+          },
+          {
+            "atH": 120,
+            "action": "inject-gray",
+            "value": null,
+            "workload": null
+          },
+          {
+            "atH": 240,
+            "action": "inject-fan-drift",
+            "value": null,
+            "workload": null
+          }
+        ]
+      },
+      {
+        "config": {
+          "product": "aidataplatform",
+          "ingestTbh": 20.0,
+          "processTbh": 6.0,
+          "indexTbh": 15.0,
+          "serveTbh": 30.0,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8.0,
+          "gpuReadDemandTbh": 25.0,
+          "inferenceSessionsDemand": 300,
+          "longContextPct": 60,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 240,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "cloudiq",
+          "ingestTbh": 20,
+          "processTbh": 6,
+          "indexTbh": 15,
+          "serveTbh": 30,
+          "gpuProcessing": false,
+          "gpuAnalytics": false,
+          "kvOffload": false,
+          "anomalyK": 3.0,
+          "weightCapacity": 40,
+          "weightPerformance": 40,
+          "weightConfig": 20
+        },
+        "workload": {
+          "rawArrivalTbh": 8,
+          "gpuReadDemandTbh": 10,
+          "inferenceSessionsDemand": 60,
+          "longContextPct": 30,
+          "analyticsScanTbh": 20
+        },
+        "durationH": 600,
+        "events": [
+          {
+            "atH": 48,
+            "action": "inject-capacity",
+            "value": null,
+            "workload": null
+          },
+          {
+            "atH": 240,
+            "action": "demand-change",
+            "value": null,
+            "workload": null
+          }
+        ]
+      }
+    ]
+  }
+}

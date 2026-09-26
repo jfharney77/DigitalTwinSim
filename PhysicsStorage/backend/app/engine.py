@@ -90,6 +90,13 @@ def pool_capacities_k(cfg: StorageConfig) -> dict[str, float]:
     }
 
 
+def _fmt_hours(h: float) -> str:
+    """'0.45 h (27 min)' under an hour, '3.6 h' above — for log lines."""
+    if h < 1.0:
+        return f"{h:.2f} h ({h * 60:.0f} min)"
+    return f"{h:.1f} h"
+
+
 def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summary]:
     cfg = scenario.config
     wl: Workload = scenario.workload.model_copy()
@@ -105,6 +112,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     snapshot_tb = 0.0
     rebuild_gb_left = 0.0
     rebuild_gb_total = 0.0
+    rebuild_elapsed_h = 0.0      # fractional, so a sub-tick rebuild is readable
+    last_rebuild_h = 0.0         # duration of the last completed rebuild
     failures_in_window = 0
     async_backlog_gb = 0.0
     rebalance_until_h = -1.0
@@ -135,6 +144,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             elif ev.action == "fail-drive":
                 rebuild_gb_total = cfg.drive_tb * 1000.0
                 rebuild_gb_left = rebuild_gb_total
+                rebuild_elapsed_h = 0.0
                 failures_in_window += 1
                 log.append(LogEntry(
                     t_h=t, severity="warning",
@@ -165,6 +175,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                     units -= 1
                     rebuild_gb_total = cfg.drives_per_unit * cfg.drive_tb * 1000.0
                     rebuild_gb_left = rebuild_gb_total
+                    rebuild_elapsed_h = 0.0
                     failures_in_window += 1
                     log.append(LogEntry(
                         t_h=t, severity="warning",
@@ -246,13 +257,21 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                     rate = C("rebuild_gbps_per_node_powerflex") * max(units - 1, 1)
                 else:
                     rate = C("rebuild_gbps_per_node") * max(units - 1, 1)
-                rebuild_gb_left = max(0.0, rebuild_gb_left - rate * 3600.0 * DT_H)
+                tick_gb = rate * 3600.0 * DT_H
+                # The part of this tick the rebuild actually needed: a
+                # rebuild shorter than one tick still reports its real length.
+                rebuild_elapsed_h += DT_H * min(1.0, rebuild_gb_left / tick_gb)
+                rebuild_gb_left = max(0.0, rebuild_gb_left - tick_gb)
                 rebuild_hours += DT_H
                 if rebuild_gb_left == 0:
                     failures_in_window = max(0, failures_in_window - 1)
+                    last_rebuild_h = round(rebuild_elapsed_h, 2)
                     log.append(LogEntry(
                         t_h=t, severity="info",
-                        message="Rebuild complete — protection restored",
+                        message=(
+                            f"Rebuild complete after {_fmt_hours(rebuild_elapsed_h)}"
+                            f" at {rate:g} GB/s — protection restored"
+                        ),
                     ))
 
             # Capacity fill.
@@ -390,6 +409,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 rebuild_gb_left / (C("rebuild_gbps_per_node") * max(units - 1, 1) * 3600), 2
             ) if rebuilding else 0.0,
             exposure=exposure,
+            last_rebuild_h=last_rebuild_h,
             srdf_latency_ms=round(srdf_ms, 3),
             rpo_seconds=round(rpo_s, 1),
             pool_util_pct=pool_util,

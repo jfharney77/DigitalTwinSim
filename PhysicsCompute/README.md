@@ -31,6 +31,25 @@ engine, plus the iDRAC closer:
 Backend tests: `cd backend && . .venv/bin/activate && python -m pytest -q`
 Frontend build: `cd frontend && npm run build`
 
+## Sourced facts
+
+Checked against public documents in September 2026; everything else in
+`constants.py` is a labeled estimate.
+
+- XE7745: dual AMD EPYC 9005 (not Xeon), up to 8× 600 W double-wide
+  GPUs, 24 DIMMs, eight 3200 W Titanium PSUs (2900 W on 200–220 V),
+  twelve front fans plus four dual-fan mid-tray modules — Dell spec
+  sheet, July 2025. The model budgets four PSUs (a 4+4 bank); that
+  split is this app's assumption.
+- XE9680: two Xeon Scalable sockets, 32 DIMMs, six PSUs, six mid-tray
+  plus ten rear fans — Dell Installation and Service Manual.
+- XE9712: 2 Grace + 4 GPUs per 1U sled, 33 kW power shelves, 30 kg
+  sled, 1,590 kg cabinet wet weight, eight dual-rotor fans per sled
+  (not modeled) — Dell spec sheet, April 2026, which now describes the
+  GB300 generation on the IR9048 rack. The first GB200 racks shipped in
+  IR7000 racks in late 2024 (Dell press release). Nine NVLink switch
+  trays — NVIDIA technical blog.
+
 ## Companions
 
 - `DellPowerEdgeXE9680/` (:5201) and `DellPowerEdgeXE9712/` (:5181) —

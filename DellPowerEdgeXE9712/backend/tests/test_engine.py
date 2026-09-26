@@ -59,7 +59,7 @@ def test_coolant_flows_before_any_silicon():
 
 
 def test_fabric_training_is_the_longest_stage():
-    """Training 5,000+ NVLink links is the single longest stage — like the
+    """Training the NVLink links (over 5,000+ copper cables) is the single longest stage — like the
     R760's memory training or VxRail's cluster build, the UI dwells here."""
     trace = simulate()
     fabric = [s for s in trace if s.phase == "fabric"]

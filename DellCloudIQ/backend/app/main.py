@@ -5,6 +5,8 @@ All content is static data + a pure engine — no state."""
 
 from __future__ import annotations
 
+from fastapi import HTTPException, Query
+
 from twinkit.api import Level, make_app
 from twinkit.tour import TourResponse
 
@@ -12,7 +14,14 @@ from .anatomy import ANATOMY
 from .catalog import CATALOG
 from .engine import simulate
 from .leveling import leveled, leveled_all
-from .models import CatalogCategory, PipelineResponse, PlatformMap, UseCase
+from .models import (
+    CatalogCategory,
+    PipelineResponse,
+    PlatformMap,
+    ScenarioInfo,
+    UseCase,
+)
+from .scenarios import HEALTHY, SCENARIOS, simulate_scenario
 from .tour import TOUR_RESPONSE
 from .usecases import USE_CASES
 
@@ -28,8 +37,26 @@ def get_anatomy(level: int = Level) -> PlatformMap:
 
 
 @app.get("/api/pipeline", response_model=PipelineResponse)
-def get_pipeline(level: int = Level) -> PipelineResponse:
-    return leveled(PipelineResponse(trace=simulate()), level)
+def get_pipeline(
+    level: int = Level,
+    scenario: str = Query(HEALTHY, description="A scenario id from /api/scenarios"),
+) -> PipelineResponse:
+    """The trace. Without ``?scenario=`` this is the healthy pipeline, exactly
+    as before; a failure scenario id returns that scenario's trace instead."""
+    if scenario == HEALTHY:
+        return leveled(PipelineResponse(trace=simulate()), level)
+    try:
+        trace = simulate_scenario(scenario)
+    except KeyError:
+        raise HTTPException(404, f"unknown scenario {scenario!r}") from None
+    return leveled(PipelineResponse(trace=trace, scenario=scenario), level)
+
+
+@app.get("/api/scenarios", response_model=list[ScenarioInfo])
+def get_scenarios(level: int = Level) -> list[ScenarioInfo]:
+    """The selectable traces: the healthy pipeline and the failure scenarios,
+    each failure carrying the sources its behaviour is anchored to."""
+    return leveled_all(SCENARIOS, level)
 
 
 @app.get("/api/catalog", response_model=list[CatalogCategory])

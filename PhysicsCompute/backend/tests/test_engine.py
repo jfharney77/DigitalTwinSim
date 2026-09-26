@@ -243,3 +243,20 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+def test_both_sides_of_the_overhead_comparison_count_their_fans():
+    """Air vs liquid is only fair if each side is charged for every air
+    mover: the XE9680's wall lands in the several-to-15% band commonly
+    quoted for air-cooled HGX boxes, and the rack pays for its tray fans
+    as well as its pumps."""
+    h100, _, _ = run(Scenario(config=XE9680_H100, workload=TRAINING, duration_s=600))
+    b200, _, _ = run(Scenario(config=XE9680_B200, workload=TRAINING, duration_s=600))
+    rack, _, _ = run(Scenario(config=XE9712_FULL, workload=TRAINING, duration_s=600))
+    assert 4 <= h100[-1].cooling_overhead_pct <= 8
+    assert 10 <= b200[-1].cooling_overhead_pct <= 18
+    r = rack[-1]
+    assert r.fan_power_w > 0 and r.pump_power_w > 0
+    assert abs(r.fan_power_w - C("rack_air_mover_w_per_w") * r.air_watts) <= 1.0
+    assert r.cooling_overhead_pct < 2.5
+    assert b200[-1].cooling_overhead_pct > 5 * r.cooling_overhead_pct

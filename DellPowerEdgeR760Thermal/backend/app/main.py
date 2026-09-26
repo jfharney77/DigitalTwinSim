@@ -25,6 +25,12 @@ from .models import (
 from .presets import CONFIG_PRESETS, EXPLAINS, GUIDED_SCENARIOS, WORKLOAD_PRESETS
 from .validation import validate
 
+# Graded labs (docs/LAB_PATTERN.md). app/labs.py is pure; this is its HTTP edge.
+from fastapi import HTTPException
+from twinkit.labs import Lab, LabResult
+
+from .labs import LABS, LABS_BY_ID, grade_scenario
+
 app = make_app(
     title="R760 Power & Thermal Simulator",
     frontend_port=5203,
@@ -69,25 +75,43 @@ def get_explain(level: int = Level) -> list[Explain]:
     return leveled_all(EXPLAINS, level)
 
 
-def _run(scenario: Scenario) -> SimResponse:
+def _run(scenario: Scenario, level: int = 3) -> SimResponse:
     trace, log, summary = simulate(scenario)
     return SimResponse(
         validations=validate(scenario),
         trace=trace,
-        log=log,
+        # The trace is numbers; the event log is prose, so it is leveled
+        # here — resolution stays out of the pure engine, as everywhere.
+        log=leveled_all(log, level),
         summary=summary,
     )
 
 
 @app.post("/api/simulate", response_model=SimResponse)
-def post_simulate(scenario: Scenario) -> SimResponse:
-    return _run(scenario)
+def post_simulate(scenario: Scenario, level: int = Level) -> SimResponse:
+    return _run(scenario, level)
 
 
 @app.get("/api/simulate", response_model=SimResponse)
-def get_simulate() -> SimResponse:
+def get_simulate(level: int = Level) -> SimResponse:
     """The default scenario (Balanced build, database workload) — for the
     CustomerSetup chip enrichment and for a zero-click first paint."""
     from .presets import BALANCED, DATABASE
 
-    return _run(Scenario(config=BALANCED, workload=DATABASE))
+    return _run(Scenario(config=BALANCED, workload=DATABASE), level)
+
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    """The graded labs: goal, criteria, hints and start scenario. Reference
+    solutions stay server-side."""
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    """Run the learner's scenario through the engine and grade the trace.
+    Stateless and deterministic; the prose in the result is leveled."""
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(status_code=404, detail=f"unknown lab {lab_id!r}")
+    return leveled(grade_scenario(lab_id, scenario), level)

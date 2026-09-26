@@ -86,3 +86,25 @@ def post_simulate(scenario: Scenario) -> SimResponse:
 def get_simulate() -> SimResponse:
     """Default: the Blocks rollout."""
     return _run(Scenario(config=BLOCKS, duration_d=120, events=ROLLOUT))
+
+
+# --- Graded labs (docs/LAB_PATTERN.md) --------------------------------------
+# app/labs.py is pure; this is its HTTP edge, and the only place lab prose is
+# resolved to a reading level. Reference solutions never leave the server.
+
+from twinkit.labs import Lab, LabResult  # noqa: E402
+
+from .labs import LABS, LABS_BY_ID, grade_scenario  # noqa: E402
+
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    """The graded labs: goal, criteria, hints and start scenario."""
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(404, f"unknown lab {lab_id}")
+    return leveled(grade_scenario(lab_id, scenario), level)

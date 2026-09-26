@@ -59,7 +59,7 @@ _MEMORY_DESC = (
     "guest virtual machines and it backs the vSAN data path, so VxRail nodes "
     "are configured with more memory than a compute-only server of the same "
     "size — a common build is hundreds of gigabytes to multiple terabytes "
-    "per node."
+    "per node, and the Intel platforms' spec-sheet ceiling is 8 TB."
 )
 
 _COMPUTE_DESC = (
@@ -67,17 +67,19 @@ _COMPUTE_DESC = (
     "hyperconverged node the processor runs both the virtual machines and "
     "the storage stack (vSAN) at the same time; ESA is deliberately designed "
     "to spread its work across many cores, which is why VxRail requires a "
-    "minimum core count and memory per node before a node may join a vSAN "
-    "ESA cluster."
+    "minimum of 16 cores and 128 GB of memory per node before a node may "
+    "join a vSAN ESA cluster."
 )
 
 _NETWORK_DESC = (
     "The node's network adapter — OCP/NDC ports, typically 25 or 100 GbE. "
     "This is the cluster's nervous system: it carries VM traffic, vMotion "
     "(live migration of running VMs between nodes), and the vSAN storage "
-    "traffic that mirrors every write across nodes. ESA clusters lean on "
-    "RoCE (RDMA over Converged Ethernet) for low-latency storage, which is "
-    "why the switch pair and NICs are chosen together."
+    "traffic that mirrors every write across nodes. vSAN ESA needs at "
+    "least 10 GbE, and Dell recommends 100 GbE for performance; RoCE (RDMA "
+    "over Converged Ethernet) is an optional step further, enabled after the "
+    "first build on NICs and switches that support it — which is why the "
+    "switch pair and NICs are chosen together."
 )
 
 _MGMT_DESC = (
@@ -208,18 +210,22 @@ ANATOMY = ClusterAnatomy(
                 "switch failure never partitions the cluster. This fabric "
                 "carries three logical networks over the same wires: VM "
                 "traffic, vMotion (live VM migration), and vSAN storage "
-                "replication. On ESA clusters it is tuned for RoCE (RDMA over "
-                "Converged Ethernet) to keep storage latency low."
+                "replication. Clusters that turn on RoCE (RDMA over Converged "
+                "Ethernet) for vSAN also need this pair configured as a "
+                "lossless network; RoCE is optional, not required."
             ),
         ),
         ClusterRegion(
             id="tor-b", kind="fabric", label="Top-of-rack switch B",
             x=51, y=1, w=43, h=6,
             description=(
-                "The second top-of-rack switch. VxRail can drive the switch "
-                "pair itself through SmartFabric Services on Dell PowerSwitch "
-                "hardware — the cluster programs its own VLANs — or connect to "
-                "customer-managed switches. Either way the redundant pair is "
+                "The second top-of-rack switch. The pair can be Dell "
+                "PowerSwitch hardware — optionally running SmartFabric "
+                "Services, which automates the switch fabric itself — or "
+                "customer-managed switches. (VxRail 4.7 and 7.0 could program "
+                "SmartFabric switches during first run; Dell removed that "
+                "automation in VxRail 8.0, so the VLANs are now set up ahead "
+                "of time.) Either way the redundant pair is "
                 "what lets vSAN safely mirror writes between nodes: lose one "
                 "switch and every node still has a path to every other."
             ),
@@ -235,7 +241,8 @@ ANATOMY = ClusterAnatomy(
         Stat(label="Hypervisor", value="VMware ESXi on every node"),
         Stat(label="Storage", value="VMware vSAN — ESA all-NVMe or OSA"),
         Stat(label="Management", value="VxRail Manager + vCenter Server"),
-        Stat(label="Cluster network", value="25 / 100 GbE redundant top-of-rack pair"),
+        Stat(label="Cluster network", value="10 / 25 / 100 GbE redundant top-of-rack pair"),
+        Stat(label="vSAN ESA minimum", value="16 cores · 128 GB · 10 GbE per node"),
         Stat(label="Minimum cluster", value="2 nodes + a witness (ROBO/edge)"),
     ],
     photo=CLUSTER_ILLO,
@@ -253,8 +260,40 @@ ANATOMY = ClusterAnatomy(
             url="https://infohub.delltechnologies.com/p/vxrail-with-vsan-express-storage-architecture-esa/",
         ),
         SourceLink(
+            label="What's happening with SmartFabric Services and VxRail 8.0 (Dell Info Hub)",
+            url="https://infohub.delltechnologies.com/en-us/p/what-s-happening-with-smartfabric-services-and-vxrail-8-0/",
+        ),
+        SourceLink(
+            label="VxRail Network Planning Guide — first-run initialization (Dell docs)",
+            url="https://www.dell.com/support/manuals/en-us/vxrail-appliance-series/vxrail_planning_guide/perform-initialization-to-create-a-vxrail-cluster?guid=guid-32e87dc8-b130-4164-b57e-9669cced6c95&lang=en-us",
+        ),
+        SourceLink(
             label="VxRail Architecture Overview (Dell docs)",
             url="https://www.dell.com/support/manuals/en-us/vxrail-d-series-nodes/vxrail_architecture_guide/features",
         ),
     ],
 )
+
+
+# --- The day-2 map: the same cluster with a fifth node racked beneath it.
+#
+# Additive on purpose. ``ANATOMY`` above is untouched — the first-run page,
+# the anatomy page, the catalog's regionIds and the tour all keep the
+# four-node map — and the node-add scenario (app/nodeadd.py) is drawn on this
+# taller copy. Node 5 comes from the same ``_node`` builder, so it is the same
+# building block by construction: the refusal in that trace is about the
+# software image on the node, never about the hardware.
+NODE_ADD_ANATOMY = ANATOMY.model_copy(
+    update={
+        "id": "vxrail-node-add",
+        "name": "VxRail cluster with a fifth node being added",
+        "form_factor": "5× 1U/2U HCI nodes + redundant top-of-rack fabric",
+        "height": 78,
+        "regions": [*ANATOMY.regions, *_node(5, 65)],
+    }
+)
+
+ANATOMIES = {
+    "first-run": ANATOMY,
+    "node-add-mismatch": NODE_ADD_ANATOMY,
+}

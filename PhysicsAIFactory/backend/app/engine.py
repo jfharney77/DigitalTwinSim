@@ -16,6 +16,11 @@ Identities asserted in the tests, house style:
   where utilization = data availability × fabric efficiency × (1 −
   checkpoint tax) × ramp. Undersized storage therefore *emerges* as
   GPU-idle-due-to-data %, the dashboard's hero number.
+* **A stalled GPU is not a dark GPU**: a GPU waiting for data busy-waits in
+  its dataloader and collectives, so most of the utilization it demanded
+  and did not get still burns power (``stall_power_fraction``, the same
+  estimate PhysicsCompute uses). Starvation therefore cuts tokens far more
+  than it cuts megawatts — the asymmetry that prices the idle gauge.
 * **Checkpoint economics**: the tax of writing checkpoints is continuous;
   the cost of *not* writing them arrives as rollbacks when a failure
   rewinds the token counter to the last checkpoint. The interior optimum
@@ -210,11 +215,17 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             ramp = min(1.0, C("ramp_floor") + (1.0 - C("ramp_floor")) * ramp_t)
 
             u0 = data_util * fab_eff * (1.0 - ckpt_frac) * ramp * (1.0 - stall_frac)
+            # Power follows the work the GPUs *tried* to do. The share of it
+            # that data starvation withheld still burns stall_power_fraction
+            # of its power (busy-waiting), so power utilization = k × token
+            # utilization with k ≥ 1, and k == 1 whenever data keeps up.
+            power_k = 1.0 + (1.0 / max(data_util, 1e-9) - 1.0) * C("stall_power_fraction")
         else:
             demand_gbps = 0.0
             data_util = 1.0
             ckpt_frac = 0.0
             u0 = 0.0
+            power_k = 1.0
 
         # --- Power, with the facility cap as load shedding ----------------
         fabric_mw = online * C("fabric_kw_per_gpu") / 1000.0
@@ -223,7 +234,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         of = C("other_it_fraction")
 
         def it_of(u: float) -> tuple[float, float, float]:
-            gpu_mw = online * (idle_w + (peak_w - idle_w) * u) / 1e6
+            # u is token utilization; min() only guards float noise.
+            pu = min(1.0, u * power_k)
+            gpu_mw = online * (idle_w + (peak_w - idle_w) * pu) / 1e6
             other_mw = of * (gpu_mw + fixed_mw)
             return gpu_mw, other_mw, (gpu_mw + fixed_mw + other_mw)
 
@@ -235,7 +248,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             # Shed load: solve u_max so facility == budget.
             it_allowed = cfg.facility.mw_budget / pue
             gpu_allowed = it_allowed / (1.0 + of) - fixed_mw
-            u_max = (gpu_allowed * 1e6 / online - idle_w) / (peak_w - idle_w)
+            u_max = (gpu_allowed * 1e6 / online - idle_w) / (peak_w - idle_w) / power_k
             u_capped = max(0.0, min(u0, u_max))
             if u_capped < u0:
                 capped = True
@@ -250,10 +263,17 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                             message=(f"Facility at budget ({cfg.facility.mw_budget:g} MW) "
                                      "— GPU clocks capped to shed load"),
                         ))
-        if was_capped and not capped and phase == "train":
-            log.append(LogEntry(t_h=t, severity="info",
-                                message="Power cap released — full clocks restored"))
-        was_capped = capped
+        if was_capped and not capped and phase == "train" and stall_frac > 0:
+            # A failure restart idles the cluster for part of this hour, so
+            # draw dips under the ceiling on its own. Nothing was released;
+            # stay in the capped episode rather than log a release and a
+            # fresh cap one hour apart.
+            pass
+        else:
+            if was_capped and not capped and phase == "train":
+                log.append(LogEntry(t_h=t, severity="info",
+                                    message="Power cap released — full clocks restored"))
+            was_capped = capped
 
         # --- Tokens ---------------------------------------------------------
         tokens_per_s = online * job.tokens_per_gpu_s * u if phase == "train" else 0.0
@@ -303,8 +323,25 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             ),
             "power": round(100.0 * facility_mw / cfg.facility.mw_budget, 1),
             "cooling": round(min(100.0, (pue - 1.0) * 200.0), 1),
-            "resilience": round(max(0.0, 100.0 - overhead_pct), 1),
+            # Load, like every other block: the share of this hour spent
+            # saving or restarting, scaled so a 25% hour reads full.
+            "resilience": round(min(100.0, overhead_pct * 4.0), 1),
         }
+
+        # Which blocks are holding the factory back right now — the map
+        # reserves its alarm colour for these.
+        limiting: list[str] = []
+        if phase == "train":
+            if data_util < 0.99:
+                limiting.append("data")
+            if capped:
+                limiting.append("power")
+                if warm_pue_delta > 0:
+                    limiting.append("cooling")
+            if stall_frac > 0:
+                limiting.append("resilience")
+            if online < installed:
+                limiting.append("compute")
 
         trace.append(SimState(
             t_h=t,
@@ -333,6 +370,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             failures_cum=failures,
             cost_usd_m=round(cost_usd / 1e6, 3),
             region_status=region_status,
+            limiting_regions=limiting,
         ))
 
     summary = Summary(

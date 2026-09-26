@@ -610,3 +610,20 @@ select:hover {
 .app.dell .tour-page {
   grid-row: 2 / -1;
 }
+
+/* Failure scenario (cleaning / garbage collection). The error colour is the
+ * shared token; no background highlight, per the clean-design rules. */
+.app.dell .stat .stat-failed,
+.app.dell .stat span.stat-failed:last-child {
+  color: var(--dell-error, #ce1126);
+}
+.app.dell .stat.hero-stat span:last-child {
+  font-weight: 700;
+}
+.app.dell .an-alert {
+  margin-top: 8px;
+  color: var(--dell-error, #ce1126);
+}
+.app.dell .scenario-summary {
+  margin-top: 10px;
+}

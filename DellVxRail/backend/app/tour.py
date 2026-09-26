@@ -87,7 +87,8 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "computer starting up. It is four computers joining into "
                     "one system, called hyperconverged infrastructure, where "
                     "every node does computing, storage and virtualization "
-                    "together."
+                    "together. Virtualization means running many pretend "
+                    "computers, called virtual machines, on one real one."
                 ),
                 standard=(
                     "A Dell VxRail cluster in a front-of-rack elevation: four "
@@ -175,14 +176,14 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "hypervisor, from its BOSS device, and leaves the NVMe "
                     "capacity drives untouched because they belong to vSAN, "
                     "not to ESXi. Whatever lights on one node lights on all "
-                    "four: the nodes boot in lockstep, in parallel and "
-                    "uncoordinated, and the design assumes any one of them "
-                    "may be absent."
+                    "four. Every node runs the same sequence at the same time, "
+                    "but none waits on another, so the design tolerates any "
+                    "one of them being absent."
                 ),
                 expert=(
-                    "Power, POST, ESXi from BOSS on all four nodes in "
-                    "lockstep. NVMe untouched, reserved for vSAN. No "
-                    "coordination yet."
+                    "Power, POST, ESXi from BOSS on all four nodes: same "
+                    "sequence, same time, no node waiting on another. NVMe "
+                    "untouched, reserved for vSAN."
                 ),
             ),
             camera=whole_map(anatomy),
@@ -279,14 +280,14 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "four nodes into one cluster. It also switches on "
                     "features that restart virtual machines if a node fails "
                     "and spread the work evenly. Dell says this takes roughly "
-                    "25 to 40 minutes; the timeline here is only illustrative. "
+                    "25 to 40 minutes, and the clock here gives it 30. "
                     "The top node is still in charge, directing the other "
                     "three through the switches."
                 ),
                 standard=(
                     "The longest stage of the trace, which is why playback "
                     "dwells here; Dell quotes roughly 25 to 40 minutes, and "
-                    "the twin's clock is illustrative. You hand VxRail "
+                    "the twin's clock gives it 30. You hand VxRail "
                     "Manager one JSON configuration. It validates every "
                     "input, assigns management IPs, deploys or attaches "
                     "vCenter Server, and joins all four nodes into one "
@@ -296,7 +297,8 @@ def build_tour(anatomy: ClusterAnatomy) -> Tour:
                     "over the fabric."
                 ),
                 expert=(
-                    "Longest stage (Dell: 25 to 40 min). JSON config "
+                    "Longest stage (Dell: 25 to 40 min; 30 on this clock). "
+                    "JSON config "
                     "validated, IPs assigned, vCenter deployed, vSphere "
                     "cluster with HA and DRS."
                 ),

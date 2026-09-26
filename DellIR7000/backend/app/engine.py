@@ -12,7 +12,7 @@ compute twin: nothing here boots. The plot is physics — heat is conserved,
 so every watt the IT payload dissipates must leave through the liquid loop
 or through the rear-door air coil, and the trace's defining invariant is
 that the books balance on every single step
-(``liquid_watts + air_watts == it_load_watts``). The loop is proven *empty*
+(``liquid_watts + air_watts == it_load_watts``). The loop is proven *sound while empty of heat*
 first — fill, pump, leak-check — because the one unrecoverable failure in
 liquid cooling is discovering a bad fitting after 264 kW of silicon is
 already running above it. Numbers are illustrative but plausible for an
@@ -26,8 +26,8 @@ from .leveling import L
 from .models import ThermalState
 
 # The four IT bays whose cold plates are the loop's heat source. A real
-# IR7000 hosts whatever dense payload the site deploys (an NVL72, XE9685L
-# nodes, ...); the bays are drawn generic on purpose.
+# IR7000 hosts whatever dense payload the site deploys (an NVL72, M7725
+# sleds, ...); the bays are drawn generic on purpose.
 BAYS = ["b1", "b2", "b3", "b4"]
 MANIFOLDS = ["manifold-supply", "manifold-return"]
 
@@ -152,7 +152,7 @@ def simulate() -> list[ThermalState]:
                     "The cooling unit's pumps spin up and the vertical supply pipe "
                     "pressurizes, pushing coolant up the rack, through every "
                     "branch, and back down the return pipe. Flow settles at around "
-                    "300 litres per minute with no heat to carry yet — the loop is "
+                    "80 litres per minute with no heat to carry yet — the loop is "
                     "proving it can move liquid before it is asked to move heat. "
                     "Either pump can carry the whole load alone."
                 ),
@@ -160,7 +160,7 @@ def simulate() -> list[ThermalState]:
                     "The CDU's redundant pumps spin up and the vertical supply "
                     "manifold pressurizes, pushing coolant up the rack, through "
                     "every branch, and back down the return manifold. Flow settles "
-                    "near 300 litres per minute with no heat to carry yet — the "
+                    "near 80 litres per minute with no heat to carry yet — the "
                     "loop runs open, proving it can move coolant before it is asked "
                     "to move heat. Each pump can carry the load alone."
                 ),
@@ -168,7 +168,7 @@ def simulate() -> list[ThermalState]:
                     "The CDU's redundant pumps spin up and the vertical supply "
                     "manifold pressurizes, pushing coolant up the rack, through "
                     "every branch, and back down the return manifold. Flow "
-                    "settles near 300 liters per minute with no heat to carry "
+                    "settles near 80 liters per minute with no heat to carry "
                     "yet — the loop is running open-loop, proving it can move "
                     "coolant before it is asked to move heat. Each pump can "
                     "carry the load alone; like the power shelves on the "
@@ -177,12 +177,12 @@ def simulate() -> list[ThermalState]:
                 ),
                 technical=(
                     "Redundant CDU pumps up; supply manifold pressurizes, coolant "
-                    "circulates every branch and returns. ~300 L/min with zero "
+                    "circulates every branch and returns. ~80 L/min with zero "
                     "thermal load — flow is established and proven before heat is "
                     "admitted, which the engine asserts. N+1 pump redundancy."
                 ),
                 expert=(
-                    "Pumps up, manifolds pressurized, ~300 L/min at zero load. "
+                    "Pumps up, manifolds pressurized, ~80 L/min at zero load. "
                     "Flow-before-heat asserted. N+1 pumps."
                 ),
             ),
@@ -190,7 +190,7 @@ def simulate() -> list[ThermalState]:
             it_load_watts=0,
             liquid_watts=0,
             air_watts=0,
-            flow_lpm=300,
+            flow_lpm=80,
             elapsed_seconds=900,
         ),
         ThermalState(
@@ -245,7 +245,7 @@ def simulate() -> list[ThermalState]:
             it_load_watts=0,
             liquid_watts=0,
             air_watts=0,
-            flow_lpm=300,
+            flow_lpm=80,
             elapsed_seconds=2400,
             cycle_cost=5,
         ),
@@ -299,7 +299,7 @@ def simulate() -> list[ThermalState]:
             it_load_watts=0,
             liquid_watts=0,
             air_watts=0,
-            flow_lpm=300,
+            flow_lpm=80,
             elapsed_seconds=2700,
         ),
         ThermalState(
@@ -352,7 +352,7 @@ def simulate() -> list[ThermalState]:
             it_load_watts=60000,
             liquid_watts=55000,
             air_watts=5000,
-            flow_lpm=450,
+            flow_lpm=90,
             elapsed_seconds=3000,
         ),
         ThermalState(
@@ -361,51 +361,56 @@ def simulate() -> list[ThermalState]:
             label="Pumps and fans modulate as the load climbs",
             description=L(
                 novice=(
-                    "The load climbs toward the design point and the loop chases "
-                    "it: the cooling unit raises pump speed to hold the temperature "
-                    "difference steady, and the door's fans track the exhaust. This "
-                    "is the cooling twin's version of the tuning stages the "
-                    "computing twins go through — a control system hunting briefly "
-                    "before it settles. Through every adjustment the books still "
-                    "balance exactly."
+                    "The load climbs to 150 kilowatts and the loop chases it. More "
+                    "heat in the same amount of liquid would make the liquid come "
+                    "back hotter, so the cooling unit speeds its pumps up instead: "
+                    "flow rises from 90 to 225 litres per minute, the same two and "
+                    "a half times as the load, and the liquid still returns about "
+                    "10 degrees warmer than it left. The rear door's fans speed up "
+                    "to follow the warm air. Through every adjustment the books "
+                    "still balance exactly: 137 kilowatts by liquid plus 13 by air "
+                    "is 150."
                 ),
                 plain=(
                     "The load steps up toward design point and the loop chases it: "
-                    "the CDU raises pump speed to hold the supply-return "
-                    "temperature difference steady, and the door's fans track the "
-                    "exhaust. This is the thermal twin's version of the compute "
-                    "twins' training stages — a control system hunting briefly "
-                    "before it settles. Through every adjustment the books still "
-                    "balance: 150 kW in, 137 kW out by liquid, 13 kW by air."
+                    "the CDU raises pump speed in proportion, 90 to 225 litres per "
+                    "minute for 60 to 150 kW, so the coolant still comes back about "
+                    "10 K warmer than it went out, and the door's fans track the "
+                    "exhaust. It is a control system following its load. Through "
+                    "every adjustment the books still balance: 150 kW in, 137 kW "
+                    "out through the cold plates, 13 kW through the door."
                 ),
                 standard=(
                     "The load steps up toward design point and the loop chases "
                     "it: the CDU raises pump speed to hold the supply-return "
                     "temperature difference steady, and the door's fans track "
-                    "the exhaust. This is the thermal twin's version of the "
-                    "compute twins' 'training' stages — a control system "
-                    "hunting briefly before it settles. Through every "
-                    "adjustment the books still balance: 150 kW in, 137 kW out "
-                    "by liquid, 13 kW out by air, not a watt unaccounted for."
+                    "the exhaust. Check it against the panel: load went from 60 "
+                    "to 150 kW and flow from 90 to 225 L/min, the same 2.5 "
+                    "times, so the rise stays near 10 K (the rise is load "
+                    "divided by flow times the coolant's heat capacity). "
+                    "Through every adjustment the books still balance: 150 kW "
+                    "in, 137 kW out through the cold plates, 13 kW out through "
+                    "the door, not a watt unaccounted for."
                 ),
                 technical=(
                     "Load steps toward design point; the CDU modulates pump speed "
-                    "to hold delta-T and the door fans track exhaust. A control "
-                    "loop settling, analogous to the compute twins' training "
-                    "stages. The balance holds through every intermediate state: "
-                    "150 kW in, 137 kW liquid, 13 kW air."
+                    "to hold delta-T and the door fans track exhaust. Flow scales "
+                    "with load, 90 to 225 L/min for 60 to 150 kW, so delta-T = "
+                    "Q/(m·cp) stays near 10 K in PG25. The balance holds through "
+                    "every intermediate state: 150 kW in, 137 kW cold plate, 13 kW "
+                    "door."
                 ),
                 expert=(
-                    "Load ramps; CDU modulates on delta-T, door fans track exhaust. "
-                    "Balance holds through transients: 150 kW in, 137 liquid / 13 "
-                    "air."
+                    "Load ramps; CDU modulates on delta-T (~10 K, 225 L/min at "
+                    "150 kW), door fans track exhaust. Balance holds through "
+                    "transients: 150 kW in, 137 cold plate / 13 door."
                 ),
             ),
             active_regions=["cdu", "door"] + _bays(),
             it_load_watts=150000,
             liquid_watts=137000,
             air_watts=13000,
-            flow_lpm=650,
+            flow_lpm=225,
             elapsed_seconds=3600,
             cycle_cost=2,
         ),
@@ -415,30 +420,32 @@ def simulate() -> list[ThermalState]:
             label="Full design load — the heat balance holds",
             description=L(
                 novice=(
-                    "Steady state at 264 kilowatts — the rack's current limit, with "
-                    "the roadmap pointing toward nearly double that. About "
-                    "ninety-one percent of the heat leaves through the liquid and "
-                    "the rest through the rear door, and at the building connection "
-                    "all of it becomes warm water. A modern site treats that as a "
-                    "product rather than a waste stream, feeding it into heat-reuse "
-                    "loops or into dry coolers that use a fraction of the energy a "
-                    "chiller would."
+                    "The rack now runs at full load and gives off 264 kilowatts, "
+                    "the most an IR7000 is rated for today. About 91 percent of "
+                    "that heat leaves through the cooling plates and the rest "
+                    "through the rear door, and all of it ends up in the same "
+                    "place: the building's water, which leaves warm. The heat does "
+                    "not disappear. A modern site can use that warm water to heat "
+                    "other spaces, or cool it with simple outdoor radiators that "
+                    "use far less energy than an air conditioner."
                 ),
                 plain=(
                     "Steady state at 264 kW — the IR7000's current per-rack "
                     "envelope, with Dell's roadmap pointing toward 480 kW. About "
-                    "ninety-one percent of the heat leaves through the liquid loop "
+                    "ninety-one percent of the heat leaves through the cold plates "
                     "and the rest through the rear door, and at the facility "
-                    "connection all of it becomes warm water — which a modern site "
-                    "treats as a product rather than a waste stream, feeding "
-                    "heat-reuse loops or dry coolers that cost a fraction of a "
-                    "chiller."
+                    "connection all of it becomes warm water. A modern site can "
+                    "pipe that water to heat other buildings (heat reuse), or cool "
+                    "it in dry coolers, outdoor radiators with fans, which use a "
+                    "fraction of the energy of a chiller, the refrigeration "
+                    "machine a conventional data hall depends on."
                 ),
                 standard=(
                     "Steady state at 264 kW — the IR7000's current per-rack "
                     "envelope, with Dell's roadmap pointing toward 480 kW. "
                     "About ninety-one percent of the heat leaves through the "
-                    "liquid loop and the rest through the rear door, and at the "
+                    "cold plates and the rest through the rear door, both into "
+                    "the one rack loop, which now moves 395 L/min, and at the "
                     "facility connection all of it becomes warm water — which a "
                     "modern site treats as a product, not a waste stream, "
                     "feeding heat-reuse loops or dry coolers that spend a "
@@ -446,15 +453,17 @@ def simulate() -> list[ThermalState]:
                     "balance for years; the trace ends, the physics does not."
                 ),
                 technical=(
-                    "Steady at 264 kW, roadmap to 480 kW. ~91% liquid fraction, "
-                    "remainder via the rear door; all of it presented at the "
+                    "Steady at 264 kW, roadmap to 480 kW, 395 L/min at ~10 K. "
+                    "~91% cold-plate fraction, remainder via the rear-door coil on "
+                    "the same loop; all of it presented at the "
                     "facility connection as warm water. Warm-water operation "
                     "permits economization or heat reuse rather than compressor "
                     "cooling, which is where the operating-cost argument actually "
                     "lives."
                 ),
                 expert=(
-                    "Steady 264 kW (roadmap 480 kW), ~91% liquid. Facility-side "
+                    "Steady 264 kW (roadmap 480 kW), ~91% cold plate, 395 L/min "
+                    "at ~10 K. Facility-side "
                     "output is warm water — economization or heat reuse rather than "
                     "compressor cooling."
                 ),
@@ -466,7 +475,7 @@ def simulate() -> list[ThermalState]:
             it_load_watts=264000,
             liquid_watts=240000,
             air_watts=24000,
-            flow_lpm=900,
+            flow_lpm=395,
             elapsed_seconds=4200,
         ),
     ]

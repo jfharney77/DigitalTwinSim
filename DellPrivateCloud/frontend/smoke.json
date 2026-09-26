@@ -143,7 +143,7 @@
       ],
       "text": [
         "A stack drawn in layers",
-        "A second hypervisor, and nobody notices"
+        "A second hypervisor, and no service goes down"
       ],
       "play": {
         "click": "button:text-is('Next')",

@@ -28,7 +28,7 @@ USE_CASES: list[UseCase] = [
                 "network cable. Everything this twin's trace shows — "
                 "attestation, claiming, provisioning, blueprint, "
                 "workload — then happens four hundred times without a "
-                "single additional human action."
+                "single additional on-site action."
             ),
             (
                 "The estate stays uniform because it was never touched "
@@ -72,7 +72,7 @@ USE_CASES: list[UseCase] = [
         ],
         outcomes=[
             Stat(label="Sites", value="400, no technician at any of them"),
-            Stat(label="Human actions", value="One per site — power and a cable"),
+            Stat(label="On-site human actions", value="One per site — power and a cable"),
             Stat(label="Hardware repair", value="Ship a box; re-onboarding rebuilds it"),
         ],
     ),
@@ -165,9 +165,10 @@ USE_CASES: list[UseCase] = [
                 "rotating certificates — before going quiet again."
             ),
             (
-                "This is the estate pattern Dell now markets as "
-                "Distributed Private Cloud: many small sites behaving as "
-                "one cloud, with NativeEdge as the substrate. The "
+                "This is the pattern the product is now named for: in "
+                "May 2026 Dell renamed NativeEdge to Dell Distributed "
+                "Private Cloud — many small sites behaving as one "
+                "cloud. The "
                 "security posture is the strictest in this twin — "
                 "critical infrastructure, physically exposed cabinets, "
                 "regulatory audit — and it leans entirely on the "

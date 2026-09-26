@@ -27,7 +27,7 @@ MEDIA: dict[str, ProductMedia] = {
         kind="illustration", shape="rack", credit=ILLO,
     ),
     "cloudiq": ProductMedia(
-        name="CloudIQ / APEX AIOps", tagline="The console whose tuning gets a report card.",
+        name="Dell AIOps (formerly CloudIQ)", tagline="The console whose tuning gets a report card.",
         kind="illustration", shape="console", credit=ILLO,
     ),
 }

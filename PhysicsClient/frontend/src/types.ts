@@ -10,8 +10,8 @@ export const LAPTOP_CPU_PL1 = [45, 55, 65];
 export const DESKTOP_CPU_PL1 = [65, 125, 150];
 export const LAPTOP_GPU_TGP = [0, 80, 115, 140, 175];
 export const DESKTOP_GPU_TGP = [0, 200, 300, 450];
-export const BATTERY_WH = [68, 90, 97];
-export const CHARGER_W = [130, 180, 240, 330];
+export const BATTERY_WH = [68, 90, 96, 97];
+export const CHARGER_W = [130, 165, 180, 240, 280, 330];
 export const DESKTOP_PSU_W = [750, 1000, 1500];
 
 export interface DeviceConfig {
@@ -105,7 +105,8 @@ export interface SimState {
   gpuThrottling: boolean;
   fpsProxy: number;
   tokensPerS: number;
-  tokensPerJoule: number;
+  tokensPerJoule: number;        // per engine watt
+  systemTokensPerJoule: number;  // per system watt — what the battery sees
   activeEngine: InferenceEngine | null;
   regionTemps: Record<string, number>;
 }
@@ -175,6 +176,12 @@ export interface WorkloadPreset {
   id: string;
   name: string;
   workload: Workload;
+}
+
+export interface PageIntro {
+  heading: string;
+  text: string;
+  terms: { term: string; meaning: string }[];
 }
 
 export interface GuidedScenario {

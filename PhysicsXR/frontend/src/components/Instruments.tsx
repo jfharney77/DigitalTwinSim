@@ -79,7 +79,12 @@ export function Instruments({
       )}
       {s?.cpuThrottling && (
         <div className="mini rule-error">
-          ▼ THROTTLING — {s.perfLostPct.toFixed(0)}% performance lost
+          ▼ CPU THROTTLING — {s.perfLostPct.toFixed(0)}% performance lost
+        </div>
+      )}
+      {s?.accelThrottling && (
+        <div className="mini rule-error">
+          ▼ ACCELERATOR THROTTLING — {s.accelPerfLostPct.toFixed(0)}% of its work lost
         </div>
       )}
       {s && s.inputVPct < 100 && s.poweredOn && (
@@ -121,6 +126,10 @@ export function Instruments({
         <span>{s ? `${s.accelTempC.toFixed(1)} °C` : "—"}</span>
       </div>
       {s && <MarginBar value={s.accelTempC} limit={92} label="accelerator throttle margin" />}
+      <div className="stat">
+        <span>accelerator work lost (throttle)</span>
+        <span>{s ? `${s.accelPerfLostPct.toFixed(0)}%` : "—"}</span>
+      </div>
       <div className="stat">
         <span>storage perf lost (vibration)</span>
         <span>{s ? `${s.storagePerfLostPct.toFixed(0)}%` : "—"}</span>

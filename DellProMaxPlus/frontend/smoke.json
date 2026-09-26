@@ -25,6 +25,14 @@
       "play": { "click": "button:text-is('Reset')", "watch": ".phase", "times": 1 }
     },
     {
+      "hash": "#step=7",
+      "name": "inference-step-back",
+      "svg": true,
+      "visible": [".phase"],
+      "text": ["8 / 8"],
+      "play": { "click": "button:text-is('Back')", "watch": ".phase", "times": 2 }
+    },
+    {
       "hash": "#anatomy",
       "name": "anatomy",
       "svg": true,

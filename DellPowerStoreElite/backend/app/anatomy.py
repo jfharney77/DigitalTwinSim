@@ -9,7 +9,11 @@ millimetres (project scope guardrail).
 The map is deliberately not one box. The top band is a prior-generation
 PowerStore appliance (2U, 25 drive slots); the bottom band is the new
 PowerStore Elite appliance (3U, 40 low-profile E3 NVMe slots); the thin
-band between them is the 200 Gb RDMA cluster interconnect. Drawing the two
+band between them is the cluster network that joins the two appliances
+(Ethernet through the top-of-rack switches — *not* Elite's 200 Gb RDMA node
+interconnect, which joins the two controllers inside the Elite chassis and
+is described on the Elite board regions; corrected in the 2026-09
+fact-check). Drawing the two
 generations as peers in one picture *is* the lesson: Elite's launch claim
 is that the old array joins the new one's cluster and keeps working — no
 forklift, no migration weekend — so the diagram refuses to show a
@@ -64,24 +68,29 @@ _ELITE_FAN_DESC = (
 
 _ELITE_BBU_DESC = (
     "Battery backup unit. On AC loss it powers the node just long enough "
-    "to vault: flush cached writes to the non-volatile NVMe NVRAM slots so "
-    "no acknowledged write is ever lost. Seconds of ride-through, not "
-    "minutes of UPS — the same vaulting contract as the prior generation."
+    "to vault: copy cached writes out of memory to an on-board M.2 flash "
+    "device so no acknowledged write is ever lost. A short ride-through, "
+    "not minutes of UPS — the same vaulting contract as the prior "
+    "generation, kept a new way. StorageReview's hands-on review reports "
+    "two 54 Wh packs per controller on the 5500 and 9500."
 )
 
 _ELITE_CPU_DESC = (
-    "The Elite node's Intel Xeon Scalable processor — up to 50% more cores "
-    "than the PowerStore 3200T/5500 class it succeeds. PowerStore Elite's "
-    "built-in AI does dynamic core allocation: cores move between block, "
-    "file and data-reduction work as the load mix shifts, which is part of "
-    "how the platform claims up to 95% less manual tuning."
+    "The Elite node's Intel Xeon Scalable processors — up to 50% more "
+    "cores, by Dell's comparison of the new PowerStore 5500 with the "
+    "3200T. Dell describes dynamic core allocation that adjusts CPU "
+    "resources as workloads fluctuate, and claims the platform's built-in "
+    "intelligence cuts manual effort by up to 95% (Dell's internal "
+    "analysis against traditional array management)."
 )
 
 _ELITE_DIMM_DESC = (
     "The Elite node's DDR5 DIMM bank — a generation up from the prior "
-    "array's memory, feeding metadata and cache. Metadata Acceleration, "
-    "new in Elite, keeps hot metadata structures resident here and is "
-    "credited with reads up to 70% faster."
+    "array's memory, feeding metadata and cache, and also holding the "
+    "battery-backed write cache. Metadata Acceleration arrives with "
+    "PowerStoreOS 5.0 for every PowerStore, not only Elite; Dell credits "
+    "it with reads up to 70% faster, a figure measured on a PowerStore "
+    "500T under a read-only 8 KB workload."
 )
 
 _ELITE_MGMT_DESC = (
@@ -93,18 +102,21 @@ _ELITE_MGMT_DESC = (
 
 _ELITE_IO_DESC = (
     "The Elite node's front-end connectivity: up to 40 network ports per "
-    "appliance — twice the prior generation — at 64 Gb Fibre Channel "
-    "(128 Gb-ready) and 100 Gb Ethernet (200/400 Gb-ready). PCIe Gen 5 "
-    "lanes feed the ports, which is what makes the 3x network-throughput "
-    "claim mechanical rather than aspirational."
+    "appliance, which Dell calls twice the current generation, at 64 Gb "
+    "Fibre Channel (128 Gb-ready) and 100 Gb Ethernet (200/400 Gb-ready). "
+    "PCIe Gen 5 lanes feed the ports. Dell's 3x throughput claim compares "
+    "a 9500 with a 9200T on a 70/30 read/write mix at 1 MB blocks."
 )
 
 _ELITE_BOARD_DESC = (
     "The Elite node's system board: a PCIe Gen 5 fabric fanning out from "
-    "the CPU to the 40 dual-ported E3 drives, the I/O modules, and the "
-    "200 Gb RDMA cluster interconnect. Gen 5 doubles per-lane bandwidth "
-    "over the prior generation's Gen 4 — headroom the E3 drives can "
-    "actually use."
+    "the CPUs to the 40 dual-ported E3 drives, the I/O modules, and the "
+    "200 Gb RDMA (remote direct memory access) node interconnect: the "
+    "cable-free link across the midplane to the partner node in the same "
+    "chassis, which carries mirrored writes. StorageReview puts the prior "
+    "generation's equivalent at 2× 10 GbE and its fabric at PCIe Gen 3, "
+    "so Gen 5 is four times the per-lane bandwidth. The 1500 runs the "
+    "node link at 100 Gb."
 )
 
 _ELITE_PSU_DESC = (
@@ -133,7 +145,7 @@ ANATOMY = ChassisAnatomy(
             "to the new box and switching over — a risky, carefully "
             "scheduled event. Elite is built so that never has to happen: "
             "the new box simply joins the old one's cluster, they link up "
-            "over the fast connection drawn between them, and the data "
+            "over the cluster network drawn between them, and the data "
             "drifts across while everyone keeps working. The old box is "
             "not thrown away afterwards — it takes a lighter job, like "
             "holding backup copies. Play the sequence to watch the whole "
@@ -144,8 +156,9 @@ ANATOMY = ChassisAnatomy(
             "a prior-generation PowerStore (2U, 25 NVMe slots) that is "
             "already in service; the bottom band is the new PowerStore "
             "Elite (3U, 40 low-profile E3 NVMe slots, up to 5.8 PB "
-            "effective); the thin band between them is the 200 Gb RDMA "
-            "cluster interconnect. Elite's defining feature is "
+            "effective, by Dell's figure); the thin band between them is "
+            "the cluster network that joins the appliances. Elite's "
+            "defining feature is "
             "mixed-generation clustering: the old array joins the new "
             "one's cluster live, volumes rebalance across the link while "
             "hosts keep reading and writing, and the old array is then "
@@ -158,27 +171,32 @@ ANATOMY = ChassisAnatomy(
             "appliance on Intel Xeon Scalable processors with DDR5 memory, "
             "a PCIe Gen 5 fabric, 40 low-profile E3 NVMe slots (QLC or "
             "TLC), up to 5.8 PB effective capacity behind a 6:1 data "
-            "reduction guarantee, and a 200 Gb RDMA node interconnect. "
+            "reduction guarantee, and a 200 Gb RDMA interconnect between "
+            "the two controller nodes inside the chassis. "
             "This map deliberately draws it beside a prior-generation "
             "PowerStore, because Elite's signature capability is "
             "mixed-generation clustering: the existing array joins the "
             "Elite's cluster with no service interruption, workloads "
-            "rebalance live across the RDMA mesh, and the older appliance "
-            "is repurposed — replication target, snapshot host, test "
+            "rebalance live across the cluster network, and the older appliance "
+            "is repurposed — snapshot host, test and development "
             "estate — instead of forklifted out. The dual active-active "
-            "controller design, mirrored NVRAM write cache, and "
-            "battery-backed vaulting all carry over from the PowerStore "
-            "twin this one extends."
+            "controller design, mirrored write cache, and battery-backed "
+            "vaulting all carry over from the PowerStore twin this one "
+            "extends, though Elite keeps its write cache in battery-backed "
+            "DDR5 rather than in NVRAM drives. Performance, capacity and "
+            "effort figures on this page are Dell's launch claims."
         ),
         technical=(
             "3U Elite appliance: dual active-active nodes, Xeon Scalable "
-            "(+50% cores vs 3200T/5500 class), DDR5, PCIe Gen 5, 40× "
-            "dual-ported E3 NVMe (QLC/TLC), NVMe NVRAM write cache with "
-            "BBU vaulting, up to 40 front-end ports at 64 Gb FC "
-            "(128 Gb-ready) / 100 GbE (200/400-ready), 200 Gb RDMA "
-            "cluster interconnect. Drawn beside a prior-generation 2U "
+            "(+50% cores, 5500 vs 3200T), DDR5, PCIe Gen 5, 40× "
+            "dual-ported E3 NVMe (QLC/TLC; 24 bays on the 1500 at "
+            "launch), DDR5 software-defined persistent-memory write cache "
+            "with BBU vaulting to M.2, up to 40 front-end ports at 64 Gb "
+            "FC (128 Gb-ready) / 100 GbE (200/400-ready), 200 Gb RDMA "
+            "intra-appliance node interconnect (100 Gb on the 1500). "
+            "Drawn beside a prior-generation 2U "
             "appliance because the trace's subject is the mixed-generation "
-            "join: cluster membership first, RDMA mesh, live rebalance, "
+            "join: cluster membership first, intra-cluster network, live rebalance, "
             "cutover (3x IOPS/throughput claims realized post-cutover, "
             "70/30 mix basis), then repurposing of the prior array. "
             "Downtime is asserted zero across the entire sequence."
@@ -186,8 +204,8 @@ ANATOMY = ChassisAnatomy(
         expert=(
             "Elite 3U: dual A/A nodes, Xeon Scalable +50% cores, DDR5, "
             "Gen 5 fabric, 40× E3 NVMe, 6:1 DRR guarantee, 5.8 PB "
-            "effective, 200 Gb RDMA interconnect, 40 ports @ 64G FC / "
-            "100 GbE. Mixed-generation join → mesh → live rebalance → "
+            "effective, 200 Gb RDMA node-to-node (in-chassis), 40 ports @ "
+            "64G FC / 100 GbE. Mixed-generation join → cluster net → live rebalance → "
             "cutover → repurpose; downtime ≡ 0."
         ),
     ),
@@ -237,16 +255,18 @@ ANATOMY = ChassisAnatomy(
         ),
         # --- The cluster interconnect (between the generations) --------------
         ChassisRegion(
-            id="cluster-mesh", kind="board", label="200 Gb RDMA cluster mesh",
+            id="cluster-mesh", kind="board", label="Cluster network (Ethernet)",
             x=15, y=24, w=70, h=4,
             description=(
-                "The 200 Gb RDMA (remote direct memory access) node "
-                "interconnect — the wire the whole modernization travels. "
-                "RDMA lets one appliance read and write the other's memory "
-                "without a round trip through either CPU, which is what "
-                "makes live rebalancing and fast failover between "
-                "generations affordable. This link is the only new "
-                "plumbing the join requires."
+                "The cluster network between the two appliances — the "
+                "wire the whole modernization travels. PowerStore "
+                "appliances in one cluster reach each other over an "
+                "internal Ethernet network that runs through the "
+                "top-of-rack switches, and volume migration between "
+                "appliances rides it. It is not Elite's 200 Gb RDMA node "
+                "interconnect: that link joins the two controllers inside "
+                "the Elite chassis and never leaves it. The speed of the "
+                "link drawn here is illustrative."
             ),
         ),
         # --- PowerStore Elite appliance (bottom band, y 32–70) ---------------
@@ -259,18 +279,28 @@ ANATOMY = ChassisAnatomy(
                 "replacing 2.5″ drives — taking QLC or TLC flash, "
                 "dual-ported to both nodes. Forty slots of dense E3 flash "
                 "behind a 6:1 data reduction guarantee is how a single 3U "
-                "box reaches 5.8 PB effective."
+                "box reaches Dell's figure of 5.8 PB effective (a 9500 "
+                "base chassis at an assumed 6:1). The 1500 opens 24 of the "
+                "bays at launch."
             ),
         ),
         ChassisRegion(
-            id="elite-nvram", kind="nvram", label="NVMe NVRAM",
+            id="elite-nvram", kind="nvram", label="Write cache",
             x=0, y=63, w=11, h=7,
             description=(
-                "NVMe NVRAM write-cache slots. Incoming writes land here, "
-                "mirrored across both nodes over the internal link, and are "
-                "acknowledged to hosts immediately — destaging to the E3 "
-                "capacity drives happens later. Same contract as every "
-                "PowerStore generation; only the speeds changed."
+                "The Elite's persistent write cache. Incoming writes land "
+                "here, mirrored across both nodes over the 200 Gb RDMA "
+                "node link, and are acknowledged to hosts immediately — "
+                "destaging to the E3 capacity drives happens later. The "
+                "contract matches every PowerStore generation, but the "
+                "mechanism is new: the prior generation spent up to four "
+                "front drive slots on NVRAM drives, and Elite instead "
+                "presents battery-backed DDR5 as persistent memory and "
+                "copies it to an M.2 flash device on power loss "
+                "(software-defined persistent memory, as StorageReview's "
+                "review describes it). It is drawn as its own block so "
+                "the write path stays visible; physically it lives in the "
+                "nodes' memory."
             ),
         ),
         ChassisRegion(
@@ -339,14 +369,15 @@ ANATOMY = ChassisAnatomy(
         ),
     ],
     stats=[
-        Stat(label="Models", value="Elite 1500 · 5500 · 9500"),
-        Stat(label="Form factor", value="3U · 40× E3 NVMe (QLC/TLC)"),
-        Stat(label="Effective capacity", value="Up to 5.8 PB per 3U appliance"),
+        Stat(label="Models", value="PowerStore 1500 · 5500 · 9500"),
+        Stat(label="Form factor", value="3U · up to 40× E3 NVMe (QLC/TLC)"),
+        Stat(label="Effective capacity", value="Up to 5.8 PB per 3U (Dell, 9500 at 6:1)"),
         Stat(label="Data reduction", value="6:1 guaranteed (up from 5:1)"),
-        Stat(label="Performance", value="Up to 3x IOPS & network throughput"),
+        Stat(label="Performance", value="Up to 3x IOPS & throughput (Dell claim)"),
         Stat(label="Front end", value="Up to 40 ports · 64 Gb FC · 100 GbE"),
-        Stat(label="Cluster interconnect", value="200 Gb RDMA"),
-        Stat(label="Availability", value="Global from July 2026"),
+        Stat(label="Node interconnect", value="200 Gb RDMA, inside the chassis"),
+        Stat(label="Cluster size", value="Up to 4 appliances, mixed generations"),
+        Stat(label="Availability", value="Announced for July 2026, global"),
     ],
     photo=None,
     sources=[
@@ -361,6 +392,18 @@ ANATOMY = ChassisAnatomy(
         SourceLink(
             label="StorageNewsletter — PowerStore Elite at Dell Tech World 2026",
             url="https://www.storagenewsletter.com/2026/05/21/dell-tech-world-2026-dell-rewrites-the-rules-of-storage-modernization-and-performance-with-dell-powerstore-elite/",
+        ),
+        SourceLink(
+            label="StorageReview — Dell PowerStore Gen 3 hands-on (node interconnect, write cache, per-model specs)",
+            url="https://www.storagereview.com/review/dell-powerstore-gen-3",
+        ),
+        SourceLink(
+            label="Dell blog — Introducing PowerStore Elite (100 GbE, 2x ports)",
+            url="https://www.dell.com/en-us/blog/introducing-powerstore-elite-built-to-lead-in-an-unpredictable-world/",
+        ),
+        SourceLink(
+            label="Dell white paper H18157 — PowerStore clustering and high availability (cluster networks)",
+            url="https://www.delltechnologies.com/asset/en-us/products/storage/industry-market/h18157-dell-powerstore-clustering-high-availability.pdf",
         ),
         SourceLink(
             label="DCD — Dell announces PowerStore Elite storage platform",

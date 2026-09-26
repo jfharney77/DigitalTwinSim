@@ -34,7 +34,8 @@ def _tray(i: int) -> LoopRegion:
         x=74, y=2 + i * 9, w=19, h=8,
         description=(
             "One bank of liquid-cooled compute trays (~40 kW at full "
-            "tilt — about six GB200-class trays behind cold plates). To "
+            "tilt, an illustrative figure — about three Vera Rubin "
+            "NVL72-class trays behind cold plates). To "
             "the loop, a bank is just heat: its silicon rides the "
             "supply temperature plus the loop's rise plus the cold "
             "plate's own resistance. The IRC can cap it; its own "
@@ -68,7 +69,8 @@ ANATOMY = LoopMap(
             "must never be so cold that water condenses on the pipes. "
             "When the building's water runs warm, the whole chain "
             "shifts up — and something has to give. The controller at "
-            "the top decides what: slow every computer down a little, "
+            "the top (the Integrated Rack Controller, IRC for short) "
+            "decides what: slow every computer down a little, "
             "together, or let each one panic on its own."
         ),
         standard=(
@@ -76,9 +78,11 @@ ANATOMY = LoopMap(
             "crosses a plate heat exchanger in the 4U CDU (center) and "
             "never mixes with the treated coolant the pumps push out to "
             "the tray banks (right). The physics is a chain of three "
-            "temperatures: secondary supply = facility supply + the "
-            "heat exchanger's approach (Q ÷ UA, worse at low flow); "
-            "loop rise = Q ÷ (ṁ·cp); silicon = supply + half the rise "
+            "temperatures: coolant supply = facility supply + the "
+            "heat exchanger's approach (heat Q ÷ UA, the exchanger's "
+            "heat-transfer capacity; worse at low flow); loop rise = "
+            "Q ÷ (ṁ·cp), mass flow times the coolant's specific heat; "
+            "silicon = coolant supply + half the rise "
             "+ the cold plate's resistance. Both loops carry the same "
             "heat on every tick — that identity is asserted in the "
             "tests. Above it all sits the Integrated Rack Controller: "
@@ -109,8 +113,9 @@ ANATOMY = LoopMap(
                 "dry coolers, or a warm-water loop. Its supply "
                 "temperature is the floor under everything downstream: "
                 "no heat exchanger can deliver coolant colder than the "
-                "water on its other side. ASHRAE's W-classes (W32, W45) "
-                "are bands for this number."
+                "water on its other side. ASHRAE's W-classes (W17 through "
+                "W45) are bands for this number; Dell states the C7000 "
+                "accepts facility water up to 40 °C."
             ),
         ),
         LoopRegion(
@@ -141,8 +146,8 @@ ANATOMY = LoopMap(
                 "conductance (UA) sets the approach temperature: the "
                 "unavoidable gap between facility supply and rack "
                 "supply, which grows with heat and shrinks with flow. "
-                "When people say a CDU 'moves 220 kW', this is the part "
-                "they mean."
+                "When Dell says the C7000 'cools more than 220 kW', this "
+                "is the part doing it."
             ),
         ),
         LoopRegion(
@@ -150,8 +155,10 @@ ANATOMY = LoopMap(
             x=28, y=2, w=18, h=8,
             description=(
                 "Dell's rack-scope management plane — iDRAC's idea, "
-                "grown to rack scale. It reads the loop's sensors "
-                "(leak detection in seconds, per Dell's announcement) "
+                "grown to rack scale (announced November 2025, with a "
+                "new release at Dell Technologies World 2026). It reads "
+                "the loop's sensors (Dell's claim: leak detection and "
+                "response in seconds) "
                 "and owns the policy this twin exists to compare: on a "
                 "warm-water day, cap every tray bank a little, "
                 "together — or let each bank discover the problem "
@@ -201,12 +208,20 @@ ANATOMY = LoopMap(
         ),
     ],
     sources=[
+        {"label": "Dell blog — PowerRack and the PowerCool CDU C7000 "
+                  "(more than 220 kW in 4U, facility water up to 40 °C)",
+         "url": "https://www.dell.com/en-us/blog/dell-powerrack-transforms-ai-infrastructure-with-scalable-compute-networking-storage/"},
+        {"label": "Dell press release, 17 November 2025 — Integrated Rack "
+                  "Controller (rack-level leak detection and response)",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~11~dell-technologies-accelerates-enterprise-ai-with-powerful-automated-solutions.htm"},
         {"label": "Dell announcement coverage — PowerRack, PowerCool CDU "
                   "C7000, Integrated Rack Controller (DCD)",
          "url": "https://www.datacenterdynamics.com/en/news/dell-launches-powerrack-a-turnkey-compute-storage-and-networking-solution-updates-nvidia-ai-factory-platform/"},
         {"label": "Dell Technologies DTW 2026 press release",
          "url": "https://www.businesswire.com/news/home/20260518066830/en/Dell-Technologies-Closes-the-Gap-Between-AI-Ambition-and-AI-Outcomes"},
-        {"label": "ASHRAE liquid-cooling guidelines (W-classes, dew point)",
-         "url": "https://www.ashrae.org/technical-resources/bookstore/datacom-series"},
+        {"label": "ASHRAE TC 9.9 white paper — Emergence and Expansion of "
+                  "Liquid Cooling in Mainstream Data Centers (facility-"
+                  "water classes W17–W45)",
+         "url": "https://www.ashrae.org/file%20library/technical%20resources/bookstore/emergence-and-expansion-of-liquid-cooling-in-mainstream-data-centers_wp.pdf"},
     ],
 )

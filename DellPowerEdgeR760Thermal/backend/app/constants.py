@@ -108,13 +108,21 @@ CONSTANTS: dict[str, Constant] = {
     # --- GPU -------------------------------------------------------------
     "gpu_dw_tdp": Constant(
         value=300, unit="W",
-        source="Dell R760 supports 300 W-class double-wide GPUs (Technical Guide)",
+        source=(
+            "Dell R760 spec sheet lists up to 2 x 350 W double-wide GPUs; "
+            "this model uses a 300 W-class card, inside that ceiling — "
+            "https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-r760-spec-sheet.pdf"
+        ),
         estimated=False,
-        blurb="Double-wide GPU TDP class modeled.",
+        blurb="Double-wide GPU TDP class modeled (Dell's ceiling is 350 W per card).",
     ),
     "gpu_sw_tdp": Constant(
         value=75, unit="W",
-        source="75 W single-wide accelerator class (no aux power)", estimated=False,
+        source=(
+            "Dell R760 spec sheet — up to 6 x 75 W single-wide GPUs — "
+            "https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-r760-spec-sheet.pdf"
+        ),
+        estimated=False,
         blurb="Single-wide accelerator TDP class modeled.",
     ),
     "gpu_idle_fraction": Constant(
@@ -145,7 +153,11 @@ CONSTANTS: dict[str, Constant] = {
     # --- Fans ------------------------------------------------------------
     "fan_count": Constant(
         value=6, unit="fans",
-        source="Dell R760 Technical Guide — 6 hot-swap fan modules", estimated=False,
+        source=(
+            "Dell R760 spec sheet — up to 6 hot-plug fans (Standard, HPR "
+            "Silver or HPR Gold) — https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-r760-spec-sheet.pdf"
+        ),
+        estimated=False,
         blurb="Fan-wall population in the standard chassis.",
     ),
     "fan_pmax_gold_w": Constant(
@@ -217,8 +229,12 @@ CONSTANTS: dict[str, Constant] = {
         blurb="Upper bound of the ASHRAE A2 allowable inlet band.",
     ),
     "derate_start_m": Constant(
-        value=950, unit="m",
-        source="Dell derating note — supported ambient decreases ~1 °C per 300 m above 950 m",
+        value=900, unit="m",
+        source=(
+            "Dell R760 environmental specifications (ASHRAE A2) — maximum "
+            "temperature is reduced by 1 °C/300 m above 900 m — "
+            "https://www.dell.com/support/manuals/en-us/poweredge-r760/per760_ism_pub/environmental-specifications?guid=guid-11193b30-1caa-4e7b-900f-bc79a66398ad&lang=en-us"
+        ),
         estimated=False,
         blurb="Altitude above which supported ambient derates.",
     ),
@@ -238,17 +254,25 @@ CONSTANTS: dict[str, Constant] = {
 }
 
 # PSU efficiency curve: (load fraction of active capacity, efficiency).
-# Titanium-class approximation per spec §3.5; linear interpolation between
-# points, flat beyond the ends.
+# The 10/20/50/100% points are the 80 PLUS Titanium minimums for 230 V
+# internal redundant supplies (90/94/96/91%); the 0% point is an estimate.
+# Linear interpolation between points, flat beyond the ends. Dell ships the
+# R760 with both Titanium (700/1100/1800/2800 W) and Platinum (800/1400/
+# 2400 W) supplies; the model applies the one Titanium curve to every
+# capacity — a labeled simplification.
 PSU_EFFICIENCY_CURVE: list[tuple[float, float]] = [
     (0.0, 0.85),
     (0.10, 0.90),
     (0.20, 0.94),
     (0.50, 0.96),
-    (1.00, 0.94),
+    (1.00, 0.91),
 ]
 
-PSU_CURVE_SOURCE = "estimate — Titanium-class approximation, spec §3.5"
+PSU_CURVE_SOURCE = (
+    "estimate — 80 PLUS Titanium 230 V redundant minimums (90/94/96/91% at "
+    "10/20/50/100% load) applied to every PSU size; Dell's 800/1400/2400 W "
+    "R760 supplies are Platinum-rated and run about two points lower"
+)
 
 
 def value(name: str) -> float:

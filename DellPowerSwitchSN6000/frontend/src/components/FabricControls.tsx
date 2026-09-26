@@ -1,4 +1,9 @@
+import type { Scenario } from "../types";
+
 export function FabricControls({
+  scenarios,
+  scenario,
+  onScenario,
   speed,
   running,
   done,
@@ -9,6 +14,9 @@ export function FabricControls({
   onStep,
   onReset,
 }: {
+  scenarios: Scenario[];
+  scenario: string;
+  onScenario: (id: string) => void;
   speed: number;
   running: boolean;
   done: boolean;
@@ -22,6 +30,29 @@ export function FabricControls({
   return (
     <div className="an-panel">
       <h2>Playback</h2>
+      {scenarios.length > 1 && (
+        <label className="field" style={{ marginBottom: 10 }}>
+          Scenario
+          <select
+            className="scenario-picker"
+            value={scenario}
+            onChange={(e) => onScenario(e.target.value)}
+          >
+            {scenarios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {scenarios
+        .filter((s) => s.id === scenario && s.id !== "healthy")
+        .map((s) => (
+          <div key={s.id} className="mini" style={{ marginBottom: 10 }}>
+            {s.summary}
+          </div>
+        ))}
       <div className="btnrow">
         {running ? (
           <button className="primary" onClick={onPause}>
@@ -50,10 +81,8 @@ export function FabricControls({
         {phaseLabel}
       </div>
       <div className="mini" style={{ marginTop: 8 }}>
-        The fabric sequence is a fixed trace computed by the backend; Run
-        only plays it back. Step walks one event at a time — the long
-        real-world stage (training every link at 1.6 Tb/s) dwells on screen
-        longer.
+        {scenarios.find((s) => s.id === scenario)?.playbackHint ??
+          "Run plays back a fixed trace computed by the backend. The longest real-world stage dwells on screen longer."}
       </div>
     </div>
   );

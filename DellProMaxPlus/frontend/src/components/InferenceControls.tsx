@@ -15,7 +15,9 @@ export function InferenceControls({
   onRun,
   onPause,
   onStep,
+  onStepBack,
   onReset,
+  canStepBack,
 }: {
   speed: number;
   running: boolean;
@@ -25,7 +27,10 @@ export function InferenceControls({
   onRun: () => void;
   onPause: () => void;
   onStep: () => void;
+  /** Walk the cursor back one state — the trace is already materialised. */
+  onStepBack: () => void;
   onReset: () => void;
+  canStepBack: boolean;
 }) {
   return (
     <ControlPanel
@@ -43,9 +48,17 @@ export function InferenceControls({
           The sequence is a fixed trace computed by the backend; Run only
           plays it back. Step walks one event at a time — the long real-world
           stage, moving 61 GB of weights across PCIe, dwells on screen longer.
-          That cost is paid once per model, not once per prompt.
+          Back walks the other way, so two neighbouring steps can be compared
+          without replaying from the start. That cost is paid once per model,
+          not once per prompt.
         </>
       }
-    />
+    >
+      <div className="btnrow" style={{ marginTop: 10 }}>
+        <button onClick={onStepBack} disabled={!canStepBack}>
+          Back
+        </button>
+      </div>
+    </ControlPanel>
   );
 }

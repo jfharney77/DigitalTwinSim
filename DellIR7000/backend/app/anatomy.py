@@ -36,7 +36,7 @@ LOOP_ILLO = Photo(
 
 _BAY_DESC = (
     "An IT bay — the loop's heat source. Whatever dense payload the site "
-    "racks here (GB200 NVL72 trays, XE9685L GPU nodes, dense CPU sleds), "
+    "racks here (GB200 NVL72 trays, dense M7725 CPU sleds), "
     "its processors sit under cold plates: machined copper blocks with "
     "coolant channels, clamped where a heatsink would go. Each bay taps "
     "the manifolds through blind-mate quick disconnects — dry-break "
@@ -182,7 +182,7 @@ ANATOMY = RackAnatomy(
                 "power shelves — still heat the air inside the rack; the "
                 "door captures that exhaust heat and returns it to the "
                 "liquid loop instead of the room. Dell quotes up to 60% "
-                "cooling-energy savings versus conventional room cooling, "
+                "cooling-energy savings compared with standard solutions, "
                 "and the practical effect is that a 264 kW rack is "
                 "room-neutral: the aisle behind it stays office-warm."
             ),
@@ -196,8 +196,8 @@ ANATOMY = RackAnatomy(
                 "the loop's control brain. It keeps the rack loop and the "
                 "facility water hydraulically separate — they exchange heat "
                 "through the plate exchanger but never mix, so a facility "
-                "water-quality problem cannot corrode a cold plate. Rated "
-                "on the order of 160 kW per unit; extreme racks pair units "
+                "water-quality problem cannot corrode a cold plate. Dell "
+                "rates the RCDU at up to 160 kW per unit; extreme racks pair units "
                 "or step up to row-scale CDUs."
             ),
         ),
@@ -231,10 +231,11 @@ ANATOMY = RackAnatomy(
     ],
     stats=[
         Stat(label="Rack standard", value="OCP ORv3 · 21-inch open rack"),
-        Stat(label="Power envelope", value="33–264 kW today · 480 kW roadmap"),
-        Stat(label="CDU", value="PowerCool RCDU — ~160 kW class, redundant pumps"),
-        Stat(label="Air-side catch", value="eRDHx rear door · up to 60% cooling-energy savings"),
-        Stat(label="Heat split at load", value="~90% liquid · ~10% air (door-captured)"),
+        Stat(label="Power envelope", value="33–264 kW today (33 kW shelves) · 480 kW roadmap"),
+        Stat(label="Rack heights", value="44 OU (IR7044) · 50 OU (IR7050)"),
+        Stat(label="CDU", value="PowerCool RCDU — up to 160 kW (Dell rating), redundant pumps"),
+        Stat(label="Air-side catch", value="eRDHx rear door · up to 60% cooling-energy savings (Dell claim)"),
+        Stat(label="Heat split at load", value="~90% liquid · ~10% air (door-captured) — illustrative"),
         Stat(label="Coolant", value="Treated propylene-glycol mix (e.g. PG25)"),
         Stat(label="Service", value="Blind-mate dry-break quick disconnects per bay"),
     ],
@@ -247,6 +248,18 @@ ANATOMY = RackAnatomy(
         SourceLink(
             label="Dell — cooling and computing innovations (eRDHx, RCDU)",
             url="https://www.dell.com/en-us/blog/power-future-ai-dell-cooling-servers/",
+        ),
+        SourceLink(
+            label="Dell IR7000 Integrated Rack specification sheet (44/50 OU, 33 kW shelves)",
+            url="https://www.delltechnologies.com/assetlink/doc/en-us/dell-ir7000-spec-sheet-en-dl1m1au-original.pdf",
+        ),
+        SourceLink(
+            label="Dell — data center power and cooling (PowerCool RCDU, up to 160 kW)",
+            url="https://www.dell.com/en-us/shop/data-center-servers/sf/poweredge-power-cooling-servers",
+        ),
+        SourceLink(
+            label="Dell AI Factory announcement, Nov 2024 — IR5000, XE9685L (96 GPUs per rack)",
+            url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2024~11~dell-ai-factory.htm",
         ),
         SourceLink(
             label="Dell Integrated Rack Scalable Systems",

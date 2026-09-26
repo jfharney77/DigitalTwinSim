@@ -9,8 +9,9 @@ the clock; nothing here knows about time, IO or the web (AST-checked in
 
 The storyboard is ACTIVE_TWIN_SPEC.md section 8's PowerStore row, and the
 signature beat is ``mirrored-ack``: a write exists in two places before the
-host is told it is safe. Every claim the scripts make is one the engine and
-the anatomy already make — the trace indices named in each beat are the
+host is told it is safe — on a mirrored pair of NVRAM drives in the shared
+bay, not node to node (white paper H18157, as in ``failover.py``). Every
+claim the scripts make is one the engine and the anatomy already make — the trace indices named in each beat are the
 steps whose descriptions say the same thing.
 
 Layers (region id -> layer) ride with the tour rather than on the anatomy
@@ -129,9 +130,9 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "to come back by itself after any outage with nobody there. We "
                     "have lifted the lid now, and the first thing each half checks "
                     "is its battery. That battery cannot keep the array running. "
-                    "Its only job is to keep things alive for a few seconds after a "
-                    "power cut, long enough to save anything still in memory onto "
-                    "flash. Until both halves know that works, the array will not "
+                    "Its only job is to keep the write-cache drives powered for a "
+                    "short while after a power cut, long enough for them to copy "
+                    "what they are holding into their own flash. Until both halves know that works, the array will not "
                     "accept a single write."
                 ),
                 standard=(
@@ -139,13 +140,15 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "an array must return to service unattended after any outage. "
                     "With the lid peeled back, the first check each node makes is "
                     "its battery backup unit (BBU). The BBU is not a UPS and cannot "
-                    "keep the array running; it exists for vaulting, powering the "
-                    "node for the seconds it takes to flush cached writes to "
-                    "non-volatile media. Until both nodes pass, no write is accepted."
+                    "keep the array running; it exists for vaulting, holding up the "
+                    "NVRAM drive slots and the node's management controller while "
+                    "the NVRAM drives copy their volatile contents into their own "
+                    "flash. Until both nodes pass, no write is accepted."
                 ),
                 expert=(
                     "AC is the power-on. First gate: BBU self-test on both nodes. "
-                    "BBU funds the vault flush only, not ride-through. No writes "
+                    "BBU holds up NVRAM slots and BMC for the vault only, not "
+                    "ride-through. No writes "
                     "until both pass."
                 ),
             ),
@@ -163,29 +166,30 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             title="Two computers in one box",
             script=L(
                 novice=(
-                    "Look at the top half and the bottom half. They are mirror "
-                    "images, because they are two separate computers, called nodes, "
-                    "sharing one box. Each has its own processor, its own memory and "
-                    "its own power supply, and each starts up on its own without "
-                    "waiting for the other. They are loading the array's operating "
-                    "system, PowerStoreOS, which runs every storage feature as a "
-                    "separate container, a small packaged program. This is the "
-                    "slowest part of the whole start-up, so the timeline lingers "
-                    "here."
+                    "Look at the top half and the bottom half. They are mirror images, "
+                    "because they are two separate computers, called nodes, sharing one "
+                    "box. Each has its own processor, its own memory and its own power "
+                    "supply, and each starts up on its own without waiting for the "
+                    "other. They follow the same schedule, though, so the same part "
+                    "lights on both halves at every step. They are loading the array's "
+                    "operating system, PowerStoreOS, which runs every storage feature "
+                    "as a separate container, a small packaged program. This is the "
+                    "slowest part of the whole start-up, so the timeline lingers here."
                 ),
                 standard=(
-                    "The top and bottom halves are mirror images because they are "
-                    "two complete x86 computers: controller nodes A and B, each with "
-                    "its own Xeon, DRAM, fans and power supply. They boot "
-                    "independently, assuming the partner may not be there. Here both "
-                    "load PowerStoreOS, an embedded Linux that runs the storage "
-                    "stack as containers. It is the longest stage in the trace, "
-                    "which is why playback dwells on it."
+                    "The top and bottom halves are mirror images because they are two "
+                    "complete x86 computers: controller nodes A and B, each with its "
+                    "own Xeons, DRAM, fans and power supply. They boot independently, "
+                    "assuming the partner may not be there, but on the same schedule, "
+                    "so the same region lights on both at each step. Here both load "
+                    "PowerStoreOS, an embedded Linux that runs the storage stack as "
+                    "containers. It is the longest stage in the trace, which is why "
+                    "playback dwells on it."
                 ),
                 expert=(
                     "Nodes A and B: independent x86 controllers, independent boot. "
-                    "PowerStoreOS container stack loading on both; longest stage, "
-                    "max dwell."
+                    "PowerStoreOS container stack loading on both; longest stage, max "
+                    "dwell."
                 ),
             ),
             camera=frame("cpu-a", "cpu-b", "dimm-a", "dimm-b", pad=2.0),
@@ -231,38 +235,44 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             script=L(
                 novice=(
                     "This is the most important moment in the tour. The four special "
-                    "drives at the front wake up as the write cache, called NVRAM: "
-                    "fast storage that keeps its contents without power. Here is "
-                    "what happens to every piece of data a computer sends from now "
-                    "on. It arrives at one half of the box, is copied across the "
-                    "link in the middle to the other half, and is held in that "
-                    "cache, reachable from both halves. Only then does the array "
-                    "answer, yes, your data is safe. Because two copies exist "
-                    "before that answer, losing a whole half of the box, or losing "
+                    "drives at the front wake up as the write cache, called NVRAM: fast "
+                    "storage that keeps its contents without power. They work as "
+                    "mirrored pairs, two drives that always hold the same thing, and "
+                    "they sit in the shared front bay, wired to both halves of the box. "
+                    "Here is what happens to every piece of data a computer sends once "
+                    "the array is serving. It arrives at one half of the box, and that "
+                    "half saves it onto both drives of a pair. Only then does the array "
+                    "answer, yes, your data is safe. The two copies are on drives "
+                    "outside both halves, so losing a whole half of the box, or losing "
                     "power, cannot lose anything the array has already promised to "
-                    "keep. Moving the data onto the main drives happens later, "
-                    "while nobody is waiting."
+                    "keep. The link in the middle is not part of this: it carries the "
+                    "two halves' I-am-alive signals, not the safe copy. Moving the data "
+                    "onto the main drives happens later, while nobody is waiting."
                 ),
                 standard=(
-                    "The four NVRAM drives come up as the write cache, and this is "
-                    "the idea the whole appliance is built around. A host write "
-                    "arrives at one node, is mirrored across the interconnect to "
-                    "its partner, and lands in non-volatile NVRAM that both nodes "
-                    "can reach. Only then is the host acknowledged. Because the "
-                    "write exists twice before the acknowledgement, an "
-                    "acknowledged write survives a node failure and a power loss "
-                    "both. Destaging to the capacity SSDs happens later, off the "
-                    "path the host is waiting on."
+                    "The four NVRAM drives come up as the write cache, and this is the "
+                    "idea the whole appliance is built around. They are mirrored pairs "
+                    "in the shared, dual-ported front bay, reached directly by both "
+                    "nodes. Once the array is serving, a host write arrives at one node "
+                    "and that node commits it to both drives of a pair. Only then is "
+                    "the host acknowledged. Because the write exists twice, on drives "
+                    "outside either node, an acknowledged write survives a node failure "
+                    "and a power loss both. The node interconnect carries heartbeat and "
+                    "coordination; it is not the mirror. Destaging to the capacity SSDs "
+                    "happens later, off the path the host is waiting on."
                 ),
                 expert=(
-                    "Signature: mirrored acknowledgement. Write mirrored node to "
-                    "node, landed in non-volatile NVRAM, then acked. Survives node "
-                    "loss and power loss. Destage async."
+                    "Signature: mirrored acknowledgement. Write committed to a mirrored "
+                    "NVRAM drive pair in the shared bay, outside either node, then "
+                    "acked. Interconnect is not the mirror. Survives node loss and "
+                    "power loss. Destage async."
                 ),
             ),
-            camera=frame("nvram", "dimm-a", "dimm-b", "interconnect", pad=2.0),
-            region_ids=["nvram", "dimm-a", "dimm-b", "interconnect"],
-            layer_reveal=_LINK,
+            # The mirror is the NVRAM drive pair in the shared bay, reached by
+            # both nodes. The interconnect stays unlit: it is not the mirror.
+            camera=frame("nvram", "board-a", "board-b", pad=2.0),
+            region_ids=["nvram", "board-a", "board-b"],
+            layer_reveal=_CANISTER,
             trace_cursor=7,
             duration_ms=40_000,
         ),
@@ -271,25 +281,24 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             title="The two boots converge",
             script=L(
                 novice=(
-                    "Until now the two halves have ignored each other. Here they "
-                    "finally meet over the internal link. They start sending each "
-                    "other a regular I-am-alive signal, called a heartbeat, and "
-                    "agree to work at the same time rather than one waiting as a "
-                    "spare. From now on each one watches the other, and if one "
-                    "stops answering, its partner takes over all of its "
-                    "connections within seconds."
+                    "Until now the two halves have run the same steps side by side "
+                    "without talking to each other. Here they finally meet over the "
+                    "internal link. They start sending each other a regular I-am-alive "
+                    "signal, called a heartbeat, and agree to work at the same time "
+                    "rather than one waiting as a spare. From now on each one watches "
+                    "the other, and if one stops answering, its partner takes over all "
+                    "of its connections within seconds."
                 ),
                 standard=(
-                    "The two independent boots converge over the internal "
-                    "interconnect. The nodes exchange heartbeats, establish the "
-                    "cache-mirroring path, and negotiate active/active operation: "
-                    "both own volumes and serve I/O at once, rather than one idling "
-                    "as a spare. Each now watches the other, and if a node stops "
+                    "The two independent boots converge over the internal interconnect. "
+                    "The nodes exchange heartbeats and negotiate active/active "
+                    "operation: both own volumes and serve I/O at once, rather than one "
+                    "idling as a spare. Each now watches the other, and if a node stops "
                     "answering, its partner takes over every host path in seconds."
                 ),
                 expert=(
-                    "Boots converge: heartbeat, mirror path, active/active. Mutual "
-                    "watch; path takeover in seconds."
+                    "Boots converge: heartbeat, active/active. Mutual watch; path "
+                    "takeover in seconds."
                 ),
             ),
             camera=frame("interconnect", pad=6.0),
@@ -342,24 +351,25 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             script=L(
                 novice=(
                     "The lid goes back on. The array is now serving data, and both "
-                    "halves share the work. New data is copied into the cache on "
-                    "both sides before it is confirmed, and it reaches the main "
-                    "drives later. From plugging in the cords to serving data took "
-                    "a few minutes in this illustrative timeline, and at no point "
-                    "did anyone need to touch the box. Press play on the power-on "
-                    "page to walk the same sequence step by step."
+                    "halves share the work. New data is saved onto two cache drives in "
+                    "the front bay before it is confirmed, and it reaches the main "
+                    "drives later. From plugging in the cords to serving data took a "
+                    "few minutes in this illustrative timeline, and at no point did "
+                    "anyone need to touch the box. Press play on the power-on page to "
+                    "walk the same sequence step by step."
                 ),
                 standard=(
-                    "Reassembled and online. Both nodes serve host I/O and share "
-                    "the load; writes mirror through NVRAM, reads come off the NVMe "
-                    "pool, and data reduction runs inline on every write. Cords-in "
-                    "to serving took minutes on this illustrative timeline, with no "
-                    "one touching the box. The power-on page walks the same trace "
-                    "one step at a time."
+                    "Reassembled and online. Both nodes serve host I/O and share the "
+                    "load; writes commit to a mirrored NVRAM drive pair before the "
+                    "acknowledgement, reads come off the NVMe pool, and data reduction "
+                    "runs inline on every write. Cords-in to serving took minutes on "
+                    "this illustrative timeline, with no one touching the box. The "
+                    "power-on page walks the same trace one step at a time."
                 ),
                 expert=(
-                    "Online, active/active. NVRAM-mirrored writes, NVMe reads, "
-                    "inline reduction. Cords-in to serving in minutes, unattended."
+                    "Online, active/active. Writes to the shared mirrored NVRAM pair, "
+                    "NVMe reads, inline reduction. Cords-in to serving in minutes, "
+                    "unattended."
                 ),
             ),
             camera=whole_map(anatomy),

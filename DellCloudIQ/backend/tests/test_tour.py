@@ -96,14 +96,25 @@ def test_the_longest_stage_gets_a_beat():
 def test_the_tour_follows_telemetry_one_way():
     """The camera travels left to right with the data: the gateway beat
     comes before any insight beat, and each non-bookend beat's lit regions
-    never sit left of the previous one's."""
+    never sit left of the previous one's.
+
+    Both bookends are excluded. The first is the whole estate; the last
+    closes the loop by lighting the whole path again, because the recovery to
+    88 comes from a later collection — a second cycle, which has to start at
+    the machines on the left or the picture would contradict the words.
+    """
     trace = simulate()
     phases = [trace[s.trace_cursor].phase for s in TOUR.steps]
     assert phases.index("transmit") < phases.index("surface")
     lefts = [
-        min(BOXES[r].x for r in s.region_ids) for s in TOUR.steps[1:] if s.region_ids
+        min(BOXES[r].x for r in s.region_ids) for s in TOUR.steps[1:-1] if s.region_ids
     ]
     assert all(a <= b for a, b in zip(lefts, lefts[1:])), lefts
+    closing = TOUR.steps[-1]
+    assert {"gateway", "ingest", "analytics"} <= set(closing.region_ids), (
+        "the closing beat must show the second collection cycle, not just the "
+        "outbound edge"
+    )
 
 
 def test_every_beat_lights_what_its_trace_step_lights():

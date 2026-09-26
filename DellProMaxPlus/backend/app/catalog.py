@@ -26,7 +26,7 @@ CATALOG: list[CatalogCategory] = [
             "The chassis, and with it the thermal and power envelope that "
             "decides how long a sustained inference run can hold its rate."
         ),
-        limits="16-inch and 18-inch chassis; ISV-certified mobile workstations",
+        limits="The card ships in the 16-inch Pro Max 16 Plus; an 18-inch option was reported, not documented",
         region_ids=[],
         options=[
             CatalogOption(
@@ -44,19 +44,28 @@ CATALOG: list[CatalogCategory] = [
                     "of the CPU's. It is a full workstation in every other "
                     "respect, so it is a reasonable primary machine that "
                     "happens to be able to run a 109-billion-parameter "
-                    "model on a plane. Linux first, with Windows support "
-                    "arriving in early 2026."
+                    "model on a plane. It was shown at Dell Technologies "
+                    "World in May 2025 and shipped on 20 November 2025 "
+                    "with Ubuntu 24.04 LTS; Dell said then that the "
+                    "Windows 11 version would follow in early 2026. The "
+                    "card takes the place of a discrete GPU — the machine "
+                    "is ordered with one or the other."
                 ),
             ),
             CatalogOption(
                 id="promax18plus",
                 name="Dell Pro Max 18 Plus",
                 summary=(
-                    "The 18-inch sibling — more chassis volume, so more "
-                    "sustained thermal headroom."
+                    "The 18-inch sibling. Reported at announcement as a "
+                    "second home for the card; not a documented option."
                 ),
                 details=(
-                    "The same discrete-NPU architecture in a larger body. "
+                    "PCMag reported in May 2025 that the 18-inch Pro Max "
+                    "Plus would also be offered with the Qualcomm card. "
+                    "Dell's own product brief and shipping announcement "
+                    "name only the 16 Plus, so treat this entry as a "
+                    "reported option rather than a confirmed one. The "
+                    "reasoning is what matters. "
                     "For inference the extra size buys exactly one thing, "
                     "and it is the right one: the ability to hold a given "
                     "wattage for longer without the fans becoming the "
@@ -75,12 +84,14 @@ CATALOG: list[CatalogCategory] = [
                 ),
                 details=(
                     "Worth listing because it is the honest baseline. This "
-                    "machine still has an integrated NPU in its processor, "
-                    "good for perhaps 50 TOPS, and can carry a workstation "
-                    "GPU. It will run small models comfortably. What it "
+                    "machine still has an integrated NPU in its processor "
+                    "(Intel rates the Core Ultra 200HX's at 13 TOPS) and "
+                    "can carry a workstation GPU with up to 24 GB of its "
+                    "own memory. It will run small models comfortably. What it "
                     "cannot do is hold a hundred-billion-parameter model "
-                    "resident, because both of those accelerators draw on "
-                    "system memory shared with everything else. The gap is "
+                    "resident: the integrated NPU draws on system memory "
+                    "shared with everything else, and 24 GB of graphics "
+                    "memory is well short of 61 GB. The gap is "
                     "not about speed; it is about capacity."
                 ),
             ),
@@ -93,7 +104,7 @@ CATALOG: list[CatalogCategory] = [
             "The accelerator and, more importantly, the memory it brings "
             "with it — the single decision that sets which models will run."
         ),
-        limits="Up to 2 × AI-100, 32 AI cores, 64 GB dedicated AI memory",
+        limits="2 × AI-100, 32 AI cores, 64 GB dedicated AI memory (2 × 32 GB)",
         region_ids=["npu-1", "npu-2", "aimem"],
         options=[
             CatalogOption(
@@ -104,14 +115,20 @@ CATALOG: list[CatalogCategory] = [
                     "dedicated AI memory."
                 ),
                 details=(
-                    "The configuration in this twin. Two inference "
-                    "processors share one 64 GB pool of LPDDR4x memory that "
-                    "belongs to the card and to nothing else. TOPS "
-                    "(trillions of operations per second) is the headline "
-                    "number at roughly 450 for 8-bit arithmetic, but the "
-                    "64 GB is the number that decides what is possible: a "
-                    "109-billion-parameter model with weights quantized to "
-                    "about four bits fits in roughly 61 GB, leaving room "
+                    "The configuration in this twin, and the only one Dell "
+                    "lists. Two inference processors, each with 16 AI "
+                    "cores and its own 32 GB bank of LPDDR4x, on one "
+                    "module in the slot a discrete GPU would otherwise "
+                    "occupy; the 64 GB belongs to the card and to nothing "
+                    "else, and a large model is split across both banks. "
+                    "TOPS (trillions of operations per second) is the "
+                    "headline number, widely reported as roughly 450 for "
+                    "8-bit arithmetic within a 75 W envelope, but the "
+                    "64 GB is the number that decides what is possible. "
+                    "Dell's brief gives the ceiling as about 120 billion "
+                    "parameters with four-bit (MXINT4) weights; by that "
+                    "arithmetic a 109-billion-parameter model fits in "
+                    "roughly 61 GB (illustrative), leaving a little room "
                     "for the KV cache — the running record of the "
                     "conversation, which grows with context length. Compute "
                     "runs at FP16 (16-bit floating point) even though the "
@@ -121,21 +138,26 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="ai100-single",
-                name="Single AI-100 configuration",
+                name="One NPU, one 32 GB bank",
                 summary=(
-                    "One inference processor and a smaller memory pool — "
-                    "sized for models in the tens of billions."
+                    "A way of using the card, not a separate part: a model "
+                    "that fits in one NPU's 32 GB."
                 ),
                 details=(
-                    "Half the card, and therefore half the ceiling. This is "
-                    "the right choice when the target models are in the 7 "
+                    "Dell sells the card in one form, with both NPUs. But "
+                    "the host sees two devices, each with its own 32 GB, "
+                    "so a model that fits in one bank runs on one NPU and "
+                    "leaves the other free. Half the card, and therefore "
+                    "half the ceiling. This is "
+                    "the right plan when the target models are in the 7 "
                     "to 30 billion parameter range, which covers most "
                     "coding assistants, summarizers, and domain-tuned "
                     "models in practice. The reasoning to apply is "
                     "unglamorous: work out the resident size of the largest "
                     "model you actually intend to run, add the KV cache for "
-                    "your longest realistic context, and buy the pool that "
-                    "holds it. Nothing else about the card matters as much."
+                    "your longest realistic context, and check it against "
+                    "32 GB and 64 GB. Nothing else about the card matters "
+                    "as much."
                 ),
             ),
             CatalogOption(
@@ -147,7 +169,9 @@ CATALOG: list[CatalogCategory] = [
                 ),
                 details=(
                     "Every current business laptop processor includes a "
-                    "modest NPU, typically around 50 TOPS, and it is "
+                    "modest NPU — 13 TOPS by Intel's rating in this "
+                    "machine's Core Ultra 200HX, 40 to 50 in thin-and-light "
+                    "Copilot+ parts — and it is "
                     "genuinely useful: background blur, live captioning, "
                     "local transcription, small classifiers running "
                     "continuously at very low power. It shares system "
@@ -216,7 +240,7 @@ CATALOG: list[CatalogCategory] = [
             "Host DRAM — for the operating system and applications, not for "
             "the model."
         ),
-        limits="LPDDR5X, on the host side of the PCIe boundary",
+        limits="DDR5 on a CAMM2 module, on the host side of the PCIe boundary",
         region_ids=["dram"],
         options=[
             CatalogOption(
@@ -299,7 +323,7 @@ CATALOG: list[CatalogCategory] = [
             "What else in the machine can run a model, and why it is not "
             "the same thing."
         ),
-        limits="Integrated NPU ~50 TOPS; optional workstation GPU",
+        limits="Integrated NPU 13 TOPS (Intel); workstation GPU only instead of the card",
         region_ids=["cpu", "pcie"],
         options=[
             CatalogOption(
@@ -320,18 +344,21 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="rtx-gpu",
-                name="Workstation GPU",
+                name="Workstation GPU (instead of the card)",
                 summary=(
                     "Excellent at training, rendering, and bursty compute; "
                     "an awkward fit for sustained inference."
                 ),
                 details=(
+                    "This is an either/or choice: the inference card takes "
+                    "the discrete GPU's place, so a Pro Max 16 Plus has one "
+                    "or the other. "
                     "A mobile workstation GPU has more raw floating-point "
                     "throughput than the inference card and is the right "
                     "tool for rendering, simulation, and fine-tuning a "
                     "small model locally. For serving a large model it runs "
-                    "into two problems: its memory is measured in tens of "
-                    "gigabytes shared with graphics, and its power and "
+                    "into two problems: its memory tops out at 24 GB on "
+                    "this chassis and is shared with graphics, and its power and "
                     "thermal design assumes bursts, so a long generation "
                     "hits a high rate and then throttles. Sustained token "
                     "rate, not peak, is what an interactive assistant is "
@@ -378,9 +405,14 @@ CATALOG: list[CatalogCategory] = [
                 ),
                 details=(
                     "Quantization stores each weight in fewer bits than the "
-                    "16 or 32 it was trained with. Four-bit weights are "
+                    "16 or 32 it was trained with. Four-bit weights — "
+                    "MXINT4, the format Dell's brief attaches to its "
+                    "120-billion-parameter ceiling — are "
                     "what let 109 billion parameters occupy about 61 GB "
-                    "rather than 218 GB. The cost is a small, measurable "
+                    "rather than 218 GB. Qualcomm's own published model "
+                    "builds mostly use six-bit MXFP6, which is gentler on "
+                    "accuracy and would not fit a model this large. "
+                    "The cost is a small, measurable "
                     "loss of accuracy that varies by model and by task, so "
                     "the honest engineering step is to evaluate the "
                     "quantized model on your own task rather than trusting "
@@ -416,7 +448,7 @@ CATALOG: list[CatalogCategory] = [
             "What 64 GB of dedicated memory actually buys, in models you "
             "would want to run."
         ),
-        limits="Up to ~120 billion parameters resident, quantized",
+        limits="Up to ~120 billion parameters with MXINT4 weights (Dell's figure)",
         region_ids=["aimem"],
         options=[
             CatalogOption(
@@ -428,7 +460,8 @@ CATALOG: list[CatalogCategory] = [
                 ),
                 details=(
                     "Dell demonstrated a 109-billion-parameter Llama 4 "
-                    "model generating text on this machine offline. Models "
+                    "Scout model generating text on this machine offline, "
+                    "at Dell Technologies World in May 2025. Models "
                     "of this size are typically mixture-of-experts designs: "
                     "all the parameters must be held in memory, but only a "
                     "fraction of them are used for any given token, so the "
@@ -465,8 +498,9 @@ CATALOG: list[CatalogCategory] = [
                     "reload between them."
                 ),
                 details=(
-                    "Sixty-four gigabytes can hold one very large model or "
-                    "several smaller ones simultaneously — a mid-size "
+                    "Sixty-four gigabytes, in two 32 GB banks, can hold one "
+                    "very large model split across both or several smaller "
+                    "ones placed on one NPU or the other — a mid-size "
                     "general model, an embedding model for retrieval, and a "
                     "small fast model for classification and routing. For "
                     "agent workloads that switch between roles constantly, "
@@ -484,7 +518,7 @@ CATALOG: list[CatalogCategory] = [
             "What decides the token rate you can hold for an hour, as "
             "opposed to for thirty seconds."
         ),
-        limits="Vapor chamber cooling; adapter and battery rail shared with CPU/GPU",
+        limits="Vapor chamber cooling; card envelope 75 W (reported); rail shared with the CPU",
         region_ids=["thermal", "power"],
         options=[
             CatalogOption(
@@ -508,20 +542,21 @@ CATALOG: list[CatalogCategory] = [
                 id="adapter",
                 name="Adapter and battery operation",
                 summary=(
-                    "The card runs on battery too — at a lower sustained "
-                    "wattage."
+                    "Assumed here: the card runs on battery too, at a "
+                    "lower sustained wattage."
                 ),
                 details=(
                     "The power path here is the one this repo's Alienware "
                     "twin models in detail: an adapter negotiating its "
                     "capability with the embedded controller, a system "
-                    "budget divided between CPU, GPU, and now the "
-                    "inference card, and a battery able to supplement the "
-                    "adapter under peak demand. The card's draw is modest "
-                    "by accelerator standards, which is what makes it "
-                    "viable in a laptop; on battery the model still runs, "
-                    "just at a lower held wattage and a correspondingly "
-                    "lower token rate."
+                    "budget divided between the CPU and the inference "
+                    "card, and a battery able to supplement the "
+                    "adapter under peak demand. The card's reported 75 W "
+                    "envelope is modest by accelerator standards, which is "
+                    "what makes it viable in a laptop. Dell does not "
+                    "document battery behaviour; this twin assumes the "
+                    "model still runs, at a lower held wattage and a "
+                    "correspondingly lower token rate."
                 ),
             ),
         ],

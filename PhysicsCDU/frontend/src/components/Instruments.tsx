@@ -7,13 +7,15 @@ import type { Explain, SimState } from "../types";
 function substituted(id: string, s: SimState): string {
   switch (id) {
     case "approach":
-      return `${s.secSupplyC.toFixed(1)} °C = ${s.facSupplyC.toFixed(1)} °C + ${s.approachC.toFixed(1)} K approach`;
+      // The equation gives the settled value; the live supply lags it by
+      // about a minute, so both are shown rather than a false equality.
+      return `settled: ${s.secSupplySteadyC.toFixed(1)} °C = ${s.facSupplyC.toFixed(1)} °C + ${(s.secSupplySteadyC - s.facSupplyC).toFixed(1)} K · now ${s.secSupplyC.toFixed(1)} °C, about a minute behind`;
     case "loop-dt":
       return `ΔT = ${(s.secReturnC - s.secSupplyC).toFixed(1)} K at ${s.secFlowLpm.toFixed(0)} L/min carrying ${s.heatRemovedKw.toFixed(0)} kW`;
     case "pump-flow":
       return `${s.secFlowLpm.toFixed(0)} L/min from ${s.pumpsAlive} pump(s) at ${s.pumpSpeedPct.toFixed(0)}% → ${s.pumpPowerKw.toFixed(1)} kW`;
     case "chip-temp":
-      return `${s.chipTempC.toFixed(1)} °C = ${s.secSupplyC.toFixed(1)} °C supply + rise + cold plate`;
+      return `settled: ${s.chipSteadyC.toFixed(1)} °C = ${s.secSupplyC.toFixed(1)} °C supply + ${((s.secReturnC - s.secSupplyC) / 2).toFixed(1)} K half rise + ${(s.chipSteadyC - s.secSupplyC - (s.secReturnC - s.secSupplyC) / 2).toFixed(1)} K cold plate · now ${s.chipTempC.toFixed(1)} °C, about 15 s behind`;
     case "dew-floor":
       return `margin = ${s.dewMarginC.toFixed(1)} K ${s.floorActive ? "(floor holding)" : ""}`;
     default:
@@ -41,12 +43,20 @@ export function Instruments({
   state,
   explains,
   explainOn,
+  policy,
+  level,
 }: {
   state: SimState | null;
   explains: Explain[];
   explainOn: boolean;
+  policy: "coordinated" | "uncoordinated";
+  level: number;
 }) {
   const s = state;
+  const plain = level <= 2;
+  // With the controller's policy off there is no cap to report; showing
+  // 100% would read as "the controller is fine".
+  const capOff = policy === "uncoordinated";
   const ex = (id: string) => explains.find((e) => e.id === id);
 
   const Info = ({ id }: { id: string }) => {
@@ -67,20 +77,26 @@ export function Instruments({
       <h2>Instruments</h2>
       {s?.capping && (
         <div className="mini rule-warning">
-          ▼ IRC SHEDDING — caps at {s.capPct.toFixed(0)}%
+          ▼ {plain ? "Rack controller slowing every bank" : "IRC shedding"} — caps at {s.capPct.toFixed(0)}%
         </div>
       )}
       {s && s.trips > 0 && (
         <div className="mini rule-error">
-          ■ {s.trips} tray bank{s.trips > 1 ? "s" : ""} TRIPPED
+          ■ {s.trips} tray bank{s.trips > 1 ? "s" : ""} tripped{plain ? " (shut themselves off)" : ""}
         </div>
       )}
       <div className="stat"><span>heat moved</span><span>{s ? `${s.heatRemovedKw.toFixed(0)} kW` : "—"}</span></div>
-      <div className="stat"><span>HX load (of 220 kW class)</span><span>{s ? `${s.hxLoadPct.toFixed(0)}%` : "—"}</span></div>
+      <div className="stat"><span>{plain ? "energy delivered so far (heat moved, added up)" : "energy delivered"}</span><span>{s ? `${s.deliveredKwh.toFixed(1)} kWh` : "—"}</span></div>
+      <div className="stat"><span>{plain ? "heat exchanger load (HX, of its 220 kW rating)" : "HX load (of 220 kW class)"}</span><span>{s ? `${s.hxLoadPct.toFixed(0)}%` : "—"}</span></div>
       <Info id="loop-dt" />
-      <div className="stat"><span>facility supply → return</span><span>{s ? `${s.facSupplyC.toFixed(1)} → ${s.facReturnC.toFixed(1)} °C` : "—"}</span></div>
+      <div className="stat"><span>facility supply → return (across the exchanger)</span><span>{s ? `${s.facSupplyC.toFixed(1)} → ${s.facReturnC.toFixed(1)} °C` : "—"}</span></div>
+      <div className="stat"><span>{plain ? "facility water flow (the valve opens and closes to keep that rise at 6 K)" : "facility flow (valve modulates to hold the 6 K design rise)"}</span><span>{s ? `${s.facFlowLpm.toFixed(0)} L/min` : "—"}</span></div>
       <div className="stat"><span>coolant supply → return</span><span>{s ? `${s.secSupplyC.toFixed(1)} → ${s.secReturnC.toFixed(1)} °C` : "—"}</span></div>
-      <div className="stat"><span>approach</span><span>{s ? `${s.approachC.toFixed(1)} K` : "—"}</span></div>
+      <div className="stat"><span>{plain ? "approach (coolant supply minus facility supply)" : "approach (coolant − facility supply, lagging)"}</span><span>{s ? `${s.approachC.toFixed(1)} K` : "—"}</span></div>
+      <div className="mini">
+        Deliberately wide in this model: about 30 K at rated load, where a
+        real plate exchanger runs 2–5 K. Do not size a plant from it.
+      </div>
       <Info id="approach" />
       <div className="stat"><span>coolant flow</span><span>{s ? `${s.secFlowLpm.toFixed(0)} L/min` : "—"}</span></div>
       <div className="stat">
@@ -91,10 +107,10 @@ export function Instruments({
       <div className="stat"><span>hottest silicon</span><span>{s ? `${s.chipTempC.toFixed(1)} °C` : "—"}</span></div>
       {s && <MarginBar value={s.chipTempC} limit={65} label="trip margin" />}
       <Info id="chip-temp" />
-      <div className="stat"><span>IRC cap</span><span>{s ? `${s.capPct.toFixed(0)}%` : "—"}</span></div>
-      <div className="stat"><span>banks online</span><span>{s ? `${s.groupsOnline}/${s.groupsPresent}` : "—"}</span></div>
+      <div className="stat"><span>{plain ? "speed limit set by the rack controller (IRC) — 100% = no slowdown" : "IRC cap (Integrated Rack Controller; 100% = no slowdown)"}</span><span>{!s ? "—" : capOff ? "off" : `${s.capPct.toFixed(0)}%`}</span></div>
+      <div className="stat"><span>{plain ? "banks of computers online" : "banks online"}</span><span>{s ? `${s.groupsOnline}/${s.groupsPresent}` : "—"}</span></div>
       <div className="stat">
-        <span>dew-point margin</span>
+        <span>{plain ? "dew-point margin (how far the coolant is above the temperature where pipes sweat)" : "dew-point margin"}</span>
         <span>{s ? `${s.dewMarginC.toFixed(1)} K${s.floorActive ? " · floor" : ""}` : "—"}</span>
       </div>
       <Info id="dew-floor" />

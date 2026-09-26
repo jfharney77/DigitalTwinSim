@@ -125,6 +125,18 @@ def _map(map_id: str, name: str, gen: str, overview: str) -> LifecycleMap:
              "url": "../physics_specs/08-telecom-and-sustainability.md"},
             {"label": "Dell Product Carbon Footprint reports (the calibration source)",
              "url": PCF_NOTE},
+            {"label": "Dell — Product Carbon Footprints (per-product PCF reports)",
+             "url": "https://www.dell.com/en-us/lp/dt/product-carbon-footprints"},
+            {"label": "Dell press release, 22 Feb 2023 — Telecom Infrastructure Blocks; "
+                      "PowerEdge XR8000 rated −5 to 55 °C",
+             "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/"
+                    "detailpage.press-releases~usa~2023~02~2023-02-22-dell-technologies-"
+                    "accelerates-adoption-of-open-telecom-network-architectures.htm"},
+            {"label": "IEEE Spectrum — Dell's Concept Luna repairable-laptop prototype",
+             "url": "https://spectrum.ieee.org/dells-bold-idea-a-laptop-you-can-actually-repair"},
+            {"label": "Ember — Global Electricity Review 2026 (world grid intensity, 458 gCO2e/kWh in 2025)",
+             "url": "https://ember-energy.org/latest-insights/global-electricity-review-2026/"
+                    "electricity-demand-and-supply-trends/"},
         ],
     )
 
@@ -132,7 +144,7 @@ def _map(map_id: str, name: str, gen: str, overview: str) -> LifecycleMap:
 TELECOM = _map(
     "telecomblocks",
     "Telecom Infrastructure Blocks · the build-out",
-    "Open RAN engineered blocks",
+    "Engineered blocks for Open RAN and 5G core",
     L(
         novice=(
             "Building a mobile network means hundreds of small "

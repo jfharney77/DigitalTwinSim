@@ -72,3 +72,17 @@ def test_camel_case_wire_format():
     data = ANATOMY.model_dump(by_alias=True)
     assert "formFactor" in data
     assert "regions" in data and "description" in data["regions"][0]
+
+
+def test_every_block_is_readable_at_level_one():
+    """The power-on page tells the reader to click a block, so the text that
+    comes back has to be written for whoever is reading the rest of the page.
+    Every region description is authored at level 1, not just the overview."""
+    from app.leveling import leveled
+
+    novice = leveled(ANATOMY, 1)
+    for region, plain in zip(novice.regions, ANATOMY.regions):
+        assert region.description != plain.description, (
+            f"{region.id} reads the same at level 1 as at level 3 — a newcomer "
+            f"who clicks it gets the technical register"
+        )

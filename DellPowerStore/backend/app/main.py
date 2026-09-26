@@ -4,14 +4,24 @@ state."""
 
 from __future__ import annotations
 
+from fastapi import HTTPException
+
 from twinkit.api import Level, make_app
 from twinkit.tour import TourResponse
 
 from .anatomy import ANATOMY
 from .catalog import CATALOG
 from .engine import simulate
+from .failover import POWER_ON, SCENARIO, SCENARIO_ID, SCENARIOS, simulate_node_loss
 from .leveling import leveled, leveled_all
-from .models import CatalogCategory, ChassisAnatomy, PowerOnResponse, UseCase
+from .models import (
+    CatalogCategory,
+    ChassisAnatomy,
+    FailoverResponse,
+    PowerOnResponse,
+    ScenarioInfo,
+    UseCase,
+)
 from .tour import TOUR_RESPONSE
 from .usecases import USE_CASES
 
@@ -26,9 +36,29 @@ def get_anatomy(level: int = Level) -> ChassisAnatomy:
     return leveled(ANATOMY, level)
 
 
-@app.get("/api/poweron", response_model=PowerOnResponse)
-def get_poweron(level: int = Level) -> PowerOnResponse:
-    return leveled(PowerOnResponse(trace=simulate()), level)
+@app.get("/api/poweron", response_model=PowerOnResponse | FailoverResponse)
+def get_poweron(
+    level: int = Level, scenario: str = POWER_ON.id
+) -> PowerOnResponse | FailoverResponse:
+    """The trace. With no ``scenario`` (or ``power-on``) this is the power-on
+    sequence exactly as before; ``?scenario=node-loss-failover`` serves the
+    failure trace, whose states carry the extra failure fields."""
+    if scenario == POWER_ON.id:
+        return leveled(PowerOnResponse(trace=simulate()), level)
+    if scenario == SCENARIO_ID:
+        return leveled(
+            FailoverResponse(scenario=SCENARIO, trace=simulate_node_loss()), level
+        )
+    raise HTTPException(
+        status_code=404,
+        detail=f"unknown scenario {scenario!r}; see /api/scenarios",
+    )
+
+
+@app.get("/api/scenarios", response_model=list[ScenarioInfo])
+def get_scenarios(level: int = Level) -> list[ScenarioInfo]:
+    """The traces this twin can play: the power-on sequence and its failures."""
+    return leveled_all(SCENARIOS, level)
 
 
 @app.get("/api/catalog", response_model=list[CatalogCategory])

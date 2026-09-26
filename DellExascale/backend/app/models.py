@@ -122,7 +122,7 @@ class DataState(CamelModel):
     throughput_gbps: int
     # How many data servers are streaming in parallel right now (0–4 drawn).
     data_servers_streaming: int = Field(ge=0, le=4)
-    # Whether the client currently holds a layout (pNFS delegation) telling
+    # Whether the client currently holds a pNFS layout (from LAYOUTGET) telling
     # it where the stripes live. Once held, reads bypass the metadata server.
     layout_held: bool = False
     # Illustrative wall-clock seconds since the job attached.

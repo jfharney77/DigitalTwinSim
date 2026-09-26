@@ -87,7 +87,7 @@ def test_the_generations_are_drawn_as_peers():
 
 
 def test_the_mesh_sits_between_the_generations():
-    """The 200 Gb RDMA interconnect is drawn strictly between the two
+    """The cluster network is drawn strictly between the two
     appliance bands — it is the wire the whole modernization travels."""
     by_id = {r.id: r for r in ANATOMY.regions}
     mesh = by_id["cluster-mesh"]

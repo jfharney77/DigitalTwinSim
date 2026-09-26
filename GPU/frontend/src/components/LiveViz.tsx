@@ -37,10 +37,14 @@ export function LiveDieView({
   profile,
   state,
   compact,
+  representative,
 }: {
   profile: GpuProfile;
   state: LiveState | null;
   compact?: boolean;
+  // Tour frames whose recording was authored, not captured: the header must
+  // not call the placement real.
+  representative?: boolean;
 }) {
   const { rows, cols, count, label } = dieGrid(state, profile);
   const TILE_W = compact ? 88 : 116;
@@ -140,7 +144,9 @@ export function LiveDieView({
             ? "CUPTI CAPTURE (TIMING ONLY — NO PLACEMENT DATA)"
             : state?.running
               ? "KERNEL RUNNING — STREAMED COUNTS"
-              : "REAL BLOCK PLACEMENT (%smid)"}
+              : representative
+                ? "REPRESENTATIVE BLOCK PLACEMENT (%smid) — NOT CAPTURED ON HARDWARE"
+                : "REAL BLOCK PLACEMENT (%smid)"}
       </text>
       {tiles}
       <text x={M + 8} y={H - 12} fill="#6b7d96" fontSize={10}>

@@ -97,7 +97,10 @@ CATALOG: list[CatalogCategory] = [
         blurb=(
             "The layer that stopped being a foundation and became a choice."
         ),
-        limits="VMware, Red Hat, Nutanix (February 2026), Microsoft",
+        limits=(
+            "VMware, Red Hat, Nutanix (February 2026), "
+            "Microsoft Azure Local (June 2026)"
+        ),
         region_ids=["hv-vmware", "hv-redhat", "hv-nutanix", "hv-microsoft"],
         options=[
             CatalogOption(
@@ -115,8 +118,8 @@ CATALOG: list[CatalogCategory] = [
                     "leave prices itself accordingly, and the last few "
                     "years turned that abstract concern into a budget line "
                     "for a great many organizations simultaneously — which "
-                    "is why 52% of IT leaders now report weighing multiple "
-                    "hypervisors."
+                    "is why, in a Gartner figure Dell cites, 52% of IT "
+                    "leaders are weighing multiple hypervisors."
                 ),
             ),
             CatalogOption(
@@ -143,10 +146,13 @@ CATALOG: list[CatalogCategory] = [
                 id="nutanix",
                 name="Nutanix",
                 summary=(
-                    "Added to Dell Private Cloud in February 2026 — the "
-                    "closest like-for-like alternative."
+                    "Nutanix AHV, added to Dell Private Cloud in February "
+                    "2026 — the closest like-for-like alternative."
                 ),
                 details=(
+                    "Available on PowerFlex storage from 10 February 2026, "
+                    "with PowerStore following in July 2026 by Dell's "
+                    "schedule. "
                     "The option for an estate that wants to move without "
                     "relearning how virtualization works, since the "
                     "operational concepts map closely. There is an irony "
@@ -159,13 +165,16 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="microsoft",
-                name="Microsoft",
+                name="Microsoft Azure Local",
                 summary=(
-                    "Hyper-V and Azure Stack HCI, where the licensing "
-                    "arithmetic already favours it."
+                    "Azure Local (formerly Azure Stack HCI, built on "
+                    "Hyper-V), where the licensing arithmetic already "
+                    "favours it."
                 ),
                 details=(
-                    "Most compelling in estates already deeply committed "
+                    "Dell announced Azure Local on Dell Private Cloud with "
+                    "PowerStore as external storage, available from June "
+                    "2026. Most compelling in estates already deeply committed "
                     "to Microsoft licensing and identity, at which point "
                     "the marginal cost of the hypervisor is genuinely "
                     "different from what a price list suggests. Licensing "
@@ -203,15 +212,20 @@ CATALOG: list[CatalogCategory] = [
                     "conversation is how many consoles an operator "
                     "actually touches once two hypervisors are running: if "
                     "the answer is two, 'multi-hypervisor support' means "
-                    "'we will sell you both problems'."
+                    "'we will sell you both problems'. In the shipping "
+                    "product the single plane is Dell Automation Platform, "
+                    "which owns infrastructure deployment and lifecycle; "
+                    "each hypervisor keeps its own workload console "
+                    "(vCenter, Nutanix Prism) above it, so the twin's count "
+                    "of one describes the infrastructure plane."
                 ),
             ),
             CatalogOption(
                 id="automation",
                 name="Automation and infrastructure as code",
                 summary=(
-                    "Declarative provisioning across pools, with the "
-                    "Automation Platform."
+                    "Declarative provisioning across pools, with Dell "
+                    "Automation Platform blueprints."
                 ),
                 details=(
                     "A control plane that only offers a console has "
@@ -278,7 +292,7 @@ CATALOG: list[CatalogCategory] = [
             "Capacity on its own lifecycle, which is a different lifecycle "
             "from servers."
         ),
-        limits="PowerStore, PowerFlex, PowerMax, PowerScale",
+        limits="PowerStore, PowerFlex, PowerMax (Dell's named platforms); PowerScale for file",
         region_ids=["storage"],
         options=[
             CatalogOption(
@@ -323,6 +337,9 @@ CATALOG: list[CatalogCategory] = [
                     "nodes."
                 ),
                 details=(
+                    "Not one of the three block platforms Dell names for "
+                    "Dell Private Cloud (PowerStore, PowerFlex, PowerMax) — "
+                    "it sits beside the pools as the file tier. "
                     "For unstructured data, where capacity growth is least "
                     "predictable and therefore where independent scaling "
                     "pays best. The DellPowerScale spec in this repo "
@@ -403,8 +420,12 @@ CATALOG: list[CatalogCategory] = [
                     "attention to the things that do not translate "
                     "cleanly — guest tooling, snapshots, network "
                     "constructs, licensing. Anyone selling this as "
-                    "effortless is selling something. What matters is that "
-                    "it is possible at all and that the workloads stay up; "
+                    "effortless is selling something. There is no live "
+                    "migration across hypervisors: each virtual machine is "
+                    "replicated, then takes a short scheduled cutover "
+                    "restart, rolled through redundant instances so the "
+                    "service stays up. What matters is that it is possible "
+                    "at all without an estate-wide outage; "
                     "in a coupled architecture the alternative is not a "
                     "slow migration but a new estate."
                 ),

@@ -100,5 +100,8 @@ def test_api_surface_snapshot() -> None:
         "/api/profiles/default",
         "/api/simulate",
         "/api/tour",
+        # Static hosting: the query-addressed twin of the route below, so the
+        # snapshot builder can enumerate it — the deliberate 24 -> 25 addition.
+        "/api/tour/recording",
         "/api/tour/recordings/{lesson_id}",
     ]

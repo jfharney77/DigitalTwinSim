@@ -39,9 +39,13 @@ CATALOG: list[CatalogCategory] = [
                     "same floor footprint as a classic 19-inch rack, power "
                     "delivered by shelf-fed DC busbar instead of per-server "
                     "supplies, and mounting provisions for manifolds and "
-                    "CDUs. The IR7000 is Dell's productization — tall (up "
-                    "to 50 OU), seismically rated, and shipped under IRSS "
-                    "with the payload integrated and the loop pre-plumbed."
+                    "CDUs. The IR7000 is Dell's productization — offered "
+                    "in 44 OU and 50 OU heights (IR7044 / IR7050), fed by "
+                    "33 kW power shelves (one to eight of them is where the "
+                    "33–264 kW range comes from), and shipped under IRSS "
+                    "with the payload integrated and the loop pre-plumbed. "
+                    "Since 2026 Dell's rack-scale page also lists it as "
+                    "PowerRack 7000 (IR7000). Source: Dell IR7000 spec sheet."
                 ),
             ),
             CatalogOption(
@@ -68,7 +72,7 @@ CATALOG: list[CatalogCategory] = [
             "heat to facility water, and keeps the two liquids forever "
             "separate."
         ),
-        limits="~160 kW per in-rack unit; pair units or go row-scale beyond",
+        limits="Up to 160 kW per RCDU (Dell's rating); pair units or go row-scale beyond",
         region_ids=["cdu"],
         options=[
             CatalogOption(
@@ -81,7 +85,10 @@ CATALOG: list[CatalogCategory] = [
                     "pumps, a plate heat exchanger against facility water, "
                     "filtration, and the controls that hold the "
                     "supply-return temperature difference steady as load "
-                    "moves. One RCDU class-rates on the order of 160 kW. "
+                    "moves. Dell rates the PowerCool RCDU at up to 160 kW; "
+                    "the 4U PowerCool CDU C7000 announced in May 2026 is "
+                    "rated by Dell above 220 kW (availability stated as Q3 "
+                    "2026). "
                     "Keeping the CDU in the rack keeps the failure domain "
                     "small: a pump problem affects one rack, not a row."
                 ),
@@ -125,8 +132,8 @@ CATALOG: list[CatalogCategory] = [
                     "that is thermally invisible — no hot aisle, no "
                     "added CRAC load — which is what lets a legacy "
                     "air-cooled building host a 264 kW row. Dell quotes up "
-                    "to 60% cooling-energy savings versus conventional room "
-                    "cooling."
+                    "to 60% cooling-energy savings compared with standard "
+                    "solutions."
                 ),
             ),
             CatalogOption(
@@ -382,11 +389,13 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="pay-xe9685l",
                 name="PowerEdge XE9685L (dense GPU nodes)",
-                summary="4U liquid-cooled nodes — up to 96 GPUs per IR7000 rack.",
+                summary="4U liquid-cooled nodes — up to 96 GPUs per 19-inch IR5000 rack.",
                 details=(
                     "The XE9685L packs two AMD EPYC CPUs and eight NVIDIA "
                     "GPUs into a liquid-cooled 4U node; Dell's density "
-                    "claim is up to 96 GPUs per IR7000 rack. Where the "
+                    "claim is up to 96 GPUs per rack, in the 19-inch "
+                    "IR5000 rather than the 21-inch IR7000 (Dell AI "
+                    "Factory announcement, November 2024). Where the "
                     "XE9712 is one integrated NVL72 system, XE9685L racks "
                     "are configure-to-order — a reminder that the loop "
                     "serves whatever the site racks, one bay at a time."

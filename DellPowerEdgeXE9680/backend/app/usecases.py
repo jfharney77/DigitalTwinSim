@@ -18,11 +18,13 @@ USE_CASES: list[UseCase] = [
         ),
         narrative=[
             (
-                "xAI's Colossus is the public proof of this build: 100,000 "
-                "GPUs running within 122 days of the first rack arriving, "
-                "then 200,000 — built not from exotic rack-scale machines "
-                "but from 8-GPU HGX servers, 64 GPUs to a liquid-cooled "
-                "rack, roughly 1,500 racks. The choice of box is the "
+                "xAI's Colossus is the public proof of this build: a "
+                "reported 100,000 GPUs built out in 122 days, with 19 days "
+                "from the first rack to the first training run, then a "
+                "doubling to 200,000 — built not from exotic rack-scale "
+                "machines but from 8-GPU HGX servers supplied by Dell and "
+                "Supermicro, 64 GPUs to a liquid-cooled rack, roughly "
+                "1,500 racks. The choice of box is the "
                 "schedule. A factory-integrated NVL72 rack is a single "
                 "delivery with a single commissioning path; a fleet of "
                 "identical servers is thousands of independent rack jobs "
@@ -33,8 +35,9 @@ USE_CASES: list[UseCase] = [
                 "The architecture accepts a trade to get there. Inside each "
                 "box, NVSwitch fuses eight GPUs into one 900 GB/s domain; "
                 "past the sheet metal, every GPU's traffic rides its own "
-                "400 GbE NIC onto a Spectrum-X Ethernet fabric — about "
-                "3.6 Tb/s per server. Model parallelism spanning boxes "
+                "400 GbE NIC onto a Spectrum-X Ethernet fabric — 3.2 Tb/s "
+                "of GPU networking per server, about 3.6 Tb/s as reported "
+                "with the host's own link. Model parallelism spanning boxes "
                 "therefore lives at fabric speed, not NVLink speed, and "
                 "the training frameworks are built around exactly that "
                 "hierarchy: tensor-parallel inside the domain, data- and "
@@ -47,19 +50,23 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="platform", option_id="xe9680l-dlc", qty=12500,
                 rationale=(
-                    "The liquid-cooled 4U variant is what packs 64 GPUs "
-                    "into a rack — ~12,500 servers is the 100k-GPU build."
+                    "A liquid-cooled 4U box is what packs 64 GPUs into a "
+                    "rack — ~12,500 servers is the 100k-GPU build. "
+                    "Illustrative: the Dell model used at Colossus was "
+                    "not published, and Dell lists the XE9680L for "
+                    "H200 and B200 boards."
                 ),
             ),
             UseCaseItem(
                 category_id="gpu-baseboard", option_id="hgx-h100", qty=12500,
-                rationale="The first build ran Hopper-generation HGX baseboards.",
+                rationale="The first build was reported as Hopper-generation (H100) HGX baseboards.",
             ),
             UseCaseItem(
                 category_id="scale-out", option_id="connectx-400", qty=12500,
                 rationale=(
                     "One 400 GbE NIC per GPU is the reported Colossus "
-                    "design — the cluster exists in these ports."
+                    "design (BlueField-3 SuperNICs there) — the cluster "
+                    "exists in these ports."
                 ),
             ),
             UseCaseItem(
@@ -72,9 +79,9 @@ USE_CASES: list[UseCase] = [
             ),
         ],
         outcomes=[
-            Stat(label="GPUs", value="100,000 in 122 days, then 200,000"),
+            Stat(label="GPUs (reported)", value="100,000 in 122 days, then doubling to 200,000"),
             Stat(label="Per rack", value="64 GPUs · 8 servers · one coolant loop"),
-            Stat(label="Network", value="~3.6 Tb/s per server, one port per GPU"),
+            Stat(label="Network", value="8× 400 GbE = 3.2 Tb/s per server, one port per GPU"),
         ],
     ),
     UseCase(
@@ -152,8 +159,8 @@ USE_CASES: list[UseCase] = [
         ),
         narrative=[
             (
-                "University and national-lab clusters — TACC's lineage of "
-                "Dell systems is the marquee example — standardized on "
+                "Many university and national-lab clusters — several of "
+                "TACC's Dell systems among them — standardized on "
                 "InfiniBand years before AI reshaped their workloads, and "
                 "their schedulers, MPI stacks, and operations assume it. "
                 "The XE9680 meets them where they are: the same ConnectX "

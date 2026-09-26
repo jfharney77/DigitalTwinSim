@@ -75,6 +75,22 @@ ANATOMY = PanelMap(
             "url": "https://www.dell.com/en-us/shop/dell-ultrasharp-32-hdr-premiercolor-monitor-up3221q/apd/210-ayci/monitors-monitor-accessories",
         },
         {
+            "label": "Dell UP3221Q user's guide (68.3 W on-mode, 380 W maximum)",
+            "url": "https://dl.dell.com/manuals/all-products/esuprt_electronics_accessories/esuprt_electronics_accessories_monitors/dell-up3221q-monitor_user's-guide_en-us.pdf",
+        },
+        {
+            "label": "Dell S2722QC monitor PCF datasheet (638 kgCO2e, use 33.8%)",
+            "url": "https://www.delltechnologies.com/asset/en-us/products/electronics-and-accessories/technical-support/dell-s2722qc-monitor-pcf-datasheet.pdf",
+        },
+        {
+            "label": "Dell P3424WE monitor PCF datasheet (777 kgCO2e, use 33.6%)",
+            "url": "https://www.delltechnologies.com/asset/en-us/products/electronics-and-accessories/technical-support/dell-p3424we-monitor-pcf-datasheet.pdf",
+        },
+        {
+            "label": "Dell Latitude E7440 carbon footprint whitepaper (use 12%)",
+            "url": "https://i.dell.com/sites/doccontent/corporate/corp-comm/en/Documents/PCF-WP-E7440.pdf",
+        },
+        {
             "label": "Dell Product Carbon Footprint datasheets (monitors)",
             "url": "https://www.dell.com/en-us/lp/dt/product-carbon-footprints",
         },

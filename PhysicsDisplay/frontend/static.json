@@ -1,0 +1,68 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "model": "miniled-32",
+          "brightnessPct": 75,
+          "content": "mixed",
+          "localDimming": true,
+          "hubLaptopW": 0
+        },
+        "lifecycle": {
+          "hoursPerDay": 8,
+          "daysPerYear": 230,
+          "serviceYears": 6,
+          "gridKgco2PerKwh": 0.4
+        },
+        "durationS": 300,
+        "events": []
+      },
+      {
+        "config": {
+          "model": "miniled-32",
+          "brightnessPct": 75,
+          "content": "mixed",
+          "localDimming": true,
+          "hubLaptopW": 0
+        },
+        "lifecycle": {
+          "hoursPerDay": 8,
+          "daysPerYear": 230,
+          "serviceYears": 6,
+          "gridKgco2PerKwh": 0.4
+        },
+        "durationS": 300,
+        "events": [
+          {
+            "action": "hub-plug",
+            "value": 90,
+            "atS": 0
+          }
+        ]
+      },
+      {
+        "config": {
+          "model": "miniled-32",
+          "brightnessPct": 75,
+          "content": "mixed",
+          "localDimming": true,
+          "hubLaptopW": 0
+        },
+        "lifecycle": {
+          "hoursPerDay": 8,
+          "daysPerYear": 230,
+          "serviceYears": 6,
+          "gridKgco2PerKwh": 0.4
+        },
+        "durationS": 300,
+        "events": [
+          {
+            "action": "standby",
+            "atS": 0
+          }
+        ]
+      }
+    ]
+  }
+}

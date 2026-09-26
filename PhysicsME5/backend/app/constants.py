@@ -3,9 +3,11 @@
 ``source`` is honest per the repo's no-invented-specs rule: values taken
 from published documentation or plain arithmetic say so; everything else
 says ``estimate`` and the UI badges readouts that derive from estimates.
-The ME5-specific figures the spec flags ``verify`` (enclosure drive
-counts, the marketing IOPS ceiling) are labeled with where they came from
-and, where memory rather than a document is the basis, marked estimated.
+The ME5-specific figures were checked against public sources in
+2026-09: enclosure drive counts match Dell's ME5000 spec sheet; the 640K
+IOPS ceiling is Dell's launch claim (trade press), not a spec-sheet line,
+and the per-controller halving is a modeling choice — so it stays
+estimated.
 """
 
 from __future__ import annotations
@@ -104,8 +106,13 @@ CONSTANTS: dict[str, Constant] = {
     # --- Controllers ---------------------------------------------------------
     "ctrl_cap_kiops": Constant(
         value=320, unit="kIOPS/controller",
-        source="Dell ME5 spec sheet claims up to 640K IOPS per array — "
-               "halved per controller; verify against current document",
+        source="Dell's launch claim of up to 640K IOPS per array (vendor "
+               "claim, reported by TechTarget 2022-02-25: "
+               "https://www.techtarget.com/searchstorage/news/252513889/"
+               "Performance-capacity-tick-up-with-Dell-PowerVault-ME5) — "
+               "halved per controller as a modeling choice; the ME5000 "
+               "spec sheet itself lists throughput (12 GB/s read, 10 GB/s "
+               "write), not IOPS",
         estimated=True,
         blurb="Front-end ceiling of one controller. Spindles never reach "
               "it; a shelf of SSDs does — which is the teaching point.",
@@ -141,7 +148,7 @@ CONSTANTS: dict[str, Constant] = {
         value=0.8, unit="index points/hour",
         source="estimate — illustrative exposure index, not a probability",
         estimated=True,
-        blurb="Risk-index points per hour of remaining rebuild window, "
+        blurb="Exposure-index points per hour of remaining rebuild window, "
               "scaled by the RAID level's exposure factor.",
     ),
 }

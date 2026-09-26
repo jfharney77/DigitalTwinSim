@@ -72,6 +72,9 @@ export interface SimState {
   capacityVms: number;
   headroomPct: number;
   exposure: boolean;
+  exposureDaysCum: number;
+  workloadsDeployed: number;
+  deployHoursCum: number;
   versionCurrentPct: number;
   driftCount: number;
   outageMinutesCum: number;
@@ -98,6 +101,9 @@ export interface Summary {
   outageMinutes: number;
   truckRolls: number;
   faults: number;
+  exposureDays: number;
+  workloadsDeployed: number;
+  deployHours: number;
   finalVersionCurrentPct: number;
   totalBill: number;
   meanCostPerVmHourAsvc: number;
@@ -153,12 +159,28 @@ export interface WorkloadPreset {
   workload: Workload;
 }
 
+export interface ScenarioVariant {
+  label: string;
+  config: FleetConfig;
+}
+
 export interface GuidedScenario {
   id: string;
   title: string;
   narration: string[];
   question: string;
   scenario: Scenario;
+  variants: ScenarioVariant[];
+}
+
+export interface GlossaryTerm {
+  term: string;
+  gloss: string;
+}
+
+export interface Intro {
+  body: string;
+  glossary: GlossaryTerm[];
 }
 
 export interface Explain {

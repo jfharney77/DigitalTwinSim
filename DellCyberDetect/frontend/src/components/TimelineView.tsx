@@ -38,6 +38,11 @@ const KIND_ACTIVE_FILL: Record<RegionKind, string> = {
 const CORRUPT_FILL = "#3d1414";
 const CORRUPT_STROKE = "#8c3a3a";
 
+// A region that cannot do its job at this step (failure scenarios). The
+// shared error token for dark diagrams, not a new colour.
+const FAILED_STROKE = "var(--core-hot)";
+const FAILED_FILL = "#2e1a10";
+
 export function TimelineView({
   anatomy,
   active,
@@ -45,6 +50,11 @@ export function TimelineView({
   corruptedCount = 0,
   revealed = false,
   namedClean = -1,
+  failed,
+  notes,
+  labels,
+  noCleanCopy = false,
+  removedCount = 0,
   onSelect,
   onHover,
   camera,
@@ -60,6 +70,17 @@ export function TimelineView({
   revealed?: boolean;
   // 1-based index of the snapshot the verdict named; -1 before a verdict.
   namedClean?: number;
+  // Failure scenarios: regions that cannot do their job at this step, a
+  // short status line per region id, and whether the verdict was that no
+  // retained snapshot is clean.
+  failed?: Set<string>;
+  notes?: Record<string, string>;
+  // Replacement labels by region id, for the same reason as `notes`.
+  labels?: Record<string, string>;
+  noCleanCopy?: boolean;
+  // Failure scenarios: how many of the oldest drawn slots hold no copy any
+  // more (exported for forensics and removed). Drawn as empty slots.
+  removedCount?: number;
   onSelect?: (id: string | null) => void;
   // Client (viewport) coords, for the photo tooltip; null on leave.
   onHover?: (id: string | null, cx: number, cy: number) => void;
@@ -166,6 +187,25 @@ export function TimelineView({
         </g>
       )}
 
+      {/* The other verdict: no marker to place, and the axis says so. */}
+      {noCleanCopy && snaps.length > 0 && (
+        <text
+          x={
+            (rx(snaps[0]) +
+              rx(snaps[snaps.length - 1]) +
+              snaps[snaps.length - 1].w) /
+            2
+          }
+          y={ry(snaps[0]) - 1.2}
+          textAnchor="middle"
+          fill={FAILED_STROKE}
+          fontSize={1.6}
+          letterSpacing={0.15}
+        >
+          no clean copy on this array
+        </text>
+      )}
+
       {anatomy.regions.map((r) => {
         const style = KIND_STYLE[r.kind];
         const isSel = r.id === selected;
@@ -173,27 +213,40 @@ export function TimelineView({
         const snapIdx = snaps.indexOf(r);
         const look = regionLook?.(r.id);
         const corrupt = revealed && snapIdx >= 0 && isCorrupt(snapIdx);
+        const isFailed = failed?.has(r.id) ?? false;
+        const isRemoved = snapIdx >= 0 && snapIdx < removedCount;
+        const note = notes?.[r.id];
+        // The conclusion blocks are labelled for the incident that ends with
+        // a named copy. When there is none, the label would be telling the
+        // reader something the trace disproves, so the caller may swap it.
+        const label = labels?.[r.id] ?? r.label;
         // Fit the label to the region: shrink to fit horizontally, fall back
         // to a rotated label for tall-narrow blocks, else tooltip only.
-        const len = r.label.length || 1;
+        const len = label.length || 1;
         const hSize = Math.min(1.9, r.h * 0.45, (r.w - 1.6) / (len * 0.62));
         const vSize = Math.min(1.9, r.w * 0.42, (r.h - 1.6) / (len * 0.62));
-        const showLabel = !!r.label && r.h > 3.4 && hSize >= 1.05;
-        const showVLabel = !showLabel && !!r.label && r.w >= 3 && vSize >= 1.05;
+        const showLabel = !!label && r.h > 3.4 && hSize >= 1.05;
+        const showVLabel = !showLabel && !!label && r.w >= 3 && vSize >= 1.05;
         const fontSize = hSize;
         const fill = corrupt
           ? CORRUPT_FILL
-          : isActive
+          : isFailed
+            ? FAILED_FILL
+            : isActive
             ? KIND_ACTIVE_FILL[r.kind]
             : style.fill;
         const stroke = corrupt
           ? CORRUPT_STROKE
-          : isSel || isActive
+          : isFailed
+            ? FAILED_STROKE
+            : isSel || isActive
             ? "var(--accent)"
             : style.stroke;
         const textFill = corrupt
           ? "#d98b8b"
-          : isSel || isActive
+          : isFailed
+            ? FAILED_STROKE
+            : isSel || isActive
             ? "var(--accent)"
             : style.text;
         return (
@@ -203,10 +256,12 @@ export function TimelineView({
             style={
               look
                 ? {
-                    opacity: look.opacity,
+                    opacity: look.opacity * (isRemoved ? 0.35 : 1),
                     transform: `translate(${look.dx}px, ${look.dy}px)`,
                   }
-                : undefined
+                : isRemoved
+                  ? { opacity: 0.35 }
+                  : undefined
             }
             onClick={(e) => {
               e.stopPropagation();
@@ -223,7 +278,10 @@ export function TimelineView({
               rx={0.8}
               fill={fill}
               stroke={stroke}
-              strokeWidth={isSel || isActive || corrupt ? 0.5 : 0.25}
+              strokeWidth={isSel || isActive || corrupt || isFailed ? 0.5 : 0.25}
+              strokeDasharray={
+                isFailed ? "1.2 0.8" : isRemoved ? "0.6 0.6" : undefined
+              }
             />
             {showVLabel && (
               <text
@@ -235,7 +293,7 @@ export function TimelineView({
                 letterSpacing={0.2}
                 transform={`rotate(-90 ${rx(r) + r.w / 2} ${ry(r) + r.h / 2})`}
               >
-                {r.label}
+                {label}
               </text>
             )}
             {showLabel && (
@@ -247,7 +305,31 @@ export function TimelineView({
                 fontSize={fontSize}
                 letterSpacing={0.12}
               >
-                {r.label}
+                {label}
+              </text>
+            )}
+            {note && r.h >= 8 && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 1.6}
+                textAnchor="middle"
+                fill={isFailed ? FAILED_STROKE : textFill}
+                fontSize={1.5}
+                letterSpacing={0.1}
+              >
+                {note}
+              </text>
+            )}
+            {isRemoved && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 1.6}
+                textAnchor="middle"
+                fill={style.text}
+                fontSize={1.5}
+                letterSpacing={0.1}
+              >
+                removed
               </text>
             )}
             {corrupt && (
@@ -276,7 +358,9 @@ export function TimelineView({
         fontSize={1.5}
         letterSpacing={0.1}
       >
-        CONCLUSION — bottom row, names a copy
+        {noCleanCopy
+          ? "CONCLUSION — bottom row, and it names none"
+          : "CONCLUSION — bottom row, names a copy"}
       </text>
     </svg>
   );

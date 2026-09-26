@@ -41,16 +41,23 @@ E3200 = FabricMap(
             "big fabrics lack: per-device draws (AP ~20 W, camera "
             "~13 W, phone ~7 W) sum against the switch budget, and "
             "that budget binds before port count does; a PSU loss "
-            "halves it and sheds devices by priority. Uplinks are a "
-            "LAG pair per access switch — losing one is a ~2 s STP "
-            "outage, then the survivor at doubled utilization walks "
+            "halves it and sheds devices by priority (Dell's install "
+            "guide rates the E3248P-ON at 1440 W of PoE on two PSUs "
+            "and roughly 713–813 W on one; the 740 W default here is "
+            "illustrative). Uplinks are a pair per access switch — "
+            "losing one is modeled as a ~2 s reconvergence outage "
+            "(rapid-STP class, an estimate; a healthy LACP bundle "
+            "fails over faster), then the survivor at doubled "
+            "utilization walks "
             "up the same 1/(1−ρ) curve the SN6000's 800G links use. "
             "Same physics, human scale."
         ),
         expert=(
             "PoE: Σdevice W vs budget, binds first; PSU loss → ½ "
-            "budget, priority shed. LAG loss → 2 s STP + survivor at "
-            "2× ρ. The 1G/10G rehearsal for the 800G act."
+            "budget, priority shed (E3248P-ON: 1440 W on 2 PSUs, "
+            "~713–813 W on 1, per Dell; 740 W default illustrative). "
+            "Uplink loss → ~2 s RSTP-class gap (estimate) + survivor "
+            "at 2× ρ. The 1G/10G rehearsal for the 800G act."
         ),
     ),
     regions=[
@@ -94,13 +101,17 @@ E3200 = FabricMap(
     sources=[
         {"label": "physics_specs/03-networking.md (this repo)",
          "url": "../physics_specs/03-networking.md"},
+        {"label": "Dell PowerSwitch E3200-ON Series spec sheet (Aug 2024, v1.9) — models, 4× 10G SFP+ / 2× 100G uplinks, PSU wattages",
+         "url": "https://www.delltechnologies.com/asset/en-us/products/networking/technical-support/dell-powerswitch-e3200-specsheet.pdf"},
+        {"label": "Dell N3200-ON/E3200-ON Installation Guide — PoE budget specifications (E3248P-ON: 1440 W on two PSUs, 713–813 W on one)",
+         "url": "https://www.dell.com/support/manuals/en-us/networking-n3200-series/n3200-on_e3200-on_install_pub/poe-budget-specifications?guid=guid-20cfc11e-210e-4984-85ad-82e8110525d1&lang=en-us"},
         {"label": "DellPowerSwitchE3200 twin — the same switch's boot story",
          "url": "http://localhost:5178/"},
     ],
 )
 
 
-def _leafspine(map_id: str, name: str, gen: str, overview: str,
+def _leafspine(map_id: str, name: str, gen: str, year: int, overview: str,
                extra_regions: list[MapRegion],
                sources: list[dict[str, str]]) -> FabricMap:
     return FabricMap(
@@ -109,7 +120,7 @@ def _leafspine(map_id: str, name: str, gen: str, overview: str,
         vendor="Dell Technologies",
         form_factor="Leaf/spine fabric — topology view",
         generation=gen,
-        year=2026,
+        year=year,
         width=100,
         height=56,
         overview=overview,
@@ -165,6 +176,7 @@ SN6000 = _leafspine(
     "sn6000",
     "PowerSwitch SN6000 · AI Ethernet fabric",
     "NVIDIA Spectrum-6 / Spectrum-X",
+    2026,
     L(
         novice=(
             "The Ethernet fabric that joins GPU racks into one "
@@ -188,13 +200,16 @@ SN6000 = _leafspine(
             "the pause counter and the latency multiplier. The optics "
             "ledger is the other lesson: ~18 W per pluggable port "
             "rivals the ASIC at 128 ports; the CPO toggle drops it to "
-            "~6 W. Compare against the X800 personality on identical "
+            "~6 W (both per-port figures are estimates; Dell's SN6000 "
+            "datasheet claims 5x better power efficiency for the "
+            "co-packaged models). Compare against the X800 personality on identical "
             "traffic — the suite's best A/B."
         ),
         expert=(
             "ECMP skew +25/+50/+85% by pattern; AR ×0.15 residual. "
             "RoCE: drops→pauses, HoL spread ×1.5. Optics: 18 W/port "
-            "pluggable vs 6 CPO — Σoptics ≈ ASIC at scale. A/B "
+            "pluggable vs 6 CPO (estimates; vendor claims 5x) — "
+            "Σoptics ≈ ASIC at scale. A/B "
             "against IB is the point."
         ),
     ),
@@ -205,7 +220,8 @@ SN6000 = _leafspine(
             description=(
                 "Per-port optics power as a share of fabric power. "
                 "Pluggables at 128 ports rival the ASIC; CPO cuts the "
-                "line by two-thirds."
+                "line by two-thirds in this model (an estimate — "
+                "Dell's datasheet claims 5x better power efficiency)."
             ),
         ),
         MapRegion(
@@ -219,7 +235,13 @@ SN6000 = _leafspine(
             ),
         ),
     ],
-    [{"label": "DellPowerSwitchSN6000 twin", "url": "http://localhost:5185/"}],
+    [
+        {"label": "Dell PowerSwitch SN6000 Series datasheet — Spectrum-6, 102.4 Tb/s per ASIC, 800 Gb/s per port, CPO efficiency claims",
+         "url": "https://www.delltechnologies.com/asset/en-us/products/networking/technical-support/dell-powerswitch-sn6000-series-spec-sheet.pdf"},
+        {"label": "Dell press release, 16 March 2026 — SN6000 series announced, global availability from July 2026",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~03~dell-ai-factory-with-nvidia-delivers-proven-path-to-enterprise-ai-roi.htm"},
+        {"label": "DellPowerSwitchSN6000 twin", "url": "http://localhost:5185/"},
+    ],
 )
 
 
@@ -227,6 +249,7 @@ X800 = _leafspine(
     "x800",
     "Quantum-X800 · Dell-integrated InfiniBand",
     "NVIDIA Quantum-X800 XDR",
+    2024,  # announced at NVIDIA GTC, March 2024
     L(
         novice=(
             "The other way to build the same fabric. InfiniBand "
@@ -247,7 +270,8 @@ X800 = _leafspine(
             "manifests as sender stall time (µs/s), the honest cost "
             "metric. SHARP moves the collective into the fabric: "
             "with it on, all-reduce bytes crossing links fall by "
-            "half while the effective all-reduce rate rises ~1.8× — "
+            "half while the effective all-reduce rate rises ~1.8× "
+            "(both modeling estimates, not NVIDIA figures) — "
             "the counters cross, the DellQuantumX800 twin's "
             "signature move. The subnet manager sits beside the "
             "fabric, small: essential to its life, absent from every "
@@ -280,7 +304,13 @@ X800 = _leafspine(
             ),
         ),
     ],
-    [{"label": "DellQuantumX800 twin", "url": "http://localhost:5202/"}],
+    [
+        {"label": "NVIDIA Quantum-X800 InfiniBand platform — 800 Gb/s XDR, SHARP v4 in-network computing",
+         "url": "https://www.nvidia.com/en-us/networking/products/infiniband/quantum-x800/"},
+        {"label": "NVIDIA Q32xx/Q34xx XDR switch user manual — Q3400: 144 ports of 800 Gb/s, dedicated UFM port",
+         "url": "https://networking-docs.nvidia.com/xdrswitcheshw/introduction"},
+        {"label": "DellQuantumX800 twin", "url": "http://localhost:5202/"},
+    ],
 )
 
 

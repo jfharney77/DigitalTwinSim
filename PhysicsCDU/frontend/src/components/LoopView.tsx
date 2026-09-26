@@ -155,7 +155,9 @@ export function LoopView({
               </text>
             )}
             {/* Temperature readout on the larger blocks. */}
-            {r.w >= 10 && r.h >= 7 && state && !muted && (
+            {/* The controller is not a wet part, so it carries no reading;
+                the exchanger's number is the mean of its two sides. */}
+            {r.w >= 10 && r.h >= 7 && state && !muted && r.kind !== "controller" && (
               <text
                 x={rx(r) + r.w / 2}
                 y={ry(r) + r.h - 1.6}
@@ -165,6 +167,18 @@ export function LoopView({
                 fontWeight={700}
               >
                 {temp.toFixed(0)}°
+              </text>
+            )}
+            {r.kind === "hx" && state && !muted && (
+              <text
+                x={rx(r) + r.w / 2}
+                y={ry(r) + r.h - 4}
+                textAnchor="middle"
+                fill="#0d1420"
+                fontSize={1.2}
+                fontWeight={600}
+              >
+                mean of both sides
               </text>
             )}
           </g>

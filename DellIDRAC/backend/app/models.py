@@ -44,6 +44,21 @@ BringUpPhase = Literal[
     "ready",     # reachable, console live, watching the host out-of-band
 ]
 
+# The firmware-update failure scenario (``engine.simulate_firmware_rollback``)
+# starts where the bring-up ends — at ``ready`` — and walks its own phases.
+# Additive: the bring-up trace never carries any of these.
+UpdatePhase = Literal[
+    "upload",     # the update package arrives over the management network
+    "verify",     # its signature is checked against the Root of Trust
+    "stage",      # the image is written to the *inactive* flash partition
+    "reboot",     # iDRAC restarts; management is lost, the host is not
+    "bootcheck",  # the new image is verified at boot, and fails
+    "rollback",   # the bootloader falls back to the previous partition
+    "restored",   # iDRAC is back on the old version, with a log entry
+]
+
+FlashPartition = Literal["A", "B"]
+
 
 class Photo(CamelModel):
     """A photograph of the part; ``credit`` must always be rendered by the UI."""
@@ -102,7 +117,7 @@ class BringUpState(CamelModel):
     consumes. The clock lives in the frontend, never here."""
 
     step: int
-    phase: BringUpPhase
+    phase: BringUpPhase | UpdatePhase
     label: str
     description: str
     # Block ids in the subsystem map lit up at this step.
@@ -116,9 +131,55 @@ class BringUpState(CamelModel):
     # UI dwell ticks; long stages (Lifecycle Controller init) get more.
     cycle_cost: int = 1
 
+    # --- Failure-scenario fields (additive) --------------------------------
+    # All default to None and the bring-up trace never sets them; the trace
+    # route drops None fields, so the happy path's wire format is unchanged.
+    # Is the host (the server proper) powered? The scenario's first invariant:
+    # it is True on every step — an iDRAC update never touches the workload.
+    host_powered: bool | None = None
+    # Which flash partition iDRAC is running from, and what each side holds.
+    active_partition: FlashPartition | None = None
+    running_version: str | None = None
+    # The partition being written at this step, if any — never the active one.
+    writing_partition: FlashPartition | None = None
+    # True once the uploaded package's signature has been verified.
+    signature_verified: bool | None = None
+    # How many flash partitions iDRAC counts as holding a bootable image.
+    # Never zero. It is iDRAC's view, not ground truth: between the damaged
+    # write and the failed boot check it reads 2 while only A would boot,
+    # and the running partition keeps the true count at 1 or more throughout.
+    bootable_images: int | None = None
+    # Can an administrator reach iDRAC (web console, Redfish, RACADM)?
+    management_reachable: bool | None = None
+    # The hero number: cumulative seconds the management plane was dark.
+    # Illustrative, and bounded.
+    management_outage_seconds: int | None = None
+    # Blocks to draw in the error colour (a subset of the map's ids).
+    failed_regions: list[str] | None = None
+    # What the Lifecycle log or job queue shows the administrator at this step.
+    log_entry: str | None = None
+
 
 class BringUpResponse(CamelModel):
     trace: list[BringUpState]
+
+
+class ScenarioInfo(CamelModel):
+    """One selectable trace: the bring-up, or a failure scenario. ``sources``
+    are the documents the scenario's behaviour is drawn from."""
+
+    id: str
+    name: str
+    summary: str
+    phases: list[str]
+    # The counter the scenario exists for, as the UI should name it.
+    hero_label: str
+    # What is sourced and what is illustrative, in one honest sentence.
+    basis: str
+    # The paragraph under the trace page's heading. It lives here, not in the
+    # frontend, so that it follows the reading level like the rest of the prose.
+    intro: str = ""
+    sources: list[SourceLink] = Field(default_factory=list)
 
 
 class CatalogOption(CamelModel):

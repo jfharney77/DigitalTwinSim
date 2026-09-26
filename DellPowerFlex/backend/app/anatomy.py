@@ -17,9 +17,13 @@ than any single storage node. It maps chunks to nodes and referees
 failures; it does not carry data. Drawing it large would tell the reader
 exactly the wrong thing about where the bytes go.
 
-Six nodes are drawn. A real pool starts at three and runs past two
-thousand, which is the scale at which the rebuild property below stops
-being a nicety and becomes the reason to buy it.
+Six nodes are drawn. Dell has quoted the mirrored generations of the
+product (through 4.x) at three nodes to past two thousand, which is the
+scale at which the rebuild property below stops being a nicety and becomes
+the reason to buy it. The erasure-coded PowerFlex 5.0 ("Ultra", announced
+May 2025, available October 2025) is a separate greenfield system: its
+spec sheet lists a five-node minimum (2+2) or eleven (8+2) and 128 storage
+nodes per system. The trace models the classic two-copy mesh mirror.
 """
 
 from __future__ import annotations
@@ -67,8 +71,11 @@ ANATOMY = ClusterAnatomy(
     name="Dell PowerFlex — software-defined block storage pool",
     vendor="Dell Technologies",
     form_factor="Server-based block storage over an IP fabric",
-    generation="PowerFlex 5.0 Ultra — scalable availability engine, erasure coding",
-    year=2026,
+    generation=(
+        "Mesh-mirrored PowerFlex (through 4.x) is what the trace models; "
+        "PowerFlex 5.0 \"Ultra\" (2025) replaces mirroring with erasure coding"
+    ),
+    year=2025,
     width=100,
     height=55,
     overview=L(
@@ -98,8 +105,8 @@ ANATOMY = ClusterAnatomy(
             "into "
             "chunks, scatters them across all the servers with redundant "
             "copies, and lets clients read and write straight to whichever "
-            "servers hold what they want. It scales from three servers to over "
-            "two thousand. What matters in this diagram is what is missing: "
+            "servers hold what they want. Dell has quoted pools from three "
+            "servers to over two thousand. What matters in this diagram is what is missing: "
             "there is no controller row. PowerStore and PowerMax, twinned "
             "elsewhere here, put every byte through a controller and spend "
             "their engineering making that centre safe. This design removed "
@@ -115,9 +122,11 @@ ANATOMY = ClusterAnatomy(
             "every "
             "volume into chunks and scatters them — mirrored — across all of "
             "them, and clients read and write straight to the servers holding "
-            "the chunks they want. Scale runs from three nodes to more than "
-            "two "
-            "thousand, and past 240 million operations per second. What is "
+            "the chunks they want. Dell has quoted this mirrored design from "
+            "three nodes to more than two thousand, and up to 240 million "
+            "operations per second; the newer erasure-coded 5.0 release starts "
+            "at five nodes and its spec sheet lists 128 storage nodes per "
+            "system. What is "
             "worth noticing in this diagram is what is not in it. There is no "
             "controller row. PowerStore and PowerMax, both twinned elsewhere "
             "in "
@@ -135,8 +144,10 @@ ANATOMY = ClusterAnatomy(
         technical=(
             "Server-based block storage: local NVMe contributed to a shared "
             "pool, volumes chunked and scattered with redundancy across all "
-            "nodes, clients addressing the holders directly. Three to 2,000+ "
-            "nodes, past 240M IOPS. The notable feature of the diagram is an "
+            "nodes, clients addressing the holders directly. Dell-quoted scale "
+            "for the mirrored generations: three to 2,000+ nodes, up to 240M "
+            "IOPS (the erasure-coded 5.0 spec sheet: 5 to 128 storage nodes). "
+            "The notable feature of the diagram is an "
             "absence — no controller tier. PowerStore and PowerMax, twinned "
             "here, engineer around controller centrality; this removes it. The "
             "consequence surfaces at node loss: rebuild is many-to-many, every "
@@ -149,7 +160,8 @@ ANATOMY = ClusterAnatomy(
             "centrality "
             "PowerStore and PowerMax engineer around is removed rather than "
             "hardened. Rebuild is many-to-many, so MTTR is inversely "
-            "proportional to node count. 3–2,000+ nodes, 240M IOPS."
+            "proportional to node count. Dell-quoted, mirrored generations: "
+            "3–2,000+ nodes, 240M IOPS; 5.0 (EC-only): 5–128 storage nodes."
         ),
     ),
     regions=[
@@ -210,10 +222,13 @@ ANATOMY = ClusterAnatomy(
             x=17, y=45, w=40, h=8,
             description=(
                 "How the pool survives losing hardware. Every chunk exists "
-                "in more than one place — classically as a mirror, and in "
-                "PowerFlex 5.0 Ultra also via erasure coding, which stores "
-                "mathematical parity instead of a full second copy and so "
-                "costs far less capacity for comparable protection. The "
+                "in more than one place — through PowerFlex 4.x as a "
+                "two-copy mesh mirror, which is what this twin models. "
+                "PowerFlex 5.0 (the Ultra release, 2025) replaces the mirror "
+                "with dual-parity erasure coding, 2+2 or 8+2, which stores "
+                "mathematical parity instead of a full second copy: Dell "
+                "states up to 80 percent usable capacity for 8+2, and the "
+                "pool survives two node failures rather than one. The "
                 "part worth watching is the rebuild. Because the lost "
                 "node's data lives in fragments spread over every other "
                 "node, the reconstruction is many-to-many: in a hundred-"
@@ -244,13 +259,14 @@ ANATOMY = ClusterAnatomy(
     ],
     stats=[
         Stat(label="Architecture", value="Server-based; no controller tier"),
-        Stat(label="Scale", value="3 to 2,000+ nodes"),
-        Stat(label="Performance", value="Up to 240 million IOPS"),
+        Stat(label="Scale (Dell-quoted, mirrored generations)", value="3 to 2,000+ nodes"),
+        Stat(label="Performance (Dell-quoted)", value="Up to 240 million IOPS"),
+        Stat(label="PowerFlex 5.0 limits (spec sheet)", value="5 or 11 node minimum; 128 storage nodes and 2,000 hosts per system"),
         Stat(label="Transport", value="IP fabric — no dedicated storage network"),
-        Stat(label="Protection", value="Mesh mirroring and erasure coding"),
+        Stat(label="Protection", value="Mesh mirroring through 4.x; erasure coding (2+2, 8+2) in 5.0"),
         Stat(label="Rebuild", value="Many-to-many; every surviving node takes part"),
         Stat(label="Deployment", value="Two-layer or hyperconverged"),
-        Stat(label="Release", value="PowerFlex 5.0 Ultra — scalable availability engine"),
+        Stat(label="Latest architecture", value="PowerFlex 5.0 (Ultra), available October 2025 — Scalable Availability Engine; Dell claims up to 80% capacity efficiency and ten nines"),
     ],
     photo=POOL_ILLO,
     sources=[
@@ -259,7 +275,7 @@ ANATOMY = ClusterAnatomy(
             url="https://www.dell.com/en-us/shop/powerflex/sf/powerflex",
         ),
         SourceLink(
-            label="Dell PowerFlex technical overview — rebuild",
+            label="Dell PowerFlex 4.5.x technical overview — rebuild",
             url="https://www.dell.com/support/manuals/en-us/scaleio/flex-software-to-45x/rebuild",
         ),
         SourceLink(
@@ -267,8 +283,24 @@ ANATOMY = ClusterAnatomy(
             url="https://www.wwt.com/blog/introducing-dell-powerflex-5-dot-0-ultra-a-new-era-in-software-defined-storage",
         ),
         SourceLink(
-            label="Dell Technologies reimagines the modern data center for the AI era (May 2026)",
-            url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-reimagines-the-modern-data-center-for-the-ai-era.htm",
+            label="Dell PowerFlex 5.0 specification sheet (system limits, node minimums, greenfield only)",
+            url="https://www.delltechnologies.com/asset/en-us/products/storage/technical-support/powerflex-5-0-specification-sheet.pdf",
+        ),
+        SourceLink(
+            label="Dell PowerFlex 5.0.x technical overview — erasure coding (2+2, 8+2)",
+            url="https://www.dell.com/support/manuals/en-us/scaleio/flex-software-to-5x/powerflex-erasure-coding?guid=guid-ef733bab-fe61-4c70-a063-41886438868a&lang=en-us",
+        ),
+        SourceLink(
+            label="End storage tradeoffs at scale with PowerFlex (Dell blog, September 2025)",
+            url="https://www.dell.com/en-us/blog/end-storage-tradeoffs-at-scale-with-powerflex/",
+        ),
+        SourceLink(
+            label="Dell refreshes storage lines (Blocks & Files, September 2025 — October 2025 availability)",
+            url="https://blocksandfiles.com/2025/09/24/dell-refreshes-power-storage/",
+        ),
+        SourceLink(
+            label="Dell Technologies PowerFlex (Wikipedia — the 3 to 2,000+ node, 240 million IOPS figures)",
+            url="https://en.wikipedia.org/wiki/Dell_Technologies_PowerFlex",
         ),
     ],
 )

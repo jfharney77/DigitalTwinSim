@@ -171,42 +171,71 @@ GUIDED_SCENARIOS = [
             L(
                 novice=(
                     "On day 40, ransomware starts quietly encrypting about "
-                    "three percent of the files every day. Nothing looks "
-                    "wrong at first: capacity charts bend so slowly that "
-                    "nobody would notice for weeks. But watch the entropy "
-                    "instrument — it measures how random today's *changed* "
-                    "data looks. Ordinary edits look like documents; "
-                    "ransomware's writes look like static. The alarm fires "
-                    "within a day or two of the attack, long before any "
-                    "capacity number moves. This same physics, read from "
-                    "the storage side, is how Dell's Cyber Detect finds "
-                    "corrupted snapshots."
+                    "three percent of the files every day. Watch the entropy "
+                    "instrument. It measures how random the data that "
+                    "changed today looks. Ordinary edits look like "
+                    "documents; ransomware's writes look like static. The "
+                    "alarm fires within a day or two of the attack, and the "
+                    "event log records the day. Now look at the small chart "
+                    "under the capacity chart. It zooms in on the amber "
+                    "stored-data line and draws a dashed line showing where "
+                    "storage would have gone without the attack. The "
+                    "simulator logs a capacity notice on the first day the "
+                    "amber line climbs more than 20% above the dashed one, "
+                    "and marks that day on the chart. Compare the two days. "
+                    "One more thing to watch: when the attack stops on day "
+                    "70, the daily new data drops to a tenth of normal. "
+                    "That is not good news. By then 90% of the files are "
+                    "scrambled and nobody can edit them, so only the last "
+                    "10% still produces ordinary changes. This same physics, "
+                    "read from the storage side, is one of the signals "
+                    "Dell's Cyber Detect uses to find corrupted snapshots. "
+                    "The alarm and the 20% rule are this simulator's "
+                    "illustrations, not shipping Data Domain features."
                 ),
                 standard=(
                     "Ransomware begins at day 40, encrypting 3% of the "
-                    "dataset per day. The capacity effect is a gentle "
-                    "slope change — undetectable for weeks against normal "
-                    "variance. The stream-entropy instrument, though, "
-                    "watches what *changed* today: churn at baseline "
-                    "entropy plus ciphertext at ~98%, and the blend "
-                    "crosses the alarm threshold almost immediately. "
+                    "dataset per day. The stream-entropy instrument watches "
+                    "what changed today: churn at baseline entropy plus "
+                    "ciphertext at ~98%, and the blend crosses the alarm "
+                    "threshold almost immediately. Capacity is slower. The "
+                    "strip under the capacity chart plots physical on its "
+                    "own axis against the pre-attack trend (a straight line "
+                    "fitted to the 10 days before the event), and the log "
+                    "records a capacity notice on the first day physical "
+                    "runs more than 20% above it. That margin is this "
+                    "simulator's estimate of an alert loose enough to ride "
+                    "through a month-end batch. A tighter alert fires "
+                    "sooner, and an alert on daily novel data would see the "
+                    "jump on day 40 itself, but a busy day of honest churn "
+                    "trips that one too. Entropy is the signal that says "
+                    "the new data is ciphertext. After the halt on day 70, "
+                    "daily novel data falls to a tenth of baseline and the "
+                    "ratio recovers: the model stops churning encrypted "
+                    "files, so only the clean 10% still changes. The estate "
+                    "is not healthier; most of it has stopped being used. "
                     "The lesson pairs with the encrypted-source scenario: "
                     "the same entropy that ruins your dedupe ratio is the "
-                    "earliest honest signal of an attack — one fact, two "
-                    "sides. Cyber Detect (see the DellCyberDetect twin) "
-                    "reads it from snapshots; the backup appliance reads "
-                    "it from the ingest stream."
+                    "earliest honest signal of an attack. Cyber Detect (see "
+                    "the DellCyberDetect twin) reads content signals like it "
+                    "from snapshots; this simulator reads it from the ingest "
+                    "stream (an illustrative instrument, not a shipping Data "
+                    "Domain alarm)."
                 ),
                 expert=(
-                    "rw 3%/day from d40. ΔPhys slope +3F/100 per day — "
-                    "weeks to surface. Entropy of deltas: (c·e + r·98)/"
-                    "(c+r) ≈ 71% at d41 ⇒ alarm in O(1) days. Capacity "
-                    "detects in O(weeks). Same signal as Cyber Detect, "
-                    "opposite endpoint."
+                    "rw 3%/day from d40. Entropy of deltas: (c·e + r·98)/"
+                    "(c+r) ≈ 71% at d40 ⇒ alarm in O(1) days. Capacity "
+                    "notice = first day phys > 1.2 × (phys(d40) + slope₁₀·"
+                    "(d − 40)); margin and window are estimates, shown on "
+                    "the trend strip. Daily novel steps ×3.5 at d40, but "
+                    "that is a volume signal, not a content one. Post-halt "
+                    "churn = c·(1 − F)·full with F = 0.9: encrypted data "
+                    "does not churn in this model. Same signal as Cyber "
+                    "Detect, opposite endpoint."
                 ),
             ),
         ],
-        question="How many days pass between the entropy alarm and the day the capacity curve visibly breaks trend?",
+        question="The event log records an entropy alarm and a capacity notice. How many days apart are they, and which would you rather be paged by?",
         scenario=Scenario(
             appliance="dd9910",
             dataset=Dataset(full_tb=100, daily_change_pct=2.0, entropy_pct=30),
@@ -232,9 +261,11 @@ GUIDED_SCENARIOS = [
                     "that catalog must live in fast memory to keep up. As "
                     "unique data accumulates, the catalog outgrows memory, "
                     "lookups slow down, and backups take longer — while "
-                    "the disks sit half empty. Appliances run out of "
-                    "*index* before they run out of disk more often than "
-                    "people expect."
+                    "the disks sit half empty. The memory size here is an "
+                    "illustrative estimate, not a Dell figure — real "
+                    "appliances are engineered to push this limit out — "
+                    "but the lesson holds: the *index* can run out before "
+                    "the disk does."
                 ),
                 standard=(
                     "A 20 TB, 3%/day dataset on the DD3410 with 60-day "
@@ -242,9 +273,11 @@ GUIDED_SCENARIOS = [
                     "fingerprint index crosses its RAM budget around "
                     "week two, and ingest throughput degrades past the "
                     "knee from that day on: same disks, same network, "
-                    "slower backups. The backup window instrument shows "
-                    "the operational symptom. Index pressure, not raw "
-                    "capacity, is the entry appliance's real ceiling."
+                    "slower backups. The ingest time instrument shows "
+                    "the operational symptom. In this model index "
+                    "pressure, not raw capacity, is the entry appliance's "
+                    "ceiling; the RAM budget is an illustrative estimate, "
+                    "not a Dell specification."
                 ),
                 expert=(
                     "Chunks = phys/8 KB; RAM-resident sample × 64 B ⇒ "
@@ -419,30 +452,38 @@ EXPLAINS = [
     ),
     Explain(
         id="backup-window",
-        title="Backup window",
-        equation="window = logical TB ÷ (ingest × dedupe speedup)",
+        title="Appliance ingest time",
+        equation="ingest time = logical TB ÷ (ingest × dedupe speedup)",
         inputs=["logical TB", "novel TB", "ingest GB/s", "window hours"],
         explanation=L(
             novice=(
-                "How long the nightly backup takes. Because unchanged "
-                "pieces never even cross the network, a quiet night "
-                "'backs up' terabytes in minutes. The morning after "
-                "encryption is turned on, everything must actually "
-                "travel and be stored — and the window explodes from "
-                "minutes to hours."
+                "How long the appliance spends taking in tonight's backup. "
+                "Because unchanged pieces never even cross the network, a "
+                "quiet night lands terabytes in minutes. This is only the "
+                "appliance's share of the night: the backup clients still "
+                "have to read and fingerprint every file first, and this "
+                "simulator does not model that time. The morning after "
+                "encryption is turned on, everything must actually travel "
+                "and be stored, and the ingest time explodes from minutes "
+                "to hours."
             ),
             standard=(
                 "Effective logical throughput is physical ingest times "
-                "the day's dedupe factor (capped — client-side dedupe "
-                "can't be infinitely fast). The window is logical size "
-                "over that rate: it collapses when novelty does, which "
+                "the day's dedupe factor (capped, because client-side "
+                "dedupe can't be infinitely fast). Ingest time is logical "
+                "size over that rate: it collapses when novelty does, which "
                 "is why an encrypted source shows up first as backups "
-                "that stop finishing overnight."
+                "that stop finishing overnight. It is the appliance-side "
+                "share of the backup window only. DD Boost moves the read "
+                "and fingerprint work to the clients; it does not delete "
+                "it, and the source-read time is not modelled here."
             ),
             expert=(
-                "window = L/(ingest·min(L/novel, cap)). Novelty → 1 ⇒ "
-                "window → L/ingest: the SLA breach arrives before the "
-                "capacity alarm."
+                "t = L/(ingest·min(L/novel, cap)). Novelty → 1 ⇒ "
+                "t → L/ingest: the SLA breach arrives before the "
+                "capacity alarm. Appliance side only; client read + hash "
+                "of all L bytes is unmodelled, so t is a lower bound on "
+                "the real window."
             ),
         ),
     ),

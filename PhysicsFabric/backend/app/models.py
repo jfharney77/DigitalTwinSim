@@ -131,6 +131,8 @@ class SimState(CamelModel):
     # The gray-failure liar: device status vs experienced goodput.
     status_all_green: bool
     goodput_penalty_pct: float
+    # The same penalty as felt by the flows crossing the sick link.
+    affected_flow_penalty_pct: float = 0.0
     # E3200 PoE.
     poe_budget_w: float
     poe_demand_w: float

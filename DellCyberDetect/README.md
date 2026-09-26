@@ -3,9 +3,12 @@
 A digital twin of **Dell Cyber Detect** — machine-learning ransomware
 detection that runs directly against snapshots on primary storage,
 inspecting data at the **byte level** rather than reasoning about metadata,
-file activity, or known signatures. Content analysis by Index Engines;
-Dell puts accuracy at 99.99%, trained across thousands of variants.
-Available for PowerStore in Q3 2026 and PowerMax in 2H 2026.
+file activity, or known signatures. Content analysis by Index Engines
+(CyberSense); Dell puts accuracy at 99.99% — a vendor claim resting on a
+June 2024 ESG report commissioned by Index Engines — trained on 7,500+
+ransomware variants. Sold as Cyber Detect for Storage: PowerStore announced
+for Q3 2026 and listed as supported, PowerMax planned for 2H 2026. The
+vault-side CyberSense offering is now named Cyber Detect for PowerProtect.
 
 The companion to this repo's PowerProtect twin, which models the isolated
 vault. That twin answers "will a copy survive?"; this one answers the
@@ -66,6 +69,53 @@ outside says which. That is the position an administrator is actually in.
 The copies only turn red once the analysis has read the bytes inside them.
 `TimelineView.tsx` takes a `revealed` prop for exactly this reason: marking
 corruption early would quietly undo the whole lesson.
+
+## Failure scenario: dwell time exceeds retention
+
+The baseline incident ends well: three clean snapshots are still on the
+array and the analysis names the newest of them. The second scenario
+(`GET /api/detect?scenario=dwell-exceeds-retention`, listed by
+`GET /api/scenarios`, deep link `#scenario=dwell-exceeds-retention`, which
+composes as `#scenario=dwell-exceeds-retention&phase=verdict`) is the one
+where that does not happen.
+
+The array keeps seven daily snapshots. The attacker corrupts slowly for
+longer than seven days, and the retention policy deletes the last clean
+copy on schedule, working as designed. When content inspection finally
+runs, it reads and scores all seven copies exactly as in the baseline and
+reports that none is clean. `lastCleanSnapshot` stays `-1` for the whole
+trace and `verdict` is `no-clean-copy-on-array`. The product does not fall
+back to the least-damaged copy, because certifying a corrupted copy is the
+error it exists to prevent. Recovery then comes from the PowerProtect Cyber
+Recovery vault (the `DellPowerProtect/` twin): `recoverySource` is
+`powerprotect-vault`, no array snapshot takes part, and the restored data
+is about 310 hours old against 134 in the baseline.
+
+The vault holds backup copies replicated from a production Data Domain, not
+array snapshots, and recovery runs through a recovery host inside the vault.
+The scenario therefore assumes two things and says so in the step prose: the
+volume was in the backup set, and the vault keeps copies for longer than the
+attacker waited. Where either is false, the recover step has no good version.
+
+The state model is extended additively (`snapshotsExpired`, `verdict`,
+`recoverySource`, `recoveryPointAgeHours`, `failedRegions`). The trace lives
+in `backend/app/scenarios.py`, which is held to the same purity rule as the
+engine. `backend/tests/test_scenarios.py` pins the signature invariants:
+no corrupted copy is ever certified clean, in any scenario; confidence
+still comes only from content; inspection is still the longest stage;
+recovery names an off-array source; the recovery point is strictly worse
+than the baseline's; and every pre-existing field of the baseline trace
+hashes to the value it had before this work.
+
+What is sourced: the per-copy Good / Suspicious / Partial results and the
+alert on Suspicious (Dell Cyber Recovery product guide), last-known-clean
+identification with forensic reports and impacted-file lists (Index
+Engines), and the vault architecture (Dell H18661). Neither vendor
+publishes a worked "every copy is suspicious" walkthrough, so the sequence
+is this twin's reading of those behaviours. The seven-day window, hours and
+counts are illustrative. Most ransomware dwell times are days, not weeks
+(Mandiant M-Trends 2025); this is the patient tail. The guided tour stays
+on the baseline incident.
 
 ## Run
 
@@ -129,7 +179,11 @@ the other twins.
   find.
 - Counts, confidences, and timings are illustrative but plausible; favor a
   correct mental model over measured numbers (project scope guardrail). The
-  99.99% figure is Dell's own and is labelled as such.
+  99.99% figure is Dell's own (from an ESG report commissioned by Index
+  Engines, June 2024, "actual results may vary") and is labelled as such.
+- Dell has announced Cyber Detect for PowerStore, PowerMax, and the
+  PowerProtect Cyber Recovery vault. The catalog's file/object (PowerScale)
+  and backup-appliance placements are illustrative and say so.
 - The only shipped visual is `frontend/public/cyberdetect-timeline.svg`, a
   self-contained schematic drawn for this project with an honest credit
   line — not a Dell product image.
@@ -139,4 +193,5 @@ the other twins.
 - [Dell Cyber Detect — product page](https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/cyber-detect)
 - [Dell — faster, more confident recovery starts on primary storage](https://www.dell.com/en-us/blog/faster-more-confident-recovery-starts-on-primary-storage/)
 - [Dell Technologies reimagines the modern data center for the AI era (May 2026)](https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-reimagines-the-modern-data-center-for-the-ai-era.htm)
+- [Index Engines — Dell Cyber Detect, powered by CyberSense](https://indexengines.com/products/dell-cyber-detect/)
 - [Dell PowerMax cybersecurity — security and compliance](https://infohub.delltechnologies.com/en-us/l/dell-powermax-cybersecurity-3/security-and-compliance-9/)

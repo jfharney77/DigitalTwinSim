@@ -56,6 +56,11 @@ OnboardPhase = Literal[
     "blueprint",  # the declarative site definition is applied
     "workload",   # applications from the catalog start
     "managed",    # steady state: policy enforced, telemetry flowing
+    # The three phases below appear only in failure scenarios
+    # (app/scenarios.py); the happy path never reaches them.
+    "quarantine",  # a device fails attestation and is refused
+    "replace",     # the failed unit is swapped — a second human action
+    "recovered",   # the replacement attests and the site is whole
 ]
 
 
@@ -145,6 +150,52 @@ class OnboardState(CamelModel):
 
 class OnboardResponse(CamelModel):
     trace: list[OnboardState]
+
+
+class ScenarioState(OnboardState):
+    """One step of a failure scenario: an ``OnboardState`` extended only
+    additively, so the happy path's wire format is untouched.
+
+    In a failure scenario the site-level ``trust_established`` flag is not
+    enough — trust is a property of each device, and the per-endpoint map
+    below is the authority. ``operator_actions`` keeps its meaning and its
+    ceiling of 1 (power and a network cable); the human work a failure
+    costs is counted separately and honestly in ``recovery_actions``.
+    """
+
+    # Attestation verdict per endpoint region id. False until that device
+    # has proven itself; a device that fails stays False.
+    endpoint_trust: dict[str, bool] = Field(default_factory=dict)
+    # Endpoint region ids currently quarantined: attestation failed, nothing
+    # is sent to them, and they are excluded from ``endpoints_online``.
+    failed_endpoints: list[str] = Field(default_factory=list)
+    # Endpoint region ids that hold any delivered payload (OS, blueprint,
+    # workload). Exists to prove a negative: a quarantined id never appears.
+    deployed_to: list[str] = Field(default_factory=list)
+    # Local human actions the failure cost, beyond the one plug-in.
+    recovery_actions: int = Field(default=0, ge=0)
+
+
+class ScenarioInfo(CamelModel):
+    """A selectable trace. ``id`` is what ``?scenario=`` and ``#scenario=``
+    carry; ``sources`` cite what the behaviour is grounded in, and
+    ``illustrative`` says plainly what the twin invents."""
+
+    id: str
+    title: str
+    summary: str
+    hero_label: str
+    sources: list[SourceLink] = Field(default_factory=list)
+    illustrative: str = ""
+    # The page introduction for this trace (leveled prose). A failure
+    # scenario needs its own: the happy path's promise of exactly one
+    # on-site action is not what the failure trace goes on to show.
+    intro: str = ""
+
+
+class ScenarioResponse(CamelModel):
+    scenario: ScenarioInfo
+    trace: list[ScenarioState]
 
 
 class CatalogOption(CamelModel):

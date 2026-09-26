@@ -34,6 +34,33 @@ export function loadColor(pct: number): string {
   return STOPS[STOPS.length - 1][1];
 }
 
+// What each block's number means. A bare percentage reads as "fill", which
+// made the healthy vault look empty and the corrupted repository look busy.
+function caption(id: string, load: number, s: SimState): string {
+  switch (id) {
+    case "estate":
+      return `${load.toFixed(0)}% corrupted`;
+    case "backup":
+      return s.repoCopiesIntact === 0 && load === 0
+        ? "no copies yet"
+        : `${s.repoCopiesIntact} copies intact`;
+    case "vault":
+      return s.vaultCopiesIntact > 0
+        ? `${s.vaultCopiesIntact} copies intact`
+        : "no copies held";
+    case "gap":
+      return load > 0 ? "open for sync" : "closed";
+    case "analytics":
+      return `corruption score ${load.toFixed(0)}`;
+    case "queue":
+      return `${s.alertsBacklog} alerts waiting`;
+    case "responder":
+      return s.contained ? "contained" : s.detected ? "alerted" : "idle";
+    default:
+      return `${load.toFixed(0)}%`;
+  }
+}
+
 export function ResilienceView({
   anatomy,
   state,
@@ -106,7 +133,7 @@ export function ResilienceView({
                 fontSize={1.7}
                 fontWeight={700}
               >
-                {load.toFixed(0)}%
+                {caption(r.id, load, state)}
               </text>
             )}
           </g>
@@ -124,13 +151,13 @@ export function ResilienceView({
           />
         ))}
         <text x={MARGIN} y={H + 6.6} fill="#5a6b82" fontSize={1.7}>
-          idle
+          quiet / intact
         </text>
-        <text x={MARGIN + 62} y={H + 6.6} fill="#5a6b82" fontSize={1.7}>
-          saturated
+        <text x={MARGIN + 60} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
+          corrupt / saturated
         </text>
         <text x={W - MARGIN} y={H + 6.6} textAnchor="end" fill="#5a6b82" fontSize={1.7}>
-          colored by load / fill · click a block
+          click a block
         </text>
       </g>
     </svg>

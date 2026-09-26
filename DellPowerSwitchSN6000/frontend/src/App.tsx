@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchFabric, fetchTour } from "./api";
+import { fetchAnatomy, fetchFabric, fetchScenarios, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
 import { FabricView } from "./components/FabricView";
 import { FabricControls } from "./components/FabricControls";
-import { FabricCounters } from "./components/FabricCounters";
+import {
+  FabricCounters,
+  ecnRowLabel,
+  elapsedLabel,
+  pfcRowLabel,
+} from "./components/FabricCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import type { FabricAnatomy, FabricState, RegionKind } from "./types";
+import type { FabricAnatomy, FabricState, RegionKind, Scenario } from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -43,16 +48,30 @@ function tourStepFromHash(): string | null {
 // orientation labels below, so the diagram box is 105 x 71.
 const STAGE_ASPECT = 105 / 71;
 
-// #step=N / #phase=<name> deep-links start playback at a chosen step; both
-// fall through pageFromHash() and land on the default page.
+// #step=N / #phase=<name> deep-links start playback at a chosen step, and
+// #scenario=<id> picks the trace. They compose with "&" in any order
+// (#scenario=gray-link&phase=blind). All of them fall through pageFromHash()
+// and land on the default page.
+const HEALTHY = "healthy";
+
+function simHash(): { scenario: string; step: number | null; phase: string | null } {
+  const out = { scenario: HEALTHY, step: null as number | null, phase: null as string | null };
+  for (const part of window.location.hash.replace(/^#/, "").split("&")) {
+    const m = part.match(/^(scenario|step|phase)=([a-z0-9_-]+)$/i);
+    if (!m) continue;
+    if (m[1] === "scenario") out.scenario = m[2];
+    else if (m[1] === "phase") out.phase = m[2];
+    else if (/^\d+$/.test(m[2])) out.step = Number(m[2]);
+  }
+  return out;
+}
+
 function initialStepFromHash(states: { phase: string }[]): number | null {
   if (states.length === 0) return null;
-  const h = window.location.hash;
-  const step = h.match(/^#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/^#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  const { step, phase } = simHash();
+  if (step !== null) return Math.min(step, states.length - 1);
+  if (phase !== null) {
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
@@ -94,6 +113,12 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<FabricAnatomy | null>(null);
   const [trace, setTrace] = useState<FabricState[]>([]);
+  // Which trace is playing: the healthy bring-up, or a failure scenario. The
+  // hash is the source of truth (the picker only rewrites it), so a scenario
+  // is always a shareable link.
+  const [scenario, setScenario] = useState<string>(() => simHash().scenario);
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -122,22 +147,52 @@ export function App() {
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchFabric()])
-      .then(([an, fb]) => {
+    let stale = false;
+    Promise.all([fetchAnatomy(), fetchFabric(scenario), fetchScenarios()])
+      .then(([an, fb, sc]) => {
+        if (stale) return;
+        setError(null);
         setAnatomy(an);
         setTrace(fb.trace);
+        setScenarios(sc);
         if (!hashApplied.current) {
           hashApplied.current = true;
           const s = initialStepFromHash(fb.trace);
           if (s !== null) setCursor(s);
         }
       })
-      .catch((e) => setError(String(e)));
-  }, [level]);
+      .catch((e) => {
+        if (stale) return;
+        // A scenario id the backend does not know (a mistyped deep link):
+        // say so and show the healthy trace, not a dead page.
+        if (scenario !== HEALTHY && String(e).includes("404")) {
+          setNotice(`There is no scenario called "${scenario}". Showing the healthy bring-up.`);
+          setScenario(HEALTHY);
+          window.location.hash = "";
+          return;
+        }
+        setError(String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [level, scenario]);
 
-  // A #step=/#phase= typed into an already-open page moves the cursor too.
+  // A #step=/#phase=/#scenario= typed into an already-open page moves the
+  // cursor too. A scenario change resets the cursor and lets the fetch above
+  // apply the rest of the hash against the new trace.
   useEffect(() => {
     const onHash = () => {
+      if (pageFromHash() !== "fabric") return;
+      const wanted = simHash().scenario;
+      if (wanted !== scenario) {
+        stop();
+        setCursor(0);
+        setTrace([]);
+        hashApplied.current = false;
+        setScenario(wanted);
+        return;
+      }
       const start = initialStepFromHash(trace);
       if (start !== null) {
         stop();
@@ -146,7 +201,24 @@ export function App() {
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-  }, [trace, stop]);
+  }, [trace, scenario, stop]);
+
+  // The guided tour narrates the healthy trace and drives this same cursor.
+  useEffect(() => {
+    if (page === "tour" && scenario !== HEALTHY) {
+      stop();
+      setCursor(0);
+      setTrace([]);
+      setScenario(HEALTHY);
+    }
+  }, [page, scenario, stop]);
+
+  const pickScenario = useCallback((id: string) => {
+    setNotice(null);
+    window.location.hash = id === HEALTHY ? "" : `scenario=${id}`;
+  }, []);
+  const activeScenario = scenarios.find((s) => s.id === scenario) ?? null;
+  const failing = scenario !== HEALTHY;
 
   // The tour is fetched the first time its page opens, and again when the
   // reading level changes (the narration is leveled prose).
@@ -249,7 +321,7 @@ export function App() {
         </nav>
         {page === "fabric" && (
           <span className="sub">
-            {state ? `${state.label} · t+${state.elapsedSeconds}s` : "—"}
+            {state ? `${state.label} · ${elapsedLabel(state.elapsedSeconds)}` : "—"}
           </span>
         )}
         <LevelControl />
@@ -293,16 +365,37 @@ export function App() {
                   }}
                   camera={stage.viewBox}
                   regionLook={stage.regionLook}
+                  hot={state}
                 />
               )}
               aside={
                 <>
                   {state && (
-                    <p className="tour-trace">
-                      Fabric trace: <strong>{state.label}</strong> · t+
-                      {state.elapsedSeconds}s (illustrative) ·{" "}
-                      {state.droppedPackets} dropped packets
-                    </p>
+                    <>
+                      <p className="tour-trace">
+                        Fabric trace: <strong>{state.label}</strong> ·{" "}
+                        {elapsedLabel(state.elapsedSeconds)}
+                      </p>
+                      {/* The counters the narration tells the viewer to
+                          watch: the zero that never moves, the link that
+                          fills, and what holding the zero costs. */}
+                      <dl className="tour-counters">
+                        <dt>Dropped packets</dt>
+                        <dd>{state.droppedPackets}</dd>
+                        <dt>Busiest link</dt>
+                        <dd>
+                          {state.peakLinkPercent}%
+                          {state.peakLinkPercent >= 90 ? ", saturated" : ""}
+                        </dd>
+                        <dt>Fabric throughput</dt>
+                        <dd>{state.fabricTbps} Tb/s</dd>
+                        <dt>{ecnRowLabel(level)}</dt>
+                        <dd>{state.ecnMarkedPercent}%</dd>
+                        <dt>{pfcRowLabel(level)}</dt>
+                        <dd>{state.pfcPausesPerSec} /s</dd>
+                      </dl>
+                      <p className="tour-trace">Values are illustrative.</p>
+                    </>
                   )}
                   {selectedRegion && (
                     <div>
@@ -320,20 +413,13 @@ export function App() {
       {page === "fabric" && (
         <>
           <div className="an-hero">
-            <h2>What an AI fabric refuses to do</h2>
-            <p>
-              Ordinary Ethernet drops packets when a buffer fills — the
-              sender notices, backs off, retransmits, and the network keeps
-              working. That bargain is catastrophic for distributed
-              training, where every GPU must finish the same all-reduce
-              before any of them can start the next step, so one
-              retransmission stalls the entire fleet. This fabric is built
-              never to drop: it signals congestion early, pauses
-              selectively, and spreads flows across the alternate paths
-              leaf/spine holds in reserve. Play the trace and watch the
-              dropped-packet counter stay at zero while the busiest link
-              hits 98%.
-            </p>
+            <h2>
+              {failing
+                ? "A link that fails without going down"
+                : "What an AI fabric refuses to do"}
+            </h2>
+            {/* The intro is scenario data, leveled like the step text. */}
+            {activeScenario?.intro && <p>{activeScenario.intro}</p>}
             <button
               className="primary fabric-tour-link"
               onClick={() => setPage("tour")}
@@ -344,12 +430,15 @@ export function App() {
           <div className="stage">
             <div className="an-card">
               {error && <div className="mini an-error">{error}</div>}
+              {notice && <div className="mini an-error scenario-notice">{notice}</div>}
               {anatomy && (
                 <FabricView
                   anatomy={anatomy}
                   active={new Set(state?.activeRegions ?? [])}
                   selected={regionId}
                   onSelect={setRegionId}
+                  sick={state}
+                  hot={state}
                 />
               )}
               {state && (
@@ -357,13 +446,55 @@ export function App() {
                   <strong>{state.label}.</strong> {state.description}
                 </div>
               )}
-              <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Watch the congestion step and then the reroute: the busiest
-                link falls from 98% to 71% while total throughput <em>rises</em>
-                {" "}— the work did not shrink, it spread across the spare
-                paths in the mesh. Click a block to pin what it is; the full
-                tour lives under Inside the fabric.
+              {failing && activeScenario && activeScenario.sources.length > 0 && (
+                <div className="mini an-hint scenario-sources">
+                  How this failure behaves is drawn from:{" "}
+                  {activeScenario.sources.map((src, i) => (
+                    <span key={src.url}>
+                      {i > 0 ? "; " : ""}
+                      <a href={src.url} target="_blank" rel="noreferrer">
+                        {src.label}
+                      </a>
+                    </span>
+                  ))}
+                  . The same fault is a toggle in the PhysicsFabric simulator.
+                </div>
+              )}
+              {/* This paragraph carries the two numbers the diagram is
+                  about, so it is leveled like the step prose beside it,
+                  in the vocabulary each register has already set up. */}
+              <div className="mini an-hint" hidden={failing}>
+                {level <= 2 ? (
+                  <>
+                    Highlighted blocks are the parts doing work at this step,
+                    and the busiest link is drawn in amber while it is full.
+                    Watch the congestion step, then the next one, where the
+                    fabric moves traffic onto the other route: that link falls
+                    from 98% full to 71% while the total data carried rises
+                    from 24 to 31 Tb/s. The work did not shrink. It moved onto
+                    the path through upper switch 2. Click a block to pin what
+                    it is; the full tour lives under Inside the fabric.
+                  </>
+                ) : level >= 4 ? (
+                  <>
+                    Highlighted blocks are active this step; the hot link is
+                    amber above 90%. Congestion then reroute: 98% → 71% on
+                    that link, 24 → 31 Tb/s fabric-wide — the work moved to
+                    the spine-2 path, it did not shrink. Click a block to pin
+                    it; full tour under Inside the fabric.
+                  </>
+                ) : (
+                  <>
+                    Highlighted blocks are the parts doing work at this step,
+                    and the busiest link is drawn in amber while it is
+                    saturated. Watch the congestion step and then the reroute:
+                    that link falls from 98% to 71% while total throughput
+                    rises from 24 to 31 Tb/s. The work did not shrink, it
+                    moved onto the path through the other spine. Click a block
+                    to pin what it is; the full tour lives under Inside the
+                    fabric.
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -374,6 +505,9 @@ export function App() {
               running={running}
               done={done}
               phaseLabel={state?.label ?? "—"}
+              scenarios={scenarios}
+              scenario={scenario}
+              onScenario={pickScenario}
               onSpeed={setSpeed}
               onRun={run}
               onPause={stop}
@@ -384,6 +518,9 @@ export function App() {
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
+              failing={failing}
+              baselineMs={trace[0]?.collectiveMs ?? 0}
+              note={activeScenario?.telemetryNote ?? ""}
             />
             {selectedRegion && (
               <section className="an-panel">

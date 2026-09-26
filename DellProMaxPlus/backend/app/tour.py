@@ -110,7 +110,7 @@ def build_tour(anatomy: DeviceAnatomy) -> Tour:
         ),
         TourStep(
             id="three-rooms",
-            title="Three rooms and one narrow door",
+            title=L(standard="Three rooms and one narrow door", expert="Host, link, card"),
             script=L(
                 novice=(
                     "With the lid off, the machine splits into three rooms. On the "
@@ -122,26 +122,34 @@ def build_tour(anatomy: DeviceAnatomy) -> Tour:
                     "gigabytes of memory that belongs to the card alone. Between "
                     "the rooms is one narrow strip, the PCIe connection (short for "
                     "Peripheral Component Interconnect Express), the only door "
-                    "between them. The model file on the drive was already "
-                    "translated for this exact card, on another machine, before "
-                    "the story starts."
+                    "between them. The model file on the drive was translated for "
+                    "this exact card on another machine, before the story "
+                    "starts. Underneath the picture you will see that "
+                    "translation as a step, called \"Translated ahead of time\". "
+                    "It is listed here because it explains what happens next. "
+                    "It is not happening now: it already happened, on a "
+                    "different machine."
                 ),
                 standard=(
                     "Peeled open, the map is three rooms. Left is the host: CPU, "
-                    "LPDDR5X system memory, and the NVMe SSD holding the model "
+                    "DDR5 system memory, and the NVMe SSD holding the model "
                     "library. Right is the Qualcomm AI 100 PC Inference Card: two "
                     "AI-100 NPUs (Neural Processing Units) and 64 GB of dedicated "
                     "AI memory. Between them is one narrow PCIe strip (PCI "
                     "Express, the card's only link to the host), drawn narrow "
-                    "on purpose. The file on the SSD is already a "
-                    "hardware-specific container, compiled ahead of time from "
-                    "ONNX, an open interchange format for neural networks, so "
-                    "nothing is decided on the fly later."
+                    "on purpose. The file on the SSD is a hardware-specific "
+                    "container, compiled ahead of time from ONNX, an open "
+                    "interchange format for neural networks, so nothing is "
+                    "decided on the fly later. The trace step pinned under "
+                    "this beat is that compile. It ran earlier, on a build "
+                    "machine, and sits in the sequence because it produced "
+                    "the container."
                 ),
                 expert=(
-                    "Three zones: host (CPU, LPDDR5X, NVMe), PCIe boundary, card "
+                    "Three zones: host (CPU, DDR5, NVMe), PCIe boundary, card "
                     "(2 × AI-100, 64 GB). Model is an AOT-compiled container from "
-                    "ONNX, partitioned across 32 cores."
+                    "ONNX, partitioned across 32 cores; the pinned trace step is "
+                    "that offline compile."
                 ),
             ),
             camera=frame("cpu", "ssd", "pcie", "npu-1", "npu-2", "aimem"),
@@ -193,7 +201,7 @@ def build_tour(anatomy: DeviceAnatomy) -> Tour:
         ),
         TourStep(
             id="pinned-in-64gb",
-            title="Sixty-four gigabytes that hold on",
+            title=L(standard="Sixty-one of 64 gigabytes, pinned", expert="61 of 64 GB, pinned"),
             script=L(
                 novice=(
                     "The model has arrived, and the link goes quiet for good. "
@@ -202,25 +210,36 @@ def build_tour(anatomy: DeviceAnatomy) -> Tour:
                     "the conversation, called the KV cache (key-value cache). "
                     "Nothing is ever pushed out to make room and nothing is "
                     "fetched back later, because the whole model fits. That is "
-                    "why each new word takes as long as the last one. It only "
-                    "fits because each learned number is stored in about four "
-                    "bits instead of sixteen, even though the arithmetic itself "
-                    "runs at sixteen bits. Memory size, not raw speed, decides "
+                    "why no word ever waits for part of the model to be fetched; "
+                    "the only slow drift comes from the notes growing as the "
+                    "conversation gets longer. The spare room, about 3 "
+                    "gigabytes, limits how long a conversation can get: past "
+                    "it, a request would be refused or cut short rather than "
+                    "slowed down (illustrative; the trace does not model it). "
+                    "The model only fits because each learned number is "
+                    "squeezed into about a quarter of its usual space while it "
+                    "is stored, and unpacked when it is used. Memory size, not raw speed, decides "
                     "which models this machine can run."
                 ),
                 standard=(
                     "Resident. The link counter drops to zero and stays there. "
                     "Sixty-one gigabytes of weights occupy 64 GB of memory that "
-                    "belongs to the card alone, with headroom for the KV cache, "
-                    "the running record of the conversation. Nothing is evicted "
-                    "and nothing is paged back in, which is what makes token "
-                    "latency predictable. The fit depends on storing weights at "
-                    "roughly four bits while computing at FP16 (16-bit floating "
+                    "belongs to the card alone, with about 3 GB of headroom for "
+                    "the KV cache, the running record of the conversation. "
+                    "Nothing is evicted and nothing is paged back in, so no "
+                    "token ever waits on a page-in; the only drift is the KV "
+                    "cache growing with context. That headroom caps context "
+                    "length and concurrent sessions: past it, a request is "
+                    "refused or truncated rather than paged (illustrative; the "
+                    "trace does not model it). The fit depends on storing weights at "
+                    "roughly four bits (MXINT4, the format Dell's brief names) "
+                    "while computing at FP16 (16-bit floating "
                     "point): capacity, not TOPS, decides what runs."
                 ),
                 expert=(
-                    "Resident: 61 of 64 GB, KV-cache headroom, no eviction or "
-                    "paging. ~4-bit weight storage, FP16 compute. Capacity gates "
+                    "Resident: 61 of 64 GB, no eviction or paging. ~3 GB KV "
+                    "headroom caps context and concurrency; overflow is refused, "
+                    "not paged (illustrative). MXINT4 weight storage, FP16 compute. Capacity gates "
                     "model choice."
                 ),
             ),
@@ -241,23 +260,26 @@ def build_tour(anatomy: DeviceAnatomy) -> Tour:
                     "so small that the link counter still reads zero. The card "
                     "then reads the whole prompt in one go, called prefill. Every "
                     "piece can be worked on at the same time, so this is the "
-                    "moment the card's raw arithmetic speed, about 450 TOPS "
-                    "(trillion operations per second), actually matters, and "
-                    "power use peaks here."
+                    "moment the card's raw arithmetic speed actually matters (the "
+                    "maker rates it at about 450 TOPS, trillion simple "
+                    "operations per second), and power use peaks here."
                 ),
                 standard=(
                     "A prompt arrives. The host tokenizes it and sends a few "
                     "kilobytes across the link, which is why the bandwidth "
                     "counter still honestly reads zero. The card then runs "
                     "prefill: every input token is processed in parallel, so "
-                    "this is the compute-bound half of inference and the card's "
-                    "~450 TOPS (trillion operations per second, 8-bit) is "
-                    "briefly the number that matters. Power peaks on this step."
+                    "this is the compute-bound half of inference and arithmetic "
+                    "rate is briefly what matters. The vendor rates the card at "
+                    "~450 TOPS (trillion operations per second) for 8-bit "
+                    "integers; at the FP16 this model computes in, throughput "
+                    "is lower. Power peaks on this step."
                 ),
                 expert=(
                     "Prefill: host tokenizes, KB-scale transfer, link reads 0. "
-                    "Parallel over the prompt, compute-bound, ~450 TOPS INT8 "
-                    "saturated. Power peak."
+                    "Parallel over the prompt, compute-bound, all 32 cores "
+                    "saturated (vendor rating ~450 TOPS INT8; FP16 throughput "
+                    "is lower). Power peak."
                 ),
             ),
             camera=frame("cpu", "pcie", "npu-1", "npu-2", "aimem"),
@@ -309,32 +331,44 @@ def build_tour(anatomy: DeviceAnatomy) -> Tour:
         ),
         TourStep(
             id="host-goes-idle",
-            title="The left side goes dark",
+            title=L(standard="The left side goes dark", expert="Host idle, card steady"),
             script=L(
                 novice=(
                     "Look at the left side of the map. The main processor, its "
                     "memory and the drive are all dark, and they stay dark for "
                     "as long as the model is writing. The whole job is happening "
                     "on the card, so the laptop stays responsive for ordinary "
-                    "work. Meanwhile the card's power draw holds steady instead "
-                    "of spiking and then dropping, because it was designed to "
-                    "run flat out for a long time, unlike a gaming graphics chip "
-                    "that slows down when it gets hot. Several minutes in, the "
-                    "rate you can hold matters more than the peak."
+                    "work. The finished tokens do come back across the strip to "
+                    "be turned into text, but that is a few bytes a second, far "
+                    "too little to show on the link counter or to keep the main "
+                    "processor busy. Meanwhile the card's power draw holds "
+                    "steady, within a few percent, because it uses little "
+                    "enough power that the laptop's cooling can keep up for as "
+                    "long as it takes. A hungrier graphics chip in the same "
+                    "body would have to slow down once it heated up. Several "
+                    "minutes in, the speed you can keep up matters more than "
+                    "the top speed."
                 ),
                 standard=(
                     "Minutes into a long generation, the host side is dark: no "
-                    "CPU, system memory or SSD activity on any generating step. "
-                    "It is the counterpart to the Exascale twin's metadata "
-                    "leaving the data path, and it keeps the machine responsive "
-                    "for other work. The card's wattage also holds flat, where "
-                    "a laptop GPU would burst and then throttle; for interactive "
-                    "use, the rate you can hold is what counts. The IR7000 twin "
-                    "makes the same argument at rack scale."
+                    "host region is lit on any generating step. Generated tokens "
+                    "do return to the host to be turned back into text, but "
+                    "that is bytes per second, far below the link counter's "
+                    "resolution, and the host's share of the work is trivial. "
+                    "The machine stays responsive for other work. The card's "
+                    "wattage and token rate also hold within a few percent, "
+                    "because its draw sits inside what the chassis can cool "
+                    "indefinitely; a higher-power laptop GPU in the same "
+                    "chassis would burst and then throttle. Sustained output "
+                    "is set by how much heat you can remove, and for "
+                    "interactive use the sustained rate is what counts."
                 ),
                 expert=(
-                    "Sustained: host, DRAM, SSD idle on every generating step. "
-                    "Card wattage flat, no throttle. Holdable rate over peak."
+                    "Sustained: host, DRAM, SSD idle on every generating step; "
+                    "returned tokens are bytes per second, below counter "
+                    "resolution. Card draw inside the chassis budget, so rate "
+                    "and wattage hold within a few percent. Sustained rate "
+                    "matters more than peak."
                 ),
             ),
             camera=whole_map(anatomy),
@@ -366,7 +400,7 @@ def build_tour(anatomy: DeviceAnatomy) -> Tour:
                     "non-event is the commercial case: material that cannot "
                     "leave the building can go into a 109-billion-parameter "
                     "model. The datacenter twins, such as the XE9712 rack, cover "
-                    "models too large to do anything else."
+                    "models too large to fit on one card."
                 ),
                 expert=(
                     "Offline: no counter moves. Nothing after load depends on "

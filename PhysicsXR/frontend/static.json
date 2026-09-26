@@ -1,0 +1,17 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "platform": "xr8000", "cpuTdpW": 205, "thermalConfig": "standard",
+          "dimms": 8, "driveType": "ssd", "drives": 2, "accelsSingleWide": 2,
+          "ioCardW": 100, "psuCount": 1, "psuCapacityW": 800, "redundancy": "1+0"
+        },
+        "workload": { "cpuPct": 85, "memPct": 50, "storagePct": 10, "accelPct": 60 },
+        "environment": { "inletC": 25, "altitudeM": 0, "dust": "moderate", "filterMonths": 0, "vibration": "none" },
+        "durationS": 900,
+        "events": []
+      }
+    ]
+  }
+}

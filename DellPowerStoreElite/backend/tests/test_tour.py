@@ -88,7 +88,7 @@ def test_the_beats_pin_the_steps_they_narrate():
     """Each storyboard beat stops on the trace step making the same claim."""
     assert STEPS["elite-wakes"].trace_cursor == _step_for("Elite nodes boot PowerStoreOS")
     assert STEPS["rdma-mesh"].trace_cursor == _step_for(
-        "200 Gb RDMA mesh links the generations"
+        "The cluster network links the generations"
     )
     assert STEPS["cutover"].trace_cursor == _step_for(
         "Cutover — the Elite serves, performance triples"

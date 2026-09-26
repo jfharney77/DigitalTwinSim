@@ -204,6 +204,11 @@ select:hover {
   font-size: 13px;
   line-height: 1.6;
 }
+/* Scoping detail a step carries below its main claim. */
+.poweron-desc-more {
+  margin: 10px 0 0;
+  color: var(--dell-muted);
+}
 /* Regions carrying power/activity in the current trace step. */
 .region-active rect {
   animation: region-pulse 1.4s ease-in-out infinite;
@@ -579,4 +584,23 @@ select:hover {
 }
 .app.dell .tour-page {
   grid-row: 2 / -1;
+}
+
+/* --- Failure scenarios ---------------------------------------------------- */
+/* A failed region takes the shared error colour. The fill and label are tints
+   of the same token so they read on the dark diagram. */
+.app.dell {
+  --region-failed-fill: color-mix(in srgb, var(--dell-error) 22%, #0d1420);
+  --region-failed-text: color-mix(in srgb, var(--dell-error) 45%, #ffffff);
+}
+.scenario-note {
+  margin-top: 8px;
+}
+.scenario-note a {
+  display: block;
+  margin-top: 4px;
+}
+.legend .failed-swatch {
+  background: var(--region-failed-fill);
+  border: 1px dashed var(--dell-error);
 }

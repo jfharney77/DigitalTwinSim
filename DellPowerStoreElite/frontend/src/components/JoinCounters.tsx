@@ -4,7 +4,7 @@ const PHASE_LABEL: Record<JoinPhase, string> = {
   steady: "prior generation serving",
   power: "Elite waking",
   join: "cluster join",
-  mesh: "RDMA mesh up",
+  mesh: "Cluster network up",
   rebalance: "live rebalance",
   cutover: "cutover to Elite",
   repurpose: "prior gen repurposed",

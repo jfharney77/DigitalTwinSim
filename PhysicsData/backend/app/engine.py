@@ -141,19 +141,29 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         # --- Pipeline half --------------------------------------------------
         rates = stage_rates(cfg)
         flow = wl.raw_arrival_tbh
+        # The limiter is what actually sets this tick's throughput: the
+        # last stage running flat out, or the sources when no stage is.
+        limiter = "arrival"
         for s in STAGES:
             capacity = rates[s]
             demand_in = flow + backlogs[s]
             passed = min(demand_in, capacity)
+            if demand_in >= capacity:
+                limiter = s
             backlogs[s] = max(0.0, demand_in - capacity)
             flow = passed
         throughput = flow
         bottleneck = min(STAGES, key=lambda s: rates[s])
         total_backlog = sum(backlogs.values())
         freshness = total_backlog / throughput if throughput > 0 else 0.0
-        served = min(wl.gpu_read_demand_tbh, throughput + rates["serve"] * 0.0
-                     ) if wl.gpu_read_demand_tbh else 0.0
-        served = min(wl.gpu_read_demand_tbh, min(rates["serve"], throughput + 5.0))
+        # The serve stage hands the GPUs fresh throughput plus a fixed
+        # allowance of re-reads from data it already holds, capped by
+        # its own rate. validation.servable_tbh() is the same expression.
+        served = min(
+            wl.gpu_read_demand_tbh,
+            rates["serve"],
+            throughput + C("serve_store_headroom_tbh"),
+        )
         gpu_idle = (
             100.0 * (1.0 - served / wl.gpu_read_demand_tbh)
             if wl.gpu_read_demand_tbh > 0 else 0.0
@@ -259,6 +269,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             stage_rates_tbh={k: round(v, 1) for k, v in rates.items()},
             stage_backlogs_tb={k: round(v, 1) for k, v in backlogs.items()},
             bottleneck=bottleneck,
+            limiter=limiter,
             throughput_tbh=round(throughput, 2),
             freshness_lag_h=round(freshness, 1),
             gpu_idle_due_to_data_pct=round(gpu_idle, 1),

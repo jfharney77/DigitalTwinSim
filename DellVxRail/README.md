@@ -96,3 +96,67 @@ and VMware vocabulary (vSAN, ESA/OSA, BOSS, RoCE, vMotion, VCF, SmartFabric,
 Dynamic Nodes, witness, ROBO) on first use. Grounded in the Dell VxRail
 product page, the VxRail spec sheet (H16763), the vSAN ESA Info Hub, and the
 VxRail architecture guide (see the anatomy `sources`).
+
+Fact-checked September 2026 against Dell's 2025 spec sheet (H16763) and
+support docs. Points worth knowing before editing copy: per-node memory tops
+out at 8 TB on the VE-660/VP-760 (3 TB on the AMD nodes); the VS-760 is a
+hybrid hard-drive OSA platform; vSAN ESA needs 16 cores, 128 GB and 10 GbE
+per node, and RoCE is optional; VxRail 8.0 removed the automated SmartFabric
+switch configuration that 4.7/7.0 first runs had; CloudIQ is now Dell AIOps
+and can start VxRail updates; the 25–40 minute cluster build is Dell's
+planning-guide figure; "first HCI system fully integrated with VCF" is Dell's
+own claim and is worded as such.
+
+## Failure scenario: a node add refused on a version mismatch
+
+The repo's first day-2 trace. It starts where the first run ends: four nodes
+serving virtual machines. A fifth node is racked and discovered, the Add
+VxRail Hosts compatibility check finds its factory image (7.0.370) older than
+the cluster (8.0.300) can take, and the add is refused before the node touches
+vSAN. The admin re-images the node with RASR (Rapid Appliance Self Recovery),
+the retry passes, the host joins, vSAN claims its drives and rebalances.
+
+- Open it at `/#scenario=node-add-mismatch`, or pick it from the Scenario
+  control on the First run page. It composes with the trace deep links:
+  `/#scenario=node-add-mismatch&phase=refused`. Changing scenario rewinds
+  playback.
+- Backend: `app/nodeadd.py` is a second pure engine (same AST purity rule,
+  same `FirstRunState`, extended only with optional fields). It is served on
+  the existing route as `GET /api/firstrun?scenario=node-add-mismatch`;
+  `GET /api/scenarios` lists both traces with their sources, and
+  `GET /api/anatomy?scenario=node-add-mismatch` returns the five-node map
+  (`NODE_ADD_ANATOMY`, the four-node map plus one more `_node`). With no
+  `scenario` parameter every route answers exactly as before.
+- Phases: `serving → racked → found → check → refused → reimage → recheck →
+  join → rebalance → expanded`.
+- Invariants (`tests/test_nodeadd.py`): a mismatched node never joins vSAN
+  (`mismatchedNodesInVsan` is 0 on every step, and vSAN stays at four hosts
+  while the versions differ); the running cluster is untouched (every original
+  node's CPU, memory, NVMe, NIC and power supplies and both switches are lit on every step,
+  and the VM count never moves); the datastore grows exactly once, by one
+  node's worth, after the recheck passes; the re-image is node-local and the
+  unique longest stage; the first-run response is byte-identical to the one
+  served before scenarios existed (sha256 pinned at three reading levels).
+- The other classic way a node add stops is one step earlier. Discovery uses
+  the VMware Loudmouth service over IPv6 multicast on the internal management
+  VLAN (3939 by default), so a switch port missing that VLAN, or MLD snooping
+  with no querier, hides the node completely. That case is covered in the
+  `found` step's prose, not as a second trace.
+- What follows the sources (listed in `nodeadd.SOURCES` and under the
+  diagram): where the check sits, what a refused node has and has not
+  touched, RASR as the recovery, and how discovery works. The version pair,
+  terabytes, VM count, watts and timings are illustrative. Recent releases
+  upgrade a slightly older node automatically when the pair is inside Dell's
+  Node Addition Matrix; this trace assumes a pair outside it (a 7.0.x image
+  against an 8.0.x cluster). The matrix PDF could not be fetched during
+  review, so the prose points at KB 000012298 and does not quote cells from
+  it. The Dell community thread in the sources is an admin asking the
+  question, unanswered; it shows people meet the case, not how it resolves.
+  vSAN's automatic rebalance is off by default, and the `rebalance` step says
+  this cluster has it enabled.
+- `mismatchedNodesInVsan` is computed from each step's vSAN host count and
+  versions, not typed in, so an engine edit that lets the node in early moves
+  the counter and fails `test_a_mismatched_node_never_joins_vsan`.
+- An unknown `#scenario=` falls back to the first run.
+- The guided tour stays on the first run and the four-node map. Opening it
+  from the scenario switches back to the first run.

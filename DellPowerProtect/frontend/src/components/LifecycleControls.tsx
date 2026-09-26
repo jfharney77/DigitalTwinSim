@@ -1,4 +1,9 @@
+import type { ScenarioInfo } from "../types";
+
 export function LifecycleControls({
+  scenarios,
+  scenario,
+  onScenario,
   speed,
   running,
   done,
@@ -9,6 +14,9 @@ export function LifecycleControls({
   onStep,
   onReset,
 }: {
+  scenarios: ScenarioInfo[];
+  scenario: string;
+  onScenario: (id: string) => void;
   speed: number;
   running: boolean;
   done: boolean;
@@ -22,6 +30,22 @@ export function LifecycleControls({
   return (
     <div className="an-panel">
       <h2>Playback</h2>
+      {scenarios.length > 0 && (
+        <label className="field" style={{ marginBottom: 10 }}>
+          Scenario
+          <select
+            aria-label="Scenario"
+            value={scenario}
+            onChange={(e) => onScenario(e.target.value)}
+          >
+            {scenarios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="btnrow">
         {running ? (
           <button className="primary" onClick={onPause}>
@@ -50,9 +74,10 @@ export function LifecycleControls({
         {phaseLabel}
       </div>
       <div className="mini" style={{ marginTop: 8 }}>
-        The lifecycle is a fixed trace computed by the backend; Run only
+        Each scenario is a fixed trace computed by the backend; Run only
         plays it back. Step walks one event at a time — the long real-world
-        stage (the CyberSense content scan) dwells on screen longer.
+        stage (the CyberSense content scan, or cleaning's copy pass) dwells
+        on screen longer.
       </div>
     </div>
   );

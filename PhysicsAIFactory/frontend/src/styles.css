@@ -669,3 +669,13 @@ label.field.cfg-row { flex-direction: row; align-items: center; }
    column; select rows stack the label above the control instead. */
 label.field.cfg-row:has(select) { flex-direction: column; align-items: stretch; gap: 4px; }
 label.field.cfg-row:has(select) .cfg-label { flex: none; }
+
+/* The playback scrubber is an hour of the run, so it is labelled and reads
+   its value back (the scenario questions and the event log speak in hours). */
+.scrub-field { margin-top: 6px; gap: 3px; }
+
+/* "Fed by engines" (docs/COMPOSITION_DESIGN.md §7): the aggregate/fed
+   control and the named divergences between the two modes. */
+.fed-panel .btnrow { margin-bottom: 8px; }
+.fed-divergence { margin-top: 6px; }
+.fed-divergence b { color: var(--dell-text, #161616); font-weight: 500; }

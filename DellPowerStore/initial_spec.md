@@ -78,10 +78,12 @@ off → power → boot → drives → cluster → services → online
    embedded Linux running the storage stack as containers) boots on each —
    the longest single stage, largest `cycleCost`.
 4. **drives** — each node enumerates all 25 dual-ported NVMe drives (both
-   nodes see every drive — why failover is instant); the NVRAM drives come up
-   as the mirrored write cache.
+   nodes see every drive — why failover needs no drive takeover, only seconds
+   of host path retry); the NVRAM drives come up as the write cache: mirrored
+   pairs in the shared bay, reached by both nodes.
 5. **cluster** — the nodes handshake over the internal interconnect
-   (heartbeat + cache mirroring), then the dynamic resiliency engine
+   (heartbeat + active/active negotiation — coordination only; the write
+   mirror is the NVRAM drive pair, not this link), then the dynamic resiliency engine
    assembles the storage pool from drive slices.
 6. **services** — data-service containers (always-on inline dedup +
    compression, snapshots, thin provisioning), front-end ports (FC / iSCSI /
@@ -127,6 +129,6 @@ region ids, every use-case config points at a real category + option).
   resiliency engine rebuilds from every remaining drive at once).
 - Metro Volume view: two appliances active-active across sites, zero-RPO
   writes acknowledged at both.
-- Capacity / data-reduction calculator: pick drives + the 4:1 reduction
+- Capacity / data-reduction calculator: pick drives + the 5:1 reduction
   guarantee, get effective capacity; scale-up (ENS24) vs scale-out compare.
 - More components as sibling top-level directories per the repo pattern.

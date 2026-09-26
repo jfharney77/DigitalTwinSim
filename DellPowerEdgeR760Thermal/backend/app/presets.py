@@ -125,35 +125,69 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "The workload never changes in this run — only the "
-                    "room gets hotter, from 22 to 40 degrees. Yet the "
+                    "Ignore the first minute: the processors sprint "
+                    "briefly and the fans overshoot before settling, and "
+                    "the event log says when the sprint ends. After that "
+                    "the workload never changes in this run — only the "
+                    "room gets hotter, from 22 to 40 degrees, at three "
+                    "minutes. Yet the "
                     "server's electricity bill rises. Why? The fans. "
                     "Hotter intake air means the fans must spin faster to "
                     "hold the processors at temperature, fan power rises "
                     "with the cube of speed, and those extra watts come "
                     "through the same power supplies as everything else. "
                     "Cooling is not free, and this run makes you watch "
-                    "yourself pay for it."
+                    "yourself pay for it. Forty degrees is hotter than a "
+                    "server room is allowed to get; think of it as the "
+                    "day the air conditioning fails. The before-and-after "
+                    "table under this text fills in once the room has "
+                    "warmed, so you do not have to remember the numbers. "
+                    "One thing to know before you read it: in this model "
+                    "the processors use exactly the same watts hot as "
+                    "cold, so every extra watt you see is the fans. Real "
+                    "chips leak a little more power when they are hot, so "
+                    "a real machine would rise slightly more than this "
+                    "one does."
                 ),
                 standard=(
-                    "Constant database workload; at t=180 s the inlet "
-                    "rises from 22 to 40 °C. Compute work is unchanged, "
-                    "but wall power climbs anyway: the fans ramp to hold "
-                    "target temperature against hotter air, fan power "
+                    "Constant HPC workload (CPUs at 100%); at t=180 s the "
+                    "inlet rises from 22 to 40 °C. The first minute is "
+                    "warm-up: the turbo boost window runs out at t=60 s "
+                    "(logged) and the fan controller overshoots before "
+                    "it settles, so take the baseline from the last "
+                    "seconds before the step. From there compute work is "
+                    "unchanged, but wall power climbs anyway: the fans "
+                    "ramp from just over half speed to about 90% to hold "
+                    "the CPUs at target against hotter air, fan power "
                     "goes with rpm³, and that overhead routes through the "
-                    "PSUs like any other load. The highlighted fan-power "
-                    "readout is the feedback loop the spec calls a core "
-                    "teaching point."
+                    "PSUs like any other load. Watch the fan power "
+                    "(overhead) row in the instruments: CPU power does "
+                    "not move and fan power roughly quadruples. 40 °C is "
+                    "past the ASHRAE A2 allowable limit of 35 °C, a "
+                    "cooling-failure condition and not a design point, "
+                    "and the rules panel flags it. The before-and-after "
+                    "table below fills in once the step has happened. "
+                    "That CPU power holds exactly constant is a modelling "
+                    "choice, not a measurement: the engine has no "
+                    "temperature-dependent leakage term, so the fan "
+                    "contribution can be read on its own. Real silicon "
+                    "leaks more when hot, so a hall would show a wall "
+                    "delta slightly above the fan term alone."
                 ),
                 expert=(
-                    "Fixed load, inlet 22→40 at t=180. Wall rises on fan "
-                    "rpm³ overhead alone. The loop, priced."
+                    "Fixed HPC load, inlet 22→40 at t=180 (past A2 "
+                    "allowable). Boost ends t=60; baseline at t=179. Wall "
+                    "rises on fan rpm³ overhead alone, ~56→90% rpm. The "
+                    "loop, priced in the before/after table. No "
+                    "T-dependent leakage term: constant P_cpu is a "
+                    "modelling choice, so the wall delta is the fan term "
+                    "alone and reads low against a real hall."
                 ),
             ),
         ],
         question="How many watts of wall power did 18 °C of room temperature cost, at constant work?",
         scenario=Scenario(
-            config=BALANCED, workload=DATABASE, environment=Environment(),
+            config=BALANCED, workload=HPC, environment=Environment(),
             duration_s=720,
             events=[SimEvent(at_s=180, action="set-inlet", value=40)],
         ),
@@ -164,26 +198,52 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
+                    "Ignore the first minute: the processors sprint "
+                    "briefly, then drop back to their normal power, and "
+                    "the fans overshoot before settling. That drop is "
+                    "the sprint ending, not the processors slowing down "
+                    "to protect themselves, and the event log says so. "
                     "Six fans share the work of moving air; at three "
                     "minutes, one of them dies. The machine does not "
                     "overheat — the surviving five simply spin faster to "
                     "move the same air. But look at the cost: five fans "
                     "at higher speed use more electricity than six at "
                     "lower speed, because fan power grows so steeply with "
-                    "speed. Redundancy works, and it is never free."
+                    "speed. Redundancy works, and it is never free. The "
+                    "before-and-after table under this text compares the "
+                    "moment before the failure with now. Be careful "
+                    "taking the size of that cost to real hardware: this "
+                    "model simply adds up the airflow of whichever fans "
+                    "are running, so five faster fans move exactly what "
+                    "six slower ones did. A real machine recovers less "
+                    "than that, partly because some air leaks back "
+                    "through the stopped fan."
                 ),
                 standard=(
-                    "Under HPC load, fan 3 fails at t=180 s. The "
+                    "Under HPC load, fan 3 fails at t=180 s. Before that, "
+                    "at t=60 s, CPU power steps down about 75 W: the "
+                    "turbo boost window ending (logged), not a throttle. "
+                    "A throttle shows as a red THROTTLING banner in the "
+                    "instruments, and this run never raises one. The "
                     "survivors ramp to restore airflow and the CPUs "
                     "barely notice — that is the redundancy working. The "
                     "bill shows up in fan power: five fans running "
                     "faster draw more than six running slower (rpm³ "
                     "again), so total power rises even as cooling "
-                    "capacity merely recovers."
+                    "capacity merely recovers. The before-and-after table "
+                    "below holds the t=179 s baseline for you. The size "
+                    "of the penalty is the model's: airflow superposes "
+                    "linearly across live fans, with no fan curve against "
+                    "the chassis impedance and no backflow through the "
+                    "dead rotor, so the survivors here recover the lost "
+                    "flow exactly and real hardware would not."
                 ),
                 expert=(
-                    "Fan 3 dies at t=180 under HPC. Survivors ramp; "
-                    "ΔT holds; fan watts rise (rpm³ across 5 > 6)."
+                    "Fan 3 dies at t=180 under HPC. Boost ends t=60 (not "
+                    "a throttle). Survivors ramp; ΔT holds; fan watts "
+                    "rise (rpm³ across 5 > 6). Linear airflow "
+                    "superposition, no dead-rotor bypass — the ratio is "
+                    "the model's, optimistic for N+1 sizing."
                 ),
             ),
         ],
@@ -304,7 +364,7 @@ GUIDED_SCENARIOS = [
                     "PSU of the 1+1 pair fails. The survivor takes the "
                     "full load and its efficiency point moves along the "
                     "Titanium curve (90% at light load, 96% near half, "
-                    "94% flat out). Watch DC stay put while AC shifts — "
+                    "91% flat out). Watch DC stay put while AC shifts — "
                     "the gap between the two readouts is the conversion "
                     "loss this scenario exists to make visible."
                 ),
@@ -328,8 +388,7 @@ GUIDED_SCENARIOS = [
             L(
                 novice=(
                     "The same server, the same work, but at 2,500 metres "
-                    "— a data center in Mexico City or Denver's high "
-                    "suburbs. Thin air carries less heat per litre, so "
+                    "— a little higher than Mexico City. Thin air carries less heat per litre, so "
                     "the fans must move more of it to do the same job: "
                     "higher speeds, more fan power, less margin. Nothing "
                     "else changed. Mountains show up on server spec "
@@ -341,7 +400,7 @@ GUIDED_SCENARIOS = [
                     "run measurably faster for the same silicon "
                     "temperatures — with the rpm³ power cost that "
                     "implies. Dell's derating note (supported ambient "
-                    "falls ~1 °C per 300 m above 950 m) is this physics, "
+                    "falls 1 °C per 300 m above 900 m) is this physics, "
                     "written as a warranty condition; the validation "
                     "panel carries it as a warning."
                 ),
@@ -366,7 +425,19 @@ EXPLAINS = [
     Explain(
         id="cpu-power",
         title="CPU power",
-        equation="P_cpu = sockets × (P_idle + (TDP − P_idle) × util^1.4) × clamp",
+        equation=L(
+            novice=(
+                "processor watts = how many processors × "
+                "(their idle watts + the rest of their rated watts "
+                "scaled by how busy they are, and scaled steeply) × "
+                "any cut-back applied to keep them cool"
+            ),
+            plain=(
+                "CPU watts = sockets × (idle watts + (rated watts − idle "
+                "watts) × busyness, steeply scaled) × heat cut-back"
+            ),
+            standard="P_cpu = sockets × (P_idle + (TDP − P_idle) × util^1.4) × clamp",
+        ),
         inputs=["CPU util", "CPU power", "CPU heat", "fan rpm", "fan power", "total power"],
         explanation=L(
             novice=(
@@ -396,7 +467,18 @@ EXPLAINS = [
     Explain(
         id="zone-outlet",
         title="Zone outlet temperature",
-        equation="T_out = T_in + Q / (ṁ × cp)",
+        equation=L(
+            novice=(
+                "air temperature out = air temperature in + the heat "
+                "picked up, divided by how much air is moving and how "
+                "much heat a kilogram of air can hold"
+            ),
+            plain=(
+                "outlet air = inlet air + heat in watts ÷ (air mass flow "
+                "× how much heat air holds per degree)"
+            ),
+            standard="T_out = T_in + Q / (ṁ × cp)",
+        ),
         inputs=["zone heat", "airflow", "inlet temp", "outlet temp"],
         explanation=L(
             novice=(
@@ -404,6 +486,9 @@ EXPLAINS = [
                 "a knowable amount: the heat added, divided by how much "
                 "air is passing and how much heat air can hold. Less "
                 "airflow or more heat means hotter air out the back. "
+                "Cold metal soaks up heat before passing it on, so just "
+                "after a change the air carries less than the full "
+                "wattage and catches up over a minute or so. "
                 "This one line is most of what a thermal engineer does "
                 "all day."
             ),
@@ -413,19 +498,35 @@ EXPLAINS = [
                 "(1005 J/kg·K). Zones chain front to back — one zone's "
                 "outlet is the next zone's inlet — and summing every "
                 "zone gives the whole-box identity exhaust = inlet + "
-                "DC/(ṁ·cp), the IR7000 twin's heat balance seen from "
-                "inside."
+                "DC/(ṁ·cp) once temperatures settle (the same heat "
+                "balance the IR7000 liquid-cooled rack twin enforces for "
+                "a whole rack). While a part is still warming it keeps "
+                "some of its watts, so the live line uses the heat the "
+                "air is actually carrying, which trails DC power by the "
+                "thermal mass."
             ),
             expert=(
                 "T_out = T_in + Q/(ṁcp); zones chain; Σ gives exhaust "
-                "identity. ṁ derated by altitude density."
+                "identity at steady state. Transient Q_air = ΣP − "
+                "Σ(T_ss−T)/R. ṁ derated by altitude density."
             ),
         ),
     ),
     Explain(
         id="fan-power",
         title="Fan power",
-        equation="P_fan = N_alive × P_max × (rpm%)³",
+        equation=L(
+            novice=(
+                "fan watts = how many fans are running × the watts one "
+                "fan uses flat out × (its speed as a fraction of flat "
+                "out, multiplied by itself three times)"
+            ),
+            plain=(
+                "fan watts = running fans × one fan's full-speed watts × "
+                "speed fraction cubed"
+            ),
+            standard="P_fan = N_alive × P_max × (rpm%)³",
+        ),
         inputs=["CPU temp", "fan rpm", "fan power", "total power", "heat"],
         explanation=L(
             novice=(
@@ -433,7 +534,7 @@ EXPLAINS = [
                 "costs eight times the electricity. That is why a "
                 "slightly warmer room can noticeably raise a server's "
                 "power bill — and why the fans' own watts, which also "
-                "become heat, are highlighted as 'overhead' in the "
+                "become heat, are labeled 'overhead' in the "
                 "instruments."
             ),
             standard=(
@@ -452,7 +553,18 @@ EXPLAINS = [
     Explain(
         id="wall-power",
         title="Wall (AC) power",
-        equation="P_wall = P_dc / η(load fraction)",
+        equation=L(
+            novice=(
+                "watts drawn from the wall = the watts the parts use, "
+                "divided by how efficient the power supplies are at the "
+                "amount of load they happen to be carrying"
+            ),
+            plain=(
+                "wall watts = DC watts used by the parts ÷ power-supply "
+                "efficiency at the current load"
+            ),
+            standard="P_wall = P_dc / η(load fraction)",
+        ),
         inputs=["total DC power", "PSU load point", "efficiency", "wall power"],
         explanation=L(
             novice=(
@@ -466,7 +578,7 @@ EXPLAINS = [
             standard=(
                 "Wall power is DC load divided by efficiency at the "
                 "current load fraction, read off the Titanium-class "
-                "curve (≈90% at 10% load, 96% near 50%, 94% at 100%). "
+                "curve (≈90% at 10% load, 96% near 50%, 91% at 100%). "
                 "In 1+1 the pair shares load so each sits lower on the "
                 "curve; lose one and the survivor's point — and the "
                 "wall wattage — moves."
@@ -480,7 +592,19 @@ EXPLAINS = [
     Explain(
         id="recirculation",
         title="Effective inlet with recirculation",
-        equation="T_inlet_eff = T_room + r × (T_exhaust − T_room)",
+        equation=L(
+            novice=(
+                "the air the server really breathes = room air + the "
+                "share of its own hot exhaust that finds its way back to "
+                "the front × how much hotter that exhaust is than the "
+                "room"
+            ),
+            plain=(
+                "effective inlet = room air + recirculated share × "
+                "(exhaust air − room air)"
+            ),
+            standard="T_inlet_eff = T_room + r × (T_exhaust − T_room)",
+        ),
         inputs=["exhaust temp", "recirculation", "effective inlet", "CPU temp"],
         explanation=L(
             novice=(

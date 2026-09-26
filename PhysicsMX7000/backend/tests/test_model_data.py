@@ -210,3 +210,27 @@ def test_served_prose_carries_no_markdown_emphasis():
         for path in ("/api/anatomy", "/api/scenarios", "/api/explain"):
             body = client.get(path, params={"level": level}).text
             assert not emphasis.search(body), (path, level, emphasis.search(body).group(0))
+
+
+def test_grid_wiring_follows_dells_slot_map():
+    """Dell's technical guide: Grid A is PSU slots 1–3, Grid B is 4–6,
+    and slots populate 1, 4, 2, 5, 3, 6 — so every even count splits
+    evenly, and the map's PSU labels must agree with the engine."""
+    from app.engine import populated_psu_slots, psu_feed
+
+    assert [psu_feed(i, EIGHT_COMPUTE) for i in range(6)] == list("AAABBB")
+    four = EIGHT_COMPUTE.model_copy(update={"psu_count": 4})
+    assert populated_psu_slots(four) == [0, 1, 3, 4]
+    for cfg in (EIGHT_COMPUTE, four):
+        feeds = [psu_feed(i, cfg) for i in populated_psu_slots(cfg)]
+        assert feeds.count("A") == feeds.count("B")
+    for i in range(6):
+        region = next(r for r in ANATOMY.regions if r.id == f"psu-{i}")
+        assert region.label.endswith(psu_feed(i, EIGHT_COMPUTE))
+
+
+def test_the_psu_curve_is_labeled_platinum_not_titanium():
+    from app.constants import PSU_CURVE_SOURCE
+
+    assert "Platinum" in PSU_CURVE_SOURCE and "estimate" in PSU_CURVE_SOURCE
+    assert "Platinum" in CONSTANTS["psu_capacity_w"].source

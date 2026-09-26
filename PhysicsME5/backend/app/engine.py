@@ -25,7 +25,9 @@ Deliberate simplifications, stated honestly: one disk group (plus global
 spares), averaged reconstruct-on-read cost, an M/M/1-shaped latency knee,
 no read/write cache modeling beyond the controllers' flat overhead, and
 RAID 10's second failure always hits the degraded mirror — the unlucky
-case, so the lesson is the guarantee, not the coin flip.
+case, so the lesson is the guarantee, not the coin flip. The risk gauge
+is a unitless 0–100 index (hours of exposure × a weight for the
+tolerance left), not a probability.
 """
 
 from __future__ import annotations
@@ -213,7 +215,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             elif ev.action == "replace-drive" and ev.index is not None:
                 i = ev.index
                 if 0 <= i < SLOT_COUNT and slot_state[i] == "failed" \
-                        and failures_outstanding > 0:
+                        and failures_outstanding > 0 and not data_lost:
                     slot_state[i] = "queued"
                     rebuild_queue.append(i)
                     start_next_rebuild(t)
@@ -328,9 +330,23 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 rebuild_pct = 0.0
 
             if degraded:
+                # The gauge prices the position, not the RAID label: with
+                # no tolerance left, a RAID 6 group stands exactly where a
+                # degraded RAID 5 group stands.
+                remaining = tolerance - failures_outstanding
                 factor = RISK_FACTOR[cfg.raid_level]
-                if rebuilding:
-                    risk = min(100.0, C("risk_per_hour") * hours_left * factor)
+                if remaining <= 0 and cfg.raid_level == "6":
+                    factor = RISK_FACTOR["5"]
+                # Every missing member needs a rebuild running or queued
+                # for the exposure to have an end. One that waits for a
+                # replacement drive does not decay with the clock.
+                covered = (1 if rebuilding else 0) + len(rebuild_queue)
+                if covered >= failures_outstanding:
+                    full_h = rebuild_total_gb / (
+                        rebuild_mbps(cfg.drive_type) * 3.6
+                    )
+                    exposure_h = hours_left + len(rebuild_queue) * full_h
+                    risk = min(100.0, C("risk_per_hour") * exposure_h * factor)
                 else:
                     risk = min(100.0, 100.0 * factor)
             else:
@@ -363,11 +379,15 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             "empty" if cfg.controllers < 2
             else ("ok" if ctrl_alive >= 2 else "failed")
         )
+        # A cache module lives inside its controller: when the canister is
+        # gone the cache is gone with it, not degraded. Only a surviving
+        # controller's cache can be in write-through.
         cache_mirrored = ctrl_alive == 2
-        region_states["cache-a"] = "ok" if cache_mirrored else "write-through"
+        surviving = "ok" if cache_mirrored else "write-through"
+        region_states["cache-a"] = surviving if ctrl_alive >= 1 else "failed"
         region_states["cache-b"] = (
             "empty" if cfg.controllers < 2
-            else ("ok" if cache_mirrored else "write-through")
+            else (surviving if ctrl_alive >= 2 else "failed")
         )
         region_states["psu-a"] = "ok"
         region_states["psu-b"] = "ok"

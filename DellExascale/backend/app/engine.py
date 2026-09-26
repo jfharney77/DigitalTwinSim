@@ -54,19 +54,21 @@ def simulate() -> list[DataState]:
             description=L(
                 novice=(
                     "The storage rack is powered up and idle. Inside one footprint "
-                    "sit all four ways of accessing data that an AI system needs: "
-                    "block, ordinary files, high-speed parallel files, and object "
-                    "storage. Putting them together is not tidiness. A training "
+                    "sit the ways of accessing data that an AI system needs: "
+                    "ordinary files, high-speed parallel files, and object "
+                    "storage, with block storage for databases planned by Dell "
+                    "for 2027. Putting them together is not tidiness. A training "
                     "dataset typically arrives as objects, gets prepared as files, "
                     "and must then be read very fast indeed — and shuttling "
                     "petabytes between separate systems for each of those steps "
                     "would waste more time than the training itself."
                 ),
                 plain=(
-                    "The storage rack is up and idle. Inside one footprint sit all "
-                    "four access patterns an AI factory needs: block (PowerFlex), "
-                    "file (OneFS), parallel file (Lightning), and object "
-                    "(ObjectScale). Consolidating them is not tidiness — a training "
+                    "The storage rack is up and idle. Inside one footprint sit the "
+                    "access patterns an AI factory needs: file (OneFS), parallel "
+                    "file (Lightning), and object (ObjectScale), with block "
+                    "(PowerFlex) planned by Dell for 2027. Consolidating them is "
+                    "not tidiness — a training "
                     "corpus arrives as objects, is prepared as files, and must be "
                     "read at parallel-filesystem speed, and moving petabytes "
                     "between separate systems for each stage costs more than the "
@@ -74,26 +76,29 @@ def simulate() -> list[DataState]:
                 ),
                 standard=(
                     "The storage rack is up and idle. Inside one footprint sit "
-                    "all four access patterns an AI factory needs: block "
-                    "(PowerFlex), file (PowerScale's OneFS), parallel file "
-                    "(Lightning), and object (ObjectScale). Consolidating them "
-                    "is not tidiness — a training corpus arrives as objects, is "
+                    "the access patterns an AI factory needs, each a software "
+                    "personality on the same servers: file (PowerScale's "
+                    "OneFS), parallel file (Lightning), and object "
+                    "(ObjectScale). Dell targets block (PowerFlex) for the "
+                    "first half of 2027, so that box stays dark. Consolidating "
+                    "them is not tidiness — a training corpus arrives as objects, is "
                     "prepared as files, and must be read at parallel-filesystem "
                     "speed, and moving petabytes between separate systems for "
                     "each step wastes more time than the training itself."
                 ),
                 technical=(
-                    "Rack up, idle. Four access patterns co-resident in one "
-                    "footprint: block (PowerFlex), file (OneFS), parallel file "
-                    "(Lightning), object (ObjectScale). Consolidation is a "
+                    "Rack up, idle. Three personalities co-resident on common "
+                    "nodes: file (OneFS), parallel file (Lightning), object "
+                    "(ObjectScale); block (PowerFlex) targeted 1H CY2027. "
+                    "Consolidation is a "
                     "data-movement argument, not an aesthetic one — the corpus "
                     "transits object → file → parallel-file, and inter-system "
                     "copies at petabyte scale dominate the pipeline."
                 ),
                 expert=(
-                    "Four access patterns co-resident: block, file, parallel file, "
-                    "object. Consolidation avoids petabyte-scale inter-system "
-                    "copies across the object → file → pNFS transit."
+                    "File, parallel file, object co-resident; block planned 2027. "
+                    "Consolidation avoids petabyte-scale inter-system "
+                    "copies across the object → file → parallel-file transit."
                 ),
             ),
             active_regions=["mgmt", "protocol-file", "protocol-object"],
@@ -116,26 +121,32 @@ def simulate() -> list[DataState]:
                     "— not where any data is, only who to ask."
                 ),
                 plain=(
-                    "The compute racks connect to the Lightning File System using "
-                    "pNFS — parallel NFS, a standard extension that lets one client "
-                    "talk to many servers at once rather than to just one. The "
+                    "The compute racks connect to the rack's parallel file path. "
+                    "This twin tells it as pNFS — parallel NFS, the open standard "
+                    "PowerScale ships, which lets one client talk to many servers "
+                    "at once; the Lightning File System does the same job with "
+                    "Dell's own client software. The "
                     "connection itself is unremarkable: a handshake with the "
                     "metadata server, credentials, a namespace. Nothing has been "
                     "read yet. Notice what the client has actually learned — not "
                     "where any data is, only who to ask for it."
                 ),
                 standard=(
-                    "The compute racks mount the Lightning File System over "
-                    "pNFS — parallel NFS, the standardized extension of NFS "
-                    "that lets a client talk to many servers at once instead of "
-                    "one. The mount itself is ordinary: a handshake with the "
+                    "The compute racks mount the parallel file path. The twin "
+                    "narrates it as pNFS — parallel NFS, the standardized "
+                    "extension of NFS that lets a client talk to many servers "
+                    "at once instead of one, which PowerScale's OneFS ships and "
+                    "ordinary Linux clients speak. The Lightning File System "
+                    "reaches the same split with Dell's own client software. "
+                    "The mount itself is ordinary: a handshake with the "
                     "metadata server, credentials, a namespace. Nothing has "
                     "been read yet. Note what the client has just learned — not "
                     "where any data is, only who to ask."
                 ),
                 technical=(
-                    "Clients mount Lightning over pNFS — the standardized NFS "
-                    "extension permitting many-server access from one client. "
+                    "Clients mount over pNFS — the standardized NFS extension "
+                    "permitting many-server access from one client, as OneFS "
+                    "ships it; Lightning FS substitutes its own client. "
                     "Ordinary mount semantics: metadata server handshake, "
                     "credentials, namespace. No data path established. The client "
                     "has learned who to ask, not where anything is."
@@ -167,9 +178,11 @@ def simulate() -> list[DataState]:
                 ),
                 plain=(
                     "The pivotal exchange. The client requests a layout for the "
-                    "files it wants — under Flex Files, a map saying which data "
-                    "servers hold which stripes of which file. The metadata server "
-                    "answers once and hands over a delegation. This is the only "
+                    "files it wants. Under Flex Files (the pNFS layout type that "
+                    "lets ordinary NFS servers act as data servers), a layout is a "
+                    "map saying which data servers hold which stripes of which "
+                    "file. The metadata server answers once and hands over the "
+                    "layout. This is the only "
                     "moment the metadata server touches this job's read path. "
                     "Everything after is a direct conversation between the client "
                     "and the data servers, which is why it never becomes the "
@@ -177,10 +190,12 @@ def simulate() -> list[DataState]:
                 ),
                 standard=(
                     "The pivotal exchange. The client requests a layout for "
-                    "the files it wants — under Flex Files, the layout is a map "
-                    "saying which data servers hold which stripes of which "
-                    "file. The metadata server answers once and hands over a "
-                    "delegation. This is the only moment the metadata server "
+                    "the files it wants. Under Flex Files (the pNFS layout type "
+                    "that lets ordinary NFS servers act as data servers), the "
+                    "layout is a map saying which data servers hold which "
+                    "stripes of which file. The metadata server answers once "
+                    "and hands over the layout. This is the only moment the "
+                    "metadata server "
                     "touches this job's read path. Everything after it is a "
                     "direct conversation between the client and the data "
                     "servers, which is precisely why the metadata server never "
@@ -189,14 +204,15 @@ def simulate() -> list[DataState]:
                 technical=(
                     "The pivotal exchange: the client requests a Flex Files layout "
                     "— the stripe-to-data-server map — and the MDS answers once "
-                    "with a delegation. This is the only MDS touch on the read "
-                    "path; the engine asserts the metadata region is active in "
-                    "exactly {mount, layout} and absent from every bulk phase."
+                    "with the layout (LAYOUTGET, not a delegation). This is the "
+                    "only MDS touch on the read path; in this trace the metadata "
+                    "region is active in exactly {mount, layout} and absent from "
+                    "every bulk phase, and the twin's tests enforce that."
                 ),
                 expert=(
-                    "Flex Files layout requested; MDS answers once with a "
-                    "delegation. Only MDS touch on the read path — active in "
-                    "exactly {mount, layout}, asserted."
+                    "Flex Files layout requested; MDS answers once with the "
+                    "layout. Only MDS touch on the read path — active in "
+                    "exactly {mount, layout} (test-enforced)."
                 ),
             ),
             active_regions=["clients", "fabric", "metadata"],
@@ -245,13 +261,13 @@ def simulate() -> list[DataState]:
                     "named data server and reads stripes concurrently. The MDS is "
                     "out of the path entirely — restartable mid-transfer without "
                     "interruption. The map shows it: metadata dark, all four data "
-                    "servers lit. Nonzero throughput implies full four-way fan-out, "
-                    "asserted."
+                    "servers lit. In this trace nonzero throughput always means "
+                    "full four-way fan-out."
                 ),
                 expert=(
                     "Layout held; concurrent reads from all named data servers. MDS "
                     "out of path — restartable mid-transfer. Throughput implies "
-                    "full fan-out, asserted."
+                    "full fan-out."
                 ),
             ),
             active_regions=["clients", "fabric"] + _servers() + MEDIA,
@@ -268,8 +284,12 @@ def simulate() -> list[DataState]:
             description=L(
                 novice=(
                     "The rack reaches its stride: roughly six terabytes every "
-                    "second flowing from flash storage, through the servers, across "
+                    "second, the most Dell says one rack can read, flowing from "
+                    "flash storage, through the servers, across "
                     "the network and into the memory of the graphics processors. "
+                    "The gauge above says 48 Tb/s, which is terabits; eight bits "
+                    "make a byte, so 48 terabits a second is the same speed as "
+                    "about six terabytes a second. "
                     "Special data paths let the information land directly in that "
                     "memory without a detour through the ordinary processors, so "
                     "the chips that matter spend their time on mathematics rather "
@@ -277,7 +297,8 @@ def simulate() -> list[DataState]:
                 ),
                 plain=(
                     "The rack reaches its stride: roughly 6 TB/s aggregate — about "
-                    "48,000 gigabits per second — flowing from NVMe flash through "
+                    "48,000 gigabits per second, Dell's claimed per-rack read "
+                    "ceiling — flowing from NVMe flash through "
                     "the data servers and across the fabric into GPU memory. RDMA "
                     "and GPUDirect paths let the data land in GPU memory without a "
                     "detour through host CPUs, so the processors that matter spend "
@@ -290,20 +311,23 @@ def simulate() -> list[DataState]:
                     "memory. RDMA and GPUDirect paths let the data land in GPU "
                     "memory without a detour through host CPUs, so the "
                     "processors that matter spend their cycles on mathematics "
-                    "rather than on copying. Dell's claim for Lightning is up "
-                    "to 6× the large-file performance of the prior NFS stack, "
-                    "and the reason is on screen: four servers streaming, none "
-                    "of them waiting on a metadata lookup."
+                    "rather than on copying. The 6 TB/s is Dell's own figure "
+                    "for a rack running the Lightning File System, used here "
+                    "as an illustrative peak; for PowerScale's pNFS Dell "
+                    "claims up to 6× NFSv3 on large files. The reason for both "
+                    "is on screen: four servers streaming, none of them "
+                    "waiting on a metadata lookup."
                 ),
                 technical=(
-                    "~6 TB/s aggregate (≈48,000 Gbps) from NVMe through the data "
+                    "~6 TB/s aggregate (≈48,000 Gbps; Dell's per-rack read claim "
+                    "for the Lightning personality) from NVMe through the data "
                     "servers across the fabric into GPU memory. RDMA and GPUDirect "
                     "eliminate the host-CPU bounce, so host cycles are not spent on "
-                    "data movement. Peak ≥48,000 Gbps is asserted."
+                    "data movement. The trace peaks at 48,000 Gbps, illustrative."
                 ),
                 expert=(
-                    "~6 TB/s (≈48,000 Gbps) NVMe → data servers → fabric → GPU "
-                    "memory. RDMA/GPUDirect, no host bounce. Peak asserted."
+                    "~6 TB/s (≈48,000 Gbps, vendor claim) NVMe → data servers → fabric → GPU "
+                    "memory. RDMA/GPUDirect, no host bounce."
                 ),
             ),
             active_regions=["clients", "fabric"] + _servers() + MEDIA,
@@ -316,7 +340,7 @@ def simulate() -> list[DataState]:
         DataState(
             step=5,
             phase="checkpoint",
-            label="Checkpoint burst — the same stripes, written back",
+            label="Checkpoint burst — new files, written across the same servers",
             description=L(
                 novice=(
                     "The long stage. Every so often the training job must save its "
@@ -325,7 +349,11 @@ def simulate() -> list[DataState]:
                     "from every compute rack at the same instant. Saving state is "
                     "the least glamorous number in this field and one of the most "
                     "consequential: it is pure overhead while it happens, and yet "
-                    "it decides how much work a failure can destroy."
+                    "it decides how much work a failure can destroy. Saving makes "
+                    "new files, so the job first asks the metadata server for "
+                    "their maps. That is a few tiny messages, too brief to draw "
+                    "here, and none of the saved data passes through it: the "
+                    "terabytes go straight to the storage servers, as the reads did."
                 ),
                 plain=(
                     "The long stage. Every so often the training job must save "
@@ -334,7 +362,11 @@ def simulate() -> list[DataState]:
                     "parallel, from every GPU rack simultaneously. Checkpointing is "
                     "the least glamorous number in AI infrastructure and one of the "
                     "most consequential — pure overhead while it runs, yet it "
-                    "bounds how much work a failure can destroy."
+                    "bounds how much work a failure can destroy. A checkpoint "
+                    "writes new files, so the client first gets their layouts from "
+                    "the metadata server: a few small messages, too brief to draw "
+                    "here, carrying none of the checkpoint. The bulk write goes "
+                    "straight to the data servers, as the reads did."
                 ),
                 standard=(
                     "The long stage. Every so often the training job must save "
@@ -346,19 +378,28 @@ def simulate() -> list[DataState]:
                     "pure overhead while it runs, yet it bounds how much work a "
                     "failure can destroy. Faster checkpoints mean more frequent "
                     "ones, which means a dead GPU costs minutes instead of "
-                    "hours."
+                    "hours. A checkpoint writes new files, so the client first "
+                    "gets their layouts from the metadata server and commits "
+                    "them afterwards: a few small messages, too brief to draw "
+                    "here, carrying none of the checkpoint's bytes. The bulk "
+                    "write bypasses the metadata server exactly as the reads do."
                 ),
                 technical=(
                     "Max-dwell stage. Checkpoint writes a trillion-parameter "
                     "model's state — terabytes — across the same striped layout, in "
                     "parallel, from every rack simultaneously. Pure overhead while "
                     "it runs and the bound on failure-recoverable work; checkpoint "
-                    "interval is the trade between overhead and redo cost."
+                    "interval is the trade between overhead and redo cost. New "
+                    "files mean real MDS traffic — CREATE/OPEN, a read-write "
+                    "LAYOUTGET, then LAYOUTCOMMIT — but those are control messages "
+                    "too small to draw at this scale; zero bulk bytes cross the "
+                    "MDS, which is the claim the dark metadata block makes."
                 ),
                 expert=(
                     "Max dwell: checkpoint burst, terabytes across the striped "
                     "layout from all racks at once. Pure overhead; bounds redo on "
-                    "failure."
+                    "failure. CREATE, rw LAYOUTGET and LAYOUTCOMMIT hit the MDS "
+                    "but are not drawn: control only, zero bulk bytes."
                 ),
             ),
             active_regions=["clients", "fabric"] + _servers() + MEDIA,
@@ -379,14 +420,14 @@ def simulate() -> list[DataState]:
                     "because both live in this same rack, the move is internal. No "
                     "copying across a network to a separate archive system, and no "
                     "second naming scheme to reconcile. This is the argument for "
-                    "putting all four storage types in one footprint."
+                    "putting several storage types in one footprint."
                 ),
                 plain=(
                     "Between epochs, data the job has finished with ages from the "
                     "file tier to ObjectScale's S3 object tier — and because both "
                     "engines live in this rack, the move is internal: no copy "
                     "across a network to a separate archive, no second namespace to "
-                    "reconcile. This is the argument for consolidating four storage "
+                    "reconcile. This is the argument for consolidating storage "
                     "types in one footprint."
                 ),
                 standard=(
@@ -395,7 +436,7 @@ def simulate() -> list[DataState]:
                     "because both engines live in this rack, the move is "
                     "internal: no copy across a network to a separate archive "
                     "system, no second namespace to reconcile. This is the "
-                    "argument for consolidating four storage types in one "
+                    "argument for consolidating storage types in one "
                     "footprint. The corpus that arrives as objects, gets "
                     "prepared as files, and is read in parallel never has to "
                     "leave the building to change its clothes."
@@ -455,12 +496,14 @@ def simulate() -> list[DataState]:
                     "Steady state: parallel stream, compute, checkpoint, repeat, "
                     "with tiering underneath. Success condition is that the GPUs "
                     "never stall on I/O — the only metric an AI data platform is "
-                    "judged on. Completes the quartet with XE9712 (compute), IR7000 "
-                    "(cooling), SN6000 (fabric)."
+                    "judged on. This is the data pillar of the repo's four AI-factory "
+                    "twins, beside XE9712 (compute), IR7000 (cooling) and SN6000 "
+                    "(fabric)."
                 ),
                 expert=(
                     "Steady: stream, compute, checkpoint, tier. Success = GPUs "
-                    "never stall on I/O. Completes the quartet."
+                    "never stall on I/O. Data pillar of the AI-factory four "
+                    "(compute, cooling, fabric, data)."
                 ),
             ),
             active_regions=(

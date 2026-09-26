@@ -590,3 +590,14 @@ select:hover {
 .app.dell .tour-page {
   grid-row: 2 / -1;
 }
+
+/* Failure scenarios: the sources panel under the counters. */
+.app.dell .scenario-sources ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.app.dell .scenario-sources li + li {
+  margin-top: 4px;
+}

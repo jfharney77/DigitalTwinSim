@@ -67,3 +67,64 @@ cd frontend && npm run build                                 # typecheck / build
 
 Content is grounded in Dell's iDRAC9 documentation (see the Sources panel on
 the anatomy page); timings and wattages are illustrative, not measured.
+
+## Failure scenario: a firmware update that rolls back
+
+Both traces stamp `elapsedSeconds` at the end of each step, so a step's length
+is its stamp minus the one before it. The Telemetry panel shows that length and
+names the longest step (Lifecycle Controller init in the bring-up, the flash
+write in the rollback). The picker lists this scenario as "Firmware rollback".
+
+The sim page has a scenario picker. The second trace is the iDRAC firmware
+update lifecycle and its failure, the loudest iDRAC theme in the community
+threads collected in `RESEARCH_ASSETS.md`: upload, signature verification,
+staging to the inactive flash partition, the iDRAC restart, a failed boot check
+on the new image, automatic rollback to the previous partition, and iDRAC back
+on the old version with a Lifecycle log entry. The host is powered on and
+running on every step. Management is lost for a while; the workload is not.
+
+- Deep link: `/#scenario=firmware-update-rollback`, which composes with the
+  existing links (`/#scenario=firmware-update-rollback&phase=bootcheck`,
+  `&step=7`). Phases: `ready → upload → verify → stage → reboot → bootcheck →
+  rollback → restored`.
+- API: `GET /api/bringup?scenario=firmware-update-rollback` serves it on the
+  same route and the same `BringUpState` model, extended with optional fields
+  (`hostPowered`, `activePartition`, `runningVersion`, `writingPartition`,
+  `signatureVerified`, `bootableImages`, `managementReachable`,
+  `managementOutageSeconds`, `failedRegions`, `logEntry`). The bring-up never
+  sets them and the route drops unset fields, so `GET /api/bringup` returns
+  what it always did. `GET /api/scenarios` lists the traces with their sources.
+- Engine: `simulate_firmware_rollback()` in `app/engine.py`, pure like
+  `simulate()`. Scenario metadata and sources live in `app/scenarios.py`.
+- Invariants (`tests/test_firmware_rollback.py`): the host power state never
+  changes; nothing is written before the signature verifies, and never to the
+  running partition; there is always at least one bootable image, and the trace
+  reaches that floor twice (during the write, and after the rejected image);
+  the management outage is real, tracks the clock, and stays under
+  `MAX_MANAGEMENT_OUTAGE_S`; the failed flash block stays marked to the end,
+  because a rollback leaves one good image until the administrator re-stages
+  the update; and the bring-up trace is pinned unchanged.
+- The hero counter is **management outage** in seconds. The block holding the
+  rejected image is drawn dashed in the error colour (`--dell-error`).
+
+What is sourced: Dell signs firmware packages with SHA-256 hashing and
+2048-bit RSA and aborts one that fails validation with a Lifecycle Controller
+log error; iDRAC keeps two operating-system images "to ensure a bootable
+iDRAC"; an iDRAC update or rollback needs no server reboot, and an iDRAC reset
+does not affect the running operating system (KB 000126703); SD card or TFTP
+recovery is the documented last resort. Sourced with a qualification: RED007,
+unable to verify update package signature, is published in an iDRAC7 and
+iDRAC8 article, and the SUP0516, RAC0182, SUP0520 sequence is published in
+KB 000343194, which describes an iDRAC10 case on 17G servers — the message
+identifiers are Dell's, the generations are not this twin's, and the prose
+says so at both steps. What is inferred: that the switch to the other image is
+automatic. Dell's two-image KB implies it and does not describe the mechanics.
+Reported rather than documented: the fans ramping up while iDRAC is away. Dell
+documents a full-speed ramp as a sign of a hard iDRAC reset, not of an update,
+so the reboot step calls it reported behaviour. What is illustrative: every
+timing, the version strings, the partition letters, the cause of the failed
+boot check (a staged copy damaged in the flash write), the single boot
+attempt, and the RAC0182 reason text. Real failures do not always end this
+cleanly: KB 000343194 includes a case that needed AC power removed, and the
+last step of the trace says so. The guided tour still
+narrates the bring-up only; opening it switches the scenario back.

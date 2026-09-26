@@ -20,7 +20,7 @@ export function Legend() {
     [
       "var(--core-mma)",
       "Tensor MMA — whole SM",
-      "Tensor-core mode (spec_23): the SM's tensor units issue one matrix-multiply-accumulate consuming a whole chunk of ranks, so the SM lights as one block, not lane by lane.",
+      "Tensor-core mode: the SM's tensor units issue one matrix-multiply-accumulate consuming a whole chunk of ranks, so the SM lights as one block, not lane by lane.",
     ],
     [
       "var(--core-hot)",

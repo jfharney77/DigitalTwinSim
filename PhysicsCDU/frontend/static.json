@@ -1,0 +1,13 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {"trayGroups": 5, "pumps": 3, "flowSetpointLpm": 340, "minSupplyC": 32, "policy": "coordinated"},
+        "workload": {"utilPct": 100},
+        "environment": {"facilitySupplyC": 17, "dewPointC": 12},
+        "durationS": 900,
+        "events": []
+      }
+    ]
+  }
+}

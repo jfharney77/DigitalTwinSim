@@ -598,3 +598,33 @@ select:hover {
 .app.dell .tour-page {
   grid-row: 2 / -1;
 }
+
+/* --- Failure scenarios ------------------------------------------------------ */
+.app.dell .stat .stat-bad {
+  color: var(--dell-error);
+  font-weight: 500;
+}
+.app.dell .scenario-picker {
+  width: 100%;
+}
+.app.dell .scenario-sources a {
+  color: var(--dell-blue);
+}
+
+/* Tour sidebar counters: the rows the narration tells the viewer to watch. */
+.tour-counters {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.tour-counters dt {
+  color: var(--dell-muted, #636363);
+}
+.tour-counters dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--dell-text, #161616);
+}

@@ -1,0 +1,19 @@
+{
+  "params": {"product": ["e3200", "sn6000", "x800"]},
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "product": "sn6000", "spines": 4, "leaves": 8, "endpointsPerLeaf": 16,
+          "downlinkGbps": 400, "uplinkGbps": 800, "adaptiveRouting": true,
+          "losslessRoce": true, "cpoOptics": false, "sharp": false,
+          "poeAps": 16, "poeCameras": 10, "poePhones": 31, "poeBudgetW": 740,
+          "psuRedundant": true
+        },
+        "workload": {"demandGbps": 16000, "pattern": "alltoall", "collectivePct": 70},
+        "durationS": 600,
+        "events": []
+      }
+    ]
+  }
+}

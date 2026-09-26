@@ -12,8 +12,8 @@
       "hash": "#scenario=noisy-neighbor",
       "name": "scenario-noisy-neighbor",
       "svg": true,
-      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question"],
-      "text": ["The noisy neighbor, thermally", "hottest sled"],
+      "visible": [".scenario-list button.active", ".scenario-narration", ".scenario-question", ".sled-list .sled-row", ".sled-picker button"],
+      "text": ["The noisy neighbor, thermally", "hottest sled", "sled 8"],
       "play": { "click": "button:text-is('×60')", "watch": "header .sub", "times": 1 }
     },
     {
@@ -47,6 +47,21 @@
       "visible": [".scenario-list button.active", ".scenario-narration"],
       "text": ["The chassis power budget", "Power budget"],
       "play": { "click": ".playback-row input[type=range]", "watch": ".playback-row button.primary", "times": 1 }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [".lab-panel", ".lab-list button"],
+      "text": ["Spread the heat", "The budget is a wall"]
+    },
+    {
+      "hash": "#lab=spread-the-heat",
+      "name": "lab-spread-the-heat",
+      "svg": true,
+      "visible": [".lab-goal", ".lab-run", ".lab-list button.active"],
+      "text": ["Run and grade", "No grade yet"],
+      "play": { "click": ".lab-run", "watch": ".lab-results", "times": 1 }
     }
   ]
 }

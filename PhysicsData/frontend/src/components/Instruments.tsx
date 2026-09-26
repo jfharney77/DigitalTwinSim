@@ -4,7 +4,7 @@ import type { Explain, SimState } from "../types";
 function substituted(id: string, s: SimState): string {
   switch (id) {
     case "min-stages":
-      return `${s.throughputTbh.toFixed(1)} TB/h — constraint: ${s.bottleneck}`;
+      return `${s.throughputTbh.toFixed(1)} TB/h — slowest stage: ${s.bottleneck}, limited by: ${s.limiter}`;
     case "littles-law":
       return `lag = backlog ÷ ${s.throughputTbh.toFixed(1)} = ${s.freshnessLagH.toFixed(0)} h`;
     case "kv-sessions":
@@ -72,8 +72,14 @@ export function Instruments({
         <>
           <div className="stat"><span>throughput</span><span>{s ? `${s.throughputTbh.toFixed(1)} TB/h` : "—"}</span></div>
           <div className="stat">
-            <span>bottleneck</span>
+            <span>bottleneck (slowest stage)</span>
             <span className="fan-overhead">{s ? s.bottleneck : "—"}</span>
+          </div>
+          <div className="stat">
+            <span>limited by</span>
+            <span>
+              {s ? (s.limiter === "arrival" ? "arrival (no stage is full)" : s.limiter) : "—"}
+            </span>
           </div>
           <Info id="min-stages" />
           <div className="stat">

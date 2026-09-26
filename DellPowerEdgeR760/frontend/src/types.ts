@@ -77,6 +77,7 @@ export interface PowerOnState {
 }
 
 export interface PowerOnResponse {
+  intro: string;
   trace: PowerOnState[];
 }
 

@@ -30,6 +30,52 @@
       ]
     },
     {
+      "hash": "#scenario=firmware-update-rollback",
+      "name": "scenario-rollback",
+      "svg": true,
+      "visible": [
+        ".phase",
+        ".poweron-desc",
+        ".scenario-panel select"
+      ],
+      "text": [
+        "An update that fails",
+        "management outage",
+        "on — workload running"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 2
+      }
+    },
+    {
+      "hash": "#scenario=firmware-update-rollback&phase=bootcheck",
+      "name": "scenario-rollback-deeplink",
+      "svg": true,
+      "visible": [
+        ".poweron-desc"
+      ],
+      "text": [
+        "Root of Trust verifies the new image",
+        "boot check of the new image",
+        "unreachable"
+      ]
+    },
+    {
+      "hash": "#scenario=firmware-update-rollback&step=7",
+      "name": "scenario-rollback-failed",
+      "svg": true,
+      "visible": [
+        ".region-failed",
+        ".poweron-desc"
+      ],
+      "text": [
+        "New image fails its boot check",
+        "1 of 2"
+      ]
+    },
+    {
       "hash": "#anatomy",
       "name": "anatomy",
       "svg": true,

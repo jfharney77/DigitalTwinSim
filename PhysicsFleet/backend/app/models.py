@@ -117,6 +117,10 @@ class SimState(CamelModel):
     capacity_vms: int
     headroom_pct: float
     exposure: bool                    # a failure now would lose service
+    exposure_days_cum: int = 0        # days the exposure flag has stood so far
+    # Private Cloud: workload deployments charged to the ledger.
+    workloads_deployed: int = 0
+    deploy_hours_cum: float = 0.0
     # Software currency & drift.
     version_current_pct: float
     drift_count: int
@@ -146,6 +150,9 @@ class Summary(CamelModel):
     outage_minutes: float
     truck_rolls: int
     faults: int
+    exposure_days: int = 0
+    workloads_deployed: int = 0
+    deploy_hours: float = 0.0
     final_version_current_pct: float
     total_bill: float
     mean_cost_per_vm_hour_asvc: float
@@ -209,12 +216,34 @@ class WorkloadPreset(CamelModel):
     workload: Workload
 
 
+class ScenarioVariant(CamelModel):
+    """One build to run beside a guided scenario's own: the same
+    workload, events and duration under a different config."""
+    label: str
+    config: FleetConfig
+
+
 class GuidedScenario(CamelModel):
     id: str
     title: str
     narration: list[str]
     question: str
     scenario: Scenario
+    # The first variant is the scenario as loaded; the UI runs them all
+    # and tabulates the results beside the narration.
+    variants: list[ScenarioVariant] = Field(default_factory=list)
+
+
+class GlossaryTerm(CamelModel):
+    term: str
+    gloss: str
+
+
+class Intro(CamelModel):
+    """The page's opening paragraph and the instrument glossary — served
+    so both follow the reading level like the rest of the teaching prose."""
+    body: str
+    glossary: list[GlossaryTerm]
 
 
 class Explain(CamelModel):

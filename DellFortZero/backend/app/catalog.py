@@ -76,10 +76,12 @@ CATALOG: list[CatalogCategory] = [
                     "is validated at Target Level."
                 ),
                 details=(
-                    "The Department of Defense defines graded levels of "
-                    "zero-trust maturity, and Project Fort Zero completed "
-                    "assessment for Target Level as a sovereign, "
-                    "on-premises private cloud in April 2025, tested "
+                    "The Department of Defense's zero-trust strategy "
+                    "defines two levels: Target, the required baseline "
+                    "(91 of its 152 activities), and Advanced (all 152). "
+                    "Dell's 2023 announcement aimed at Advanced; what Dell "
+                    "reports completing, in April 2025, is Target Level as "
+                    "a sovereign, on-premises private cloud, tested "
                     "against sophisticated attack. The value of an "
                     "external grading is that it is an assessment of the "
                     "architecture rather than of a feature list — which "

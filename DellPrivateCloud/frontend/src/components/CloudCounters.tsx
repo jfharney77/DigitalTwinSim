@@ -58,21 +58,28 @@ export function CloudCounters({
         <span>{state ? state.workloads : 0}</span>
       </div>
       <div className="stat">
-        <span>workload downtime</span>
+        <span>service downtime (illustrative)</span>
         <span>{state ? `${state.workloadDowntimeSeconds}s` : "0s"}</span>
       </div>
       <div className="stat">
-        <span>elapsed (typical)</span>
+        <span>stage ends (typical)</span>
         <span>{state ? `t+${state.elapsedMinutes}m` : "t+0m"}</span>
       </div>
       <div className="mini" style={{ marginTop: 8 }}>
         Read the compute row against the storage row at the expansion step:
         capacity doubles and not one server is added. On a hyperconverged
-        cluster that same need is met by adding nodes, and a node brings
-        processors whether or not anyone wanted them — which is why estates
-        so routinely own a third more of one resource than they will ever
-        use. Then watch control planes stay at one while hypervisors reach
-        two. Values are typical, meant to show shape and order of magnitude.
+        cluster with its drive bays full, that same need is met by adding
+        nodes, and a node brings processors whether or not anyone wanted
+        them, which is how estates come to own a surplus of one resource.
+        Then watch control planes stay at one while hypervisors reach two.
+        Service downtime counts services, not single machines: at the
+        migration step each virtual machine takes a short scheduled cutover
+        restart, rolled one at a time so no service goes dark. The clock
+        shows when each stage ends, so a stage lasts from the previous
+        step's reading: the storage expansion runs t+160m to t+220m, and the
+        hypervisor migration runs t+220m to t+520m, which is why the
+        migration is the longest stage in the trace. Values are
+        illustrative, meant to show shape and order of magnitude.
       </div>
     </div>
   );

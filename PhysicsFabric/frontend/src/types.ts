@@ -81,6 +81,7 @@ export interface SimState {
   asicPowerW: number;
   statusAllGreen: boolean;
   goodputPenaltyPct: number;
+  affectedFlowPenaltyPct: number;
   poeBudgetW: number;
   poeDemandW: number;
   devicesPowered: number;

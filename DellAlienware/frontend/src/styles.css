@@ -629,6 +629,9 @@ select:hover {
 }
 .app.dell .badge {
   border: none;
+  /* A phase name is one chip, not two lines: the diagnostics walk's phases
+     ("pack too hot", "adapter unknown") are longer than the plug-in path's. */
+  white-space: nowrap;
   background: var(--dell-tint);
   color: var(--dell-blue);
   font-size: 12px;
@@ -1023,4 +1026,41 @@ select:hover {
 }
 .app.dell .tour-page {
   grid-row: 2 / -1;
+}
+
+/* ---- Charging diagnostics (failure scenario) ---------------------------
+   Failed parts use the skin's error token, mixed onto the dark diagram so
+   they read there. */
+.app.dell {
+  --region-failed-fill: color-mix(in srgb, var(--dell-error) 22%, #0d1420);
+  --region-failed-text: color-mix(in srgb, var(--dell-error) 45%, #ffffff);
+}
+.pp-block.region-failed rect:first-of-type {
+  fill: var(--region-failed-fill);
+  stroke: var(--dell-error);
+  stroke-width: 0.45;
+  stroke-dasharray: 1.2 0.8;
+}
+.pp-block.region-failed text {
+  fill: var(--region-failed-text);
+}
+.app.dell .legend .failed-swatch {
+  background: var(--region-failed-fill);
+  border: 1px dashed var(--dell-error);
+}
+.app.dell .diag {
+  margin-top: 12px;
+}
+.app.dell .diag-screen {
+  max-width: 460px;
+}
+.app.dell .diag-check p {
+  margin: 8px 0 0;
+}
+.app.dell .diag-bad {
+  color: var(--dell-error);
+  font-weight: 500;
+}
+.app.dell .hero-stat span:last-child {
+  font-weight: 500;
 }

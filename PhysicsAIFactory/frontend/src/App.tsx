@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { hostedHref } from "@twinsim/twin-ui";
 import {
   fetchAnatomy,
   fetchExplain,
@@ -10,8 +11,14 @@ import {
 import { BuildPanel } from "./components/BuildPanel";
 import { FactoryView } from "./components/FactoryView";
 import { Headline } from "./components/Headline";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
+import { FedControl } from "./components/FedControl";
+import { fetchFedRun } from "./fed";
+import type { FedRun } from "./fed";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   Explain,
@@ -48,13 +55,13 @@ const DEFAULT_JOB: TrainingJob = {
 
 const SPEEDS = [2, 12, 48]; // sim-hours advanced per second of playback
 
-const TWIN_LINKS: { name: string; port: number; note: string }[] = [
-  { name: "PowerEdge XE9712", port: 5181, note: "the compute rack — 72 GPUs fuse into one domain" },
-  { name: "PowerSwitch SN6000", port: 5185, note: "the Ethernet fabric — losslessness under congestion" },
-  { name: "Quantum-X800", port: 5202, note: "the InfiniBand fabric — lossless by construction" },
-  { name: "IR7000", port: 5182, note: "the cooling loop — heat in equals heat out" },
-  { name: "Exascale", port: 5184, note: "the data platform — metadata leaves the data path" },
-  { name: "GPU", port: 5173, note: "one die — the roofline this factory inherits" },
+const TWIN_LINKS: { name: string; dir: string; port: number; note: string }[] = [
+  { name: "PowerEdge XE9712", dir: "DellPowerEdgeXE9712", port: 5181, note: "the compute rack — 72 GPUs fuse into one domain" },
+  { name: "PowerSwitch SN6000", dir: "DellPowerSwitchSN6000", port: 5185, note: "the Ethernet fabric — losslessness under congestion" },
+  { name: "Quantum-X800", dir: "DellQuantumX800", port: 5202, note: "the InfiniBand fabric — lossless by construction" },
+  { name: "IR7000", dir: "DellIR7000", port: 5182, note: "the cooling loop — heat in equals heat out" },
+  { name: "Exascale", dir: "DellExascale", port: 5184, note: "the data platform — metadata leaves the data path" },
+  { name: "GPU", dir: "GPU", port: 5173, note: "one die — the roofline this factory inherits" },
 ];
 
 // Deep link to a guided scenario: /#scenario=<id> (ids from
@@ -98,9 +105,17 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   // Prose-bearing content refetches on level change.
@@ -112,6 +127,10 @@ export function App() {
         setExplains(ex);
       })
       .catch((e) => setError(String(e)));
+  }, [level]);
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
   }, [level]);
 
   useEffect(() => {
@@ -148,6 +167,31 @@ export function App() {
 
   const trace = result?.trace ?? [];
   const state = trace[cursor] ?? null;
+
+  // "Fed by engines" (docs/COMPOSITION_DESIGN.md §7): the same engine, its
+  // inputs computed by the detailed twins and carried in across tested seams.
+  // Off by default, and nothing else on the page depends on it.
+  const [fedMode, setFedMode] = useState<"aggregate" | "fed">("aggregate");
+  const [fed, setFed] = useState<FedRun | null>(null);
+  const [fedError, setFedError] = useState<string | null>(null);
+  const [fedLoading, setFedLoading] = useState(false);
+  useEffect(() => {
+    if (fedMode !== "fed" || fed || fedLoading) return;
+    setFedLoading(true);
+    fetchFedRun()
+      .then((run) => {
+        setFed(run);
+        setFedError(null);
+      })
+      .catch((e) => {
+        setFedError(String(e));
+        setFedMode("aggregate");
+      })
+      .finally(() => setFedLoading(false));
+  }, [fedMode, fed, fedLoading]);
+  const fedOn = fedMode === "fed" && fed !== null;
+  const shownTrace = fedOn ? fed!.trace : trace;
+  const shownState = shownTrace[Math.min(cursor, shownTrace.length - 1)] ?? state;
 
   // Playback clock: 500 ms real tick advances speed/2 sim-hours.
   useEffect(() => {
@@ -193,6 +237,48 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setJob(lab.start.job);
+    setEvents(lab.start.events);
+    setDurationH(lab.start.durationH);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const reset = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -215,10 +301,19 @@ export function App() {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
-            ? `day ${(state.tH / 24).toFixed(1)} · ${state.phase} · ${state.facilityMw.toFixed(2)} MW`
+            ? `hour ${state.tH} · day ${(state.tH / 24).toFixed(1)} · ${state.phase} · ${state.facilityMw.toFixed(2)} MW`
             : "—"}
         </span>
         <LevelControl />
@@ -226,19 +321,28 @@ export function App() {
 
       <div className="an-hero">
         <h2>Stand up an AI factory — every earlier lesson, as a line item</h2>
-        <p>
-          Size a training cluster, its fabric, its data platform, its
-          facility, and its checkpoint discipline, then watch one
-          dashboard: tokens per second, megawatts, PUE, the share of GPU
-          time lost waiting for data, cost per million tokens, and the
-          time until the first token exists at all. Each block is a
-          first-order stand-in for a product this repo simulates in
-          detail — the couplings between them are what this page adds.
-        </p>
+        {/* Served by the backend so it follows the reading level. */}
+        <p>{anatomy?.intro ?? ""}</p>
       </div>
 
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
+
       <Headline
-        state={state}
+        state={shownState}
         summary={summary}
         explains={explains}
         explainOn={explainOn}
@@ -312,8 +416,18 @@ export function App() {
                 </button>
               ))}
               <button onClick={reset}>Reset</button>
+            </div>
+            {/* The cursor is an hour, and everything that asks you to
+                read it — scenario questions, the event log's t+NNNh —
+                speaks in hours, so the scrubber says which hour it is. */}
+            <label className="field scrub-field">
+              <span className="mini">
+                hour {state?.tH ?? 0} of {Math.max(trace.length - 1, 0)}
+                {state ? ` · day ${(state.tH / 24).toFixed(1)} · ${state.phase}` : ""}
+              </span>
               <input
                 type="range"
+                aria-label="timeline scrubber — the hour of the run"
                 min={0}
                 max={Math.max(trace.length - 1, 0)}
                 value={cursor}
@@ -321,9 +435,8 @@ export function App() {
                   setRunning(false);
                   setCursor(+e.target.value);
                 }}
-                style={{ flex: 1 }}
               />
-            </div>
+            </label>
             <div className="btnrow">
               <button onClick={() => addEvent("degrade-storage", 25)}>
                 Degrade storage to 25%
@@ -372,7 +485,7 @@ export function App() {
             </div>
             {TWIN_LINKS.map((t) => (
               <div className="mini" key={t.port}>
-                <a href={`http://localhost:${t.port}/`}>{t.name}</a> — {t.note}
+                <a href={hostedHref(t.dir, t.port)}>{t.name}</a> — {t.note}
               </div>
             ))}
           </div>
@@ -380,14 +493,26 @@ export function App() {
 
         {/* Right — charts + run summary */}
         <div className="thermal-col">
-          <StripCharts trace={trace} cursor={cursor} />
+          <StripCharts trace={shownTrace} cursor={cursor} />
+          <FedControl
+            mode={fedMode}
+            fed={fed}
+            error={fedError}
+            loading={fedLoading}
+            onMode={setFedMode}
+          />
           <div className="an-panel">
-            <h2>Run summary</h2>
-            <div className="stat"><span>time to first token</span><span>{summary && summary.timeToFirstTokenH >= 0 ? `${summary.timeToFirstTokenH} h` : "—"}</span></div>
+            <h2>Run summary — the whole {durationH} h run, not the cursor</h2>
+            <div className="mini">
+              End-of-run figures, computed from the entire trace. They are
+              filled in before you press play, and they do not follow the
+              playback cursor — the tiles above do.
+            </div>
+            <div className="stat"><span>time to first training token</span><span>{summary && summary.timeToFirstTokenH >= 0 ? `${summary.timeToFirstTokenH} h` : "—"}</span></div>
             <div className="stat"><span>tokens produced</span><span>{summary ? `${summary.tokensTotalB.toFixed(1)} B` : "—"}</span></div>
             <div className="stat"><span>avg idle (data)</span><span>{summary ? `${summary.avgIdleDataPct.toFixed(1)}%` : "—"}</span></div>
             <div className="stat"><span>avg PUE</span><span>{summary ? summary.avgPue.toFixed(2) : "—"}</span></div>
-            <div className="stat"><span>$ / Mtok</span><span>{summary ? `$${summary.usdPerMtok.toFixed(2)}` : "—"}</span></div>
+            <div className="stat"><span>$ / Mtok (illustrative)</span><span>{summary ? `$${summary.usdPerMtok.toFixed(2)}` : "—"}</span></div>
             <div className="stat"><span>peak facility</span><span>{summary ? `${summary.peakFacilityMw.toFixed(2)} MW` : "—"}</span></div>
             <div className="stat"><span>failures</span><span>{summary ? summary.failures : "—"}</span></div>
             <div className="stat"><span>hours power-capped</span><span>{summary ? summary.powerCappedHours : "—"}</span></div>

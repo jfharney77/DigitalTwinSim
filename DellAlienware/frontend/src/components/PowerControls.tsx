@@ -3,6 +3,7 @@ import type {
   AdapterOption,
   LaptopProfile,
   ThermalMode,
+  TraceScenario,
   WorkloadKind,
 } from "../types";
 
@@ -20,6 +21,9 @@ const WORKLOADS: { id: WorkloadKind; name: string }[] = [
 ];
 
 export function PowerControls({
+  scenarios,
+  traceId,
+  onTrace,
   profiles,
   profileId,
   onProfile,
@@ -42,6 +46,9 @@ export function PowerControls({
   onStep,
   onReset,
 }: {
+  scenarios: TraceScenario[];
+  traceId: string;
+  onTrace: (id: string) => void;
   profiles: LaptopProfile[];
   profileId: string;
   onProfile: (id: string) => void;
@@ -65,6 +72,7 @@ export function PowerControls({
   onReset: () => void;
 }) {
   const adapter = adapters.find((a) => a.id === adapterId) ?? null;
+  const fixedScript = scenarios.find((sc) => sc.id === traceId)?.kind === "failure";
   return (
     <>
       <div className="an-panel">
@@ -79,6 +87,39 @@ export function PowerControls({
             </p>
           </InfoDot>
         </div>
+
+        {scenarios.length > 1 && (
+          <label className="field">
+            <span className="field-head">
+              Trace
+              <InfoDot title="Which trace to play">
+                <p>
+                  The plug-in power path is the sequence with everything
+                  working. Charging diagnostics walks one machine through the
+                  four reasons a plugged-in battery is not filling at full
+                  speed, and shows the readouts that tell them apart: the BIOS
+                  AC Adapter line, the battery status, the charge mode and the
+                  pack temperature. The status line reads the same for three
+                  of the four.
+                </p>
+              </InfoDot>
+            </span>
+            <select value={traceId} onChange={(e) => onTrace(e.target.value)}>
+              {scenarios.map((sc) => (
+                <option key={sc.id} value={sc.id}>
+                  {sc.title}
+                </option>
+              ))}
+            </select>
+            {fixedScript && (
+              <span className="mini">
+                This walk is a fixed script: it starts at 62%, runs a game in
+                Full Speed mode, and swaps in the unrecognized adapter itself.
+                Laptop and AC adapter still apply; the three dials below do not.
+              </span>
+            )}
+          </label>
+        )}
 
         <label className="field">
           <span className="field-head">
@@ -165,6 +206,7 @@ export function PowerControls({
             min={0}
             max={100}
             value={startBatteryPct}
+            disabled={fixedScript}
             onChange={(e) => onStartBatteryPct(Number(e.target.value))}
           />
         </label>
@@ -189,6 +231,7 @@ export function PowerControls({
           </span>
           <select
             value={thermalMode}
+            disabled={fixedScript}
             onChange={(e) => onThermalMode(e.target.value as ThermalMode)}
           >
             {THERMAL_MODES.map((m) => (
@@ -215,6 +258,7 @@ export function PowerControls({
           </span>
           <select
             value={workload}
+            disabled={fixedScript}
             onChange={(e) => onWorkload(e.target.value as WorkloadKind)}
           >
             {WORKLOADS.map((w) => (

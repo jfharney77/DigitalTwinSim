@@ -10,7 +10,8 @@
       ],
       "text": [
         "metadata alerts",
-        "It reads the data, not the metadata"
+        "It reads the data, not the metadata",
+        "under Guided tour"
       ],
       "play": {
         "click": "button:text-is('Step')",
@@ -53,8 +54,31 @@
         ".phase"
       ],
       "text": [
-        "the answer, as a date"
+        "the answer, as a date",
+        "taken t+0h",
+        "restored data age"
       ]
+    },
+    {
+      "hash": "#scenario=dwell-exceeds-retention&phase=verdict",
+      "name": "scenario-dwell-exceeds-retention",
+      "svg": true,
+      "visible": [
+        ".phase",
+        "select[aria-label='Scenario']"
+      ],
+      "text": [
+        "No clean copy on this array",
+        "none on this array",
+        "clean copies on the array",
+        "The attacker outwaits the snapshots",
+        "restored data age"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".phase",
+        "times": 1
+      }
     },
     {
       "hash": "#tour",

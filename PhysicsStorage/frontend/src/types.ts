@@ -94,6 +94,7 @@ export interface SimState {
   rebuildPct: number;
   rebuildHoursLeft: number;
   exposure: boolean;
+  lastRebuildH: number;
   srdfLatencyMs: number;
   rpoSeconds: number;
   poolUtilPct: Record<string, number>;

@@ -92,8 +92,8 @@ def build_tour(anatomy: ZeroTrustMap) -> Tour:
                     "visibility and analytics, and automation. They are drawn "
                     "identical in size because the model treats them as "
                     "co-equal. Notice what is absent: no ring, no enclosure, no "
-                    "perimeter. Most maps in this repo carry their lesson in a "
-                    "boundary. This one carries it in the lack of one."
+                    "perimeter. The lesson of this map is the wall that is "
+                    "not drawn."
                 ),
                 expert=(
                     "Fort Zero: turnkey zero-trust private cloud, DoD Target "
@@ -357,8 +357,12 @@ def build_tour(anatomy: ZeroTrustMap) -> Tour:
                     "inside was allowed to do, and could wander from machine to "
                     "machine, often unnoticed for weeks. Here the network pillar "
                     "notices a machine behaving oddly, and the monitoring "
-                    "notices too. But look at the number that matters. Things "
-                    "the attacker can reach: zero. Confidence: zero. That is "
+                    "notices too. A stolen password on its own is not a strong "
+                    "sign-in, and the earlier permission has already run out, "
+                    "so there is nothing to borrow. Look at the number that "
+                    "matters. Things the attacker can reach: zero. Confidence: "
+                    "zero, where the employee's request was approved at 88. "
+                    "That is "
                     "not because a guard stopped the attack. It is because "
                     "being inside was never worth anything."
                 ),
@@ -371,16 +375,23 @@ def build_tour(anatomy: ZeroTrustMap) -> Tour:
                     "permitted and begins lateral movement, sideways from host "
                     "to host, often undetected for weeks. Here the network "
                     "pillar registers a host behaving oddly and analytics "
-                    "notices. Resources reachable: zero. Confidence: zero. "
-                    "Implicit trust grants: zero, as on every step. Not "
+                    "notices. A phished password is not strong "
+                    "authentication, and the last lease has expired, so there "
+                    "is nothing to inherit. Resources reachable: zero. "
+                    "Confidence: zero, against the 88 the employee's request "
+                    "was granted at. Implicit trust grants: zero, as on every "
+                    "step. This is position only; a device hijacked during a "
+                    "live session would hold one resource for the time left "
+                    "on its lease, until re-verification narrowed it. Not "
                     "because the attack was blocked, but because being inside "
                     "was never worth anything."
                 ),
                 expert=(
-                    "Signature: compromised internal host, valid network "
-                    "position, terminal in a boundary model. Reachable 0, "
-                    "confidence 0, implicit grants 0. Not blocked; position "
-                    "never authorized."
+                    "The claim this twin exists for: compromised internal "
+                    "host with a valid network position, fatal under a "
+                    "perimeter model. Reachable 0, confidence 0 vs the 88 "
+                    "grant, implicit grants 0. Not blocked; position never "
+                    "authorized. Shown for position only, no live session."
                 ),
             ),
             camera=frame("network", "visibility", "policy", pad=2.0),

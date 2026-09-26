@@ -38,8 +38,9 @@ _DD_PROD_DESC = (
     "estate streams to every night. Data Domain's defining trick is "
     "variable-length deduplication: it slices incoming streams into "
     "segments, recognizes ones it has stored before regardless of shifting "
-    "offsets, and keeps each unique segment once. Dell quotes up to 65:1 "
-    "reduction on the all-flash appliance, which is why weeks of restore "
+    "offsets, and keeps each unique segment once. Dell quoted up to 65:1 "
+    "reduction when the all-flash appliance launched in 2025 (a vendor "
+    "figure; its pages now say up to 75:1), which is why weeks of restore "
     "points fit in a few rack units — and why replication to the vault "
     "moves minutes of uniques, not days of raw data. The Data Invulnerability "
     "Architecture (end-to-end checksums, verify-after-write) guards what "
@@ -241,13 +242,13 @@ ANATOMY = SiteAnatomy(
         ),
     ],
     stats=[
-        Stat(label="Appliance", value="PowerProtect Data Domain (All-Flash, 2025)"),
-        Stat(label="Data reduction", value="Up to 65:1 dedupe + compression"),
-        Stat(label="Restore speed", value="Up to 4× faster (all-flash vs disk)"),
+        Stat(label="Appliance", value="PowerProtect Data Domain All-Flash (DD9910F, May 2025)"),
+        Stat(label="Data reduction", value="Up to 65:1 at launch, 75:1 on Dell's current pages (vendor claim)"),
+        Stat(label="Restore speed", value="Up to 4× faster, DD9910F vs DD9910 (Dell testing)"),
         Stat(label="Immutability", value="Retention Lock Compliance (WORM)"),
         Stat(label="Air gap", value="Vault-controlled, closed by default"),
-        Stat(label="Analytics", value="CyberSense — 200+ ML integrity signals"),
-        Stat(label="Entry point", value="DD3410 · 8–32 TBu grow-in-place (Q1 2026)"),
+        Stat(label="Analytics", value="CyberSense — 200+ content analytics (vendor figure)"),
+        Stat(label="Entry point", value="DD3410 · 8–32 TBu announced for Q1 2026; Dell now lists 8–40 TB"),
     ],
     photo=SITE_ILLO,
     sources=[
@@ -256,12 +257,32 @@ ANATOMY = SiteAnatomy(
             url="https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/powerprotect-data-domain",
         ),
         SourceLink(
-            label="Dell announcement — all-flash Data Domain & cyber resilience (Sept 2025)",
+            label="Dell blog — all-flash Data Domain announcement: 4× restores, 2× replication, 2.8× analytics (May 2025)",
+            url="https://www.dell.com/en-us/blog/achieving-cyber-resilience-with-dell-powerprotect/",
+        ),
+        SourceLink(
+            label="Blocks & Files — Dell intros all-flash PowerProtect appliance, DD9910F (20 May 2025)",
+            url="https://www.blocksandfiles.com/ai-ml/2025/05/20/dell-intros-all-flash-powerprotect-target-backup-appliance/1605446",
+        ),
+        SourceLink(
+            label="Dell blog — September 2025 software update: CyberSense for Commvault client-direct Oracle backups",
+            url="https://www.dell.com/en-us/blog/achieving-cyber-resilience-with-dell-powerprotect-2/",
+        ),
+        SourceLink(
+            label="Dell press release — DD3410, 8 to 32 TBu, available Q1 2026 (24 Sept 2025)",
             url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~09~dell-technologies-data-center-breakthroughs-power-smarter-faster-and-more-secure-private-clouds.htm",
         ),
         SourceLink(
+            label="Dell PowerProtect Data Domain DD3410 product page (8 TB to 40 TB usable)",
+            url="https://www.dell.com/en-us/shop/ipovw/power-protect-dd3410",
+        ),
+        SourceLink(
+            label="Dell PowerProtect Data Domain DD9910F All-Flash product page",
+            url="https://www.dell.com/en-us/shop/ipovw/power-protect-dd9910f",
+        ),
+        SourceLink(
             label="Dell PowerProtect Cyber Recovery",
-            url="https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/cyber-recovery-solution",
+            url="https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/powerprotect-cyber-recovery",
         ),
         SourceLink(
             label="Dell Data Domain family data sheet",

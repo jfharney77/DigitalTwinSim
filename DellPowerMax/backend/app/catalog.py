@@ -37,7 +37,7 @@ CATALOG: list[CatalogCategory] = [
                     "effective, after data reduction). The two nodes of a pair "
                     "connect over a direct InfiniBand fabric link. Same "
                     "PowerMaxOS 10, same data services, same six-nines "
-                    "availability as the 8500 — the ceiling is scale, not "
+                    "availability design target as the 8500 — the ceiling is scale, not "
                     "capability. Dell positions it as up to seven times the "
                     "capacity of the previous generation in half the footprint."
                 ),
@@ -125,13 +125,14 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="cpu-high",
-                name="High memory config (Xeon Gold, 18–20-core class)",
-                summary="Faster Xeons — up to 20 cores per CPU on the 8500.",
+                name="High memory config (18-core Xeon class and up)",
+                summary="Faster Xeons — up to 112 cores per node pair on the 8500.",
                 details=(
                     "The upper memory configurations ship higher-core, "
-                    "higher-clock Xeons (e.g. Gold 6254/8280L-class) and unlock "
-                    "the largest cache options and the highest per-system core "
-                    "counts — up to 736 cores across a fully populated 8500. "
+                    "higher-clock Xeons (the spec sheet names the Gold 6240L "
+                    "and 6254 and the 8280L) and unlock the largest cache "
+                    "options and the highest core counts — Dell's spec sheet "
+                    "lists up to 112 cores per node pair and 736 per 8500. "
                     "Chosen where sustained sub-millisecond latency under heavy "
                     "concurrent load is the requirement."
                 ),
@@ -236,21 +237,22 @@ CATALOG: list[CatalogCategory] = [
                 name="15.36 TB NVMe TLC",
                 summary="High density; the widest RAID support.",
                 details=(
-                    "Large TLC drives supporting every Flexible-RAID layout, "
-                    "including the wide RAID 6 (24+2). Chosen when both "
+                    "Large TLC drives supporting every open-systems "
+                    "Flexible-RAID layout, including the wide RAID 6 (24+2). Chosen when both "
                     "capacity and resilience options matter and rack space is "
                     "at a premium."
                 ),
             ),
             CatalogOption(
                 id="drive-30_72tb-qlc",
-                name="30.72 TB NVMe (TLC / QLC)",
+                name="30.72 TB NVMe (TLC; QLC on the 2500)",
                 summary="Maximum capacity per slot — petabytes in one DME.",
                 details=(
-                    "The densest drives, available in TLC and, for the most "
-                    "capacity-oriented tiers, QLC (quad-level cell — four bits "
-                    "per cell, more capacity per dollar, lower write "
-                    "endurance). A DME of these is multiple petabytes raw "
+                    "The densest drives, available in TLC and, on the PowerMax "
+                    "2500 only, QLC (quad-level cell — four bits per cell, "
+                    "more capacity per dollar, lower write endurance; the "
+                    "spec sheet lists QLC at 15.36 and 30.72 TB, with a "
+                    "restricted set of RAID layouts). A DME of these is multiple petabytes raw "
                     "before data reduction; per-terabyte performance is lower "
                     "because fewer drive controllers share the work."
                 ),
@@ -448,7 +450,7 @@ CATALOG: list[CatalogCategory] = [
             "plus the standby power supply is the hardware that guarantees an "
             "acknowledged write survives a power loss."
         ),
-        limits="2–4 NVMe SED vault modules per node pair · SPS per director",
+        limits="2–4 NVMe SED vault modules per node pair (2500) · 4 (8500)",
         region_ids=["vault-a", "vault-b", "sps-a", "sps-b"],
         options=[
             CatalogOption(
@@ -457,7 +459,8 @@ CATALOG: list[CatalogCategory] = [
                 summary="Non-volatile flash that cache is dumped to on power loss.",
                 details=(
                     "Two to four NVMe SED (self-encrypting drive) flash "
-                    "modules per node pair. On AC loss, the standby power "
+                    "modules per node pair on the 2500, four on the 8500. On "
+                    "AC loss, the standby power "
                     "supply keeps the director alive just long enough to copy "
                     "the entire DRAM cache to these modules; on the next boot "
                     "the array validates the vault and restores cache if the "
@@ -501,7 +504,8 @@ CATALOG: list[CatalogCategory] = [
                     "Deduplication (identical blocks stored once) and "
                     "compression run inline in dedicated hardware across the "
                     "whole array before data reaches flash — no post-process "
-                    "pass, no off switch. Dell guarantees 5:1 reduction on open "
+                    "pass. It is on by default and can be switched off per "
+                    "storage group. Dell guarantees 5:1 reduction on open "
                     "systems and 3:1 on mainframe, which is why effective "
                     "capacity is quoted well above raw."
                 ),
@@ -642,8 +646,9 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "Three-phase power (North American Delta or International "
                     "Wye) for denser cabinets, delivering more capacity per "
-                    "cord. A fully populated 8500 draws on the order of 15 kVA "
-                    "per cabinet at high ambient temperature — three-phase "
+                    "cord. Dell's spec sheet puts an 8500 cabinet at about "
+                    "11–15 kVA below 26 °C and 14–19 kVA above 35 °C, depending "
+                    "on how densely it is packed — three-phase "
                     "keeps the cord count and per-cord current manageable."
                 ),
             ),

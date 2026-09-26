@@ -29,7 +29,7 @@ def validate(scenario: Scenario) -> list[Validation]:
                     "let you try it — and trip the supplies if the "
                     "overload sustains."
                 ),
-                source="spec 01 §1 — GPU count × TDP vs PSU capacity, verify against XE7745 spec sheet",
+                source="Dell XE7745 spec sheet — eight 3200 W Titanium PSUs (2900 W on 200–220 V); the 4+4 budget of four supplies is this model's assumption",
             ))
         else:
             out.append(Validation(
@@ -73,12 +73,8 @@ def validate(scenario: Scenario) -> list[Validation]:
             ))
     else:
         # IR7000: the budgets are the product.
-        tray_kw = (
-            4 * C("tray_gpu_w") + 2 * C("tray_cpu_w") + C("tray_base_w")
-        ) / 1000.0
-        total_kw = cfg.trays * tray_kw + (
-            C("nvswitch_trays") * C("nvswitch_tray_w") + C("pump_w_max")
-        ) / 1000.0
+        # Trays, switch trays, pumps at full flow, and the tray fans.
+        total_kw = max_dc_w(cfg) / 1000.0
         if total_kw > cfg.shelf_capacity_kw:
             out.append(Validation(
                 rule_id="shelf", level="error",
@@ -118,7 +114,7 @@ def validate(scenario: Scenario) -> list[Validation]:
                 ),
                 source="spec 01 §4",
             ))
-        weight = cfg.trays * C("tray_weight_kg") + 400  # rack + shelves + CDU
+        weight = cfg.trays * C("tray_weight_kg") + C("rack_fixed_weight_kg")
         if weight > C("rack_weight_limit_kg"):
             out.append(Validation(
                 rule_id="weight", level="warning",
@@ -126,7 +122,7 @@ def validate(scenario: Scenario) -> list[Validation]:
                     f"≈ {weight:.0f} kg loaded weight — review floor "
                     "loading before this rack rolls in (advisory)."
                 ),
-                source="estimate — spec 01 §4 floor-loading advisory",
+                source="Dell XE9712 spec sheet weights (30 kg sled, 1,590 kg wet cabinet); the 1,000 kg review threshold is an estimate",
             ))
         if cfg.coolant_supply_c > 40:
             out.append(Validation(

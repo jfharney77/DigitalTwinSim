@@ -1,16 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchOnboard, fetchTour } from "./api";
+import {
+  HAPPY_SCENARIO,
+  fetchAnatomy,
+  fetchOnboard,
+  fetchScenarios,
+  fetchTour,
+} from "./api";
 import { ArchitecturePage } from "./components/ArchitecturePage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
 import { PlatformView } from "./components/PlatformView";
 import { OnboardControls } from "./components/OnboardControls";
-import { OnboardCounters } from "./components/OnboardCounters";
+import { OnboardCounters, elapsed } from "./components/OnboardCounters";
 import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import type { PlatformMap, OnboardState, RegionKind } from "./types";
+import type {
+  OnboardState,
+  PlatformMap,
+  RegionKind,
+  ScenarioInfo,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -42,18 +53,44 @@ function tourStepFromHash(): string | null {
 // Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
 // cursor, or null when the hash matches neither pattern (or names an unknown
 // phase) — in which case playback starts at 0 as before.
+//
+// Both compose with a scenario: /#scenario=attestation-fails&phase=quarantine.
+// The hash is read as key=value pairs joined by "&"; a page hash such as
+// #architecture has no "=" and yields no parameters.
+function hashParams(): URLSearchParams {
+  const h = window.location.hash.replace(/^#/, "");
+  return new URLSearchParams(h.includes("=") ? h : "");
+}
+
 function initialStepFromHash(states: { phase: string }[]): number | null {
   if (states.length === 0) return null;
-  const h = window.location.hash;
-  const step = h.match(/#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  const params = hashParams();
+  const step = params.get("step");
+  if (step !== null && /^\d+$/.test(step)) {
+    return Math.min(Number(step), states.length - 1);
+  }
+  const phase = params.get("phase");
+  if (phase !== null) {
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
 }
+
+// Which trace the sim page plays: /#scenario=<id>. Absent means the happy
+// path. An unknown id is kept as typed; the backend answers 404 and the page
+// shows the error rather than silently playing something else.
+function scenarioFromHash(): string {
+  const id = hashParams().get("scenario");
+  return id && /^[a-z0-9-]+$/i.test(id) ? id : HAPPY_SCENARIO;
+}
+
+// Shown only until /api/scenarios answers; the leveled introductions for
+// each trace live in backend/app/scenarios.py.
+const FALLBACK_INTRO =
+  "One site, four devices, no IT staff. Each device proves it is the " +
+  "machine Dell built and asks the Orchestrator what it should become. " +
+  "The only on-site human action is power and a network cable.";
 
 // Keep in sync with KIND_STYLE in PlatformView.tsx.
 const KIND_SWATCH: Record<RegionKind, string> = {
@@ -94,6 +131,10 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<PlatformMap | null>(null);
   const [trace, setTrace] = useState<OnboardState[]>([]);
+  const [scenario, setScenario] = useState<string>(scenarioFromHash);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -128,19 +169,62 @@ export function App() {
 
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
+  // A scenario change refetches too, and re-arms the deep link so that
+  // #scenario=<id>&phase=<name> lands on that phase of the new trace.
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchOnboard()])
-      .then(([an, po]) => {
+    let stale = false;
+    Promise.all([fetchAnatomy(), fetchOnboard(scenario), fetchScenarios()])
+      .then(([an, po, sc]) => {
+        if (stale) return;
+        setError(null);
         setAnatomy(an);
         setTrace(po.trace);
+        setScenarios(sc);
         if (!hashApplied.current) {
           hashApplied.current = true;
           const start = initialStepFromHash(po.trace);
           if (start !== null) setCursor(start);
         }
       })
-      .catch((e) => setError(String(e)));
-  }, [level]);
+      .catch((e) => {
+        if (stale) return;
+        setTrace([]);
+        setError(String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [level, scenario]);
+
+  // Pick a scenario: stop, rewind, and put the choice in the URL. The
+  // cursor always resets, because step N of one trace is not step N of
+  // another.
+  const chooseScenario = useCallback(
+    (id: string) => {
+      if (id === scenarioRef.current) return;
+      stop();
+      setCursor(0);
+      hashApplied.current = false;
+      window.history.replaceState(
+        null,
+        "",
+        id === HAPPY_SCENARIO
+          ? window.location.pathname + window.location.search
+          : `#scenario=${id}`,
+      );
+      setScenario(id);
+    },
+    [stop],
+  );
+
+  // The guided tour narrates the happy path and drives this same cursor, so
+  // opening it puts the happy path back under it.
+  useEffect(() => {
+    if (page === "tour" && scenarioRef.current !== HAPPY_SCENARIO) {
+      stop();
+      setScenario(HAPPY_SCENARIO);
+    }
+  }, [page, stop]);
 
   // Follow hash changes after load: in-page links (the use-case page's
   // "Go deeper" buttons), back/forward, and a #step=/#phase= typed into the
@@ -157,6 +241,16 @@ export function App() {
         }
       }
       if (next === "onboard") {
+        const wanted = scenarioFromHash();
+        if (wanted !== scenarioRef.current) {
+          // A different trace: rewind now, and let the fetch apply any
+          // &phase= / &step= once the new trace has arrived.
+          stop();
+          setCursor(0);
+          hashApplied.current = false;
+          setScenario(wanted);
+          return;
+        }
         const start = initialStepFromHash(traceRef.current);
         if (start !== null) {
           stop();
@@ -179,6 +273,14 @@ export function App() {
   }, [level, tourWanted]);
 
   const state = trace[cursor] ?? null;
+  const failed = new Set(state?.failedEndpoints ?? []);
+  const scenarioInfo = scenarios.find((s) => s.id === scenario) ?? null;
+  const isFailure = scenario !== HAPPY_SCENARIO;
+  // A hash naming a scenario the backend does not serve: the fetch 404s and
+  // there is no trace to show. The page must say so rather than dress the
+  // empty stage in either trace's copy.
+  const unknownScenario = isFailure && scenarioInfo === null;
+  const showFailure = isFailure && scenarioInfo !== null;
   const done = cursor >= trace.length - 1 && trace.length > 0;
 
   const run = useCallback(() => {
@@ -269,7 +371,7 @@ export function App() {
         </nav>
         {page === "onboard" && (
           <span className="sub">
-            {state ? `${state.label} · t+${state.elapsedSeconds}s` : "—"}
+            {state ? `${state.label} · ${elapsed(state.elapsedSeconds)}` : "—"}
           </span>
         )}
         <LevelControl />
@@ -321,8 +423,9 @@ export function App() {
                 <>
                   {state && (
                     <p className="tour-trace">
-                      Onboarding trace: <strong>{state.label}</strong> · t+
-                      {state.elapsedSeconds}s (illustrative) · operator actions{" "}
+                      Onboarding trace: <strong>{state.label}</strong> ·{" "}
+                      {elapsed(state.elapsedSeconds)} (illustrative) · operator
+                      actions{" "}
                       {state.operatorActions}
                     </p>
                   )}
@@ -342,20 +445,37 @@ export function App() {
       {page === "onboard" && (
         <>
           <div className="an-hero">
-            <h2>Nobody touches the device</h2>
+            <h2>
+              {unknownScenario
+                ? "No such trace"
+                : showFailure && scenarioInfo
+                  ? scenarioInfo.title
+                  : "Nobody touches the device"}
+            </h2>
             <p>
-              Every hardware twin in this repo assumes a person at the moment
-              of truth — someone presses the power button, racks the machine,
-              plugs in the adapter. An edge estate breaks that assumption:
-              four hundred sites, no IT staff at any of them. So NativeEdge
-              inverts the direction of trust. The device wakes, proves
-              cryptographically that it is the machine Dell built, and asks
-              the Orchestrator what it should become — OS, blueprint,
-              workloads, policy, all pulled, never pushed. The only human
-              action in the entire sequence is power and a network cable.
-              Play the trace and watch the operator-actions counter reach
-              one, and stop.
+              {unknownScenario
+                ? `There is no trace called "${scenario}". Pick one from the ` +
+                  "Scenario list below; the traces this twin serves are the " +
+                  "zero-touch onboarding and the attestation failure."
+                : scenarioInfo?.intro || FALLBACK_INTRO}
             </p>
+            {showFailure && scenarioInfo && (
+              <details className="mini scenario-note">
+                <summary>What is sourced and what is illustrative</summary>
+                <p>{scenarioInfo.illustrative}</p>
+                <p>
+                  Sources:{" "}
+                  {scenarioInfo.sources.map((src, i) => (
+                    <span key={src.url}>
+                      {i > 0 && " · "}
+                      <a href={src.url} target="_blank" rel="noreferrer">
+                        {src.label}
+                      </a>
+                    </span>
+                  ))}
+                </p>
+              </details>
+            )}
             <button
               className="primary onboard-tour-link"
               onClick={() => setPage("tour")}
@@ -370,6 +490,7 @@ export function App() {
                 <PlatformView
                   anatomy={anatomy}
                   active={new Set(state?.activeRegions ?? [])}
+                  failed={failed}
                   selected={regionId}
                   onSelect={setRegionId}
                 />
@@ -379,15 +500,26 @@ export function App() {
                   <strong>{state.label}.</strong> {state.description}
                 </div>
               )}
-              <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Watch the dwell on attestation — proving the device is the
-                machine Dell built is the slow part, on purpose — and watch
-                endpoints-online snap from zero to four when the
-                Orchestrator claims the site as a set. Click a block to pin
-                what it is; the Architecture page describes every block, and
-                the guided tour narrates the whole sequence.
-              </div>
+              {!unknownScenario && (
+                <div className="mini an-hint">
+                  {showFailure &&
+                    "A device drawn in red failed attestation and is " +
+                      "quarantined: nothing is sent to it and it is not " +
+                      "counted online. "}
+                  Highlighted blocks are the parts doing work at this step.
+                  Watch the dwell on attestation — proving the device is the
+                  machine Dell built is the slow part, on purpose — and watch
+                  endpoints-online snap from zero to{" "}
+                  {showFailure ? "three" : "four"} when the Orchestrator
+                  claims the{" "}
+                  {showFailure
+                    ? "devices that passed"
+                    : "site's devices as a set"}
+                  . Click a block to pin what it is; the Architecture page
+                  describes every block, and the guided tour narrates the
+                  whole sequence.
+                </div>
+              )}
             </div>
           </div>
 
@@ -402,6 +534,9 @@ export function App() {
               onPause={stop}
               onStep={step}
               onReset={reset}
+              scenario={scenario}
+              scenarios={scenarios}
+              onScenario={chooseScenario}
             />
             <OnboardCounters
               state={state}

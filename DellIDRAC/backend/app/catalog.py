@@ -48,8 +48,9 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "Standard on the mainstream lineup. Adds fuller "
                     "monitoring, logging, and RACADM/Redfish automation to the "
-                    "Basic set, and a single-user Virtual Console/Virtual "
-                    "Media session on some generations. Still short of the "
+                    "Basic set; the Express for Blades variant on modular "
+                    "servers adds a single-user Virtual Console/Virtual "
+                    "Media session. Still short of the "
                     "multi-user remote presence and out-of-band performance "
                     "monitoring that define Enterprise."
                 ),
@@ -110,7 +111,7 @@ CATALOG: list[CatalogCategory] = [
                 summary="Borrow a host LAN-on-Motherboard port.",
                 details=(
                     "Over NC-SI (Network Controller Sideband Interface, 1.2 on "
-                    "iDRAC9) management shares one of the host's LOM ports "
+                    "iDRAC9 firmware 7.00 and later) management shares one of the host's LOM ports "
                     "instead of using the dedicated NIC. It saves a cable and "
                     "a switch port, at the cost of coupling management to a "
                     "production link — a reconfigured or saturated host port "

@@ -1,5 +1,5 @@
 import { Gauge } from "./Gauge";
-import type { Explain, SimState } from "../types";
+import type { Explain, GlossaryTerm, SimState } from "../types";
 
 function substituted(id: string, s: SimState): string {
   switch (id) {
@@ -21,11 +21,15 @@ export function Instruments({
   explains,
   explainOn,
   product,
+  glossary,
+  glossaryOpen,
 }: {
   state: SimState | null;
   explains: Explain[];
   explainOn: boolean;
   product: string;
+  glossary: GlossaryTerm[];
+  glossaryOpen: boolean;
 }) {
   const s = state;
   const ex = (id: string) => explains.find((e) => e.id === id);
@@ -73,7 +77,14 @@ export function Instruments({
       <div className="stat"><span>sites · nodes</span><span>{s ? `${s.sitesDeployed} · ${s.nodesHealthy}/${s.nodesTotal}` : "—"}</span></div>
       <div className="stat"><span>VMs running / demand</span><span>{s ? `${s.vmsRunning} / ${s.vmsDemand}` : "—"}</span></div>
       <div className="stat"><span>headroom</span><span>{s ? `${s.headroomPct.toFixed(0)}%` : "—"}</span></div>
+      <div className="stat"><span>exposure days</span><span>{s ? s.exposureDaysCum : "—"}</span></div>
       <Info id="n-plus-one" />
+      {product === "privatecloud" && (
+        <div className="stat">
+          <span>workloads deployed · hours</span>
+          <span>{s ? `${s.workloadsDeployed} · ${s.deployHoursCum.toFixed(1)}` : "—"}</span>
+        </div>
+      )}
       <div className="stat"><span>version currency</span><span>{s ? `${s.versionCurrentPct.toFixed(0)}%` : "—"}</span></div>
       <div className="stat"><span>drift</span><span>{s ? s.driftCount : "—"}</span></div>
       <div className="stat"><span>availability</span><span>{s ? `${s.availabilityPct.toFixed(3)}%` : "—"}</span></div>
@@ -89,6 +100,19 @@ export function Instruments({
           </div>
           <Info id="apex-econ" />
         </>
+      )}
+      {glossary.length > 0 && (
+        <details className="mini glossary" open={glossaryOpen}>
+          <summary>What the labels mean</summary>
+          <dl>
+            {glossary.map((g) => (
+              <div key={g.term}>
+                <dt>{g.term}</dt>
+                <dd>{g.gloss}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
       )}
       <div className="mini" style={{ marginTop: 6 }}>
         Admin-hour figures are estimates; the order-of-magnitude gap

@@ -128,8 +128,10 @@ def validate(scenario: Scenario) -> list[Validation]:
                 f"{C('reference_temp_c'):g} °C. A five-year battery in this "
                 "room is not a five-year battery."
             ),
-            source="VRLA temperature-aging rule of thumb (IEEE 535 / "
-                   "vendor guidance; applied as an exact doubling — estimate)",
+            source="VRLA temperature-aging rule of thumb — vendors quote life "
+                   "halving per +8 to +10 °C (Schneider Electric/APC FAQ "
+                   "FA158934 says 8 °C); applied here as an exact doubling "
+                   "per +10 °C — estimate",
         ))
 
     return out

@@ -39,7 +39,7 @@ _VAULT_DESC = (
     "copying the entire cache to these flash modules so no acknowledged write "
     "is ever lost. On the next boot the array validates the vault and, if the "
     "shutdown was dirty, restores cache before serving I/O. Two to four "
-    "modules per node pair."
+    "modules per node pair on the 2500; four on the 8500."
 )
 
 _SPS_DESC = (
@@ -63,7 +63,8 @@ _CPU_DESC = (
     "multi-socket x86 compute complex; PowerMaxOS 10, all data services "
     "(global inline data reduction, SnapVX, SRDF), and the RAID math run "
     "here. Higher memory-configuration tiers ship faster Xeons with more "
-    "cores — up to 20 cores per CPU on the 8500's top tier."
+    "cores — Dell's spec sheet lists 64 cores per node pair on the base "
+    "tiers and up to 112 on the 8500's top tiers."
 )
 
 _FABRIC_DESC = (
@@ -163,7 +164,7 @@ ANATOMY = ChassisAnatomy(
     vendor="Dell Technologies",
     form_factor="3U node-pair engine + 48-slot DME",
     generation="PowerMax (PowerMaxOS 10)",
-    year=2025,
+    year=2022,
     width=100,
     height=52,
     overview=L(
@@ -206,8 +207,8 @@ ANATOMY = ChassisAnatomy(
             "time for capacity. A PowerMax 2500 is 1–2 node pairs; a PowerMax 8500 "
             "scales to 8 node pairs and 18 PBe. PowerMaxOS 10 runs global inline "
             "data reduction (guaranteed 5:1 open systems, 3:1 mainframe), SnapVX "
-            "snapshots, SRDF replication, and hardware-rooted cyber resiliency, at "
-            "six-nines availability. This floorplan shows one node pair engine and "
+            "snapshots, SRDF replication, and hardware-rooted cyber resiliency, and "
+            "Dell designs it for six-nines availability. This floorplan shows one node pair engine and "
             "one DME."
         ),
         technical=(
@@ -234,8 +235,8 @@ ANATOMY = ChassisAnatomy(
             x=0, y=0, w=9, h=51,
             description=(
                 "Dynamic Media Enclosure (DME): the drive shelf, holding up to "
-                "48 dual-ported 2.5″ NVMe flash drives (3.84–30.72 TB, TLC or "
-                "QLC). 'Dual-ported' means each drive has two independent "
+                "48 dual-ported 2.5″ NVMe flash drives (3.84–30.72 TB TLC; QLC "
+                "on the 2500 only). 'Dual-ported' means each drive has two independent "
                 "channels, so both directors — and, through the fabric, every "
                 "node pair — reach every drive directly, with automatic "
                 "failover if one path fails. The DME is a separate module from "
@@ -281,6 +282,10 @@ ANATOMY = ChassisAnatomy(
         SourceLink(
             label="Dell PowerMax product page",
             url="https://www.dell.com/en-us/shop/dell-powermax-nvme-storage/sf/powermax",
+        ),
+        SourceLink(
+            label="Dell PowerMaxOS 10 product guide: data efficiency (data reduction is per storage group)",
+            url="https://www.dell.com/support/manuals/en-us/powermax-os-10/esd_p_product_guide_pmax_10_2_magnolia/data-efficiency?guid=guid-dee52522-1cb1-4eb2-b562-2604ad8093ec&lang=en-us",
         ),
     ],
 )

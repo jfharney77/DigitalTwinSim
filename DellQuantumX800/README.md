@@ -56,6 +56,6 @@ Referenced by `CustomerSetup/TACC-Horizon/` as the sourced fabric block
 (previously stood in for by the SN6000's catalog InfiniBand option).
 Cross-references: `DellPowerSwitchSN6000/` (the Ethernet fork of the same
 decision), `DellPowerEdgeXE9712/`/`DellPowerEdgeXE9680/` (the NVLink
-domains this fabric joins), `DellIR7000/` (the liquid loop the Q3400
-plugs into), and `DellExascale/` (the other central-brain-off-the-data-path
+domains this fabric joins), `DellIR7000/` (the liquid loop the liquid-cooled
+Q3400-LD plugs into; NVIDIA also ships an air-cooled Q3400-RA), and `DellExascale/` (the other central-brain-off-the-data-path
 architecture in this repo).

@@ -101,7 +101,7 @@ export function Instruments({
       </div>
       <Info id="index-pressure" />
       <div className="stat">
-        <span>backup window</span>
+        <span>appliance ingest time (source read not modelled)</span>
         <span>{s ? `${s.backupWindowHours.toFixed(2)} h` : "—"}</span>
       </div>
       <Info id="backup-window" />

@@ -9,6 +9,7 @@ import type {
   Summary,
 } from "../types";
 import { InfoDot } from "./InfoDot";
+import { Leveled } from "./Leveled";
 
 export function Counters({
   state,
@@ -91,7 +92,30 @@ export function Counters({
     <div className="an-panel">
       <h2>Counters</h2>
       <div className="stat">
-        <span>MACs done</span>
+        <span>
+          MACs (multiply-accumulates) done{" "}
+          <InfoDot title="MACs">
+            <Leveled
+              novice={
+                <p>
+                  A MAC is one multiply-accumulate: multiply two numbers and
+                  add the product to a running total. Some texts call the same
+                  thing a multiply-add. Every cell of the result matrix is a
+                  chain of N of them, so a whole N×N matmul is N×N×N MACs. This
+                  counter is the simulator's measure of arithmetic done.
+                </p>
+              }
+              standard={
+                <p>
+                  MAC = multiply-accumulate (a multiply-add): one term of one
+                  output cell's dot product. An N×N matmul is N³ of them; this
+                  is the page's unit of arithmetic.
+                </p>
+              }
+              expert={<p>MAC = multiply-accumulate; N³ per N×N matmul.</p>}
+            />
+          </InfoDot>
+        </span>
         <span>{macs}</span>
       </div>
       <div className="stat">
@@ -111,7 +135,7 @@ export function Counters({
           <div className="stat">
             <span>
               power (illustrative){" "}
-              <InfoDot title="Modeled watts (spec_25)">
+              <InfoDot title="Modeled watts">
                 <p>
                   idle floor + watts per computing lane + watts per byte of
                   foreground memory traffic — derived from this state's own
@@ -131,9 +155,11 @@ export function Counters({
           </div>
           {peakPower && (
             <div className="mini">
-              your die measured {peakPower.value.toFixed(0)} W peak on{" "}
-              {peakPower.measuredAt} — the model's watts are illustrative;
-              this line is your hardware.
+              last recorded peak: {peakPower.value.toFixed(0)} W, sampled
+              during a live session on {peakPower.measuredAt}
+              {peakPower.device ? ` (${peakPower.device})` : ""} — it belongs
+              to the GPU that ran that session, not to this profile; the
+              model's watts are illustrative.
             </div>
           )}
           <div className="stat">
@@ -251,12 +277,18 @@ export function Counters({
         <>
           <div className="stat">
             <span>
-              KV length{" "}
+              KV length (incl. this token){" "}
               <InfoDot title="KV cache length (live)">
                 <p>
                   The cache the current token must re-read in full — it grows by
                   one row per decoded token, so every token costs a little more
                   than the last.
+                </p>
+                <p>
+                  It reads one higher than the slider on the first token, and
+                  that is not an off-by-one: the token being decoded appends its
+                  own key and value before attending, so it re-reads the slider's
+                  starting length plus itself.
                 </p>
               </InfoDot>
             </span>
@@ -283,9 +315,23 @@ export function Counters({
             <span>{llm.intensity.toFixed(3)}</span>
           </div>
           <div className="stat">
-            <span>token regime</span>
+            <span>
+              regime (this token){" "}
+              <InfoDot title="Two regimes, two scopes">
+                <p>
+                  This line grades the token being decoded now. The Roofline
+                  panel below grades the whole trace — prefill blocks included,
+                  which move far more arithmetic per byte. The two can disagree,
+                  and when they do it is the scopes differing, not the model.
+                </p>
+              </InfoDot>
+            </span>
             <span>
               {llm.regime === "memory" ? "memory-bound" : "compute-bound"}
+              {summary &&
+              Math.abs(llm.intensity - summary.ridgePoint) < 0.005
+                ? " — sitting on the ridge"
+                : ""}
             </span>
           </div>
           {!llm.prefill && llm.intensities.length > 1 && (
@@ -338,11 +384,57 @@ export function Counters({
 
       {summary && (
         <>
-          <h2 style={{ marginTop: 16 }}>Roofline (illustrative)</h2>
+          <h2 style={{ marginTop: 16 }}>
+            Roofline (illustrative){" "}
+            <InfoDot title="The roofline model">
+              <Leveled
+                novice={
+                  <>
+                    <p>
+                      A chip can be held back by one of two things: how fast it
+                      does arithmetic, or how fast memory can hand it numbers.
+                      The roofline model is a way to tell which. Picture a
+                      graph whose line rises like a sloped roof and then goes
+                      flat. On the slope, memory is the limit (memory-bound).
+                      On the flat part, arithmetic is the limit (compute-bound).
+                    </p>
+                    <p>
+                      This page does not draw the graph. It gives you the two
+                      numbers that place a workload on it — intensity and the
+                      ridge point, each explained by its own dot below — and
+                      the verdict on the regime line.
+                    </p>
+                  </>
+                }
+                standard={
+                  <p>
+                    The roofline model bounds throughput by min(compute rate,
+                    memory bandwidth × arithmetic intensity): a sloped memory
+                    roof that meets a flat compute roof at the ridge point. The
+                    page does not plot it; it reports the two numbers that place
+                    this workload on it, and the regime they imply.
+                  </p>
+                }
+                expert={
+                  <p>
+                    Throughput ≤ min(compute rate, bandwidth × intensity). Not
+                    plotted; intensity, ridge and regime are reported.
+                  </p>
+                }
+              />
+            </InfoDot>
+          </h2>
           <div className="stat">
-            <span>regime</span>
+            <span>regime{llm ? " (whole trace)" : ""}</span>
             <span>{summary.regime === "memory" ? "memory-bound" : "compute-bound"}</span>
           </div>
+          {llm && (
+            <div className="mini">
+              this panel measures the whole trace, prefill included; the
+              per-token figures above measure one decoded token, so the two
+              regimes can differ
+            </div>
+          )}
           {tensorMult != null && (
             <div className="mini">
               tensor mode: faster math, same memory — feed it or starve it. The
@@ -353,12 +445,20 @@ export function Counters({
             <div className="stat">
               <span>
                 joules/MAC{" "}
-                <InfoDot title="Energy per MAC (spec_25)">
+                <InfoDot title="Energy per MAC">
                   <p>
                     Whole-run energy ÷ macTotal — this sim's tokens-per-joule.
                     Shrink the tile and watch it climb even though macTotal is
                     identical: same math, more energy, because the die idled
                     hot through more dwelling loads.
+                  </p>
+                  <p>
+                    Compare it with itself, never with a datasheet. The sim
+                    runs tens of MACs over illustrative cycles, so the absolute
+                    value lands around a joule per MAC — real silicon is some
+                    thirteen orders of magnitude below that. The direction the
+                    number moves is the lesson; its size is an artefact of the
+                    toy scale.
                   </p>
                 </InfoDot>
               </span>
@@ -370,11 +470,104 @@ export function Counters({
             </div>
           )}
           <div className="stat">
-            <span>intensity (MAC/byte)</span>
+            <span>
+              intensity (MAC/byte){" "}
+              <InfoDot title="Arithmetic intensity">
+                <Leveled
+                  novice={
+                    <p>
+                      Arithmetic intensity is how much arithmetic the workload
+                      gets out of each byte it fetches: total MACs
+                      (multiply-accumulates) divided by total bytes moved, both
+                      shown in this panel. A high figure means each fetched
+                      number is reused many times. A low one means the chip
+                      keeps going back to memory. Shrinking the tile or choosing
+                      a wider number format lowers it, because more bytes move
+                      for the same arithmetic.
+                    </p>
+                  }
+                  standard={
+                    <p>
+                      Arithmetic intensity = MACs total ÷ bytes moved, for the
+                      whole workload. It is a property of the workload and its
+                      tiling and dtype, not of the die. Below the ridge point
+                      the run is memory-bound; at or above it, compute-bound.
+                    </p>
+                  }
+                  expert={
+                    <p>
+                      macTotal ÷ bytesMoved. Workload-side; compare with the
+                      ridge.
+                    </p>
+                  }
+                />
+              </InfoDot>
+            </span>
             <span>{summary.arithmeticIntensity.toFixed(2)}</span>
           </div>
           <div className="stat">
-            <span>ridge point</span>
+            <span>
+              ridge point{" "}
+              <InfoDot title="Ridge point">
+                <Leveled
+                  novice={
+                    <>
+                      <p>
+                        The ridge point belongs to the die, not the workload.
+                        Each cycle the selected die can do a fixed number of
+                        MACs (multiply-accumulates) and fetch a fixed number of
+                        bytes. The ridge point is the first divided by the
+                        second
+                        {profile?.bandwidth
+                          ? `: ${profile.bandwidth.macsPerCycle} MACs per cycle ÷ ${profile.bandwidth.bytesPerCycle} bytes per cycle on ${profile.name}`
+                          : ""}
+                        . It is the intensity at which arithmetic and memory
+                        finish in the same time.
+                      </p>
+                      <p>
+                        Those two per-cycle figures are roofline constants
+                        chosen to order the profiles against one another. They
+                        are not a count of the lanes drawn on the die, and the
+                        cycle here is illustrative, not a hardware clock — so
+                        4 MACs per cycle and 128 drawn lanes are two different
+                        pictures of the same die, not a contradiction.
+                      </p>
+                      <p>
+                        A workload whose intensity is below the ridge spends
+                        more cycles loading than computing: memory-bound. At or
+                        above it, compute-bound. Exactly at the ridge, the load
+                        cycles and compute cycles below come out equal (give or
+                        take rounding up to whole cycles).
+                      </p>
+                    </>
+                  }
+                  standard={
+                    <p>
+                      Ridge = the die's MACs per cycle ÷ bytes per cycle
+                      {profile?.bandwidth
+                        ? ` (${profile.bandwidth.macsPerCycle} ÷ ${profile.bandwidth.bytesPerCycle} on ${profile.name}; tensor mode multiplies the numerator)`
+                        : ""}
+                      : the intensity at which load cycles equal compute cycles,
+                      up to rounding. Intensity below it is memory-bound, at or
+                      above it compute-bound. It moves with the die profile and
+                      execution mode, never with the workload. The two
+                      per-cycle figures are illustrative roofline constants
+                      that order the profiles — not a per-cycle count of the
+                      lanes drawn above, and not a hardware clock.
+                    </p>
+                  }
+                  expert={
+                    <p>
+                      macsPerCycle ÷ bytesPerCycle (tensor mode scales the
+                      numerator). intensity &lt; ridge ⇒ memory-bound; at the
+                      ridge, load cycles = compute cycles. Both figures are
+                      illustrative profile constants, unrelated to the drawn
+                      lane count.
+                    </p>
+                  }
+                />
+              </InfoDot>
+            </span>
             <span>{summary.ridgePoint.toFixed(2)}</span>
           </div>
           <div className="stat">
@@ -392,13 +585,20 @@ export function Counters({
           {stream && (
             <>
               <div className="stat">
-                <span>your die, measured</span>
+                <span>last bandwidth measurement</span>
                 <span>{stream.value.toFixed(0)} GB/s</span>
               </div>
               <div className="mini">
-                streaming bandwidth measured by the CUDA bandwidth lesson on{" "}
-                {stream.measuredAt} — the model's units are illustrative; this
-                line is your hardware.
+                Posted to this backend on {stream.measuredAt} by the CUDA
+                bandwidth lesson's {stream.kernel ?? "copy"} kernel
+                {stream.device
+                  ? `, running on ${stream.device}`
+                  : "; the record does not name the GPU or say whether the run was live"}
+                . It describes the GPU that ran that lesson, not the{" "}
+                {profile?.name ?? "selected"} profile, and it changes no other
+                number in this panel, whose units are illustrative. For
+                scale: the RTX 4060 Laptop's memory is rated 256 GB/s, and a
+                copy kernel lands a little under its part's rating.
               </div>
             </>
           )}
@@ -420,7 +620,7 @@ export function Counters({
               <div className="stat">
                 <span>
                   exchange cycles{" "}
-                  <InfoDot title="NVLink exchange (spec_27)">
+                  <InfoDot title="NVLink exchange">
                     <p>
                       The all-gather's cost: each die pulls the other's half of
                       C over the link — ceil(bytes(C) ÷ link rate). It grows as
@@ -434,7 +634,7 @@ export function Counters({
               <div className="stat">
                 <span>
                   scale-up speedup{" "}
-                  <InfoDot title="Scale-up speedup (spec_27)">
+                  <InfoDot title="Scale-up speedup">
                     <p>
                       serial 1-GPU cycles ÷ (max(die 0, die 1) + exchange). The
                       dies run concurrently in this cost model even though the

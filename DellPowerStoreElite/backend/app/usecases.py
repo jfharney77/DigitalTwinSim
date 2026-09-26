@@ -21,7 +21,7 @@ USE_CASES: list[UseCase] = [
         ),
         narrative=[
             (
-                "The hospital's PowerStore 5500 holds the electronic health "
+                "The hospital's PowerStore 5000T holds the electronic health "
                 "record database, imaging metadata, and the VM farm behind "
                 "registration and pharmacy. It is at 87% capacity and two "
                 "generations old — but an EHR system has no good weekend "
@@ -31,17 +31,19 @@ USE_CASES: list[UseCase] = [
             ),
             (
                 "The Elite path deletes the window instead of arguing about "
-                "it. An Elite 5500 racks in below the existing array, joins "
-                "its cluster live, and drains the volumes over the 200 Gb "
-                "RDMA interconnect while clinicians keep charting. Cutover "
-                "is a multipathing event no application notices. The old "
-                "5500 stays in the cluster as the replication and snapshot "
-                "target — the hospital's recovery copies now live on "
-                "hardware it already owns and trusts."
+                "it. A new PowerStore 5500 racks in below the existing "
+                "array, joins its cluster live, and drains the volumes "
+                "over the cluster network while clinicians keep charting. "
+                "Cutover is a multipathing event no application notices. "
+                "The old 5000T stays in the cluster as the snapshot-retention "
+                "and test tier — a lighter job on hardware the hospital "
+                "already owns and trusts. Off-site replication still goes to "
+                "a separate cluster, as it must."
             ),
             (
                 "The numbers the CIO reports upward: reads up to 70% "
-                "faster under the EHR's metadata-heavy profile, six years "
+                "faster by Dell's own test figure, which a metadata-heavy "
+                "EHR profile is well placed to approach; six years "
                 "of imaging growth absorbed by the 6:1-guaranteed E3 pool, "
                 "and a modernization whose total service interruption was "
                 "zero seconds."
@@ -51,8 +53,8 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="model", option_id="elite-5500", qty=1,
                 rationale=(
-                    "The midrange model matches the 5500-class array it "
-                    "relieves — like for like, one generation up."
+                    "The midrange model matches the 5000T-class array it "
+                    "relieves — like for like, two generations up."
                 ),
             ),
             UseCaseItem(
@@ -65,8 +67,8 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="modernization", option_id="repurpose", qty=1,
                 rationale=(
-                    "The old 5500 becomes the snapshot and replication "
-                    "target instead of a decommissioning line item."
+                    "The old 5000T becomes the snapshot and test tier "
+                    "instead of a decommissioning line item."
                 ),
             ),
             UseCaseItem(
@@ -79,8 +81,8 @@ USE_CASES: list[UseCase] = [
             UseCaseItem(
                 category_id="memory", option_id="metadata-acceleration", qty=1,
                 rationale=(
-                    "EHR reads are metadata-bound; the 70%-faster-reads "
-                    "claim lands exactly here."
+                    "EHR reads are metadata-bound, which is the workload "
+                    "Dell's 70%-faster-reads claim describes."
                 ),
             ),
             UseCaseItem(
@@ -93,8 +95,8 @@ USE_CASES: list[UseCase] = [
         ],
         outcomes=[
             Stat(label="Cutover downtime", value="0 seconds"),
-            Stat(label="Read latency", value="Up to 70% faster (metadata-bound)"),
-            Stat(label="Old array's fate", value="Replication & snapshot target"),
+            Stat(label="Reads", value="Up to 70% faster (Dell claim)"),
+            Stat(label="Old array's fate", value="Snapshot & test tier"),
         ],
     ),
     UseCase(
@@ -102,7 +104,7 @@ USE_CASES: list[UseCase] = [
         title="Nine arrays become one 3U appliance",
         summary=(
             "A manufacturer collapses a sprawl of aging midrange arrays "
-            "into a single Elite 9500 — 5.8 PB effective in three rack "
+            "into a single PowerStore 9500 — 5.8 PB effective in three rack "
             "units, serving block, file, VMs and containers at once."
         ),
         narrative=[
@@ -116,20 +118,20 @@ USE_CASES: list[UseCase] = [
                 "single array was never worth the outage."
             ),
             (
-                "One Elite 9500 takes the whole estate: block LUNs for the "
+                "One PowerStore 9500 takes the whole estate: block LUNs for the "
                 "ERP database, NFS and SMB shares for engineering, vVols "
                 "for the VMware farm, and container volumes for the new "
                 "MES services — four workload classes that historically "
                 "justified four separate purchases. Forty QLC E3 drives "
-                "behind the 6:1 guarantee present 5.8 PB effective, which "
+                "behind the 6:1 guarantee present Dell's 5.8 PB effective, which "
                 "swallows the nine arrays' combined contents with room for "
                 "a decade of growth."
             ),
             (
                 "The consolidation itself is nine small migrations rather "
                 "than one giant one — and the two arrays that were "
-                "PowerStores join the Elite's cluster and drain live, no "
-                "host remap required. Dynamic core allocation keeps the "
+                "PowerStores join the Elite's cluster and drain live, their "
+                "hosts given paths to the Elite first and no outage taken. Dynamic core allocation keeps the "
                 "ERP's latency flat while the file and container loads "
                 "come aboard; the 40-port front end means no workload "
                 "queues behind another for connectivity."
@@ -213,7 +215,7 @@ USE_CASES: list[UseCase] = [
                 "refresh: next-generation controllers swap into the same "
                 "chassis, keeping the drives and the data in place. "
                 "Platform refresh: the next Elite generation joins the "
-                "cluster over the RDMA interconnect and volumes rebalance "
+                "cluster over the cluster network and volumes rebalance "
                 "to it live — the same sequence this twin's trace plays, "
                 "repeated on whatever hardware 2028 ships."
             ),
@@ -251,10 +253,10 @@ USE_CASES: list[UseCase] = [
                 ),
             ),
             UseCaseItem(
-                category_id="interconnect", option_id="rdma-200", qty=1,
+                category_id="interconnect", option_id="cluster-network", qty=1,
                 rationale=(
-                    "Every future rebalance rides the RDMA mesh without "
-                    "taxing host service."
+                    "Every future rebalance rides the cluster network "
+                    "between appliances, in the background."
                 ),
             ),
             UseCaseItem(

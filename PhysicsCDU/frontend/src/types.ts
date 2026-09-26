@@ -69,6 +69,7 @@ export interface SimState {
   secReturnC: number;
   secFlowLpm: number;
   approachC: number;
+  secSupplySteadyC: number;
   pumpSpeedPct: number;
   pumpsAlive: number;
   pumpPowerKw: number;
@@ -79,6 +80,8 @@ export interface SimState {
   capPct: number;
   capping: boolean;
   chipTempC: number;
+  chipSteadyC: number;
+  deliveredKwh: number;
   dewMarginC: number;
   floorActive: boolean;
   regionTemps: Record<string, number>;
@@ -154,6 +157,7 @@ export interface GuidedScenario {
   title: string;
   narration: string[];
   question: string;
+  answer: string;
   scenario: Scenario;
 }
 

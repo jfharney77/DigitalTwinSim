@@ -81,10 +81,11 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "this collection shows powering up. Everything to the right "
                     "of them is one Dell Exascale storage rack. Between the two "
                     "runs the network, called the fabric. Along the bottom sit "
-                    "the ways this one rack can store data: as blocks for "
-                    "databases, as ordinary files and fast parallel files, which "
-                    "share one box on the map, and as objects, the way cloud "
-                    "storage keeps things. Right now the rack is powered on and "
+                    "the ways this one rack can store data: as ordinary files "
+                    "and fast parallel files, which share one box on the map, "
+                    "and as objects, the way cloud storage keeps things. The "
+                    "box for blocks, the kind of storage databases use, is "
+                    "something Dell plans to add in 2027. Right now the rack is powered on and "
                     "idle, and no training job is attached yet."
                 ),
                 standard=(
@@ -92,15 +93,16 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "from this repo's AI Factory. Everything to their right is "
                     "one Dell Exascale storage rack. Between them, the scale-out "
                     "fabric, which the SN6000 twin covers. Along the bottom are "
-                    "the rack's four engines in one footprint: block "
-                    "(PowerFlex), file (PowerScale's OneFS) and parallel file "
-                    "(the Lightning File System) sharing one box, and object "
-                    "(ObjectScale). The rack is up and idle, with no job "
+                    "the rack's engines in one footprint: file (PowerScale's "
+                    "OneFS) and parallel file (the Lightning File System) "
+                    "sharing one box, and object (ObjectScale). Block "
+                    "(PowerFlex) is drawn too, though Dell targets it for the "
+                    "first half of 2027. The rack is up and idle, with no job "
                     "attached."
                 ),
                 expert=(
-                    "XE9712 GPU racks, fabric, one Exascale rack: block, file, "
-                    "Lightning pNFS and object co-resident. Idle, no job."
+                    "XE9712 GPU racks, fabric, one Exascale rack: file, "
+                    "Lightning and object co-resident, block planned. Idle."
                 ),
             ),
             camera=whole_map(anatomy),
@@ -122,18 +124,23 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "server, the part of a file system that keeps track of where "
                     "everything is. It sits above the storage servers, not among "
                     "them. The GPU racks now connect "
-                    "to the file system. They use pNFS, short for parallel NFS, a "
-                    "standard way of reaching shared files that lets one computer "
-                    "talk to many storage servers at once instead of just one. "
+                    "to the file system. This tour shows that connection using "
+                    "pNFS, short for parallel NFS. It is a standard way of "
+                    "reaching shared files that lets one computer talk to many "
+                    "storage servers at once instead of just one. Dell also has "
+                    "its own software for this, the Lightning File System, and "
+                    "it does the same job. "
                     "The connection is an ordinary handshake. Nothing has been "
                     "read. The GPUs have learned who to ask, not where the data is."
                 ),
                 standard=(
                     "The outer layer fades back and the light moves to the "
                     "metadata server, drawn above the data servers rather than "
-                    "among them. The GPU racks mount the Lightning File "
-                    "System over pNFS (parallel NFS), the standard extension that "
-                    "lets one client talk to many servers at once. The mount is a "
+                    "among them. The GPU racks mount the parallel file path, "
+                    "narrated here as pNFS (parallel NFS), the standard extension "
+                    "that lets one client talk to many servers at once; "
+                    "PowerScale's OneFS ships it, and the Lightning File System "
+                    "gets the same split with Dell's own client. The mount is a "
                     "plain handshake with the metadata server: credentials and a "
                     "namespace. No data has moved. The clients know who to ask, "
                     "not yet where anything lives."
@@ -165,9 +172,10 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                 standard=(
                     "Large files are cut into stripes spread across the data "
                     "servers, so the client asks one question: where do this "
-                    "file's stripes live? The answer is a layout, and under Flex "
-                    "Files a layout is exactly that map, from stripe to data "
-                    "server. The metadata server answers once and hands the "
+                    "file's stripes live? The answer is a layout. Under Flex Files, "
+                    "the pNFS layout type that lets ordinary NFS servers act as "
+                    "data servers, a layout is exactly that map, from stripe to "
+                    "data server. The metadata server answers once and hands the "
                     "layout over. That is its only part in this job's read path."
                 ),
                 expert=(
@@ -189,9 +197,11 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "This is the moment the whole design exists for. Now we can "
                     "see the data path, and something happens at once: the "
                     "metadata block at the top goes dark, and all four storage "
-                    "servers light up together. Holding the map, the GPUs go "
-                    "straight to every server that has a piece and pull all the "
-                    "pieces at the same time. The metadata server is no longer "
+                    "servers light up together. Each GPU already holds the map it "
+                    "was handed a moment ago — the list of which server keeps "
+                    "which piece of the file — so it goes straight to every "
+                    "server that has a piece and pulls all the pieces at the "
+                    "same time. The metadata server is no longer "
                     "involved at all. It could even be restarted in the middle "
                     "of the read and the transfer would carry on. Compare the "
                     "PowerStore and PowerMax twins, where every byte passes "
@@ -203,7 +213,9 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                 standard=(
                     "This is the twin's one idea. With the data path revealed, "
                     "watch the map: the metadata block goes dark and all four "
-                    "data servers light at once. Holding the layout, the client "
+                    "data servers light at once. The client is already holding "
+                    "the layout it was granted a step earlier — the map of which "
+                    "server holds which stripe — so it "
                     "opens a stream to every data server named in it and reads "
                     "its stripes in parallel. The metadata server is out of the "
                     "path, and could be restarted mid-read without stopping the "
@@ -230,7 +242,7 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
             script=L(
                 novice=(
                     "Now the rack reaches full speed: about six terabytes every "
-                    "second, the figure Dell gives for one Exascale rack, "
+                    "second, the most Dell says one Exascale rack can read, "
                     "flowing from the flash drives called NVMe, through the four "
                     "servers, across the network and into the GPUs' own memory. "
                     "Direct memory paths, known as RDMA and GPUDirect, let the "
@@ -241,7 +253,8 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                 ),
                 standard=(
                     "Full stride: roughly 6 TB/s aggregate, about 48,000 gigabits "
-                    "per second, the per-rack figure Dell quotes, flowing from "
+                    "per second, the per-rack read ceiling Dell claims for the "
+                    "Lightning File System, flowing from "
                     "NVMe flash through the data servers and across the fabric "
                     "into GPU memory. RDMA and GPUDirect put the data in GPU "
                     "memory without a detour through host CPUs. All four servers "
@@ -249,7 +262,7 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "the read fans out to every one of them."
                 ),
                 expert=(
-                    "~6 TB/s (≈48,000 Gbps), Dell's per-rack figure. NVMe to GPU "
+                    "~6 TB/s (≈48,000 Gbps), Dell's per-rack claim. NVMe to GPU "
                     "memory over RDMA/GPUDirect; full four-way fan-out."
                 ),
             ),
@@ -269,8 +282,11 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "Every so often the training job saves its own progress, "
                     "called a checkpoint. For a very large model that progress "
                     "is terabytes, and it arrives all at once from every GPU "
-                    "rack, spread across the same stripes on the same four "
-                    "servers. The saving itself trains nothing. But "
+                    "rack, spread in pieces across the same four servers. The "
+                    "save makes new files, so the GPUs first ask the metadata "
+                    "server for a map of them. That takes a few tiny messages, "
+                    "too brief to draw, and none of the saved data goes through "
+                    "it. The saving itself trains nothing. But "
                     "it decides how much work a failure can wipe out, so a "
                     "faster save means saving more often, and losing minutes "
                     "instead of hours when a GPU dies."
@@ -283,11 +299,17 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "across the same striped layout. A checkpoint is pure "
                     "overhead while it runs, yet it bounds how much work a "
                     "failure can destroy. Faster checkpoints allow more frequent "
-                    "ones, so a failed GPU costs minutes rather than hours."
+                    "ones, so a failed GPU costs minutes rather than hours. The "
+                    "checkpoint files are new, so the client gets their layouts "
+                    "from the metadata server first: a few small messages, too "
+                    "brief to draw, and no checkpoint bytes. The bulk write "
+                    "bypasses it as the reads do."
                 ),
                 expert=(
                     "Max dwell: checkpoint burst, terabytes from every rack "
-                    "across the stripes. Overhead that bounds redo on failure."
+                    "across the stripes. Overhead that bounds redo on failure. "
+                    "Create, rw layout and commit touch the MDS, undrawn: zero "
+                    "bulk bytes."
                 ),
             ),
             camera=frame("clients", "fanout", *_SERVERS, *_MEDIA),
@@ -307,16 +329,16 @@ def build_tour(anatomy: PlatformAnatomy) -> Tour:
                     "cloud tools use. Both live in this same rack, so the move "
                     "never crosses the network to a separate archive, and nobody "
                     "has to reconcile two sets of names afterwards. This is why "
-                    "putting four kinds of storage in one rack matters."
+                    "putting several kinds of storage in one rack matters."
                 ),
                 standard=(
                     "Between epochs, data the job is done with ages from the "
                     "file tier to ObjectScale's S3 object tier. Tiering here is "
                     "internal because both engines share the rack: no copy over "
                     "the network to a separate archive, no second namespace to "
-                    "reconcile. That is the argument for four engines in one "
-                    "footprint, and PowerFlex block sits beside them for the "
-                    "databases."
+                    "reconcile. That is the argument for several engines in one "
+                    "footprint, and Dell plans PowerFlex block beside them, for "
+                    "the databases, in 2027."
                 ),
                 expert=(
                     "File to S3 object tiering, rack-internal: no cross-network "

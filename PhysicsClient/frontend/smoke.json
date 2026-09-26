@@ -32,11 +32,33 @@
       "play": { "click": "button:text-is('Explain mode')", "watch": ".thermal-grid > .thermal-col:nth-child(3)", "times": 1 }
     },
     {
+      "hash": "#scenario=three-engines",
+      "name": "scenario-three-engines",
+      "svg": true,
+      "visible": [".scenario-banner .scenario-narration", ".leg-table table", ".intro-terms"],
+      "text": ["Same model, three engines", "Results by engine", "tok/J (system watts)", "which is loudest"]
+    },
+    {
       "hash": "#brands",
       "name": "brands",
       "visible": [".cat-card", ".an-sources a"],
       "text": ["Dell's client brands, mapped", "Reading a model name", "Dell Pro Max", "Alienware"],
       "play": { "click": "button:text-is('Simulator')", "watch": ".an-hero h2", "times": 1 }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [".lab-panel", ".lab-list button"],
+      "text": ["Charge while you play", "An hour of tokens on a worn pack", "Warm lap, no clamp"]
+    },
+    {
+      "hash": "#lab=charge-while-you-play",
+      "name": "lab-charge-while-you-play",
+      "svg": true,
+      "visible": [".lab-goal", ".lab-run", ".lab-list button.active"],
+      "text": ["Run and grade", "No grade yet"],
+      "play": { "click": ".lab-run", "watch": ".lab-results", "times": 1 }
     }
   ]
 }

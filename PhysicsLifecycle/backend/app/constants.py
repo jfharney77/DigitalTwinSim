@@ -42,8 +42,14 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "extended_temp_limit_c": Constant(
         value=55, unit="°C",
-        source="estimate — XR-class extended envelope; verify against Dell XR spec sheets",
-        estimated=True,
+        source=(
+            "Dell press release, 22 Feb 2023 — PowerEdge XR8000 supports "
+            "−5 to 55 °C (select configurations rate higher): "
+            "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/"
+            "detailpage.press-releases~usa~2023~02~2023-02-22-dell-technologies-"
+            "accelerates-adoption-of-open-telecom-network-architectures.htm"
+        ),
+        estimated=False,
         blurb="Ambient ceiling for extended-temperature (XR-class) sites.",
     ),
     "heatwave_site_fraction": Constant(
@@ -63,7 +69,13 @@ CONSTANTS: dict[str, Constant] = {
     # --- Circular Design (ALL estimates; calibrate from Dell PCF PDFs) ----
     "embodied_kg": Constant(
         value=280, unit="kgCO2e",
-        source="estimate — laptop-class embodied carbon, literature range 200–350; calibrate from Dell PCF reports",
+        source=(
+            "estimate — laptop-class embodied carbon. Dell's Latitude PCF "
+            "reports put whole-life footprints at roughly 210–360 kgCO2e "
+            "(Latitude 7290: 209; Latitude 5420: 364), manufacturing the "
+            "largest share; calibrate from "
+            "https://www.dell.com/en-us/lp/dt/product-carbon-footprints"
+        ),
         estimated=True,
         blurb="Embodied carbon of manufacturing one laptop.",
     ),
@@ -88,13 +100,18 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "grid_clean_kg_kwh": Constant(
         value=0.05, unit="kgCO2e/kWh",
-        source="estimate — hydro/nuclear-heavy grid", estimated=True,
+        source="estimate — hydro/nuclear-heavy grid (France/Sweden class)", estimated=True,
         blurb="Grid intensity, clean.",
     ),
     "grid_average_kg_kwh": Constant(
-        value=0.35, unit="kgCO2e/kWh", source="estimate — world-average grid",
+        value=0.35, unit="kgCO2e/kWh",
+        source=(
+            "estimate — a mixed grid, somewhat cleaner than the world "
+            "average of ~0.46 (Ember Global Electricity Review 2026: "
+            "458 gCO2e/kWh in 2025)"
+        ),
         estimated=True,
-        blurb="Grid intensity, average.",
+        blurb="Grid intensity, mixed (a little under the world average).",
     ),
     "grid_coal_kg_kwh": Constant(
         value=0.85, unit="kgCO2e/kWh", source="estimate — coal-heavy grid",

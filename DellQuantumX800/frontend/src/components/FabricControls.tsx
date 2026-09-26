@@ -1,3 +1,5 @@
+import { useLevel } from "../level";
+
 export function FabricControls({
   speed,
   running,
@@ -19,6 +21,7 @@ export function FabricControls({
   onStep: () => void;
   onReset: () => void;
 }) {
+  const level = useLevel();
   return (
     <div className="an-panel">
       <h2>Playback</h2>
@@ -50,10 +53,27 @@ export function FabricControls({
         {phaseLabel}
       </div>
       <div className="mini" style={{ marginTop: 8 }}>
-        The fabric sequence is a fixed trace computed by the backend; Run
-        only plays it back. Step walks one event at a time — the central
-        route computation dwells on screen longest, because at fabric
-        scale it is genuinely the slow part of bring-up.
+        {level <= 2 ? (
+          <>
+            The sequence is worked out in advance by the backend, and Run
+            only plays it back. Step moves one event at a time. The stage
+            that stays on screen longest is the one where the manager
+            works out every route, because on a network this size that is
+            genuinely the slow part of starting up.
+          </>
+        ) : level === 3 ? (
+          <>
+            The fabric sequence is a fixed trace computed by the backend;
+            Run only plays it back. Step walks one event at a time — the
+            central route computation dwells on screen longest, because at
+            fabric scale it is genuinely the slow part of bring-up.
+          </>
+        ) : (
+          <>
+            Fixed backend trace; Run replays it. Central route computation
+            holds the longest dwell.
+          </>
+        )}
       </div>
     </div>
   );

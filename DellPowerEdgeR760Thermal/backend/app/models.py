@@ -144,6 +144,14 @@ class SimState(CamelModel):
     fan_rpm_pct: float
     alive_fans: int
     airflow_cfm: float
+    # Mass flow behind the CFM figure (altitude-derated), and the heat the
+    # air is actually carrying this tick. air_heat_w equals dc_power_w at
+    # steady state and lags it while thermal masses warm up.
+    mass_flow_kgps: float = 0.0
+    air_heat_w: float = 0.0
+    cpu_util_pct: float = 0.0
+    # True while the 60 s turbo window lifts CPU power above rated TDP.
+    cpu_boosting: bool = False
     inlet_effective_c: float
     cpu_temp_c: float
     gpu_temp_c: float
@@ -211,6 +219,10 @@ class ChassisMap(CamelModel):
     height: float
     regions: list[ThermalRegion]
     overview: str
+    # The honesty note — what this model leaves out. Served from here so it
+    # carries reading levels like every other block of prose, instead of
+    # sitting in the frontend at one fixed register.
+    limitations: str = ""
     sources: list[dict[str, str]] = Field(default_factory=list)
 
 

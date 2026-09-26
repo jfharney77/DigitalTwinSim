@@ -17,6 +17,7 @@ from .models import (
     Explain,
     FleetMap,
     GuidedScenario,
+    Intro,
     Scenario,
     SimResponse,
     WorkloadPreset,
@@ -26,10 +27,13 @@ from .presets import (
     CONFIG_PRESETS,
     EXPLAINS,
     GUIDED_SCENARIOS,
+    INTRO,
     VXRAIL_8,
     WORKLOAD_PRESETS,
 )
 from .validation import validate
+from .labs import LABS, LABS_BY_ID, grade_scenario
+from twinkit.labs import Lab, LabResult
 
 app = make_app(
     title="Fleet-Operations Physics Simulator",
@@ -74,6 +78,11 @@ def get_scenarios(level: int = Level) -> list[GuidedScenario]:
     return leveled_all(GUIDED_SCENARIOS, level)
 
 
+@app.get("/api/intro", response_model=Intro)
+def get_intro(level: int = Level) -> Intro:
+    return leveled(INTRO, level)
+
+
 @app.get("/api/explain", response_model=list[Explain])
 def get_explain(level: int = Level) -> list[Explain]:
     return leveled_all(EXPLAINS, level)
@@ -98,3 +107,17 @@ def post_simulate(scenario: Scenario) -> SimResponse:
 def get_simulate() -> SimResponse:
     """Default scenario (VxRail, steady estate) — GET liveness."""
     return _run(Scenario(config=VXRAIL_8, workload=STEADY_WL))
+
+
+# --- Graded labs (docs/LAB_PATTERN.md) --------------------------------------
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(404, f"unknown lab {lab_id}")
+    return leveled(grade_scenario(lab_id, scenario), level)

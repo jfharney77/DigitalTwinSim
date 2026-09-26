@@ -5,6 +5,7 @@ import {
   fetchAnatomy,
   fetchConfigPresets,
   fetchExplain,
+  fetchIntro,
   fetchScenarios,
   fetchWorkloadPresets,
   simulate,
@@ -13,16 +14,20 @@ import { BuildPanel } from "./components/BuildPanel";
 import { ProductGallery } from "./components/ProductGallery";
 import { Instruments } from "./components/Instruments";
 import { ComparePanel } from "./components/ComparePanel";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { RedfishPanel } from "./components/RedfishPanel";
 import { StripCharts } from "./components/StripCharts";
 import { Timeline, bandsWhere } from "./components/Timeline";
 import { SystemView } from "./components/SystemView";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
   Explain,
   GuidedScenario,
+  Intro,
   Environment,
   Scenario,
   SimEvent,
@@ -43,6 +48,22 @@ const DEFAULT_WORKLOAD: Workload = { gpuPct: 100, cpuPct: 50, dataFeedPct: 100 }
 const DEFAULT_ENV: Environment = { inletC: 22 };
 
 const SPEEDS = [1, 10, 60];
+
+// How many GPUs a build carries — the A/B panel names it, because two
+// builds' absolute watts mean nothing until the reader knows the counts.
+// XE7745: one per populated riser slot; XE9680: the HGX board's eight;
+// XE9712: four per tray (models.py).
+function gpuCount(c: SystemConfig): number {
+  if (c.product === "xe7745") return c.pcieGpus;
+  if (c.product === "xe9680") return 8;
+  return c.trays * 4;
+}
+
+// Levels 1-2 read the plain string, 3-5 the standard one — the frontend's
+// half of the backend's L(...), for labels the API does not carry.
+function lv(level: number, plain: string, standard: string): string {
+  return level <= 2 ? plain : standard;
+}
 
 type Page = "sim" | "idrac";
 
@@ -83,6 +104,7 @@ return () => window.removeEventListener("hashchange", onHash);
   const [scenarios, setScenarios] = useState<GuidedScenario[]>([]);
   const [explains, setExplains] = useState<Explain[]>([]);
   const [explainOn, setExplainOn] = useState(false);
+  const [intro, setIntro] = useState<Intro | null>(null);
   // Held by id so a reading-level refetch swaps in the re-levelled narration.
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
@@ -99,11 +121,24 @@ return () => window.removeEventListener("hashchange", onHash);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+    fetchIntro().then(setIntro).catch((e) => setError(String(e)));
+  }, [level]);
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -162,6 +197,22 @@ return () => window.removeEventListener("hashchange", onHash);
 
   const trace = result?.trace ?? [];
   const state = trace[cursor] ?? null;
+  const ghostState = ghost
+    ? ghost.trace[Math.min(cursor, ghost.trace.length - 1)] ?? null
+    : null;
+
+  // Timed events move the workload without moving the sliders, so show the
+  // live data feed beside the slider's starting value.
+  const feedNow = useMemo(() => {
+    let feed = workload.dataFeedPct;
+    const t = state?.t ?? 0;
+    for (const e of [...events].sort((x, y) => x.atS - y.atS)) {
+      if (e.atS > t) break;
+      if (e.action === "set-data-feed" && e.value != null) feed = Math.trunc(e.value);
+      if (e.action === "set-workload" && e.workload) feed = e.workload.dataFeedPct;
+    }
+    return feed;
+  }, [events, workload.dataFeedPct, state?.t]);
 
   useEffect(() => {
     if (!running || trace.length === 0) return;
@@ -183,6 +234,8 @@ return () => window.removeEventListener("hashchange", onHash);
     setEnvironment(g.scenario.environment);
     setEvents(g.scenario.events);
     setDurationS(g.scenario.durationS);
+    // A scenario whose question is read off the A/B panel opens it.
+    if (g.comparePresetId) setComparePresetId(g.comparePresetId);
     setCursor(0);
     setRunning(true);
   }, []);
@@ -206,6 +259,49 @@ return () => window.removeEventListener("hashchange", onHash);
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
+
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEnvironment(lab.start.environment);
+    setEvents(lab.start.events);
+    setDurationS(lab.start.durationS);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
 
   const coldStart = () => {
     setEvents([]);
@@ -253,6 +349,17 @@ return () => window.removeEventListener("hashchange", onHash);
               Explain mode
             </button>
           )}
+          {page === "sim" && (
+            <button
+              className={labsOpen ? "active nav-labs" : "nav-labs"}
+              onClick={() => {
+                setLabsOpen(!labsOpen);
+                writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+              }}
+            >
+              Labs
+            </button>
+          )}
         </nav>
         <span className="sub">
           {state
@@ -263,18 +370,25 @@ return () => window.removeEventListener("hashchange", onHash);
       </header>
 
       <div className="an-hero">
-        <h2>From one hot slot to a hundred-kilowatt rack</h2>
-        <p>
-          Three machines on one engine: the XE7745, where eight identical
-          GPUs live in unequal seats; the XE9680, whose eight SXM GPUs
-          share one thermal fate and starve together when the data
-          pipeline lags; and the XE9712 rack in its IR7000, where the heat
-          leaves in water and the arithmetic — liquid + air = DC, ΔT =
-          Q/(ṁ·cp) — is enforced to the watt. The iDRAC tab closes the
-          loop: the sim's state, served as the Redfish JSON a twin would
-          read from hardware.
-        </p>
+        <h2>{intro?.title ?? "From one hot slot to a hundred-kilowatt rack"}</h2>
+        <p className="intro-text">{intro?.text ?? ""}</p>
       </div>
+
+      {page === "sim" && labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       {page === "idrac" ? (
         <div className="thermal-grid">
@@ -399,9 +513,15 @@ return () => window.removeEventListener("hashchange", onHash);
               </div>
             </div>
             <div className="mini footnote">
-              A proxy model, not a benchmark; sled counts, riser rules, and
-              tray figures are estimates pending Dell spec sheets (sources
-              in the constants table). Companions: DellPowerEdgeXE9680
+              A proxy model, not a benchmark.{" "}
+              {lv(
+                level,
+                "Some of the numbers about how the machine is physically put together — how many boards, cards and drawers it holds — are estimates, pending Dell spec sheets (sources in the constants table). Fan and pump wattages are estimates too.",
+                "Sled counts, riser rules, and tray figures are estimates pending Dell spec sheets (sources in the constants table). Fan and pump wattages are estimates.",
+              )}{" "}
+              The XE9680 settles near 7.6 kW with 700 W GPUs and 11 kW with
+              1,000 W GPUs here; the XE9680 twin's 9 to 11 kW figures are
+              illustrative and sit in the same range. Companions: DellPowerEdgeXE9680
               (:5201), DellPowerEdgeXE9712 (:5181), DellIR7000 (:5182),
               DellIDRAC (:5177).
             </div>
@@ -426,6 +546,9 @@ return () => window.removeEventListener("hashchange", onHash);
               ).map(([label, key]) => (
                 <label key={key} className="field">
                   {label} {workload[key]}%
+                  {key === "dataFeedPct" && feedNow !== workload.dataFeedPct && (
+                    <span className="feed-now"> · now {feedNow}% (timed event)</span>
+                  )}
                   <input
                     type="range" min={0} max={100} value={workload[key]}
                     onChange={(e) =>
@@ -471,10 +594,14 @@ return () => window.removeEventListener("hashchange", onHash);
                 </button>
               </div>
             </div>
-            {ghost && result && (
+            {ghost && result && (() => {
+              const bPreset = configPresets.find((p) => p.id === comparePresetId);
+              const aGpus = gpuCount(config);
+              const bGpus = bPreset ? gpuCount(bPreset.config) : 0;
+              return (
               <ComparePanel
-                aName="current build"
-                bName={configPresets.find((p) => p.id === comparePresetId)?.name ?? "B"}
+                aName={`current build — ${aGpus} GPUs`}
+                bName={`${bPreset?.name ?? "B"}${bGpus ? ` — ${bGpus} GPUs` : ""}`}
                 headline="training throughput"
                 unit="tok/s"
                 a={trace.map((s) => s.tokensPerS)}
@@ -482,10 +609,38 @@ return () => window.removeEventListener("hashchange", onHash);
                 deltas={[
                   { label: "peak tok/s", a: result.summary.peakTokensPerS, b: ghost.summary.peakTokensPerS, unit: "" },
                   { label: "GPU-hours wasted", a: result.summary.gpuHoursWasted, b: ghost.summary.gpuHoursWasted, unit: "h" },
-                  { label: "peak DC", a: result.summary.peakDcW, b: ghost.summary.peakDcW, unit: "W" },
+                  {
+                    label: lv(level, "peak power drawn by the parts", "peak DC"),
+                    a: result.summary.peakDcW, b: ghost.summary.peakDcW, unit: "W",
+                  },
+                  ...(state && ghostState
+                    ? [
+                        {
+                          label: "cooling overhead now",
+                          a: state.coolingOverheadPct, b: ghostState.coolingOverheadPct,
+                          unit: lv(level, "% of the computing power", "% of IT"),
+                        },
+                        {
+                          label: "fans + pumps now (whole machine)",
+                          a: state.fanPowerW + state.pumpPowerW,
+                          b: ghostState.fanPowerW + ghostState.pumpPowerW,
+                          unit: "W",
+                        },
+                      ]
+                    : []),
                 ]}
+                note={
+                  lv(
+                    level,
+                    "Reading these rows: % of the computing power means fans and pumps measured against the electricity that does computing; the power rows count what the machine's parts actually draw, before the wall meter adds conversion loss.",
+                    "Reading these rows: % of IT is fans and pumps over the power that does computing; DC is what the parts draw, before conversion loss at the wall.",
+                  ) +
+                  ` The watt rows are whole-machine totals, so compare them against the GPU counts in the key above (${aGpus} vs ${bGpus || "?"}): the row that normalises is the overhead percentage. ` +
+                  "Tokens/s scales with GPU count only — this model does not credit the larger NVLink domain with faster collectives or a bigger shared memory pool, so a 9× here is 9× the silicon, not a scale-up result."
+                }
               />
-            )}
+              );
+            })()}
             <Instruments
               state={state}
               explains={explains}

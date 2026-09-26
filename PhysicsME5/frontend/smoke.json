@@ -4,49 +4,148 @@
       "hash": "",
       "name": "root",
       "svg": true,
-      "visible": [".scenario-list button", ".cfg-presets button", ".playback-row input[type=range]"],
-      "text": ["Instruments", "k asked", "TB usable", "Configuration rules", "RAID write penalty"],
-      "play": { "click": ".playback-row button.primary", "watch": ".playback-row button.primary", "times": 1 }
+      "visible": [
+        ".scenario-list button",
+        ".cfg-presets button",
+        ".playback-row input[type=range]"
+      ],
+      "text": [
+        "Instruments",
+        "k asked",
+        "TB usable",
+        "Configuration rules",
+        "RAID write penalty"
+      ],
+      "play": {
+        "click": ".playback-row button.primary",
+        "watch": ".playback-row button.primary",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=write-penalty",
       "name": "scenario-write-penalty",
       "svg": true,
-      "visible": [".scenario-narration", ".scenario-list button.active"],
-      "text": ["each host write becomes 2 disk I/Os", "Write penalty at this level: ×2", "k asked"],
-      "play": { "click": ".scenario-list button:not(.active) >> nth=0", "watch": ".scenario-narration", "times": 1 }
+      "visible": [
+        ".scenario-narration",
+        ".scenario-list button.active"
+      ],
+      "text": [
+        "each host write becomes 2 disk I/Os",
+        "Write penalty at this level: ×2",
+        "k asked"
+      ],
+      "play": {
+        "click": ".scenario-list button:not(.active) >> nth=0",
+        "watch": ".scenario-narration",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=rebuild-20tb",
       "name": "scenario-rebuild-20tb",
       "svg": true,
-      "visible": [".scenario-narration", ".scenario-list button.active"],
-      "text": ["One 20 TB NL-SAS member fails", "Write penalty at this level: ×6", "k asked"],
-      "play": { "click": ".playback-row button:text-is('×60')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-narration",
+        ".scenario-list button.active"
+      ],
+      "text": [
+        "One 20 TB NL-SAS member fails",
+        "Write penalty at this level: ×6",
+        "k asked"
+      ],
+      "play": {
+        "click": ".playback-row button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=second-failure",
       "name": "scenario-second-failure",
       "svg": true,
-      "visible": [".scenario-narration", ".scenario-list button.active"],
-      "text": ["A member fails at t+60 and a second at t+1500", "k asked"],
-      "play": { "click": ".playback-row button:text-is('×60')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-narration",
+        ".scenario-list button.active"
+      ],
+      "text": [
+        "A member fails at t+1 h and a second at t+25 h",
+        "k asked"
+      ],
+      "play": {
+        "click": ".playback-row button:text-is('×60')",
+        "watch": "header .sub",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=controller-failover",
       "name": "scenario-controller-failover",
       "svg": true,
-      "visible": [".scenario-narration", ".scenario-list button.active"],
-      "text": ["A controller drops at t+120", "k asked"],
-      "play": { "click": ".playback-row button:text-is('Reset')", "watch": "header .sub", "times": 1 }
+      "visible": [
+        ".scenario-narration",
+        ".scenario-list button.active"
+      ],
+      "text": [
+        "A controller drops at t+120",
+        "k asked"
+      ],
+      "play": {
+        "click": ".playback-row button:text-is('Reset')",
+        "watch": "header .sub",
+        "times": 1
+      }
     },
     {
       "hash": "#scenario=flash-ceiling",
       "name": "scenario-flash-ceiling",
       "svg": true,
-      "visible": [".scenario-narration", ".scenario-list button.active"],
-      "text": ["24 SSDs under an all-read burst", "k asked"],
-      "play": { "click": "button:text-is('Explain mode')", "watch": ".an-panel:has(> h2:text-is('Instruments'))", "times": 1 }
+      "visible": [
+        ".scenario-narration",
+        ".scenario-list button.active"
+      ],
+      "text": [
+        "24 SSDs under an all-read burst",
+        "k asked"
+      ],
+      "play": {
+        "click": "button:text-is('Explain mode')",
+        "watch": ".an-panel:has(> h2:text-is('Instruments'))",
+        "times": 1
+      }
+    },
+    {
+      "hash": "#labs",
+      "name": "labs",
+      "svg": true,
+      "visible": [
+        ".lab-panel",
+        ".lab-list button"
+      ],
+      "text": [
+        "Pay the write tax",
+        "Close the rebuild window",
+        "Size for the worst day"
+      ]
+    },
+    {
+      "hash": "#lab=pay-the-write-tax",
+      "name": "lab-pay-the-write-tax",
+      "svg": true,
+      "visible": [
+        ".lab-goal",
+        ".lab-run",
+        ".lab-list button.active"
+      ],
+      "text": [
+        "Run and grade",
+        "No grade yet"
+      ],
+      "play": {
+        "click": ".lab-run",
+        "watch": ".lab-results",
+        "times": 1
+      }
     }
   ]
 }

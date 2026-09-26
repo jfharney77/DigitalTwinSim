@@ -65,6 +65,8 @@ export interface SimState {
   todaysNovelPhysicalTb: number;
   gcReclaimedTb: number;
   capacityUsedPct: number;
+  capacityTrendTb: number;
+  capacityNoticed: boolean;
   streamEntropyPct: number;
   entropyAlarm: boolean;
   hostEncrypted: boolean;
@@ -92,6 +94,7 @@ export interface Summary {
   peakStreamEntropyPct: number;
   alarmDay: number;
   capacityFullDay: number;
+  capacityNoticeDay: number;
   finalCapacityUsedPct: number;
 }
 

@@ -9,11 +9,11 @@ export type Dust = "clean" | "moderate" | "heavy";
 export type Vibration = "none" | "roadside" | "vehicle";
 
 export const PLATFORM_TDP_TIERS: Record<Platform, number[]> = {
-  xr8000: [125, 185, 225, 250],
+  xr8000: [125, 150, 185, 205],
   xr4000: [65, 80, 100, 122],
 };
 export const PSU_CAPACITIES = [800, 1100, 1400];
-export const DIMM_COUNTS = [4, 8, 16];
+export const DIMM_COUNTS = [2, 4, 8];
 
 export interface ServerConfig {
   platform: Platform;
@@ -69,6 +69,9 @@ export interface Scenario {
   environment: Environment;
   durationS: number;
   events: SimEvent[];
+  // true = the run opens on a sled already settled at this load and ambient;
+  // false = cold start (parts at ambient, fans at the floor).
+  warmStart?: boolean;
 }
 
 export type RuleLevel = "ok" | "warning" | "error";
@@ -110,6 +113,7 @@ export interface SimState {
   cpuThrottling: boolean;
   accelThrottling: boolean;
   perfLostPct: number;
+  accelPerfLostPct: number;
   storagePerfLostPct: number;
   regionTemps: Record<string, number>;
 }

@@ -286,3 +286,61 @@ def test_the_spiky_demand_scenario_serves_its_own_spike():
     assert all(s.vms_running == s.vms_demand for s in trace)
     assert not any("capacity outage" in e.message.lower() for e in log)
     assert g.scenario.workload == APEX_WL
+
+
+def test_the_exposure_window_is_on_the_record():
+    """The 3-node scenario asks how long exposure stood and what closed it;
+    the log and the exposure-days counter must carry the answer."""
+    base = Scenario(config=VXRAIL_3NODE, workload=EDGE_WL, duration_d=60,
+                    events=[SimEvent(at_d=20, action="node-fault")])
+    trace, log, summary = run(base)
+    assert summary.exposure_days == sum(1 for s in trace if s.exposure) == 3
+    days = [s.exposure_days_cum for s in trace]
+    assert days == sorted(days)
+    msgs = [(e.t_d, e.message) for e in log]
+    assert any(d == 20 and "Exposure opened" in m and "no spare node" in m
+               for d, m in msgs)
+    assert any(d == 23 and "Node repaired" in m and "after 3 days" in m
+               for d, m in msgs)
+    four = base.model_copy(update={
+        "config": VXRAIL_3NODE.model_copy(update={"nodes_per_site": 4})})
+    _, log4, summary4 = run(four)
+    assert summary4.exposure_days == 1
+    assert any(e.t_d == 21 and "rebuilt" in e.message and "after 1 day" in e.message
+               for e in log4)
+
+
+def test_catalog_and_stacks_both_move_the_ledger():
+    """Catalog-vs-artisanal: each switch the scenario is named after has
+    to change the admin-hours ledger, by the constants' arithmetic."""
+    from app.constants import value as C
+
+    def total(cfg):
+        _, _, s = run(Scenario(config=cfg, workload=DENSE_WL, duration_d=120))
+        return s
+
+    two = total(PRIVATE_2STACK)
+    one = total(PRIVATE_2STACK.model_copy(update={"stacks": 1}))
+    hand = total(PRIVATE_2STACK.model_copy(update={"catalog": False}))
+    assert two.workloads_deployed == one.workloads_deployed == hand.workloads_deployed > 0
+    # Deploys: same count, priced at the two table rates, all of it worked.
+    assert two.deploy_hours == two.workloads_deployed * C("catalog_deploy_h")
+    assert hand.deploy_hours == hand.workloads_deployed * C("artisanal_deploy_h")
+    assert abs((hand.admin_hours_total - two.admin_hours_total)
+               - (hand.deploy_hours - two.deploy_hours)) < 0.5
+    # The second stack costs something, but under one control plane far
+    # less than a second fleet would.
+    assert one.admin_hours_total < two.admin_hours_total < 1.5 * one.admin_hours_total
+    # Manual ops: the same second stack doubles the patch wave.
+    man2 = PRIVATE_2STACK.model_copy(update={"ops_mode": "manual"})
+    _, log2, _ = run(Scenario(config=man2, workload=DENSE_WL, duration_d=40))
+    _, log1, _ = run(Scenario(config=man2.model_copy(update={"stacks": 1}),
+                              workload=DENSE_WL, duration_d=40))
+    assert any("48 h" in e.message for e in log2)
+    assert any("24 h" in e.message for e in log1)
+
+
+def test_deploys_are_charged_to_private_cloud_only():
+    for cfg in (VXRAIL_8, EDGE_HA, STUDIO):
+        _, _, s = run(Scenario(config=cfg, workload=DENSE_WL, duration_d=90))
+        assert s.workloads_deployed == 0 and s.deploy_hours == 0

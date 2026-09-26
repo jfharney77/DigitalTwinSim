@@ -1,3 +1,4 @@
+import { apiFetch } from "@twinsim/twin-ui";
 import { getLevel } from "./level";
 import type {
   ConstantsResponse,
@@ -19,43 +20,43 @@ function url(path: string): string {
 }
 
 export async function fetchAnatomy(): Promise<FactoryMap> {
-  const r = await fetch(url("/anatomy"));
+  const r = await apiFetch(url("/anatomy"));
   if (!r.ok) throw new Error(`anatomy ${r.status}`);
   return r.json();
 }
 
 export async function fetchConstants(): Promise<ConstantsResponse> {
-  const r = await fetch(`${BASE}/constants`);
+  const r = await apiFetch(`${BASE}/constants`);
   if (!r.ok) throw new Error(`constants ${r.status}`);
   return r.json();
 }
 
 export async function fetchFactoryPresets(): Promise<FactoryPreset[]> {
-  const r = await fetch(`${BASE}/presets/configs`);
+  const r = await apiFetch(`${BASE}/presets/configs`);
   if (!r.ok) throw new Error(`presets ${r.status}`);
   return r.json();
 }
 
 export async function fetchJobPresets(): Promise<JobPreset[]> {
-  const r = await fetch(`${BASE}/presets/jobs`);
+  const r = await apiFetch(`${BASE}/presets/jobs`);
   if (!r.ok) throw new Error(`presets ${r.status}`);
   return r.json();
 }
 
 export async function fetchScenarios(): Promise<GuidedScenario[]> {
-  const r = await fetch(url("/scenarios"));
+  const r = await apiFetch(url("/scenarios"));
   if (!r.ok) throw new Error(`scenarios ${r.status}`);
   return r.json();
 }
 
 export async function fetchExplain(): Promise<Explain[]> {
-  const r = await fetch(url("/explain"));
+  const r = await apiFetch(url("/explain"));
   if (!r.ok) throw new Error(`explain ${r.status}`);
   return r.json();
 }
 
 export async function simulate(scenario: Scenario): Promise<SimResponse> {
-  const r = await fetch(`${BASE}/simulate`, {
+  const r = await apiFetch(`${BASE}/simulate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(scenario),

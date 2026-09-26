@@ -30,6 +30,28 @@
       ]
     },
     {
+      "hash": "#scenario=attestation-fails&phase=quarantine",
+      "name": "scenario-attestation-fails",
+      "svg": true,
+      "visible": [
+        ".poweron-desc",
+        ".region-failed",
+        ".scenario-select",
+        ".stat-failed"
+      ],
+      "text": [
+        "One device fails the check and is quarantined",
+        "QUARANTINED",
+        "1 / 4",
+        "recovery actions"
+      ],
+      "play": {
+        "click": "button:text-is('Step')",
+        "watch": ".poweron-desc",
+        "times": 2
+      }
+    },
+    {
       "hash": "#architecture",
       "name": "architecture",
       "svg": true,
@@ -92,7 +114,7 @@
         ".tour-step-current"
       ],
       "text": [
-        "Power and a network cable — the only human action",
+        "Power and a network cable — the only on-site action",
         "operator-actions counter ticks from zero to one"
       ],
       "play": {

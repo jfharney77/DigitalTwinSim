@@ -177,4 +177,4 @@ the apps are independent and on different ports.
 - <https://www.dell.com/en-us/blog/circular-economy-in-action-leading-the-fight-against-e-waste/>
 - <https://www.dell.com/en-us/blog/from-vision-to-reality-circular-design-ai-pcs/>
 - <https://www.dell.com/en-us/lp/dt/sustainable-devices>
-- <https://www.dell.com/en-in/blog/repair-reuse-recycle-the-circular-economy-in-action/>
+- <https://www.dell.com/en-us/blog/circular-design-gives-e-waste-a-second-life/> (replaces the retired en-in "repair, reuse, recycle" post, 404 as of 2026-09)

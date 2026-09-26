@@ -167,7 +167,7 @@ def test_acceptance_encrypted_source_breaks_the_curve():
     # Ratio collapses from healthy to near-nothing.
     assert by_day[29].dedupe_ratio > 15
     assert trace[-1].dedupe_ratio < 3
-    # Capacity planning explodes: the 1.5 PB flagship fills within weeks.
+    # Capacity planning explodes: the 2.1 PB flagship fills within weeks.
     assert summary.capacity_full_day != -1
     assert any("host-side encryption" in e.message for e in log)
     # The backup window explodes too — the SLA symptom.
@@ -210,6 +210,27 @@ def test_acceptance_entropy_alarm_fires_before_capacity_notices():
         f"alarm {summary.alarm_day} must precede capacity notice {capacity_notice}"
     )
     assert any("Entropy alarm" in e.message for e in log)
+
+    # The engine's own capacity watch (looser margin than the 10% above, from
+    # the constants table) puts the same comparison on screen: a summary
+    # field, a log line, and a per-day trend the chart draws.
+    notice = summary.capacity_notice_day
+    assert notice != -1
+    assert notice >= capacity_notice, "a looser margin cannot notice sooner"
+    assert notice - summary.alarm_day >= 14, (
+        f"'weeks later' must be a shown number, got {notice - summary.alarm_day} days"
+    )
+    assert any(e.day == notice and "Capacity notice" in e.message for e in log)
+    assert all(st.capacity_trend_tb == 0 for st in trace if st.day < 40)
+    assert all(st.capacity_trend_tb > 0 for st in trace if st.day >= 40)
+    assert [st.capacity_noticed for st in trace] == [st.day >= notice for st in trace]
+    margin = C("capacity_notice_margin_pct") / 100.0
+    assert by_day[notice].physical_tb > (1 + margin) * by_day[notice].capacity_trend_tb
+    assert by_day[notice - 1].physical_tb <= (1 + margin) * by_day[notice - 1].capacity_trend_tb
+
+    # After the halt the model stops churning the encrypted share, and says so.
+    assert by_day[71].todays_novel_physical_tb < 0.2 * by_day[39].todays_novel_physical_tb
+    assert any(e.day == 70 and "no longer edited" in e.message for e in log)
     # Entropy of *changed* data spikes even while the dataset average is low.
     assert by_day[41].stream_entropy_pct > 60
     assert by_day[39].stream_entropy_pct < 40
@@ -271,3 +292,16 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+def test_an_undisturbed_estate_never_logs_a_capacity_notice():
+    s = Scenario(
+        appliance="dd9910",
+        dataset=Dataset(full_tb=100, daily_change_pct=2.0, entropy_pct=30),
+        schedule=Schedule(retention_days=30),
+        duration_days=60,
+    )
+    trace, log, summary = run(s)
+    assert summary.capacity_notice_day == -1
+    assert not any("Capacity notice" in e.message for e in log)
+    assert all(st.capacity_trend_tb == 0 and not st.capacity_noticed for st in trace)

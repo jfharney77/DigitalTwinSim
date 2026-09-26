@@ -39,7 +39,8 @@ RACK_ILLO = Photo(
 
 _GPU_DESC = (
     "The tray's four NVIDIA Blackwell GPUs — two per GB200 superchip, "
-    "mounted under cold plates with no fans and no heatsink fins. Each GPU "
+    "mounted under cold plates instead of finned heatsinks (the tray keeps "
+    "only a few small fans for the parts that have no cold plate). Each GPU "
     "carries HBM3e stacked memory and can draw on the order of a kilowatt, "
     "which is why it is liquid-cooled and why the whole rack's power story "
     "is really the GPU story. Until the NVLink fabric fuses, these four can "
@@ -93,7 +94,7 @@ ANATOMY = RackAnatomy(
     vendor="Dell Technologies + NVIDIA",
     form_factor="Integrated liquid-cooled rack — 18 compute + 9 NVLink switch trays",
     generation="Dell AI Factory with NVIDIA (Grace Blackwell)",
-    year=2025,
+    year=2024,
     width=100,
     height=86,
     overview=L(
@@ -127,7 +128,7 @@ ANATOMY = RackAnatomy(
             "liquid-cooled rack: 18 compute trays carrying 36 NVIDIA Grace CPUs "
             "and 72 Blackwell GPUs, joined through 9 NVLink switch trays and a "
             "rear copper cable cartridge into a single NVLink domain — software "
-            "sees something close to one enormous GPU with 13.5 TB of pooled "
+            "sees something close to one enormous GPU with 13.4 TB of pooled "
             "HBM3e, which is what makes real-time trillion-parameter inference "
             "and large-model training practical. Trays draw DC from a shared "
             "busbar fed by power shelves, and nearly all of the rack's roughly "
@@ -159,7 +160,9 @@ ANATOMY = RackAnatomy(
             x=2, y=1, w=70, h=6,
             description=(
                 "One of the rack's power shelves: banks of hot-swappable "
-                "rectifiers that convert facility AC into direct current and "
+                "rectifiers that convert facility AC into direct current "
+                "(Dell's spec sheet lists 33 kW shelves holding six 5,500 W "
+                "supplies each, delivering up to 54 V DC) and "
                 "feed the busbar — the copper spine running down the back of "
                 "the rack that every tray clips onto. Centralizing "
                 "rectification in shelves instead of giving each tray its "
@@ -255,8 +258,8 @@ ANATOMY = RackAnatomy(
         Stat(label="CPUs per rack", value="36 NVIDIA Grace (72-core Arm)"),
         Stat(label="Compute trays", value="18 (2× GB200 superchip each)"),
         Stat(label="NVLink switch trays", value="9 — 1.8 TB/s per GPU, ~130 TB/s total"),
-        Stat(label="Pooled GPU memory", value="13.5 TB HBM3e across the domain"),
-        Stat(label="Power", value="~120 kW per rack via shelves + DC busbar"),
+        Stat(label="Pooled GPU memory", value="Up to 13.4 TB HBM3e across the domain (NVIDIA)"),
+        Stat(label="Power", value="~120 kW per rack (reported, illustrative) via 33 kW shelves + DC busbar"),
         Stat(label="Cooling", value="Direct liquid — in-rack CDU + manifolds"),
         Stat(label="Scale-out", value="InfiniBand or Spectrum-X Ethernet, rack to rack"),
     ],
@@ -267,12 +270,28 @@ ANATOMY = RackAnatomy(
             url="https://www.dell.com/en-us/shop/ipovw/poweredge-xe9712",
         ),
         SourceLink(
-            label="Dell announcement — AI Factory racks, IR7000 and PowerCool (OCP 2024)",
+            label="Dell PowerEdge XE9712 specification sheet (April 2026) — sled, IR9048 rack, 33 kW power shelves, BMC",
+            url="https://www.delltechnologies.com/asset/en-us/products/servers/technical-support/poweredge-xe9712-spec-sheet.pdf",
+        ),
+        SourceLink(
+            label="Dell announcement — XE9712 with GB200 NVL72 and the IR7000 rack (OCP Summit, October 2024)",
             url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2024~10~dell-servers-storage-at-ocp.htm",
         ),
         SourceLink(
             label="NVIDIA GB200 NVL72 product page",
             url="https://www.nvidia.com/en-us/data-center/gb200-nvl72/",
+        ),
+        SourceLink(
+            label="NVIDIA GB300 NVL72 product page (Blackwell Ultra, 20 TB HBM3e)",
+            url="https://www.nvidia.com/en-us/data-center/gb300-nvl72/",
+        ),
+        SourceLink(
+            label="Dell PowerCool — rack-mount CDU (up to 160 kW) and enclosed rear-door heat exchanger",
+            url="https://www.dell.com/en-us/shop/data-center-servers/sf/poweredge-power-cooling-servers",
+        ),
+        SourceLink(
+            label="Dell and CoreWeave — CoreWeave named first to receive XE9712 GB200 NVL72 racks (December 2024)",
+            url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2024~12~dell-cw-customer-announce.htm",
         ),
         SourceLink(
             label="Dell Integrated Rack Scalable Systems (IRSS)",

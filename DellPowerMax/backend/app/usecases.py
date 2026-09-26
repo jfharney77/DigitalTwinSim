@@ -27,7 +27,7 @@ USE_CASES: list[UseCase] = [
                 "storage platforms. The mainframe needs FICON connectivity and "
                 "the lowest possible read latency for its hottest data; the "
                 "open systems need Fibre Channel and NVMe at scale. The goal is "
-                "one array that does both, with six-nines availability, so a "
+                "one array that does both, designed for six-nines availability, so a "
                 "single storage team and one replication strategy cover the "
                 "whole floor."
             ),
@@ -324,7 +324,7 @@ USE_CASES: list[UseCase] = [
         id="cyber-resiliency-vault",
         title="Cyber resiliency: capacity tier with an isolated vault",
         summary=(
-            "A capacity-oriented PowerMax 8500 with QLC drives, secure "
+            "A capacity-oriented PowerMax 8500 with dense 30.72 TB drives, secure "
             "immutable snapshots, and an isolated Cyber Recovery vault — a "
             "known-good restore point kept off the production network."
         ),
@@ -348,7 +348,7 @@ USE_CASES: list[UseCase] = [
                 "of mass encryption. On the 8500 this extends to Cyber Recovery "
                 "for PowerMax — an isolated vault, delivered through Dell "
                 "Professional Services, holding a copy of critical data on an "
-                "air-gapped network segment. Dense QLC drives make the capacity "
+                "air-gapped network segment. Dense 30.72 TB drives make the capacity "
                 "tier economical, and inline data reduction stretches it "
                 "further."
             ),
@@ -396,8 +396,9 @@ USE_CASES: list[UseCase] = [
                 option_id="drive-30_72tb-qlc",
                 qty=48,
                 rationale=(
-                    "Dense QLC drives make petabyte-scale capacity economical; "
-                    "the workload is capacity-oriented, not IOPS-bound."
+                    "Dense 30.72 TB drives make petabyte-scale capacity "
+                    "economical; on the 8500 they are TLC, since Dell lists "
+                    "QLC for the 2500 only."
                 ),
             ),
             UseCaseItem(
@@ -467,7 +468,7 @@ USE_CASES: list[UseCase] = [
         outcomes=[
             Stat(label="Restore point", value="Immutable · retention-locked"),
             Stat(label="Vault", value="Isolated / air-gapped (Cyber Recovery)"),
-            Stat(label="Capacity economics", value="Dense QLC + inline reduction"),
+            Stat(label="Capacity economics", value="30.72 TB drives + inline reduction"),
             Stat(label="Failure tolerance", value="2 drives (RAID 6)"),
         ],
     ),

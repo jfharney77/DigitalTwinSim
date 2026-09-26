@@ -56,7 +56,9 @@ criteria as pytest, plus the house-style conservation identities):
   efficiency point, in 1+0 it is lights-out; sustained overcurrent trips.
 - **Constants honesty** — every constant carries a source; the
   estimate-flag and the source text must agree.
-- **Validation rules** (spec §6) — heatsink and Gold-fan requirements
+- **Validation rules** (spec §6) — heatsink (Dell rates the standard
+  heatsink to 165 W; above that the high-performance one is required) and
+  Gold-fan requirements (Dell allows GPU builds only on HPR Gold fans)
   error, ambient/altitude/PSU-oversubscription warn; presets must pass
   their own hard rules.
 - **Engine ↔ anatomy contract** — the engine's `regionTemps` keys equal

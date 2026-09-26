@@ -79,21 +79,24 @@ CONSTANTS: dict[str, Constant] = {
     # --- Battery aging ------------------------------------------------------
     "vrla_fade_per_year": Constant(
         value=0.06, unit="capacity fraction / equivalent year",
-        source="estimate — VRLA service life 3–5 years to 80% capacity at "
-               "25 °C (industry rule of thumb)", estimated=True,
+        source="estimate — APC states most of its VRLA UPS batteries last "
+               "3–5 years (se.com FAQ FA158934); 80% of nameplate is the "
+               "IEEE 1188 replacement line; the linear 6%/yr is ours", estimated=True,
         blurb="Capacity a VRLA battery loses per year at 25 °C.",
     ),
     "lithium_fade_per_year": Constant(
         value=0.02, unit="capacity fraction / equivalent year",
-        source="estimate — Li-ion rack batteries are typically warranted "
-               "8–10 years", estimated=True,
+        source="estimate — APC quotes an 8–10 year expected life for its "
+               "Smart-UPS Li-ion batteries (vendor claim, apc.com FAQ "
+               "FA343797; the warranty itself is 5 years)", estimated=True,
         blurb="Capacity a lithium battery loses per year at 25 °C.",
     ),
     "vrla_temp_doubling_c": Constant(
         value=10, unit="°C per doubling of aging rate",
         source="VRLA aging roughly doubles per +10 °C above 25 °C — "
-               "IEEE 535 / battery-vendor rule of thumb (labeled estimate: "
-               "applied here as an exact doubling)", estimated=True,
+               "battery-vendor rule of thumb; vendors quote 8–10 °C per "
+               "halving of life (APC FAQ FA158934 says 8 °C). Labeled "
+               "estimate: applied here as an exact doubling per 10 °C", estimated=True,
         blurb="Every +10 °C of room temperature ages a VRLA battery "
               "twice as fast.",
     ),

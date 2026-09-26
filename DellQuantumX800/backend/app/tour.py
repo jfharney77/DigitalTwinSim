@@ -258,11 +258,12 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
         ),
         TourStep(
             id="the-all-reduce",
-            title="Gradients cross the fabric",
+            title="The all-reduce fills the fabric",
             script=L(
                 novice=(
                     "Training starts. Each GPU has worked out its share of the "
-                    "answer, and every GPU needs everyone's shares added "
+                    "answer (its gradients, the corrections it wants to make "
+                    "to the model), and every GPU needs everyone's shares added "
                     "together. That exchange is called an all-reduce. Data "
                     "flows up through the leaves and spines and back down to "
                     "every rack. No GPU can start its next step until the "
@@ -306,9 +307,11 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
                     "spines add those totals and send one answer back down. "
                     "Watch two numbers move in opposite directions: the traffic "
                     "on the network falls, from about 36 to 22 terabits per "
-                    "second in this illustration, while the speed the training "
-                    "job actually sees rises, from 1,600 to 2,900 gigabits per "
-                    "second."
+                    "second in this illustration, while the effective "
+                    "all-reduce rate, how fast the training job gets its "
+                    "numbers added up, rises from 1,600 to 2,900 gigabits per "
+                    "second. That is 1.6 to 2.9 terabits, in the same unit as "
+                    "the traffic row."
                 ),
                 standard=(
                     "SHARP (Scalable Hierarchical Aggregation and Reduction "
@@ -319,12 +322,16 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
                     "send one result down. The counters cross: fabric traffic "
                     "falls, 36 to 22 Tb/s here, because sums are smaller than "
                     "their inputs, while the effective all-reduce rate rises, "
-                    "1,600 to 2,900 Gb/s. Both figures are illustrative."
+                    "1,600 to 2,900 Gb/s. That counter is the rate at which "
+                    "the job sees gradient data reduced, payload per second as "
+                    "the GPUs experience it, summed across the whole job. Both "
+                    "figures are illustrative."
                 ),
                 expert=(
                     "SHARP in-network reduction: leaf partial sums, spine "
-                    "combine. Fabric 36 to 22 Tb/s, all-reduce 1,600 to 2,900 "
-                    "Gb/s (illustrative). Counters cross."
+                    "combine. Fabric 36 to 22 Tb/s, aggregate all-reduce "
+                    "algorithm bandwidth 1,600 to 2,900 Gb/s (illustrative). "
+                    "Counters cross."
                 ),
             ),
             camera=frame(*SPINES, *LEAVES, *RACKS, pad=2.0),
@@ -344,10 +351,15 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
                     "handles this moment by reacting fast enough, with warning "
                     "marks and pause signals, to avoid throwing data away. "
                     "Here, the receiver simply stops handing out credits, so "
-                    "the senders stop and hold their data for a few millionths "
-                    "of a second, then carry on. The busiest link hits 97 "
-                    "percent and the waiting counter goes above zero for the "
-                    "only time in the tour. The counter of packets sent without "
+                    "the senders stop and hold their data for a moment, then "
+                    "carry on. The busiest link hits 97 percent and the "
+                    "waiting counter goes above zero for the only time in the "
+                    "tour. It reads 1,800 µs/s, meaning that, averaged over "
+                    "all the senders, about two thousandths of each second "
+                    "went on waiting. The burst is extra data on top of the "
+                    "training traffic, so traffic climbs to 38 terabits per "
+                    "second and the adding-up slows by about a tenth for this "
+                    "step. The counter of packets sent without "
                     "a credit stays at zero. A short wait is harmless; one lost "
                     "packet would hold up every GPU in the job."
                 ),
@@ -359,13 +371,19 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
                     "receiver stops granting credits, senders hold their data "
                     "for microseconds, and resume as buffers drain. The busiest "
                     "link reaches 97% and the stall counter goes nonzero, the "
-                    "only step where it does, while sent-without-credit stays "
-                    "at zero and the collective keeps progressing."
+                    "only step where it does: 1,800 µs/s, microseconds of "
+                    "credit wait per second averaged over every sender, 0.18% "
+                    "of the time. The incast rides on top of the collective, "
+                    "so fabric traffic rises from 22 to 38 Tb/s and the "
+                    "all-reduce sharing those links slows about 10%, 2,900 to "
+                    "2,600 Gb/s, but keeps progressing. Sent-without-credit "
+                    "stays at zero. Figures are illustrative."
                 ),
                 expert=(
-                    "Incast: peak link 97%, stall about 1,800 µs/s "
-                    "(illustrative), only nonzero stall step. Credits withheld, "
-                    "zero sent without credit, collective progresses. Contrast "
+                    "Incast over the collective: peak link 97%, mean "
+                    "per-sender stall 1,800 µs/s, fabric 38 Tb/s, all-reduce "
+                    "-10% (illustrative); only nonzero stall step. Credits "
+                    "withheld, zero sent without credit. Contrast "
                     "SN6000 ECN/PFC."
                 ),
             ),
@@ -373,17 +391,20 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
             region_ids=[*SPINES, *LEAVES, *RACKS, "optics"],
             layer_reveal=_PLANT,
             trace_cursor=8,
-            duration_ms=30_000,
+            duration_ms=36_000,
         ),
         TourStep(
             id="programmed-lossless-computing",
             title="Programmed, lossless, computing",
             script=L(
                 novice=(
-                    "The plant goes back under the switches. The training job "
-                    "settles into its rhythm: compute, combine, step, repeat, "
-                    "for weeks. The burst has drained and the waiting counter "
-                    "is back at zero. Put it all together: one planner mapped "
+                    "The optics and cooling slide back under the switches. The "
+                    "training job settles into its rhythm: compute, combine, "
+                    "step, repeat, for weeks. The burst has drained and the "
+                    "waiting counter is back at zero. Traffic reads 30 terabits "
+                    "per second, more than the 22 at the SHARP step, because a "
+                    "long-running job also loads training data and saves its "
+                    "progress over the same network. Put it all together: one planner mapped "
                     "and programmed the network and then stepped out of the "
                     "way, no data is ever sent without permission, and the "
                     "switches help with the maths as they carry it. The Fabric "
@@ -393,7 +414,10 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
                     "Reassembled, and the training loop settles: compute, "
                     "all-reduce, step, repeat. The burst has drained, stalls "
                     "are back at zero, SHARP is still doing the arithmetic, and "
-                    "the sent-without-credit counter never moved. The whole "
+                    "the sent-without-credit counter never moved. Fabric "
+                    "traffic settles at 30 Tb/s, not the SHARP step's 22: that "
+                    "step isolated the collective, and a running job also moves "
+                    "training data and checkpoints, about 8 Tb/s here. The whole "
                     "architecture at once: a fabric mapped and programmed by "
                     "one central brain that then left the data path, lossless "
                     "because permission precedes transmission, computing as it "
@@ -401,8 +425,8 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
                     "step by step."
                 ),
                 expert=(
-                    "Steady state: stalls zero, SHARP on, sent-without-credit "
-                    "never moved. Programmed by the SM, lossless by credits, "
+                    "Steady state: 30 Tb/s (22 collective + 8 other), stalls "
+                    "zero, SHARP on, sent-without-credit never moved. Programmed by the SM, lossless by credits, "
                     "computing in-network."
                 ),
             ),
@@ -410,7 +434,7 @@ def build_tour(anatomy: FabricAnatomy) -> Tour:
             region_ids=[],
             layer_reveal=_TOPOLOGY,
             trace_cursor=9,
-            duration_ms=26_000,
+            duration_ms=30_000,
         ),
     ]
 

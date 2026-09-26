@@ -10,8 +10,11 @@ import {
 import { BuildPanel } from "./components/BuildPanel";
 import { ChassisView } from "./components/ChassisView";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ChassisConfig,
@@ -91,10 +94,18 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   // Prose-bearing content refetches on level change.
@@ -106,6 +117,10 @@ export function App() {
         setExplains(ex);
       })
       .catch((e) => setError(String(e)));
+  }, [level]);
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
   }, [level]);
 
   useEffect(() => {
@@ -225,6 +240,49 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEnvironment(lab.start.environment);
+    setEvents(lab.start.events);
+    setDurationS(lab.start.durationS);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const coldStart = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -235,6 +293,29 @@ export function App() {
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.t <= (state?.t ?? 0));
   const load = workload.loads[loadSlot] ?? DEFAULT_LOAD;
+  // The load the engine is actually running on the edited sled at the
+  // cursor: the starting dials, overridden by any timed event so far
+  // (same replay the engine does — latest due event wins).
+  const eventLoad = useMemo(() => {
+    const t = state?.t ?? 0;
+    let hit: { atS: number; load: SledLoad } | null = null;
+    for (const e of [...events].sort((a, b) => a.atS - b.atS)) {
+      if (e.atS > t || !e.load) continue;
+      if (
+        (e.action === "set-sled-load" && e.index === loadSlot) ||
+        e.action === "set-all-load"
+      ) {
+        hit = { atS: e.atS, load: e.load };
+      }
+    }
+    return hit;
+  }, [events, state, loadSlot]);
+  // Clicking a sled bay on the map also makes it the edited/readout sled.
+  const selectRegion = (id: string | null) => {
+    setRegionId(id);
+    const m = id?.match(/^sled-(\d)$/);
+    if (m) setLoadSlot(Number(m[1]) - 1);
+  };
   const setLoad = (patch: Partial<SledLoad>) => {
     setWorkload({
       loads: workload.loads.map((l, i) => (i === loadSlot ? { ...l, ...patch } : l)),
@@ -251,6 +332,15 @@ export function App() {
             onClick={() => setExplainOn(!explainOn)}
           >
             Explain mode
+          </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
           </button>
         </nav>
         <span className="sub">
@@ -275,6 +365,22 @@ export function App() {
           labeled estimates.
         </p>
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         {/* Left — build panel + guided scenarios */}
@@ -325,7 +431,9 @@ export function App() {
                 emptyBays={emptyBays}
                 storageBays={storageBays}
                 selected={regionId}
-                onSelect={setRegionId}
+                onSelect={selectRegion}
+                redundancy={config.redundancy}
+                psuCount={config.psuCount}
                 onToggleFan={toggleFan}
               />
             )}
@@ -368,7 +476,16 @@ export function App() {
             </div>
             {selectedRegion && (
               <div className="mini region-card">
-                <strong>{selectedRegion.label}.</strong>{" "}
+                <strong>
+                  {selectedRegion.kind === "power"
+                    ? `${selectedRegion.label.split("·")[0]} (feed ${
+                        config.redundancy === "grid"
+                          ? selectedRegion.label.split("·")[1]
+                          : "A under this policy"
+                      })`
+                    : selectedRegion.label}
+                  .
+                </strong>{" "}
                 {selectedRegion.description}
               </div>
             )}
@@ -407,13 +524,22 @@ export function App() {
                 </button>
               ))}
             </div>
-            <label className="field">
-              Editing sled {loadSlot + 1}
-              <input
-                type="range" min={0} max={7} value={loadSlot}
-                onChange={(e) => setLoadSlot(+e.target.value)}
-              />
-            </label>
+            <div className="field">
+              Editing sled {loadSlot + 1}. Pick a sled here, on the chassis
+              map, or in the per-sled list under Instruments.
+              <div className="sled-picker" role="group" aria-label="Sled to edit">
+                {config.sleds.map((_, i) => (
+                  <button
+                    key={i}
+                    className={i === loadSlot ? "active" : ""}
+                    aria-pressed={i === loadSlot}
+                    onClick={() => setLoadSlot(i)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
             {(
               [
                 ["CPU", "cpuPct"],
@@ -422,13 +548,22 @@ export function App() {
               ] as const
             ).map(([label, key]) => (
               <label key={key} className="field">
-                {label} {load[key]}%
+                {label} starting load {load[key]}%
+                {eventLoad ? ` · running ${eventLoad.load[key]}% now` : ""}
                 <input
                   type="range" min={0} max={100} value={load[key]}
                   onChange={(e) => setLoad({ [key]: +e.target.value })}
                 />
               </label>
             ))}
+            {eventLoad && (
+              <div className="mini">
+                A timed event at t+{eventLoad.atS}s set sled {loadSlot + 1} to
+                CPU {eventLoad.load.cpuPct}% · memory {eventLoad.load.memPct}%
+                · storage {eventLoad.load.storagePct}%. The dials set the
+                load the run starts with; Reset clears the events.
+              </div>
+            )}
             <div className="mini">
               Sled {loadSlot + 1}:{" "}
               {config.sleds[loadSlot]?.kind === "compute"
@@ -462,7 +597,14 @@ export function App() {
               />
             </label>
           </div>
-          <Instruments state={state} explains={explains} explainOn={explainOn} />
+          <Instruments
+            state={state}
+            explains={explains}
+            explainOn={explainOn}
+            sledKinds={config.sleds.map((x) => x.kind)}
+            selectedSlot={loadSlot}
+            onSelectSlot={setLoadSlot}
+          />
           <StripCharts trace={trace} cursor={cursor} />
         </div>
       </div>

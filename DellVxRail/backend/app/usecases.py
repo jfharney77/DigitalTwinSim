@@ -47,9 +47,11 @@ USE_CASES: list[UseCase] = [
                 "ESXi, vSAN — on a Dell-validated bundle and upgrades it "
                 "node-by-node with desktops migrating out of the way, so "
                 "patching never means a maintenance window for users. "
-                "Identical guest images deduplicate heavily on vSAN, so the "
-                "effective capacity far exceeds the raw drive count, and "
-                "CloudIQ forecasts when the next node is needed before users "
+                "Identical guest images compress and deduplicate well — on "
+                "ESA, global deduplication arrives with vSAN 9 (generally "
+                "available in VCF 9.1) — so effective capacity can run well "
+                "above the raw drive count, and "
+                "Dell AIOps (formerly CloudIQ) forecasts when the next node is needed before users "
                 "feel it."
             ),
         ],
@@ -84,7 +86,7 @@ USE_CASES: list[UseCase] = [
                 category_id="drives", option_id="drive-7_68", qty=24,
                 rationale=(
                     "Six 7.68 TB drives per node; identical desktop images "
-                    "deduplicate well, so effective capacity runs far higher."
+                    "reduce well, so effective capacity runs higher (illustrative)."
                 ),
             ),
             UseCaseItem(
@@ -126,9 +128,9 @@ USE_CASES: list[UseCase] = [
                 "is the smallest VxRail — the two nodes mirror each other's "
                 "data, and a lightweight witness (a VM back at headquarters) "
                 "casts the tie-breaking vote so the survivor knows to keep "
-                "running if the partner or the link drops. SmartFabric "
-                "Services lets VxRail program its own switches, so standing up "
-                "a site needs no network engineer. It is the same VxRail "
+                "running if the partner or the link drops. The VD-4000 "
+                "chassis can also carry an embedded witness card, for sites "
+                "where even that link cannot be relied on. It is the same VxRail "
                 "software as the big clusters, so the branch is managed like "
                 "everything else."
             ),
@@ -136,7 +138,7 @@ USE_CASES: list[UseCase] = [
                 "Day to day: nobody local touches it. VxRail's lifecycle "
                 "management applies validated firmware/ESXi/vSAN bundles "
                 "remotely, node-by-node, with VMs migrating across the pair, "
-                "and CloudIQ watches health and capacity from the cloud so "
+                "and Dell AIOps (formerly CloudIQ) watches health and capacity so "
                 "the central team sees a failing drive before the branch "
                 "does and Dell dispatches the part. The only on-site skill "
                 "required is swapping a hot-plug component matched to a "
@@ -169,7 +171,7 @@ USE_CASES: list[UseCase] = [
             ),
             UseCaseItem(
                 category_id="fabric", option_id="fab-smartfabric", qty=2,
-                rationale="SmartFabric configures the switches so no network engineer visits.",
+                rationale="SmartFabric automates the small switch pair; its VLANs are set up once, before first run.",
             ),
             UseCaseItem(
                 category_id="topology", option_id="topo-2node", qty=1,
@@ -212,7 +214,7 @@ USE_CASES: list[UseCase] = [
                 "Why VxRail fits: VMware Cloud Foundation (VCF) turns the "
                 "cluster into a full software-defined data center — automated "
                 "networking, and fleet lifecycle through SDDC Manager — and "
-                "VxRail was the first HCI system with full VCF integration, so "
+                "Dell describes VxRail as the first HCI system fully integrated with it, so "
                 "VxRail Manager and SDDC Manager coordinate rather than fight "
                 "over upgrades. A stretched cluster puts half the nodes in "
                 "each of two sites with synchronous vSAN mirroring and a "
@@ -236,15 +238,15 @@ USE_CASES: list[UseCase] = [
                 rationale="Performance 2U nodes for a tier-1 private cloud.",
             ),
             UseCaseItem(
-                category_id="processor", option_id="cpu-epyc-4g", qty=4,
+                category_id="processor", option_id="cpu-xeon-5g", qty=4,
                 rationale=(
-                    "High EPYC core counts raise VMs-per-node and cut "
-                    "per-core licensing across a large estate."
+                    "The VP-760 is an Intel platform, and only the Intel "
+                    "nodes reach 4 TB — the AMD VP-7625 tops out at 3 TB."
                 ),
             ),
             UseCaseItem(
                 category_id="memory", option_id="mem-4096", qty=4,
-                rationale="Maximum memory for the densest, largest mixed workloads.",
+                rationale="Very large memory for the densest, largest mixed workloads.",
             ),
             UseCaseItem(
                 category_id="storage-arch", option_id="arch-esa", qty=1,

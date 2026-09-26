@@ -1,9 +1,12 @@
 """Every model constant in one place, each with units and a source.
 
 ``source`` is honest per the repo's no-invented-specs rule. The PowerCool
-CDU C7000, PowerRack, and Integrated Rack Controller were announced at
-Dell Technologies World in May 2026 and ship from Q3 2026 — public detail
-is press-release depth, so most physics constants here are estimates and
+CDU C7000 and PowerRack were announced at Dell Technologies World in May
+2026 (C7000 general availability Q3 2026; PowerRack for compute at
+announcement, networking September 2026, storage 2H 2026). The Integrated
+Rack Controller is older — announced November 2025, available December
+2025 — and got a new release at the same event. Public detail is
+press-release depth, so most physics constants here are estimates and
 say so. The handful of reported figures (rated capacity class, form
 factor) cite the announcement coverage. Changing a value here changes
 behavior without touching engine code.
@@ -17,8 +20,10 @@ CONSTANTS: dict[str, Constant] = {
     # --- Heat exchanger ----------------------------------------------------
     "hx_rated_kw": Constant(
         value=220, unit="kW",
-        source="Dell DTW 2026 announcement (via DCD / TechTarget): the "
-               "C7000 supports Vera Rubin NVL72-class racks at 220+ kW",
+        source="Dell DTW 2026 announcement (Dell PowerRack blog, May 2026; "
+               "also DCD / Techzine): the C7000 'cools more than 220 kW in "
+               "a 4U form factor' for Vera Rubin NVL72-class racks — "
+               "https://www.dell.com/en-us/blog/dell-powerrack-transforms-ai-infrastructure-with-scalable-compute-networking-storage/",
         estimated=False,
         blurb="Nameplate heat-moving capacity class of the CDU.",
     ),
@@ -72,7 +77,7 @@ CONSTANTS: dict[str, Constant] = {
     "tau_loop_s": Constant(
         value=60, unit="s", source="estimate — loop volume + HX metal "
         "thermal inertia", estimated=True,
-        blurb="First-order time constant of the secondary supply "
+        blurb="First-order time constant of the coolant supply "
               "temperature.",
     ),
     # --- Primary (facility) loop ---------------------------------------------
@@ -94,8 +99,9 @@ CONSTANTS: dict[str, Constant] = {
     ),
     # --- Rack payload --------------------------------------------------------
     "group_kw": Constant(
-        value=40, unit="kW", source="estimate — one bank ≈ six GB200-class "
-        "compute trays at ~6.7 kW each", estimated=True,
+        value=40, unit="kW", source="estimate — one bank ≈ three Vera "
+        "Rubin NVL72-class compute trays at ~13 kW each (18 trays per "
+        "rack; rack draw reported at roughly 190–230 kW)", estimated=True,
         blurb="Liquid-cooled heat of one tray bank at 100% utilization "
               "and no cap.",
     ),
@@ -160,20 +166,31 @@ CONSTANTS: dict[str, Constant] = {
         source="industry practice — CDUs hold supply above dew point "
                "plus margin (ASHRAE liquid-cooling guidance)",
         estimated=False,
-        blurb="Minimum margin the CDU keeps between secondary supply "
+        blurb="Minimum margin the CDU keeps between coolant supply "
               "and room dew point, via its mixing valve.",
     ),
     # --- ASHRAE water classes (annotation) -----------------------------------------
     "ashrae_w32_c": Constant(
         value=32, unit="°C",
-        source="ASHRAE W32 facility-water class upper bound",
+        source="ASHRAE TC 9.9 facility-water classes (W17, W27, W32, "
+               "W40, W45, W+) — W32 upper bound",
         estimated=False,
         blurb="Upper bound of the W32 facility supply envelope "
               "(annotated on the slider).",
     ),
+    "c7000_max_facility_c": Constant(
+        value=40, unit="°C",
+        source="Dell PowerRack blog, May 2026 (vendor claim): the C7000 "
+               "supports 'warmer facility water inlet temperatures up to "
+               "40 degrees Celsius' — "
+               "https://www.dell.com/en-us/blog/dell-powerrack-transforms-ai-infrastructure-with-scalable-compute-networking-storage/",
+        estimated=False,
+        blurb="Warmest facility water Dell states the C7000 supports "
+              "(the top of ASHRAE's W40 class).",
+    ),
     "ashrae_w45_c": Constant(
         value=45, unit="°C",
-        source="ASHRAE W45 facility-water class upper bound",
+        source="ASHRAE TC 9.9 facility-water classes — W45 upper bound",
         estimated=False,
         blurb="Upper bound of the W45 facility supply envelope.",
     ),

@@ -90,6 +90,53 @@ def test_rto_is_decision_plus_bandwidth():
     assert summary.rto_hours > 48, "200 TB at 1 GB/s is a days-scale affair"
 
 
+def test_the_rto_terms_are_shown_apart_and_add_up():
+    """Deciding and moving data are separate numbers on every tick, the
+    log and the rule line state both, and neither calls the sum 'data
+    movement'."""
+    from app.validation import validate
+
+    s = Scenario(config=VAULTED, duration_h=720, events=INCIDENT)
+    trace, log, summary = run(s)
+    move = VAULTED.estate_tb * 1000 / (VAULTED.restore_gbps * 3600)
+    for st in trace:
+        assert st.decision_hours == C("decision_hours")
+        assert abs(st.transfer_hours - move) < 0.06
+    order = next(e for e in log if "Restore ordered" in e.message)
+    assert "6 h deciding" in order.message and "56 h moving" in order.message
+    assert "held in the vault" in order.message
+    rule = next(v for v in validate(s) if v.rule_id == "rto")
+    assert "6 h to decide" in rule.message and "56 h to move" in rule.message
+    # Progress counts bytes: zero while deciding, climbing afterwards.
+    deciding = [st for st in trace if st.restore_stage == "deciding"]
+    assert len(deciding) == int(C("decision_hours"))
+    assert all(st.restore_progress_pct == 0 for st in deciding)
+    moving = [st.restore_progress_pct for st in trace if st.restore_stage == "moving"]
+    assert moving == sorted(moving) and moving[-1] > 90
+
+
+def test_the_incident_stays_on_the_instruments_after_recovery():
+    """Realised RPO, peak blast radius and hours down freeze at their
+    incident values; the summary agrees with the screen."""
+    trace, log, summary = run(Scenario(config=VAULTED, duration_h=720, events=INCIDENT))
+    last = trace[-1]
+    assert last.recovered
+    assert last.peak_blast_gb == 20000.0 == summary.blast_radius_gb
+    at_order = next(st for st in trace if st.restoring)
+    assert last.rpo_realised_h == at_order.last_clean_point_age_h == summary.rpo_hours
+    assert last.outage_hours == 352 - 240, "onset to recovery, longer than the RTO"
+    assert last.outage_hours > summary.rto_hours
+    assert any("all 10 retained copies are corrupted" in e.message and e.t_h == 240
+               for e in log), "the log must say when and why the repository died"
+
+
+def test_a_restore_with_nothing_intact_is_flagged():
+    trace, _, _ = run(Scenario(config=REPO_ONLY, duration_h=720, events=INCIDENT))
+    assert not trace[289].restore_failed
+    assert trace[290].restore_failed and trace[-1].restore_failed
+    assert trace[-1].rpo_realised_h == -1
+
+
 def test_rpo_tracks_the_newest_clean_copy():
     trace, _, _ = run(Scenario(config=VAULTED, duration_h=400,
                                events=[SimEvent(at_h=240, action="incident", value=500)]))

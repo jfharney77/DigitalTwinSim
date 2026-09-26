@@ -1,0 +1,28 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "loads": [
+            { "label": "Web 1", "powerW": 300, "phase": "A" },
+            { "label": "Web 2", "powerW": 300, "phase": "B" },
+            { "label": "DB 1", "powerW": 400, "phase": "C" },
+            { "label": "DB 2", "powerW": 400, "phase": "A" },
+            { "label": "App 1", "powerW": 300, "phase": "B" },
+            { "label": "App 2", "powerW": 300, "phase": "C" },
+            { "label": "Empty 7", "powerW": 0, "phase": "C" },
+            { "label": "Empty 8", "powerW": 0, "phase": "C" }
+          ],
+          "breakerAmps": 16,
+          "upsChemistry": "vrla",
+          "upsNameplateWh": 2000,
+          "upsAgeYears": 1,
+          "startChargePct": 100
+        },
+        "environment": { "roomTempC": 25 },
+        "durationS": 900,
+        "events": []
+      }
+    ]
+  }
+}

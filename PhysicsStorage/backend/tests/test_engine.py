@@ -300,3 +300,23 @@ def test_engine_is_pure():
     import app.engine as engine_module
 
     assert_engine_is_pure(engine_module)
+
+
+def test_a_sub_tick_rebuild_still_reports_its_length():
+    """The scale-out-rebuild scenario's question is answered from the log:
+    a rebuild shorter than the one-hour tick must state its real duration,
+    and the state keeps it after completion."""
+    from app.presets import GUIDED_SCENARIOS
+
+    g = next(x for x in GUIDED_SCENARIOS if x.id == "scale-out-rebuild")
+    trace, log, _ = simulate(g.scenario)
+    done = [e for e in log if e.message.startswith("Rebuild complete after")]
+    assert len(done) == 1 and "0.45 h (27 min)" in done[0].message
+    assert trace[5].last_rebuild_h == 0.0
+    assert trace[-1].last_rebuild_h == 0.45
+    assert not any(s.rebuilding for s in trace), "shorter than one tick"
+
+    store = g.scenario.model_copy(update={"config": POWERSTORE_2})
+    trace, log, _ = simulate(store)
+    assert 3.0 < trace[-1].last_rebuild_h < 4.0
+    assert trace[-1].last_rebuild_h > 0.45 * 5

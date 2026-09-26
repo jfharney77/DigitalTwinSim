@@ -6,12 +6,15 @@ from __future__ import annotations
 from fastapi import HTTPException, Query
 
 from twinkit.api import Level, make_app
+# Graded labs (docs/LAB_PATTERN.md). app/labs.py is pure; this is its HTTP edge.
+from twinkit.labs import Lab, LabResult
 
 from .anatomy import MAPS
 from .constants import CONSTANTS
 from .engine import simulate
+from .labs import LABS, LABS_BY_ID, grade_scenario
 from .media import MEDIA
-from .leveling import leveled, leveled_all
+from .leveling import leveled, leveled_all, resolve
 from .models import (
     ConfigPreset,
     Explain,
@@ -26,6 +29,7 @@ from .presets import (
     CONFIG_PRESETS,
     EXPLAINS,
     GUIDED_SCENARIOS,
+    INTRO,
     SN6000_ADAPTIVE,
     WORKLOAD_PRESETS,
 )
@@ -74,6 +78,12 @@ def get_scenarios(level: int = Level) -> list[GuidedScenario]:
     return leveled_all(GUIDED_SCENARIOS, level)
 
 
+@app.get("/api/intro")
+def get_intro(level: int = Level) -> dict[str, str]:
+    """The page's opening paragraph, at the reader's level."""
+    return {"text": resolve(INTRO, level)}
+
+
 @app.get("/api/explain", response_model=list[Explain])
 def get_explain(level: int = Level) -> list[Explain]:
     return leveled_all(EXPLAINS, level)
@@ -98,3 +108,18 @@ def post_simulate(scenario: Scenario) -> SimResponse:
 def get_simulate() -> SimResponse:
     """Default scenario (SN6000 adaptive, all-reduce) — GET liveness."""
     return _run(Scenario(config=SN6000_ADAPTIVE, workload=ALLREDUCE))
+
+
+@app.get("/api/labs", response_model=list[Lab])
+def get_labs(level: int = Level) -> list[Lab]:
+    """The graded labs: goal, criteria, hints and start scenario. Reference
+    solutions stay server-side."""
+    return leveled_all(LABS, level)
+
+
+@app.post("/api/labs/{lab_id}/grade", response_model=LabResult)
+def post_lab_grade(lab_id: str, scenario: Scenario, level: int = Level) -> LabResult:
+    """Run the pure engine on the learner's scenario and grade the trace."""
+    if lab_id not in LABS_BY_ID:
+        raise HTTPException(status_code=404, detail=f"unknown lab {lab_id!r}")
+    return leveled(grade_scenario(lab_id, scenario), level)

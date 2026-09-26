@@ -1,0 +1,26 @@
+{
+  "params": {
+    "product": ["powerprotect", "cyberdetect", "mdr", "fortzero"]
+  },
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "product": "powerprotect", "estateTb": 200, "changeGbDay": 500,
+          "backupEveryH": 24, "retentionCopies": 14, "dedupeRatio": 10,
+          "vault": true, "vaultSyncEveryH": 24, "restoreGbps": 1.0,
+          "detection": false, "sensitivity": 5, "response": "inhouse",
+          "noiseAlertsDay": 40, "inhouseCapacityDay": 60,
+          "architecture": "perimeter", "assets": 60, "grantsPerUser": 3,
+          "microsegSegments": 1, "reviewCadenceDays": 0
+        },
+        "durationH": 720,
+        "events": [
+          { "atH": 240, "action": "incident", "value": 500 },
+          { "atH": 280, "action": "contain" },
+          { "atH": 290, "action": "attempt-restore" }
+        ]
+      }
+    ]
+  }
+}

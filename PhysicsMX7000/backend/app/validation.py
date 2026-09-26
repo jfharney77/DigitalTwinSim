@@ -9,7 +9,7 @@ Pure module: no FastAPI, no IO — rules are data in, findings out.
 from __future__ import annotations
 
 from .constants import value as C
-from .engine import compute_sled_power, psu_feed, storage_sled_power
+from .engine import compute_sled_power, populated_psu_slots, psu_feed, storage_sled_power
 from .models import ChassisConfig, Scenario, SledLoad, Validation
 
 FULL = SledLoad(cpu_pct=100, mem_pct=100, storage_pct=100)
@@ -34,7 +34,7 @@ def _surviving_capacity(cfg: ChassisConfig) -> tuple[float, str]:
     cap = C("psu_capacity_w")
     if cfg.redundancy == "grid":
         # Survive a whole-feed loss: the smaller feed's PSUs must carry it.
-        a = sum(1 for i in range(cfg.psu_count) if psu_feed(i, cfg) == "A")
+        a = sum(1 for i in populated_psu_slots(cfg) if psu_feed(i, cfg) == "A")
         b = cfg.psu_count - a
         return min(a, b) * cap, "the surviving feed's PSUs"
     if cfg.redundancy == "n+1":
@@ -54,15 +54,17 @@ def validate(scenario: Scenario) -> list[Validation]:
             message=(
                 f"Grid redundancy splits PSUs across two AC feeds, and "
                 f"{cfg.psu_count} does not split evenly — one feed would "
-                "carry more than half the pool. Use 2, 4, or 6 PSUs."
+                "carry more than half the pool. Use 2, 4, or 6 PSUs "
+                "(Dell's population order 1, 4, 2, 5, 3, 6 keeps Grid A, "
+                "slots 1–3, and Grid B, slots 4–6, even)."
             ),
-            source="Dell MX7000 power configuration guidance (grid redundancy)",
+            source="Dell EMC PowerEdge MX7000 Technical Guide — PSU redundancy and population rules; the even-split requirement is this simulator's rule",
         ))
     else:
         out.append(Validation(
             rule_id="grid-split", level="ok",
             message="PSU count is legal for the chosen redundancy policy.",
-            source="Dell MX7000 power configuration guidance (grid redundancy)",
+            source="Dell EMC PowerEdge MX7000 Technical Guide — PSU redundancy and population rules; the even-split requirement is this simulator's rule",
         ))
 
     # Rule 2 — worst-case draw vs the pool that survives the covered failure.
@@ -126,17 +128,18 @@ def validate(scenario: Scenario) -> list[Validation]:
         out.append(Validation(
             rule_id="feed", level="warning",
             message=(
-                "All PSUs share one AC feed under this policy. N+1 survives "
+                "All PSUs share one AC feed under this policy in this "
+                "model. N+1 (Dell's PSU redundancy mode) survives "
                 "a PSU failing; it does not survive the feed failing — grid "
                 "redundancy is what splits the pool across two feeds."
             ),
-            source="Dell MX7000 power configuration guidance (grid vs N+1)",
+            source="Dell EMC PowerEdge MX7000 Technical Guide — grid vs PSU redundancy; single-feed wiring for N+1 is this model's simplification",
         ))
     else:
         out.append(Validation(
             rule_id="feed", level="ok",
             message="Grid redundancy: the pool is split across two AC feeds.",
-            source="Dell MX7000 power configuration guidance (grid vs N+1)",
+            source="Dell EMC PowerEdge MX7000 Technical Guide — grid vs PSU redundancy; single-feed wiring for N+1 is this model's simplification",
         ))
 
     # Rule 5 — top-TDP sleds in a warm room.

@@ -10,9 +10,12 @@ import {
 import { CapacityChart } from "./components/CapacityChart";
 import { DatasetPanel } from "./components/DatasetPanel";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { PipelineView } from "./components/PipelineView";
 import { StripCharts } from "./components/StripCharts";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   Appliance,
@@ -81,9 +84,17 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   // Prose-bearing content refetches on level change.
@@ -95,6 +106,7 @@ export function App() {
         setExplains(ex);
       })
       .catch((e) => setError(String(e)));
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
   }, [level]);
 
   useEffect(() => {
@@ -184,6 +196,49 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setApplianceId(lab.start.appliance);
+    setDataset(lab.start.dataset);
+    setSchedule(lab.start.schedule);
+    setDurationDays(lab.start.durationDays);
+    setEvents(lab.start.events);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const reset = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -206,6 +261,15 @@ export function App() {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -216,20 +280,64 @@ export function App() {
       </header>
 
       <div className="an-hero">
-        <h2>Change rate → chunks → fingerprints → the ratio nobody configured</h2>
-        <p>
-          Feed a deduplicating backup appliance a dataset and watch its
-          headline number emerge: daily change decides what is novel,
-          retention multiplies what is logical, and entropy decides whether
-          the machinery works at all. Encrypt at the source and the ratio
-          collapses to 1:1; let ransomware loose and the entropy of the
-          changed data is the alarm that fires while every capacity chart
-          still looks fine — the same physics the Cyber Detect twin reads
-          from the storage side. Companion to the DellPowerProtect narrative
-          twin: that one shows where the vaulted copy lives, this one shows
-          why thirty copies fit on one shelf.
-        </p>
+        {/* The lead is the backend's leveled anatomy overview (the same
+            prose test_leveling.py guards), so the first paragraph on the
+            page reads in the register the reader asked for. The
+            hard-coded text below is only the pre-fetch fallback. */}
+        <h2>
+          {level <= 2
+            ? "Why thirty backups can fit in the space of about one"
+            : "Change rate → chunks → fingerprints → the ratio nobody configured"}
+        </h2>
+        {anatomy?.overview ? (
+          <p className="overview-lead">{anatomy.overview}</p>
+        ) : (
+          <p className="overview-lead">
+            This is the path a backup takes through a Data Domain
+            appliance. Only pieces the appliance has never seen before are
+            written to disk; everything else is a reference to a piece
+            already stored.
+          </p>
+        )}
+        {level <= 2 ? (
+          <p>
+            Set the dataset and the number of days to keep, press play, and
+            watch the storage used each day. The number the appliance is
+            judged on — how much smaller the stored data is than the data
+            sent to it — is never typed in anywhere. It is whatever the
+            data makes it.
+          </p>
+        ) : (
+          <p>
+            Feed a deduplicating backup appliance a dataset and watch its
+            headline number emerge: daily change decides what is novel,
+            retention multiplies what is logical, and entropy decides whether
+            the machinery works at all. Encrypt at the source and the ratio
+            collapses to 1:1; let ransomware loose and the entropy of the
+            changed data is the alarm that fires while every capacity chart
+            still looks fine — the same physics the Cyber Detect twin reads
+            from the storage side. Companion to the DellPowerProtect narrative
+            twin: that one shows where the vaulted copy lives, this one shows
+            why thirty copies fit on one shelf.
+          </p>
+        )}
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         {/* Left — dataset & appliance */}
@@ -375,7 +483,11 @@ export function App() {
           <div className="mini footnote">
             What we don't model: real hashing or chunk boundaries (novelty
             is closed-form from change rate and entropy), compression-region
-            layout, replication, Cloud Tier, or restore paths. Appliance
+            layout, replication, Cloud Tier, or restore paths. Appliance ingest
+            time covers the appliance only: the clients' time to read and
+            fingerprint every logical byte is not modelled, so a real backup
+            window is longer. Encrypted files stop churning, and the capacity
+            notice is a 20%-over-trend rule of this simulator's own. Appliance
             capacities follow Dell's data-sheet classes; index RAM, chunk
             size, and every curve are estimates carrying source tags in the
             backend's constants table.

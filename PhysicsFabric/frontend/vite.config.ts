@@ -11,11 +11,19 @@ const twinUi = fileURLToPath(new URL("../../packages/twin-ui/src", import.meta.u
 // Proxy /api to the FastAPI backend so the frontend can use same-origin paths.
 // API_TARGET overrides the backend address, e.g. when :8034 is taken:
 //   API_TARGET=http://localhost:8017 npm run dev
+//
+// strictPort is deliberate. Without it Vite silently walks to the next free
+// port, which on a machine running several twins means squatting a sibling's
+// port — the sibling's links then open this app instead, and nobody is told.
+// Failing to start is the honest outcome. If 5207 is taken and you only need
+// this app running, take a spare port instead:
+//   PORT=5307 npm run dev
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { "@twinsim/twin-ui": twinUi } },
   server: {
-    port: 5207,
+    port: Number(process.env.PORT ?? 5207),
+    strictPort: true,
     proxy: {
       "/api": {
         target: process.env.API_TARGET ?? "http://localhost:8034",

@@ -138,13 +138,13 @@ GUIDED_SCENARIOS = [
                 standard=(
                     "SDR mixed to HDR mastering at t=120 s: the lit "
                     "fraction drops (highlights are small) while the lit "
-                    "zones overdrive to ~1.8× the SDR maximum — and the "
+                    "zones overdrive to ~2.5× the SDR maximum (an estimate) — and the "
                     "product of the two still exceeds the SDR bright-field "
                     "peak. HDR power is a burst regime: higher peaks, "
                     "content-dependent averages."
                 ),
                 expert=(
-                    "SDR→HDR @120 s: lit↓, drive×1.8; product > SDR peak. "
+                    "SDR→HDR @120 s: lit↓, drive×2.5 (est); product > SDR peak. "
                     "Burst regime — peak up, average content-dependent."
                 ),
             ),
@@ -163,8 +163,9 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "The spec sheet says this 38-watt-ish monitor can draw "
-                    "220 watts. Where would those go? At ninety seconds a "
+                    "The spec sheet says this monitor — about 26 watts in "
+                    "Dell's own on-mode test — can draw as much as 220 "
+                    "watts. Where would those go? At ninety seconds a "
                     "laptop docks over the single USB-C cable and starts "
                     "charging at 90 watts. The wall meter leaps — but "
                     "almost all of those watts pass straight through the "
@@ -207,7 +208,7 @@ GUIDED_SCENARIOS = [
                     "Here is the question the carbon bar answers: over "
                     "this monitor's whole life, which cost more — building "
                     "it, or running it? For a laptop the answer is "
-                    "lopsided: making it is roughly three-quarters of its "
+                    "lopsided: making it is roughly four-fifths of its "
                     "lifetime footprint, because it sips power on a "
                     "battery. A monitor sits plugged in with a big light "
                     "behind the glass, so running it counts for much more "
@@ -217,10 +218,11 @@ GUIDED_SCENARIOS = [
                     "laptop's would be."
                 ),
                 standard=(
-                    "Dell's PCF datasheets put a business laptop's "
-                    "use-phase near 20% of lifetime carbon — manufacturing "
-                    "dominates. Monitors invert toward the middle: ~34% "
-                    "use-phase at standard assumptions, because the "
+                    "Dell's Latitude E7440 carbon whitepaper puts a "
+                    "business laptop's use-phase at 12% of lifetime carbon "
+                    "— manufacturing, at 78%, dominates. Monitors invert "
+                    "toward the middle: ~34% use-phase in Dell's monitor "
+                    "PCF datasheets, because the "
                     "backlight burns wall power for a decade. This run "
                     "sets 16 h/day duty; watch the use share overtake the "
                     "monitor's desk-duty split. Same methodology, "
@@ -230,7 +232,7 @@ GUIDED_SCENARIOS = [
                     "portfolio version of this ledger."
                 ),
                 expert=(
-                    "Laptop PCF: use ≈20%. Monitor: ≈34% at desk duty; "
+                    "Laptop PCF (E7440): use 12%. Monitor PCFs: ≈34%; "
                     "16 h/day pushes higher. Lever differs: lifetime vs "
                     "brightness. See Circular Design spec."
                 ),

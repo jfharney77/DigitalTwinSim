@@ -31,17 +31,18 @@ CATALOG: list[CatalogCategory] = [
                 name="Quantum-X800 (Q3400, 800 Gb/s XDR)",
                 summary=(
                     "The current generation: 144 ports of 800 Gb/s per "
-                    "liquid-cooled chassis, SHARP v4 in the ASIC — "
-                    "Horizon's fabric."
+                    "chassis, air- or liquid-cooled, SHARP v4 in the "
+                    "ASIC — Horizon's fabric."
                 ),
                 details=(
-                    "The Q3400 spine chassis switches over 100 Tb/s: 144 "
-                    "ports of 800 Gb/s InfiniBand (the XDR generation), "
-                    "liquid-cooled because at that density air cannot "
-                    "carry the ASIC's heat away. SHARP v4 reduction "
-                    "engines sit in the switch silicon itself, and the "
-                    "same platform scales from one rack to "
-                    "tens-of-thousands-of-endpoint fat trees. This is "
+                    "The Q3400 chassis switches 115.2 Tb/s: 144 ports "
+                    "of 800 Gb/s InfiniBand (the XDR generation) across "
+                    "72 OSFP cages. NVIDIA ships it air-cooled (Q3400-RA, "
+                    "4U) and liquid-cooled (Q3400-LD), with a smaller "
+                    "Q3200 for modest fabrics. SHARP v4 reduction "
+                    "engines sit in the switch silicon itself, and by "
+                    "NVIDIA's figure a two-tier fat tree of Q3400s "
+                    "reaches 10,368 adapters. This is "
                     "the generation TACC's Horizon names, joining Dell "
                     "IRSS Grace Blackwell racks at 4,000 GPUs."
                 ),
@@ -74,7 +75,7 @@ CATALOG: list[CatalogCategory] = [
             "How the tree is shaped decides what the fabric guarantees — "
             "full bisection for any traffic, or rails tuned to training."
         ),
-        limits="Two-tier fat tree shown; three tiers past ~100k endpoints",
+        limits="Two-tier fat tree shown; NVIDIA cites 10,368 endpoints in two tiers, three tiers beyond",
         region_ids=_SPINE_REGIONS + _LEAF_REGIONS,
         options=[
             CatalogOption(
@@ -91,9 +92,11 @@ CATALOG: list[CatalogCategory] = [
                     "converse at line rate simultaneously. The subnet "
                     "manager exploits the symmetry when it computes "
                     "routes, spreading pairs evenly across spines. "
-                    "Academic systems like Horizon choose this shape "
-                    "because their workload mix is unknowable in "
-                    "advance — MPI codes today, training jobs tomorrow."
+                    "Academic systems choose this shape because their "
+                    "workload mix is unknowable in advance — MPI codes "
+                    "today, training jobs tomorrow; TACC's user guide "
+                    "describes Horizon's trees as having no "
+                    "oversubscription."
                 ),
             ),
             CatalogOption(
@@ -176,8 +179,8 @@ CATALOG: list[CatalogCategory] = [
                     "not in the data path; standby instances take over "
                     "management if it fails, and traffic never notices. "
                     "The twin's trace dwells on its route computation "
-                    "because at Horizon scale that is genuinely the "
-                    "slow step of bring-up."
+                    "because that work grows with fabric size; the "
+                    "timing is illustrative."
                 ),
             ),
             CatalogOption(
@@ -226,7 +229,8 @@ CATALOG: list[CatalogCategory] = [
                     "rises — the twin's sharp step shows the counters "
                     "crossing. NCCL and MPI both offload to it "
                     "transparently. This is the qualitative capability "
-                    "Ethernet fabrics lack: not moving bytes faster, "
+                    "the SN6000 twin's Ethernet fabric does not claim: "
+                    "not moving bytes faster, "
                     "but moving fewer bytes because the network did "
                     "the math."
                 ),
@@ -255,7 +259,7 @@ CATALOG: list[CatalogCategory] = [
         id="endpoints",
         name="Endpoints & adapters",
         blurb="The fabric ends at a SuperNIC in every node — one port per GPU.",
-        limits="One 800 Gb/s port per GPU at Horizon-class density",
+        limits="Up to one 800 Gb/s port per GPU; Horizon reports 800 Gb/s per GPU node",
         region_ids=_ENDPOINT_REGIONS,
         options=[
             CatalogOption(
@@ -309,7 +313,7 @@ CATALOG: list[CatalogCategory] = [
                 id="osfp-optics",
                 name="OSFP twin-port optics",
                 summary=(
-                    "The workhorse: two 400 Gb/s lanes per OSFP cage, "
+                    "The workhorse: two 800 Gb/s ports per OSFP cage, "
                     "fibre runs between tiers."
                 ),
                 details=(
@@ -347,7 +351,7 @@ CATALOG: list[CatalogCategory] = [
         id="cooling",
         name="Switch cooling",
         blurb="The network joined the liquid loop when its ASICs got GPU-dense.",
-        limits="Liquid-cooled Q3400 chassis; air-cooled leaf options",
+        limits="Liquid-cooled Q3400-LD drawn; air-cooled Q3400-RA and Q3200 also ship",
         region_ids=["cooling"],
         options=[
             CatalogOption(
@@ -358,12 +362,15 @@ CATALOG: list[CatalogCategory] = [
                     "same loop as the GPU racks."
                 ),
                 details=(
-                    "A Q3400 spine moves over 100 Tb/s through one "
-                    "chassis, and the ASIC density that implies has "
-                    "pushed the switch onto cold plates — the same "
-                    "CDU-and-manifold story the IR7000 twin tells for "
-                    "compute, extended to the network. A Horizon-class "
-                    "machine room plumbs its spines like its racks."
+                    "A Q3400 spine moves 115.2 Tb/s through one "
+                    "chassis. NVIDIA offers it air-cooled as well, but "
+                    "the liquid-cooled Q3400-LD puts the switch ASICs "
+                    "on cold plates — the same CDU-and-manifold story "
+                    "the IR7000 twin tells for compute, extended to the "
+                    "network. Illustrative: a machine room that is "
+                    "already liquid-cooled can plumb its spines like "
+                    "its racks; which variant Horizon uses is not "
+                    "published."
                 ),
             ),
         ],

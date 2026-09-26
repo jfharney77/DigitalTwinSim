@@ -147,7 +147,7 @@ export function BuildPanel({
               onChange={(e) => set({ grid: e.target.value as LifecycleConfig["grid"] })}
             >
               <option value="clean">Clean (0.05 kg/kWh)</option>
-              <option value="average">Average (0.35)</option>
+              <option value="average">Mixed (0.35)</option>
               <option value="coal">Coal-heavy (0.85)</option>
             </select>
           </Row>

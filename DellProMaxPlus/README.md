@@ -3,9 +3,12 @@
 A digital twin of the **Dell Pro Max 16 Plus** with the **Qualcomm AI 100 PC
 Inference Card** — the first mobile workstation to ship an enterprise-grade
 *discrete* Neural Processing Unit. Two AI-100 NPUs, 32 AI cores, roughly
-450 TOPS of 8-bit compute, and 64 GB of dedicated on-card AI memory. Dell
-demonstrated a 109-billion-parameter Llama 4 model generating text on this
-machine with no internet connection and no server behind it.
+450 TOPS of 8-bit compute (as reported), and 64 GB of dedicated on-card AI
+memory (two 32 GB LPDDR4x banks, one per NPU). The card takes the place of a
+discrete GPU. Dell demonstrated a 109-billion-parameter Llama 4 Scout model
+generating text on this machine with no internet connection and no server
+behind it (Dell Technologies World, May 2025); the machine shipped on
+20 November 2025 with Ubuntu 24.04 LTS, Windows 11 announced to follow.
 
 The counterpart to this repo's datacenter twins. Where the XE9712, IR7000,
 Exascale, and SN6000 twins answer "how do you build a machine large enough
@@ -106,10 +109,21 @@ the other twins.
 
 - Wattages, rates, and timings are illustrative but plausible; favor a
   correct mental model over measured numbers (project scope guardrail).
-- The 64 GB / ~120B-parameter pairing implies weights quantized to roughly
-  four bits. Dell's FP16 claim is about the *arithmetic*, not the storage —
+- Dell's product brief states the ceiling as "up to 120B (with MXINT4)", so
+  four-bit weight storage is Dell's own figure. The 61 GB resident size for a
+  109B model is this twin's arithmetic from that, not a published file size.
+  Dell's FP16 claim is about the *arithmetic*, not the storage —
   the twin says so explicitly rather than blurring the two, because only the
   storage decision is what makes the model fit.
+- Corrected in the September 2026 fact-check: the 64 GB is 2 × 32 GB (one bank
+  per NPU, presented to the host as two devices), still drawn as one block
+  because a large model is sharded across both; host memory is DDR5 on a
+  CAMM2 module, not LPDDR5X; the card replaces the discrete GPU rather than
+  sitting beside one; the host's integrated NPU is 13 TOPS (Intel), not ~50;
+  Dell lists no single-NPU card, so that catalog entry is now a way of using
+  one NPU's 32 GB; the 18-inch card option is labeled reported (PCMag), not
+  confirmed; ~450 TOPS and 75 W are trade-press figures and labeled so;
+  battery operation of the card is an assumption and labeled so.
 - The only shipped visual is `frontend/public/promax-npu.svg`, a
   self-contained schematic drawn for this project with an honest credit
   line — not a Dell or Qualcomm product image.
@@ -119,5 +133,9 @@ the other twins.
 - [Dell — Reimagining AI: discrete NPU power with Dell Pro Max](https://www.dell.com/en-us/blog/reimagining-ai-discrete-npu-power-with-dell-pro-max/)
 - [Dell Pro Max Plus 16 with Qualcomm AI 100 — product brief (PDF)](https://www.delltechnologies.com/asset/en-us/products/workstations/briefs-summaries/dell-pro-max-plus-workstation-with-qualcomm-npu-brief.pdf)
 - [Dell Pro Max 16 Plus — product page](https://www.dell.com/en-us/shop/dell-laptops/dell-pro-max-16-plus-laptop/spd/dell-pro-max-mb16250-laptop)
+- [StorageReview — Pro Max 16 Plus with Qualcomm AIC100 review](https://www.storagereview.com/review/dell-pro-max-16-plus-with-qualcomm-aic100-review-excellent-workstation-experimental-accelerator)
+- [Laptop Mag — Dell's new laptop ditches the GPU for a discrete NPU](https://www.laptopmag.com/laptops/dells-new-laptop-ditches-gpu-for-npu)
+- [Phoronix — shipping on Ubuntu 24.04 ahead of Windows 11](https://www.phoronix.com/news/Dell-Pro-Max-With-Qualcomm-NPU)
+- [Intel — Core Ultra 9 285HX specifications](https://www.intel.com/content/www/us/en/products/sku/242297/intel-core-ultra-9-processor-285hx-36m-cache-up-to-5-50-ghz/specifications.html)
 - [Qualcomm Cloud AI SDK — architecture](https://quic.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Architecture/)
-- [Serving LLMs on Cloud AI 100 vs NVIDIA GPUs (arXiv 2507.00418)](https://arxiv.org/abs/2507.00418)
+- [Serving LLMs on Cloud AI 100 Ultra vs NVIDIA GPUs (arXiv 2507.00418)](https://arxiv.org/abs/2507.00418)

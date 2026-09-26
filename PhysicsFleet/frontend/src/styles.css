@@ -639,3 +639,20 @@ label.field.cfg-row { flex-direction: row; }
   .app.dell .an-card { padding: 16px; }
   .app.dell .an-panel { padding: 16px; }
 }
+
+/* Guided-scenario brief: narration, the variant table, the question —
+   beside the diagram so a deep link lands on the explanation. */
+.scenario-brief .scenario-narration { margin-top: 0; font-size: 13px; }
+.scenario-variants { margin: 8px 0 10px; overflow-x: auto; }
+.scenario-variants table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.scenario-variants th { text-align: right; font-weight: 500; opacity: 0.75; padding: 2px 6px; }
+.scenario-variants th:first-child, .scenario-variants td:first-child { text-align: left; padding-left: 0; }
+.scenario-variants td { text-align: right; padding: 3px 6px; font-variant-numeric: tabular-nums; }
+.scenario-variants tr.active td { font-weight: 600; }
+.scenario-variants td button { font-size: 12px; text-align: left; }
+.scenario-variants tr.active td button { outline: 2px solid var(--dell-blue, #0672cb); }
+.glossary { margin-top: 8px; line-height: 1.45; }
+.glossary summary { cursor: pointer; font-weight: 600; }
+.glossary dl { margin: 4px 0 0; }
+.glossary dt { font-weight: 600; margin-top: 4px; }
+.glossary dd { margin: 0; }

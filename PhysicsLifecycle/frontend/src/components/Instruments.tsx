@@ -111,7 +111,7 @@ export function Instruments({
       )}
       <div className="mini" style={{ marginTop: 6 }}>
         {telecom
-          ? "Envelope figures and hours are estimates; XR limits to verify against Dell spec sheets."
+          ? "Hours and the standard-temp ceiling are estimates; the 55 °C XR ceiling is Dell's published XR8000 rating."
           : "All carbon figures are labeled estimates — Dell's per-product PCF reports are the real calibration source."}
       </div>
     </div>

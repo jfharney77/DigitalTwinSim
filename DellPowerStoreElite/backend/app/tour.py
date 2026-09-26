@@ -2,7 +2,7 @@
 
 ``build_tour(anatomy)`` returns a :class:`twinkit.tour.Tour`: eight beats that
 move a camera across the two stacked appliances, peel them from the
-serviceable outside to the RDMA mesh between the generations, pin the join
+serviceable outside to the cluster network between the generations, pin the join
 trace at the moments that carry the story, and narrate each one. The frontend
 player owns the clock; nothing here knows about time, IO or the web
 (AST-checked in ``tests/test_tour.py``, the same rule as ``engine.py``).
@@ -17,9 +17,10 @@ checks the pairing.
 Layers (region id -> layer) ride with the tour rather than on the anatomy
 model, so ``ChassisAnatomy`` is unchanged:
 
-    0  what you can see and touch: drive bays, NVRAM, ports, PSUs, mgmt
+    0  what you can see and touch: drive bays, write cache, ports, PSUs, mgmt
     1  inside each node canister: fans, batteries, CPUs, DDR5, node boards
-    2  the 200 Gb RDMA mesh between the generations
+    2  the cluster network between the generations (Ethernet; not the
+       Elite's in-chassis 200 Gb RDMA node link)
 """
 
 from __future__ import annotations
@@ -86,9 +87,10 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "an older generation with 25 flash drives, and it is busy "
                     "serving every application in the building, about a quarter "
                     "of a million reads and writes a second in this illustrative "
-                    "run. The bottom band is where the new one, PowerStore Elite, "
-                    "is about to go; for now it is dark. The thin strip between "
-                    "them is the link that will join them. Watch the downtime counter: "
+                    "run. The bottom band is the new one, PowerStore Elite, "
+                    "already bolted into the rack beneath it but not yet plugged "
+                    "in, so it is dark. The thin strip between them is the "
+                    "cluster network, the link that will join them. Watch the downtime counter: "
                     "the usual way to replace an array is to stop everything and "
                     "move the data, and this tour is about not doing that."
                 ),
@@ -98,15 +100,15 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "slots, serving the whole estate at a steady 250K IOPS "
                     "(input/output operations per second; illustrative). The "
                     "bottom band is the new PowerStore Elite, a 3U appliance "
-                    "about to be racked beneath it, still dark. The strip between "
-                    "them is the cluster mesh, a 200 Gb RDMA (Remote Direct "
-                    "Memory Access) interconnect. The traditional refresh is a forklift: "
+                    "racked beneath it and not yet powered, still dark. The strip between "
+                    "them is the cluster network, the Ethernet path that joins "
+                    "appliances in one cluster. The traditional refresh is a forklift: "
                     "buy, migrate, cut over, decommission. The downtime counter "
                     "keeps score against that."
                 ),
                 expert=(
                     "Prior-gen PowerStore (25 NVMe) on top serving ~250K IOPS "
-                    "(illustrative); Elite 3U below, not yet racked; RDMA mesh between. "
+                    "(illustrative); Elite 3U below, racked, not yet powered; cluster network between. "
                     "Baseline for a no-forklift refresh."
                 ),
             ),
@@ -139,8 +141,8 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "on one lighting on the other. Both boot PowerStoreOS, the same "
                     "OS lineage as the prior array (the compatibility that makes "
                     "mixed-generation clustering possible), on Xeon Scalable with "
-                    "up to 50% more cores than the 3200T/5500 class (Dell's "
-                    "figure), DDR5 and PCIe Gen 5. It is the slowest "
+                    "up to 50% more cores (Dell's figure, the new 5500 against "
+                    "the 3200T), DDR5 and PCIe Gen 5. It is the slowest "
                     "thing the new box does on its own. The bring-up is the one "
                     "the PowerStore twin walks step by step; here the top band, "
                     "just out of frame, keeps serving throughout."
@@ -189,13 +191,16 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "operation: the prior array keeps serving hosts through the "
                     "same paths, and downtime stays at zero. Effective capacity "
                     "jumps from about 1.2 PB to about 7 PB (illustrative) as the "
-                    "Elite's 40-slot E3 pool arrives behind Dell's 6:1 data "
-                    "reduction guarantee. It is the only capacity jump in the trace."
+                    "Elite's pool of 40 E3 drive slots (E3.S, the EDSFF form "
+                    "factor that succeeds the 2.5-inch drive) arrives behind "
+                    "Dell's 6:1 data reduction guarantee. It is the only "
+                    "capacity jump in the trace."
                 ),
                 expert=(
                     "Live mixed-generation join, once. Membership, not "
                     "data movement; prior gen keeps serving; downtime 0. Effective "
-                    "~1.2 to ~7 PB (illustrative), 6:1 guarantee."
+                    "~1.2 to ~7 PB (illustrative): 40 E3.S (EDSFF) slots, "
+                    "6:1 guarantee."
                 ),
             ),
             camera=whole_map(anatomy),
@@ -211,30 +216,32 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
         ),
         TourStep(
             id="rdma-mesh",
-            title="The only new plumbing",
+            title="The wire between the generations",
             script=L(
                 novice=(
-                    "Now the strip between the two boxes comes alive. It is a "
-                    "very fast network link, 200 gigabits per second, that uses "
-                    "RDMA, short for Remote Direct Memory Access: one box can copy "
-                    "data straight into the other's memory without asking either "
-                    "processor to do the work. That matters for what comes next, "
-                    "because the processors stay free to keep answering the "
-                    "applications. This link is the only new wiring the whole "
-                    "upgrade needs, and nothing uses it before this moment."
+                    "Now the strip between the two boxes comes alive. It is the "
+                    "cluster's own network: ordinary fast Ethernet that runs "
+                    "through the switches at the top of the rack and lets the "
+                    "boxes in one cluster talk to each other. Everything that "
+                    "moves in the next step travels over it, and nothing uses it "
+                    "before this moment. You may have read that the Elite has a "
+                    "200 gigabit link using RDMA, short for Remote Direct Memory "
+                    "Access. It does, but that link sits inside the new box, "
+                    "between its two halves, and never leaves the case."
                 ),
                 standard=(
-                    "The 200 Gb RDMA (Remote Direct Memory Access) node "
-                    "interconnect comes up between the generations. RDMA moves "
-                    "bulk data memory to memory without either CPU doing the "
-                    "copying, so the coming rebalance taxes neither array's "
-                    "ability to serve hosts. The mesh never lights before this "
-                    "step, and it is the only new plumbing the modernization "
-                    "requires."
+                    "The cluster network comes up between the generations: an "
+                    "internal Ethernet network through the top-of-rack switches, "
+                    "which the coming rebalance will run on. It never lights "
+                    "before this step. Keep it apart from the Elite's headline "
+                    "200 Gb RDMA (Remote Direct Memory Access) node interconnect, "
+                    "which joins the two controller nodes inside the Elite "
+                    "chassis and carries mirrored writes, not migrations. The "
+                    "link speed between the appliances here is illustrative."
                 ),
                 expert=(
-                    "200 Gb RDMA mesh up between generations; CPU-bypass bulk "
-                    "transfer. First lit here. Only new plumbing required."
+                    "Intra-cluster Ethernet up between generations; first lit "
+                    "here. The 200 Gb RDMA node link is in-chassis only."
                 ),
             ),
             # Close on the strip, with the node boards it joins on either
@@ -252,9 +259,13 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             script=L(
                 novice=(
                     "Here is the slow part, and the timeline lingers on it on "
-                    "purpose. The cluster copies every stored volume from the old "
-                    "box's drives to the new box's drives across the fast link, "
-                    "while both boxes keep answering the applications. The work "
+                    "purpose. The cluster copies every stored volume (a volume is "
+                    "the chunk of storage one application sees as its disk) from "
+                    "the old box's drives to the new box's drives across that "
+                    "network, while the old box keeps answering the applications. "
+                    "Before any of it moves, each application's computer is given "
+                    "a second path, to the new box, which waits unused; that is "
+                    "why the new box's ports are still dark. The work "
                     "rate dips a little, to about 230 thousand operations a "
                     "second in this illustrative run, but never below 85 percent "
                     "of normal, and the downtime counter stays at zero. Moving a "
@@ -264,15 +275,22 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                 standard=(
                     "The live rebalance, and the longest stage in the trace. The "
                     "cluster drains volumes from the prior bay to the Elite's E3 "
-                    "pool across the RDMA mesh while both arrays keep serving "
-                    "hosts. IOPS sags under the copy load, to about 230K "
+                    "pool across the cluster network while the prior array keeps "
+                    "serving hosts through its own ports; the Elite's front end "
+                    "stays dark until cutover. One prerequisite makes the zero "
+                    "possible: hosts are mapped and multipathed to the Elite "
+                    "before the first volume moves. IOPS sags under the copy load, to about 230K "
                     "(illustrative), but the service floor of 85% of baseline "
-                    "holds and downtime stays at zero. The hours a migration "
-                    "takes did not disappear; they stopped requiring an outage."
+                    "holds and downtime stays at zero. In PowerStore's own "
+                    "vocabulary this is an internal migration between appliances, "
+                    "and its hours did not disappear; they stopped requiring an "
+                    "outage or a host-side migration project."
                 ),
                 expert=(
-                    "Live rebalance, longest stage: volumes drain prior bay to E3 "
-                    "pool over RDMA. IOPS ~230K (illustrative), floor >=85% of "
+                    "Live rebalance (internal appliance-to-appliance migration), "
+                    "longest stage: volumes drain prior bay to E3 pool over the "
+                    "cluster net; prior gen still serving, hosts pre-mapped and "
+                    "multipathed to the Elite. IOPS ~230K (illustrative), floor >=85% of "
                     "baseline, downtime 0. Cost is duration, not availability."
                 ),
             ),
@@ -286,7 +304,7 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             ],
             layer_reveal=_MESH,
             trace_cursor=6,
-            duration_ms=32_000,
+            duration_ms=38_000,
         ),
         TourStep(
             id="cutover",
@@ -295,8 +313,8 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                 novice=(
                     "The data has moved. Now the applications' traffic shifts "
                     "over to the new box's connections, and they notice nothing, "
-                    "because each application already had more than one path to "
-                    "its storage and simply starts using the new one. Only now "
+                    "because each application was given a path to the new box "
+                    "before the move began and simply starts using it. Only now "
                     "does the speed jump: about three times the old rate, around "
                     "760 thousand operations a second in this illustrative run. "
                     "The threefold figure is Dell's own claim for the new platform, "
@@ -306,10 +324,12 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                 ),
                 standard=(
                     "Cutover. Multipathing (each host holding several paths to "
-                    "its storage) shifts host I/O to the Elite's front end with "
+                    "its storage, the Elite's among them since before the "
+                    "rebalance) shifts host I/O to the Elite's front end with "
                     "no interruption, and only now does the headline engage: up "
-                    "to 3x IOPS versus the prior generation, Dell's claim on a "
-                    "70/30 read/write, 8K basis, about 760K here (illustrative). "
+                    "to 3x IOPS versus the prior generation, Dell's preliminary "
+                    "figure for a 1500 against a 1200T on a 70/30 read/write, 8K "
+                    "basis, about 760K here (illustrative). "
                     "Before this step the cluster never served above its 250K "
                     "baseline. The tripling is a property of the modernized "
                     "estate, not of the box in the crate."
@@ -342,23 +362,31 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                 novice=(
                     "In the old way, the old array would now be unplugged and "
                     "thrown out. Here it stays. It never left the cluster, so "
-                    "giving it a new, lighter job, such as keeping copies of data "
-                    "for safety or hosting a test setup, is just a change of "
-                    "settings, not another move. Upgrades stop producing scrap "
-                    "and start producing second roles."
+                    "giving it a new, lighter job, such as keeping snapshots "
+                    "(saved earlier versions of the data) or hosting a test setup, "
+                    "is just a change of settings, not another move. One job it "
+                    "cannot do from here is hold the disaster copy: that copy "
+                    "belongs in a separate cluster, ideally in another building, "
+                    "so the box would have to be taken out and set up there. "
+                    "Upgrades stop producing scrap and start producing second roles."
                 ),
                 standard=(
-                    "The prior generation is repurposed in place: replication "
-                    "target, snapshot host, test estate, lighter roles its "
+                    "The prior generation is repurposed in place: snapshot "
+                    "retention, test and development estate, lighter roles its "
                     "hardware still serves well. Because it never left the "
-                    "cluster, the reassignment is policy, not migration. The "
-                    "refresh cycle stops producing decommissioned arrays and "
-                    "starts producing second roles."
+                    "cluster, the reassignment is policy, not a project. A "
+                    "replication target is the exception: PowerStore replicates "
+                    "between clusters, and a copy inside this one would share its "
+                    "failure domain, so that role means removing the appliance "
+                    "and redeploying it as a remote system. The refresh cycle "
+                    "stops producing decommissioned arrays and starts producing "
+                    "second roles."
                 ),
                 expert=(
-                    "Prior gen repurposed in place (replication target, "
-                    "snapshots, test). Never left the cluster: policy change, "
-                    "no migration."
+                    "Prior gen repurposed in place (snapshot retention, "
+                    "test/dev). Never left the cluster: policy change, no "
+                    "project. Replication target means a separate cluster: "
+                    "remove and redeploy remote."
                 ),
             ),
             camera=frame(
@@ -372,7 +400,7 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
             ],
             layer_reveal=_MESH,
             trace_cursor=9,
-            duration_ms=24_000,
+            duration_ms=32_000,
         ),
         TourStep(
             id="mixed-generation-end",
@@ -387,7 +415,7 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "and the Elite will be the one that takes the second job. "
                     "The downtime counter ends where it began, at zero. The "
                     "PowerScale and PowerFlex twins make the same argument, "
-                    "growing without moving data, in their own ways."
+                    "growing without an outage, in their own ways."
                 ),
                 standard=(
                     "Reassembled. The Elite serves at about 3x baseline, 7 PB "
@@ -397,7 +425,7 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                     "will join the same way, and the Elite will inherit the "
                     "second job. Downtime ends where it began, at zero. The "
                     "PowerScale and PowerFlex twins make the sibling argument for "
-                    "growth without migration."
+                    "growth without a migration project."
                 ),
                 expert=(
                     "End state: two generations, one cluster; Elite ~3x, 7 PB "
@@ -427,7 +455,8 @@ def build_tour(anatomy: ChassisAnatomy) -> Tour:
                 "A guided walk through a storage upgrade that never stops the "
                 "applications, narrated beat by beat. Watch it play, or pause "
                 "and click anything to look closer; the tour waits for you. It "
-                "reads best after the PowerStore tour."
+                "stands on its own; the PowerStore twin's tour covers how one "
+                "of these boxes starts up, if you want that first."
             ),
             standard=(
                 "A narrated walk through a live mixed-generation cluster join. "

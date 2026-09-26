@@ -49,10 +49,16 @@ def _snapshot(idx: int, x0: float) -> DetectRegion:
     return DetectRegion(
         id=f"snap-{idx}",
         kind="snapshot",
-        label=f"T-{TOTAL_SNAPSHOTS - idx}",
+        # "3 · T-4": the snapshot's number (oldest first), then its position
+        # counted back from the newest. The prose says "snapshot 3"; the box
+        # has to say so too.
+        label=f"{idx} · T-{TOTAL_SNAPSHOTS - idx}",
         x=x0, y=15, w=12, h=12,
         description=(
-            f"Snapshot {idx} of {TOTAL_SNAPSHOTS} — a point-in-time copy "
+            f"Snapshot {idx} of {TOTAL_SNAPSHOTS}, numbered oldest first; "
+            f"T-{TOTAL_SNAPSHOTS - idx} means {TOTAL_SNAPSHOTS - idx} "
+            "snapshots before the newest, a position and not a number of "
+            "days. It is a point-in-time copy "
             "of the volume, taken on the ordinary schedule long before "
             "anyone suspected anything. Every one of these looks equally "
             "trustworthy from the outside: same naming, same size, same "
@@ -71,7 +77,7 @@ ANATOMY = DetectAnatomy(
     name="Dell Cyber Detect — content-based ransomware detection",
     vendor="Dell Technologies (content analysis by Index Engines)",
     form_factor="AI detection running against snapshots on primary storage",
-    generation="Cyber Detect for PowerStore (Q3 2026) and PowerMax (2H 2026)",
+    generation="Cyber Detect for Storage: PowerStore (Q3 2026), PowerMax (planned 2H 2026)",
     year=2026,
     width=100,
     height=58,
@@ -236,7 +242,7 @@ ANATOMY = DetectAnatomy(
                 "The deliverable, and the thing that distinguishes this "
                 "from an alerting product. The output is not 'you have "
                 "ransomware' — by the point anyone is running this, that "
-                "is known. The output is 'snapshot T-4, taken at 03:00 on "
+                "is known. The output is 'snapshot 3 (T-4), taken at 03:00 on "
                 "Tuesday, is the last copy whose contents are provably "
                 "intact', with the evidence attached. That sentence is "
                 "what a recovery decision actually requires, and producing "
@@ -268,13 +274,16 @@ ANATOMY = DetectAnatomy(
     ],
     stats=[
         Stat(label="Method", value="Byte-level content analysis, not metadata"),
-        Stat(label="Accuracy", value="99.99% (Dell figure)"),
-        Stat(label="Training", value="Thousands of ransomware variants"),
+        Stat(
+            label="Accuracy",
+            value="99.99% (vendor claim: ESG report commissioned by Index Engines, June 2024)",
+        ),
+        Stat(label="Training", value="7,500+ ransomware variants (Dell figure)"),
         Stat(label="Where it runs", value="On the array, against local snapshots"),
         Stat(label="Output", value="The last provably clean copy, by name"),
-        Stat(label="Technology", value="Index Engines content analysis"),
-        Stat(label="PowerStore", value="Available Q3 2026"),
-        Stat(label="PowerMax", value="Available 2H 2026"),
+        Stat(label="Technology", value="Index Engines CyberSense content analysis"),
+        Stat(label="PowerStore", value="Supported (announced for Q3 2026)"),
+        Stat(label="PowerMax", value="Planned for 2H 2026 (Dell)"),
     ],
     photo=TIMELINE_ILLO,
     sources=[
@@ -289,6 +298,10 @@ ANATOMY = DetectAnatomy(
         SourceLink(
             label="Dell Technologies reimagines the modern data center for the AI era (May 2026)",
             url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~05~dell-technologies-reimagines-the-modern-data-center-for-the-ai-era.htm",
+        ),
+        SourceLink(
+            label="Index Engines — Dell Cyber Detect, powered by CyberSense (7,500+ variants, 99.99% claim)",
+            url="https://indexengines.com/products/dell-cyber-detect/",
         ),
         SourceLink(
             label="Dell PowerMax cybersecurity — security and compliance",

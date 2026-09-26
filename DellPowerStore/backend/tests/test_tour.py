@@ -48,18 +48,39 @@ def test_six_to_nine_beats_exterior_first():
     assert steps[-1].layer_reveal == 0
 
 
-def test_the_signature_step_frames_both_nodes_and_the_link():
-    """The camera 'splits across -a/-b': the mirrored-ack beat lights the
-    cache on both nodes and the link between them, and frames all of it."""
+def test_the_signature_step_frames_the_shared_cache_and_both_nodes():
+    """The mirror is a pair of NVRAM drives in the shared bay that both nodes
+    reach (Dell H18157, and what the node-loss trace depends on). So the beat
+    lights the NVRAM and both nodes, and never the interconnect or the DIMMs:
+    lighting those would draw a node-to-node mirror the failure trace denies."""
     step = STEPS[SIGNATURE_STEP_ID]
-    assert {"dimm-a", "dimm-b", "interconnect", "nvram"} <= set(step.region_ids)
+    assert {"nvram", "board-a", "board-b"} <= set(step.region_ids)
+    assert not {"interconnect", "dimm-a", "dimm-b"} & set(step.region_ids)
+    assert "interconnect" not in simulate()[step.trace_cursor].active_regions
     boxes = {r.id: r for r in ANATOMY.regions}
     cam = step.camera
     for rid in step.region_ids:
         r = boxes[rid]
         assert cam.x <= r.x and r.x + r.w <= cam.x + cam.w + 1e-6, rid
         assert cam.y <= r.y and r.y + r.h <= cam.y + cam.h + 1e-6, rid
-    assert step.layer_reveal == max(layer_map(ANATOMY).values())
+    # The link layer is peeled one beat later, where the link is the subject.
+    assert step.layer_reveal < max(layer_map(ANATOMY).values())
+    assert STEPS["nodes-converge"].layer_reveal == max(layer_map(ANATOMY).values())
+
+
+def test_the_happy_path_and_the_failure_trace_describe_one_write_path():
+    """Students predicted 'write-through' on the failure stop because the tour
+    once said the second copy crossed the interconnect. No level of the beat,
+    or of the trace step it pins, may say that again."""
+    reg = registry()
+    step = STEPS[SIGNATURE_STEP_ID]
+    texts = list(reg[step.script].values())
+    texts += list(reg[simulate()[step.trace_cursor].description].values())
+    for text in texts:
+        low = text.lower()
+        assert "shared" in low, text
+        for wrong in ("cross-node", "node to node,", "to its partner", "to the other half"):
+            assert wrong not in low, (wrong, text)
 
 
 def test_the_signature_step_pins_the_nvram_trace_step():

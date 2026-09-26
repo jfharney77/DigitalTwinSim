@@ -227,7 +227,9 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         # Gray failure: goodput penalty on the affected share, and the
         # counters stay clean — that is the point.
         goodput_penalty = 0.0
+        affected_penalty = 0.0
         if gray and delivered > 0:
+            affected_penalty = C("gray_goodput_penalty")
             affected_share = 1.0 / max(cfg.leaves, 1)
             goodput_penalty = affected_share * C("gray_goodput_penalty")
             delivered *= 1.0 - goodput_penalty / 100.0
@@ -358,6 +360,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             asic_power_w=round(asic_w, 0),
             status_all_green=status_green,
             goodput_penalty_pct=round(goodput_penalty, 1),
+            affected_flow_penalty_pct=round(affected_penalty, 1),
             poe_budget_w=round(budget, 0),
             poe_demand_w=round(demand_w, 0),
             devices_powered=powered,

@@ -82,6 +82,16 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
     ei = 0
     alarm_day = -1
     capacity_full_day = -1
+    # The capacity-side watch: once something disturbs the estate
+    # (ransomware, host encryption) the engine projects the pre-disturbance
+    # straight line forward and notes the first day physical leaves it by
+    # more than the notice margin. It exists so "weeks later" is a number.
+    notice_margin = C("capacity_notice_margin_pct") / 100.0
+    trend_window = int(C("capacity_trend_window_days"))
+    disturbed_day = -1       # day the first disturbance took effect
+    trend_anchor = 0.0       # physical TB on that day
+    trend_slope = 0.0        # TB/day over the window before it
+    capacity_notice_day = -1
     warned_capacity = False
     gc_started = False
     peak_entropy = 0.0
@@ -102,6 +112,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             elif ev.action == "enable-host-encryption":
                 if not host_encrypted:
                     host_encrypted = True
+                    if disturbed_day < 0:
+                        disturbed_day = day
                     log.append(LogEntry(
                         day=day, severity="warning",
                         message="Source enabled host-side encryption — every "
@@ -115,6 +127,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                                                 "next backup re-baselines in clear"))
             elif ev.action == "ransomware-start" and ev.value is not None:
                 rw_rate = max(0.0, min(1.0, ev.value / 100.0))
+                if rw_rate > 0 and disturbed_day < 0:
+                    disturbed_day = day
                 log.append(LogEntry(
                     day=day, severity="critical",
                     message=f"Ransomware begins encrypting ~{ev.value:g}% of the "
@@ -122,8 +136,15 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 ))
             elif ev.action == "ransomware-stop":
                 rw_rate = 0.0
-                log.append(LogEntry(day=day, severity="info",
-                                    message="Ransomware halted"))
+                log.append(LogEntry(
+                    day=day, severity="info",
+                    message=(
+                        f"Ransomware halted with {100.0 * enc_fraction:.0f}% of "
+                        "the dataset encrypted. Encrypted files are no longer "
+                        "edited in this model, so ordinary daily churn now "
+                        f"comes from the clean {100.0 * (1.0 - enc_fraction):.0f}% only"
+                    ),
+                ))
 
         cf = local_compression(entropy)
         gc_reclaimed = 0.0
@@ -238,6 +259,32 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
                 message="Store full — in production, backups now fail",
             ))
 
+        # Capacity-side detection: physical vs the pre-disturbance trend.
+        trend_tb = 0.0
+        if disturbed_day >= 0:
+            if day == disturbed_day:
+                trend_anchor = physical
+                # Slope over completed backups only: day 0 is the empty
+                # store, and the first full is a step, not a trend.
+                back = min(trend_window, max(0, len(trace) - 2))
+                trend_slope = (
+                    (physical - trace[-back].physical_tb) / back if back > 0 else 0.0
+                )
+            trend_tb = trend_anchor + trend_slope * (day - disturbed_day)
+            if (
+                capacity_notice_day < 0
+                and day > disturbed_day
+                and trend_tb > 0
+                and physical > (1.0 + notice_margin) * trend_tb
+            ):
+                capacity_notice_day = day
+                log.append(LogEntry(
+                    day=day, severity="warning",
+                    message=f"Capacity notice: physical {physical:.0f} TB is "
+                            f"more than {100.0 * notice_margin:g}% above the "
+                            f"pre-event trend ({trend_tb:.0f} TB)",
+                ))
+
         # Fingerprint index vs RAM: the ingest knee.
         unique_chunks = physical_data * 1e12 / chunk_bytes
         index_gb = unique_chunks * entry_bytes * ram_fraction / 1e9
@@ -274,6 +321,8 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
             todays_novel_physical_tb=round(todays_novel, 4),
             gc_reclaimed_tb=round(gc_reclaimed, 4),
             capacity_used_pct=round(capacity_used, 2),
+            capacity_trend_tb=round(trend_tb, 3),
+            capacity_noticed=capacity_notice_day >= 0,
             stream_entropy_pct=round(stream_entropy, 1),
             entropy_alarm=alarm,
             host_encrypted=host_encrypted,
@@ -296,6 +345,7 @@ def simulate(scenario: Scenario) -> tuple[list[SimState], list[LogEntry], Summar
         peak_stream_entropy_pct=round(peak_entropy, 1),
         alarm_day=alarm_day,
         capacity_full_day=capacity_full_day,
+        capacity_notice_day=capacity_notice_day,
         final_capacity_used_pct=last.capacity_used_pct,
     )
     return trace, log, summary

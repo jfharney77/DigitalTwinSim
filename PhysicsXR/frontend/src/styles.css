@@ -600,3 +600,7 @@ label.field.cfg-row { display: flex; flex-direction: row; align-items: center; g
   .app.dell header .sub { margin-left: 0; flex-basis: 100%; }
   .app.dell .an-hero { padding: 20px 16px 24px; }
 }
+
+/* Playback row: the warmed-up toggle sits beside Restart run. */
+.app.dell .warm-toggle { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.app.dell .filter-changed { color: var(--dell-blue, #0672cb); }

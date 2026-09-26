@@ -79,6 +79,9 @@ export interface PowerOnState {
 
 export interface PowerOnResponse {
   trace: PowerOnState[];
+  // Leveled landing prose for the Power-on page (backend/app/anatomy.py).
+  introTitle: string;
+  intro: string;
 }
 
 export interface CatalogOption {

@@ -40,12 +40,18 @@ def test_pro_max_plus_is_placed_on_the_map():
     assert "Pro Max Plus" in pm.description
 
 
-def test_unconfirmed_2026_claims_are_labeled_reported():
-    """The `verify` discipline: the Pro Precision rename has thinner
-    sourcing than the XPS revival and must say so."""
+def test_2026_claims_are_labeled_by_sourcing_strength():
+    """The `verify` discipline, updated by the September 2026 fact-check:
+    Dell's March 25, 2026 release confirms the 'Dell Pro Precision' name,
+    so the page must cite Dell for it. What Dell has not said — the
+    model-by-model mapping and whether Pro Max is retired — must still
+    read as reported."""
+    assert "Dell Pro Precision" in BRAND_MAP.since_note
     assert "reported" in BRAND_MAP.since_note.lower()
     pm = next(b for b in BRANDS if b.id == "dell-pro-max")
     assert "reported" in pm.description.lower()
+    urls = " ".join(s["url"] for s in BRAND_MAP.sources)
+    assert "dell.com" in urls and "2026~03" in urls, "Dell's own release"
 
 
 def test_cross_links_to_the_two_narrative_twins():

@@ -1,0 +1,116 @@
+{
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "model": "ME5024",
+          "driveType": "hdd-10k",
+          "driveCount": 24,
+          "driveTb": 2,
+          "raidLevel": "6",
+          "spares": 1,
+          "controllers": 2,
+          "hostInterface": "iSCSI"
+        },
+        "workload": {
+          "offeredKiops": 3,
+          "readPct": 70,
+          "blockKb": 8
+        },
+        "durationMin": 720,
+        "tickMinutes": 1,
+        "events": []
+      },
+      {
+        "config": {
+          "model": "ME5024",
+          "driveType": "hdd-10k",
+          "driveCount": 24,
+          "driveTb": 2,
+          "raidLevel": "6",
+          "spares": 1,
+          "controllers": 2,
+          "hostInterface": "iSCSI"
+        },
+        "workload": {
+          "offeredKiops": 1.0,
+          "readPct": 40,
+          "blockKb": 4
+        },
+        "durationMin": 120,
+        "tickMinutes": 1,
+        "events": []
+      },
+      {
+        "config": {
+          "model": "ME5012",
+          "driveType": "hdd-7.2k",
+          "driveCount": 12,
+          "driveTb": 20,
+          "raidLevel": "6",
+          "spares": 1,
+          "controllers": 2,
+          "hostInterface": "iSCSI"
+        },
+        "workload": {
+          "offeredKiops": 0.3,
+          "readPct": 95,
+          "blockKb": 64
+        },
+        "durationMin": 10080,
+        "tickMinutes": 10,
+        "events": [
+          {
+            "atMin": 60,
+            "action": "fail-drive",
+            "index": 0,
+            "value": null,
+            "workload": null
+          }
+        ]
+      },
+      {
+        "config": {
+          "model": "ME5024",
+          "driveType": "ssd",
+          "driveCount": 24,
+          "driveTb": 8,
+          "raidLevel": "6",
+          "spares": 1,
+          "controllers": 2,
+          "hostInterface": "FC"
+        },
+        "workload": {
+          "offeredKiops": 170.0,
+          "readPct": 70,
+          "blockKb": 8
+        },
+        "durationMin": 4320,
+        "tickMinutes": 5,
+        "events": [
+          {
+            "atMin": 60,
+            "action": "fail-drive",
+            "index": 0,
+            "value": null,
+            "workload": null
+          },
+          {
+            "atMin": 240,
+            "action": "fail-drive",
+            "index": 1,
+            "value": null,
+            "workload": null
+          },
+          {
+            "atMin": 480,
+            "action": "fail-controller",
+            "index": null,
+            "value": null,
+            "workload": null
+          }
+        ]
+      }
+    ]
+  }
+}

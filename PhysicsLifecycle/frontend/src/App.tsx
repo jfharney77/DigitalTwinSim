@@ -11,10 +11,13 @@ import {
 import { BuildPanel } from "./components/BuildPanel";
 import { ProductGallery } from "./components/ProductGallery";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { LifecycleView } from "./components/LifecycleView";
 import { StripCharts } from "./components/StripCharts";
 import { Timeline, bandsWhere } from "./components/Timeline";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -89,10 +92,22 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+  }, [level]);
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -178,6 +193,50 @@ return () => {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setEvents(lab.start.events);
+    setDurationD(lab.start.durationD);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+  // Inside a lab the run length and the placed events are part of the
+  // problem, so a preset changes the dials and leaves them alone.
+  const inLab = labsOpen && activeLab !== null;
+
   const pickProduct = (c: LifecycleConfig) => {
     if (c.product !== config.product) {
       setDurationD(durationFor(c.product));
@@ -222,6 +281,15 @@ return () => {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -252,6 +320,22 @@ return () => {
         {anatomy?.overview && <p className="hero-overview">{anatomy.overview}</p>}
       </div>
 
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
+
       <div className="thermal-grid">
         <div className="thermal-col">
           <ProductGallery
@@ -268,9 +352,10 @@ return () => {
             onChange={pickProduct}
             onPreset={(p) => {
               setConfig(p.config);
-              setDurationD(durationFor(p.config.product));
               setCursor(0);
               setActiveScenario(null);
+              if (inLab && p.config.product === config.product) return;
+              setDurationD(durationFor(p.config.product));
               setEvents(p.config.product === "telecomblocks" ? DEFAULT_EVENTS : []);
             }}
           />
@@ -357,7 +442,7 @@ return () => {
           <div className="mini footnote">
             All carbon figures are illustrative estimates for education —
             Dell publishes per-product PCF reports, the real calibration
-            source. Telecom envelope figures carry verify labels.
+            source. The 55 °C XR ceiling is Dell's published XR8000 rating; other telecom figures are estimates.
             Companions: DellNativeEdge (:5187) — telecom is its most
             extreme fleet; DellCircularDesign/initial_spec.md is the
             narrated-twin spec this half descends from.

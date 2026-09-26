@@ -1,16 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchFirstRun, fetchTour } from "./api";
+import {
+  HAPPY_SCENARIO,
+  fetchAnatomy,
+  fetchFirstRun,
+  fetchScenarios,
+  fetchTour,
+} from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
 import { ClusterView } from "./components/ClusterView";
 import { FirstRunControls } from "./components/FirstRunControls";
-import { FirstRunCounters } from "./components/FirstRunCounters";
+import { FirstRunCounters, clockLabel } from "./components/FirstRunCounters";
 import { LevelControl } from "./components/LevelControl";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
 import { useLevel } from "./level";
-import type { ClusterAnatomy, FirstRunState, RegionKind } from "./types";
+import type {
+  ClusterAnatomy,
+  FirstRunState,
+  RegionKind,
+  ScenarioInfo,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -27,17 +38,36 @@ function pageFromHash(): Page {
 
 // Deep-link into the trace: #step=N (clamped) or #phase=<name> (first
 // matching state). Returns null when the hash names neither.
+//
+// Both compose with a scenario: #scenario=node-add-mismatch&phase=refused.
+// The hash is read as key=value pairs joined by "&"; a page hash such as
+// #anatomy has no "=" and yields no parameters.
+function hashParams(): URLSearchParams {
+  const h = window.location.hash.replace(/^#/, "");
+  return new URLSearchParams(h.includes("=") ? h : "");
+}
+
 function initialStepFromHash(states: { phase: string }[]): number | null {
   if (states.length === 0) return null;
-  const h = window.location.hash;
-  const step = h.match(/#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  const params = hashParams();
+  const step = params.get("step");
+  if (step !== null && /^\d+$/.test(step)) {
+    return Math.min(Number(step), states.length - 1);
+  }
+  const phase = params.get("phase");
+  if (phase !== null) {
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
+}
+
+// Which trace the sim page plays: #scenario=<id>. Absent means the first
+// run. An unknown id is kept as typed; the backend answers 404 and the page
+// shows the error instead of quietly playing something else.
+function scenarioFromHash(): string {
+  const id = hashParams().get("scenario");
+  return id && /^[a-z0-9-]+$/i.test(id) ? id : HAPPY_SCENARIO;
 }
 
 const PAGE_HASH: Record<Page, string> = {
@@ -77,6 +107,10 @@ export function App() {
 
   const [anatomy, setAnatomy] = useState<ClusterAnatomy | null>(null);
   const [trace, setTrace] = useState<FirstRunState[]>([]);
+  const [scenario, setScenario] = useState<string>(scenarioFromHash);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(8);
@@ -105,23 +139,97 @@ export function App() {
 
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
+  // A scenario change refetches too (the node-add scenario has its own,
+  // taller map), and re-arms the deep link so that
+  // #scenario=<id>&phase=<name> lands on that phase of the new trace.
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchFirstRun()])
-      .then(([an, fr]) => {
+    let stale = false;
+    Promise.all([
+      fetchAnatomy(scenario),
+      fetchFirstRun(scenario),
+      fetchScenarios(),
+    ])
+      .then(([an, fr, sc]) => {
+        if (stale) return;
+        setError(null);
         setAnatomy(an);
         setTrace(fr.trace);
+        setScenarios(sc);
         if (!hashApplied.current) {
           hashApplied.current = true;
           const start = initialStepFromHash(fr.trace);
           if (start !== null) setCursor(start);
         }
       })
-      .catch((e) => setError(String(e)));
-  }, [level]);
+      .catch((e) => {
+        if (stale) return;
+        const message = e instanceof Error ? e.message : String(e);
+        // A mistyped #scenario= is not an outage: play the first run instead
+        // of leaving an empty page.
+        if (scenario !== HAPPY_SCENARIO && /404|Unknown scenario/.test(message)) {
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search,
+          );
+          setScenario(HAPPY_SCENARIO);
+          return;
+        }
+        setTrace([]);
+        setError(message);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [level, scenario]);
 
-  // A #step=/#phase= typed into an already-open page moves the cursor too.
+  // Pick a scenario: stop, rewind, and put the choice in the URL. The cursor
+  // always resets, because step N of one trace is not step N of another.
+  const chooseScenario = useCallback(
+    (id: string) => {
+      if (id === scenarioRef.current) return;
+      stop();
+      setCursor(0);
+      setRegionId(null);
+      hashApplied.current = true; // a picked scenario starts at its first step
+      window.history.replaceState(
+        null,
+        "",
+        id === HAPPY_SCENARIO
+          ? window.location.pathname + window.location.search
+          : `#scenario=${id}`,
+      );
+      setScenario(id);
+    },
+    [stop],
+  );
+
+  // The guided tour narrates the first run on the four-node map and drives
+  // this same cursor, so opening it puts the first run back under it.
+  useEffect(() => {
+    if (page === "tour" && scenarioRef.current !== HAPPY_SCENARIO) {
+      stop();
+      setCursor(0);
+      setScenario(HAPPY_SCENARIO);
+    }
+  }, [page, stop]);
+
+  // A #scenario=/#step=/#phase= typed into an already-open page moves the
+  // app too, not just the URL.
   useEffect(() => {
     const onHash = () => {
+      if (pageFromHash() !== "firstrun") return;
+      const wanted = scenarioFromHash();
+      if (wanted !== scenarioRef.current) {
+        // A different trace: rewind now, and let the fetch apply any
+        // &phase= / &step= once the new trace has arrived.
+        stop();
+        setCursor(0);
+        setRegionId(null);
+        hashApplied.current = false;
+        setScenario(wanted);
+        return;
+      }
       const start = initialStepFromHash(trace);
       if (start !== null) {
         stop();
@@ -189,6 +297,9 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speed]);
 
+  const scenarioInfo = scenarios.find((s) => s.id === scenario) ?? null;
+  const isFailure = scenario !== HAPPY_SCENARIO;
+
   const selectedRegion =
     anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const kinds = anatomy
@@ -233,7 +344,7 @@ export function App() {
         </nav>
         {page === "firstrun" && (
           <span className="sub">
-            {state ? `${state.label} · t+${state.elapsedSeconds}s` : "—"}
+            {state ? `${state.label} · ${clockLabel(state.elapsedSeconds)}` : "—"}
           </span>
         )}
         <LevelControl />
@@ -248,7 +359,7 @@ export function App() {
           {(tourError || error) && (
             <div className="mini an-error">{tourError ?? error}</div>
           )}
-          {tour && anatomy && (
+          {tour && anatomy && !isFailure && anatomy.height === tour.mapHeight && (
             <TourPlayer
               tour={tour.tour}
               layers={tour.layers}
@@ -304,16 +415,57 @@ export function App() {
       {page === "firstrun" && (
         <>
           <div className="an-hero">
-            <h2>What happens on a cluster's first run</h2>
-            <p>
-              A VxRail cluster is not one machine booting — it is several
-              identical nodes fusing into one hyperconverged system. Power them
-              on together and they boot VMware ESXi, find each other over the
-              network, and elect a primary node that runs VxRail Manager. That
-              node then builds the vSphere cluster and pools every node's local
-              NVMe into one shared vSAN datastore. Play the trace and watch each
-              stage light up the hardware it runs on.
-            </p>
+            <h2>
+              {isFailure
+                ? "What happens when a node add is refused"
+                : "What happens on a cluster's first run"}
+            </h2>
+            {isFailure ? (
+              <p>
+                Months after the first run, the cluster needs capacity and a
+                fifth node arrives. Its factory image is older than the
+                cluster, which was upgraded in the meantime. VxRail Manager
+                checks the version before it changes anything, so the add is
+                refused while the node is still a stranger to vSAN (the
+                software that pools the nodes' drives). The admin re-images
+                the node, the retry passes, and vSAN rebalances across five.
+                Watch the four original nodes: they stay lit on every step.
+              </p>
+            ) : level <= 2 ? (
+              <p>
+                A VxRail cluster is not one computer starting up. It is
+                several identical servers, called nodes, joining into one
+                system. Each node first loads software that lets one real
+                server run many pretend computers, called virtual machines.
+                The nodes then find each other over the network and pick one
+                of themselves to lead. The leader runs VxRail Manager, the
+                program that joins the nodes into one cluster and pools the
+                fast flash drives inside every node into one shared store of
+                data. Play the trace and watch each stage light up the
+                hardware it runs on.
+              </p>
+            ) : level >= 4 ? (
+              <p>
+                Four nodes boot ESXi in lockstep, discover each other, and
+                elect a primary that runs VxRail Manager. It builds the
+                vSphere cluster and claims every node's NVMe into one vSAN
+                datastore. Play the trace to see which hardware each stage
+                uses.
+              </p>
+            ) : (
+              <p>
+                A VxRail cluster is not one machine booting. It is several
+                identical nodes fusing into one hyperconverged system, where
+                compute, storage and virtualization share the same servers.
+                Power them on together and each boots VMware ESXi, the
+                hypervisor that runs virtual machines. The nodes find each
+                other over the network and elect a primary node that runs
+                VxRail Manager. That node builds the vSphere cluster and
+                pools every node's local NVMe drives into one shared vSAN
+                datastore. Play the trace and watch each stage light up the
+                hardware it runs on.
+              </p>
+            )}
             <button
               className="primary firstrun-tour-link"
               onClick={() => setPage("tour")}
@@ -328,6 +480,7 @@ export function App() {
                 <ClusterView
                   anatomy={anatomy}
                   active={new Set(state?.activeRegions ?? [])}
+                  failed={new Set(state?.failedRegions ?? [])}
                   selected={regionId}
                   onSelect={setRegionId}
                 />
@@ -337,18 +490,52 @@ export function App() {
                   <strong>{state.label}.</strong> {state.description}
                 </div>
               )}
-              <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step. Watch
-                the nodes move in lockstep — until the primary election, when
-                exactly one node lights up to run VxRail Manager. Click a block
-                to pin what it is; every block is described under Inside the
-                cluster.
-              </div>
+              {isFailure ? (
+                <div className="mini an-hint">
+                  Highlighted blocks are the parts doing work at this step.
+                  Blocks with a dashed red outline belong to the refused node.
+                  The fifth node is the bottom row; its NVMe stays dark until
+                  the second check has passed. Click a block to pin what it
+                  is.
+                </div>
+              ) : (
+                <div className="mini an-hint">
+                  Highlighted blocks are the parts doing work at this step.
+                  Watch the nodes move in lockstep — until the primary
+                  election, when exactly one node lights up to run VxRail
+                  Manager. Click a block to pin what it is; every block is
+                  described under Inside the cluster.
+                </div>
+              )}
+              {isFailure && scenarioInfo && (
+                <div className="mini scenario-note">
+                  <p>
+                    How the refusal, the re-image and discovery behave follows
+                    the sources below. The version pair, terabytes, VM count,
+                    watts and timings are illustrative.
+                  </p>
+                  <div className="an-sources">
+                    {scenarioInfo.sources.map((src) => (
+                      <a
+                        key={src.url}
+                        href={src.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {src.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <aside className="controls">
             <FirstRunControls
+              scenario={scenario}
+              scenarios={scenarios}
+              onScenario={chooseScenario}
               speed={speed}
               running={running}
               done={done}

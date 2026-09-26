@@ -53,36 +53,50 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "The pipeline moves as fast as its slowest stage — "
-                    "here, the cleaning stage, and the map paints it "
-                    "hot while data piles up in front of it. At hour "
-                    "120 that stage gets six times faster (GPU "
-                    "acceleration). Watch what happens: the pipeline "
-                    "speeds up, and a different stage immediately "
-                    "becomes the slowest. There is always exactly one "
-                    "bottleneck; improvement is the art of choosing "
-                    "which one you can live with."
+                    "The pipeline moves as fast as its slowest stage. "
+                    "Here that is the cleaning stage at 6 TB/h, while "
+                    "8 TB/h arrives, so the map paints it hot and data "
+                    "piles up in front of it. The GPUs want 16 TB/h and "
+                    "get 11, so the 'GPU idle' gauge opens near 31%. At "
+                    "hour 120 the cleaning stage gets six times faster "
+                    "(GPU acceleration). The pile rushes downstream and "
+                    "the next stage, index, becomes the slow one at "
+                    "15 TB/h. For about a day and a half the GPUs are "
+                    "fully fed. Then the pile is gone, and the pipeline "
+                    "can only deliver the 8 TB/h that arrives. The "
+                    "'limited by' readout now says 'arrival', and the "
+                    "idle gauge settles near 19%. Something always sets "
+                    "the pace. Here it ends up being the sources, which "
+                    "no stage upgrade can fix."
                 ),
                 standard=(
-                    "Theory of constraints, run live: process at "
-                    "6 TB/h binds (arrival 8 exceeds it — the "
-                    "validation panel warned), backlog and freshness "
-                    "lag grow, and the fix-stage event at t=120 (×6 "
-                    "GPU processing) relocates the constraint to "
-                    "index at 15 TB/h. Fix that and serve binds "
-                    "next. The bottleneck field names the constraint "
-                    "each tick; the tests pin its movement."
+                    "Theory of constraints, run live. Process at 6 TB/h "
+                    "binds against 8 TB/h of arrival, so backlog and "
+                    "freshness lag grow, and GPU demand of 16 TB/h is "
+                    "served 11 (throughput plus about 5 TB/h of "
+                    "re-reads): the idle gauge opens near 31%, as the "
+                    "validation panel warned. At t=120 GPU processing "
+                    "multiplies the process rate by 6. The backlog moves "
+                    "to index, which binds at 15 TB/h while it drains, "
+                    "and idle falls to 0. Once the backlog is gone, "
+                    "throughput is the 8 TB/h that arrives: index is "
+                    "still the slowest stage, but the 'limited by' "
+                    "readout says 'arrival', no stage is saturated, and "
+                    "idle settles near 19%. The rates are illustrative."
                 ),
                 expert=(
-                    "min() argmin: process → (×6) → index → serve. "
-                    "The constraint moves; it never dies. Warned, "
-                    "then demonstrated."
+                    "X = min(λ, μᵢ): process (6) → ×6 → index (15) while "
+                    "Q drains → λ = 8. Idle 31% → 0 → 19%; served = "
+                    "min(D, μ_serve, X + 5). The constraint moves, and "
+                    "can leave the pipeline."
                 ),
             ),
         ],
-        question="Which stage became the constraint after the fix, and what did throughput do?",
+        question="What set the pace before the fix, while the backlog drained, and at the end, and what did the GPU idle gauge read each time?",
         scenario=Scenario(
-            config=PIPELINE_CPU, workload=DEFAULT_WL, duration_h=360,
+            config=PIPELINE_CPU,
+            workload=DEFAULT_WL.model_copy(update={"gpu_read_demand_tbh": 16}),
+            duration_h=360,
             events=[SimEvent(at_h=120, action="toggle-gpu-process")],
         ),
     ),
@@ -319,7 +333,7 @@ EXPLAINS = [
             ),
             standard=(
                 "min() over the four stage rates, with the GPU toggle "
-                "multiplying one term ×6 (the labeled claim). Backlog "
+                "multiplying one term ×6 (an estimate). Backlog "
                 "accumulates where inflow exceeds a stage's rate — "
                 "always immediately upstream of the constraint — and "
                 "the fix-stage event demonstrates constraint "

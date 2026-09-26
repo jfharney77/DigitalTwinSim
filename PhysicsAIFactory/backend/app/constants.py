@@ -20,6 +20,14 @@ CONSTANTS: dict[str, Constant] = {
         estimated=True,
         blurb="GPU power at zero utilization, as a fraction of peak.",
     ),
+    "stall_power_fraction": Constant(
+        value=0.65, unit="fraction",
+        source="estimate — a data-starved GPU busy-waits in its dataloader "
+               "and collectives at most of its fed power; the same value "
+               "the PhysicsCompute sim uses",
+        estimated=True,
+        blurb="Share of the demanded-minus-delivered utilization gap that still burns power.",
+    ),
     "rack_overhead_kw": Constant(
         value=12.0, unit="kW/rack",
         source="estimate — NVSwitch trays, CPUs, NICs, power shelves of an "
@@ -39,8 +47,11 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "fabric_eff_ethernet": Constant(
         value=0.95, unit="fraction",
-        source="estimate — NVIDIA's Spectrum-X claim is ~95% effective "
-               "bandwidth under load vs ~60% for untuned Ethernet",
+        source="estimate — NVIDIA's own claim for Spectrum-X on xAI "
+               "Colossus is 95% data throughput vs ~60% for standard "
+               "Ethernet (nvidianews.nvidia.com/news/"
+               "spectrum-x-ethernet-networking-xai-colossus); vendor claim, "
+               "not our measurement",
         estimated=True,
         blurb="Training-step efficiency multiplier on a 1:1 Spectrum-X fabric.",
     ),
@@ -97,8 +108,10 @@ CONSTANTS: dict[str, Constant] = {
     ),
     "install_h_per_rack": Constant(
         value=2.0, unit="h/rack",
-        source="arithmetic on public reporting — xAI Colossus stood up "
-               "~1,500 racks in 122 days: 122 × 24 / 1500 ≈ 1.95 h per rack",
+        source="arithmetic on public reporting (NVIDIA newsroom: 122 days; "
+               "ServeTheHome: 64 GPUs per rack) — xAI Colossus reached "
+               "100,000 GPUs, so ~1,500 racks (100000 / 64), in 122 days: "
+               "122 × 24 / 1500 ≈ 1.95 h per rack, whole-project average",
         estimated=True,
         blurb="Install/integration hours per rack (factory-integrated pace).",
     ),
@@ -119,16 +132,21 @@ CONSTANTS: dict[str, Constant] = {
     # --- Resilience (defaults sourced in the scenario, math constants here) ---
     "mtbf_reference": Constant(
         value=50000, unit="h per GPU",
-        source="arithmetic on Meta's Llama-3 405B report — 419 unplanned "
-               "interruptions in 54 days on 16,384 GPUs: 16384 × 54 × 24 / "
-               "419 ≈ 50,700 h between failures per GPU",
+        source="arithmetic on Meta's Llama 3 paper (arXiv 2407.21783, "
+               "sec. 3.3.4) — 419 unexpected interruptions in a 54-day "
+               "snapshot of pre-training on 16,384 H100s: 16384 × 54 × 24 / "
+               "419 ≈ 50,700 GPU-hours per interruption (all causes, not "
+               "GPU faults alone)",
         estimated=True,
         blurb="Reference per-GPU MTBF for the checkpoint arithmetic.",
     ),
     "tokens_reference": Constant(
         value=200, unit="tokens/s per GPU",
-        source="arithmetic on Meta's Llama-3 405B report — ~15T tokens over "
-               "54 days on 16,384 GPUs ≈ 196 tokens/s per GPU",
+        source="illustrative round number, anchored by arithmetic on Meta's "
+               "Llama 3.1 405B model card (huggingface.co/meta-llama/"
+               "Llama-3.1-405B) — ~15.6T tokens in 30.84M H100 GPU-hours: "
+               "15.6e12 / (30.84e6 × 3600) ≈ 140 tokens/s per H100; rounded "
+               "up to 200 for a Blackwell-class GPU, which is conservative",
         estimated=True,
         blurb="Reference per-GPU training throughput for a frontier model.",
     ),

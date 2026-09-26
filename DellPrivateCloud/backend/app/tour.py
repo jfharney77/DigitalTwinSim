@@ -110,7 +110,7 @@ def build_tour(anatomy: CloudAnatomy) -> Tour:
                     "Forty-eight servers become a pool of computing power, 200 "
                     "terabytes become a pool of storage, and the switches become "
                     "a pool of networking. These numbers are illustrative. The "
-                    "important word is separately. In this repo's VxRail twin, a "
+                    "important word is separately. In the VxRail model in this course, a "
                     "hyperconverged system, computing and storage are fused "
                     "together inside every node, so the mix between them is fixed "
                     "by whichever model you ordered. Here they are three separate "
@@ -260,7 +260,8 @@ def build_tour(anatomy: CloudAnatomy) -> Tour:
                     "The organization runs short of space, so 200 more terabytes of "
                     "storage are added, doubling it. Now look at the computing "
                     "pool: still forty-eight servers, exactly as before. On a "
-                    "hyperconverged cluster, the only way to get more storage is "
+                    "hyperconverged cluster, once the drive slots are full, the "
+                    "way to get more storage is "
                     "to add whole nodes, and every node brings processors and "
                     "memory whether anyone needs them or not. Those extra "
                     "servers would sit in the racks using power, needing "
@@ -270,7 +271,8 @@ def build_tour(anatomy: CloudAnatomy) -> Tour:
                 standard=(
                     "The estate runs short of capacity, so 200 TB more storage "
                     "is added and the pool doubles to 400 TB. The compute figure "
-                    "stays at forty-eight. On a hyperconverged cluster the same "
+                    "stays at forty-eight. On a hyperconverged cluster with its "
+                    "drive bays full the same "
                     "need is met by adding nodes, which bring processors and "
                     "memory whether or not anyone wants them: racked, powered, "
                     "licensed and depreciating. Here nothing scales that was not "
@@ -292,7 +294,7 @@ def build_tour(anatomy: CloudAnatomy) -> Tour:
         ),
         TourStep(
             id=SIGNATURE_STEP_ID,
-            title="A second hypervisor, and nobody notices",
+            title="A second hypervisor, and no service goes down",
             script=L(
                 novice=(
                     "This is the moment the whole design exists for. Some of the "
@@ -301,9 +303,14 @@ def build_tour(anatomy: CloudAnatomy) -> Tour:
                     "rest stay on VMware. Moving workloads between hypervisors "
                     "is slow, careful work, with files to convert and testing to "
                     "do, and it is the longest stage in this whole timeline. The "
-                    "freedom is real, but it is not free. What matters is that "
-                    "it can be done at all, and that it happens with zero "
-                    "downtime: all 120 workloads stay running the entire time, "
+                    "freedom is real, but it is not free. No tool can slide a "
+                    "running virtual machine between two makes of hypervisor, so "
+                    "each machine is copied across and then takes a short planned "
+                    "restart, a few minutes, one machine at a time. The services "
+                    "stay up because each runs on several machines and only one "
+                    "restarts at once. That is what the service downtime figure "
+                    "of zero means, and it is illustrative, not a promise from "
+                    "Dell. All 120 workloads are still there at the end, "
                     "and the operators still have exactly one control plane. In "
                     "a fused system, the alternative is not a slow move. It is "
                     "buying a whole new set of equipment."
@@ -314,16 +321,22 @@ def build_tour(anatomy: CloudAnatomy) -> Tour:
                     "since February 2026, while the rest stays on VMware. It is "
                     "the longest stage in the trace, and honestly so: migrating "
                     "between virtualization platforms means format conversion, "
-                    "testing and care over what does not translate. What matters "
-                    "is that it is possible at all, and that downtime stays at "
-                    "zero, all 120 workloads stay up, and the control-plane count "
+                    "testing and care over what does not translate. There is no "
+                    "live migration across hypervisors: each virtual machine is "
+                    "replicated, then takes a brief scheduled cutover restart, "
+                    "rolled one at a time through redundant instances. So the "
+                    "service downtime counter holds at zero (an illustrative "
+                    "target, not a Dell figure) while individual machines do "
+                    "restart. The workload count stays at 120 and the "
+                    "control-plane count "
                     "stays at one. In a coupled architecture the alternative is "
                     "not a slow migration but a new estate."
                 ),
                 expert=(
                     "Partial cross-hypervisor migration, VMware to Nutanix. "
-                    "Longest stage in the trace. Downtime 0 s, 120 workloads, "
-                    "one control plane throughout."
+                    "Longest stage in the trace. Per-VM cutover reboots, rolled "
+                    "and scheduled; service-level downtime 0 s (illustrative), "
+                    "120 workloads, one control plane throughout."
                 ),
             ),
             camera=frame("control", "workloads", "hv-vmware", "hv-nutanix", pad=3.0),

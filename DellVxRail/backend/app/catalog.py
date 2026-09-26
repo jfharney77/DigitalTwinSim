@@ -33,9 +33,11 @@ CATALOG: list[CatalogCategory] = [
             "compute, memory, storage, and GPU each node can hold. Names "
             "encode role: VE = compute-dense 1U, VP = performance 2U, VS = "
             "storage-dense, VD = ruggedized/edge. All run the same VxRail HCI "
-            "System Software."
+            "System Software. These are the 16th-generation PowerEdge "
+            "platforms; Dell's 2025 spec sheet also lists the newer ESA-only "
+            "VE-670 and VP-770 on Intel Xeon 6."
         ),
-        limits="One platform per cluster; all nodes in a cluster match",
+        limits="Keep nodes in a cluster matched; figures per Dell's VxRail spec sheet (H16763)",
         region_ids=_COMPUTE,
         options=[
             CatalogOption(
@@ -46,8 +48,9 @@ CATALOG: list[CatalogCategory] = [
                     "A 1U node on the PowerEdge R660 chassis with single or "
                     "dual Intel Xeon Scalable processors. The volume choice "
                     "for consolidating virtual machines where rack density "
-                    "and core count matter more than GPUs or bulk capacity. "
-                    "Its 1U height limits drive slots and add-in cards, which "
+                    "and core count matter more than bulk capacity. Ten 2.5-inch "
+                    "bays, and room for up to three single-wide GPUs (NVIDIA "
+                    "L4). Its 1U height limits drive slots and add-in cards, which "
                     "is the trade for fitting twice as many nodes per rack "
                     "unit as a 2U platform."
                 ),
@@ -55,11 +58,13 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="plat-vp760",
                 name="VxRail VP-760",
-                summary="Performance 2U Intel node with room for up to six GPUs.",
+                summary="Performance 2U Intel node with room for two double-wide or up to six small GPUs.",
                 details=(
                     "A 2U node on the R760 chassis (the same server the R760 "
                     "twin models) with dual Intel Xeon Scalable CPUs, the most "
-                    "memory and NVMe per node, and space for up to six GPUs. "
+                    "memory and NVMe per node (up to 8 TB and 24 drive bays on "
+                    "the spec sheet), and space for two double-wide GPUs such "
+                    "as the NVIDIA H100 NVL or L40S, four L4s, or six A2s. "
                     "The platform for demanding workloads: virtual desktops "
                     "(VDI), AI/ML inference, and databases that want both "
                     "cores and capacity in one node."
@@ -68,9 +73,12 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="plat-vs760",
                 name="VxRail VS-760",
-                summary="Storage-dense 2U node for capacity-led clusters.",
+                summary="Storage-dense 2U hybrid node for capacity-led clusters.",
                 details=(
-                    "A 2U node configured for maximum drive count per node, "
+                    "A 2U node with twelve 3.5-inch bays for spinning disks "
+                    "behind a flash cache — up to 144 TB of SAS hard drives "
+                    "per node. It is a hybrid vSAN OSA platform only; it does "
+                    "not run the all-NVMe ESA. Built "
                     "for clusters where the sizing constraint is terabytes "
                     "rather than cores or GPUs — file services, backup "
                     "targets, and content repositories. Fewer, larger clusters "
@@ -84,11 +92,13 @@ CATALOG: list[CatalogCategory] = [
                 summary="Ruggedized short-depth node for the edge and harsh sites.",
                 details=(
                     "A compact, short-depth, ruggedized node (available in "
-                    "sled and standalone forms) built for edge locations — "
+                    "rackable and stackable chassis holding 1U or 2U sleds) "
+                    "built for edge locations — "
                     "factory floors, vehicles, telco cabinets — where depth, "
                     "temperature, shock, and dust rule out a normal rack "
-                    "server. Small VD clusters, often two nodes plus a "
-                    "witness, put full VxRail lifecycle automation where no "
+                    "server. The chassis can carry its own embedded vSAN "
+                    "witness card, so a two-node cluster needs no witness "
+                    "elsewhere. Small VD clusters put full VxRail lifecycle automation where no "
                     "IT staff sit."
                 ),
             ),
@@ -176,7 +186,7 @@ CATALOG: list[CatalogCategory] = [
             "the vSAN data path, so VxRail nodes carry more memory than a "
             "compute-only server of the same class."
         ),
-        limits="Up to ~4 TB (Intel) per node depending on platform",
+        limits="Up to 8 TB per node on VE-660 / VP-760, 4 TB on VS-760, 3 TB on the AMD nodes",
         region_ids=_MEMORY,
         options=[
             CatalogOption(
@@ -215,11 +225,13 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="mem-4096",
-                name="4 TB per node (max)",
-                summary="Maximum memory for the largest VMs and densest hosts.",
+                name="4 TB per node",
+                summary="Very large memory for the largest VMs and densest hosts.",
                 details=(
-                    "The ceiling on the 2U Intel platforms, for monster VMs "
-                    "or the highest consolidation ratios. Populating every "
+                    "For monster VMs or the highest consolidation ratios. It "
+                    "is not the ceiling — Dell's spec sheet lists up to 8 TB "
+                    "on the VE-660 and VP-760 — but it is beyond the AMD "
+                    "nodes, which top out at 3 TB. Populating every "
                     "channel also maximizes memory bandwidth, which vSAN ESA "
                     "and analytics both reward."
                 ),
@@ -248,9 +260,10 @@ CATALOG: list[CatalogCategory] = [
                     "cache and capacity, writes are logged and mirrored across "
                     "nodes, and ESA delivers RAID-6 space efficiency at RAID-1 "
                     "performance — you stop trading resilience against "
-                    "capacity. It needs NVMe drives, higher core counts, and "
-                    "a fast (RoCE) network, which is why it is the default on "
-                    "new all-NVMe VxRail clusters."
+                    "capacity. It needs NVMe drives, at least 16 cores and "
+                    "128 GB per node, and at least 10 GbE — Dell recommends "
+                    "100 GbE, and RoCE is an optional extra. It is the default "
+                    "on new all-NVMe VxRail clusters."
                 ),
             ),
             CatalogOption(
@@ -306,10 +319,11 @@ CATALOG: list[CatalogCategory] = [
             CatalogOption(
                 id="drive-15_36",
                 name="15.36 TB NVMe TLC",
-                summary="Maximum density for capacity-led VS clusters.",
+                summary="Maximum NVMe density per slot.",
                 details=(
-                    "The densest option, for storage-dense builds where "
-                    "terabytes-per-rack-unit dominate. Fewer, larger drives "
+                    "The densest option: twenty-four of these is the VP-760's "
+                    "368.64 TB spec-sheet ceiling for ESA. (The storage-dense "
+                    "VS-760 is a hard-drive platform and does not take them.) Fewer, larger drives "
                     "mean less parallelism per node, so these suit "
                     "capacity-heavy, throughput-moderate workloads like file "
                     "shares and backup landing zones."
@@ -375,8 +389,10 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "100 GbE ports supporting RoCE (RDMA over Converged "
                     "Ethernet), which lets one node write into another node's "
-                    "memory with minimal CPU involvement — the low-latency "
-                    "path vSAN ESA is built for. The right choice for VP "
+                    "memory with minimal CPU involvement. vSAN does not "
+                    "require it: RDMA is switched on after the first build, "
+                    "and only where NICs and switches form a lossless "
+                    "network. The right choice for VP "
                     "performance clusters, VDI, and databases, and it needs a "
                     "switch pair configured to match."
                 ),
@@ -392,20 +408,22 @@ CATALOG: list[CatalogCategory] = [
             "fabric, so its redundancy is part of the cluster's data "
             "resilience."
         ),
-        limits="Redundant pair required; SmartFabric needs Dell PowerSwitch",
+        limits="Redundant pair required; VxRail 8.0 and later no longer configure the switches for you",
         region_ids=_FABRIC,
         options=[
             CatalogOption(
                 id="fab-smartfabric",
                 name="Dell PowerSwitch + SmartFabric Services",
-                summary="VxRail programs its own switches — the network configures itself.",
+                summary="Dell switches whose fabric configures itself — though no longer driven by VxRail.",
                 details=(
-                    "On Dell PowerSwitch top-of-rack switches, VxRail can "
-                    "drive SmartFabric Services: the cluster automatically "
-                    "creates and maintains the VLANs and settings its own "
-                    "networks need, so adding a node does not mean a switch "
-                    "ticket. The tightest integration, and the least "
-                    "network-engineering effort at the edge."
+                    "SmartFabric Services automates a Dell PowerSwitch "
+                    "leaf/spine fabric. In VxRail 4.7 and 7.0 the first run "
+                    "could drive it, creating the cluster's VLANs on the "
+                    "switches automatically. Dell removed that automated "
+                    "switch configuration in VxRail 8.0, because it blocked "
+                    "stretched clusters and VMware Cloud Foundation; on "
+                    "current releases the VxRail networks are defined on the "
+                    "fabric before first run, through SmartFabric's own tools."
                 ),
             ),
             CatalogOption(
@@ -422,7 +440,7 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="fab-dynamic-nodes",
-                name="Dynamic Node Networking",
+                name="Dedicated storage and external-storage networking",
                 summary="Separate the cluster network from external/storage traffic.",
                 details=(
                     "Advanced topologies let VxRail split the networks it "
@@ -441,10 +459,10 @@ CATALOG: list[CatalogCategory] = [
         blurb=(
             "Optional accelerators in the 2U performance nodes, for workloads "
             "the CPU cannot serve alone — graphics for virtual desktops and "
-            "matrix math for AI. GPUs live in the compute node, so a "
-            "GPU-heavy cluster is a VP cluster."
+            "matrix math for AI. GPUs live in the compute node; the 1U nodes "
+            "take a few small cards, so a GPU-heavy cluster is a VP cluster."
         ),
-        limits="Up to 6 GPUs per VP-760 node; none on 1U VE nodes",
+        limits="VP-760: 2 double-wide, 4 L4 or 6 A2 per node; 1U VE-660: up to 3 L4",
         region_ids=_COMPUTE,
         options=[
             CatalogOption(
@@ -477,8 +495,8 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "Higher-end GPUs for running AI inference (and modest "
                     "fine-tuning) next to the data already living on the "
-                    "cluster, avoiding a separate AI silo. Up to six per "
-                    "VP-760 node; capacity and networking are sized to keep "
+                    "cluster, avoiding a separate AI silo. Two double-wide "
+                    "cards (H100 NVL, L40S) or four L4s per VP-760 node; capacity and networking are sized to keep "
                     "the accelerators fed."
                 ),
             ),
@@ -538,8 +556,8 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "Dynamic Nodes run VxRail's lifecycle automation but keep "
                     "no vSAN datastore of their own — they consume storage "
-                    "from an external Dell array (PowerStore, PowerMax, Unity "
-                    "XT) over the fabric. The way to scale compute independent "
+                    "from external Dell storage (PowerStore, PowerMax, Unity "
+                    "XT, PowerFlex) over the fabric. The way to scale compute independent "
                     "of storage while keeping one VxRail management model."
                 ),
             ),
@@ -618,7 +636,9 @@ CATALOG: list[CatalogCategory] = [
                     "vCenter Server to manage them) and vSAN (the software "
                     "that pools local drives). This is the minimum stack — a "
                     "self-contained virtualization cluster with shared "
-                    "storage, managed from vCenter, with no external SAN."
+                    "storage, managed from vCenter, with no external SAN. "
+                    "Broadcom now sells these as subscription bundles "
+                    "(vSphere Foundation or VCF) rather than separate licenses."
                 ),
             ),
             CatalogOption(
@@ -628,9 +648,12 @@ CATALOG: list[CatalogCategory] = [
                 details=(
                     "VCF layers a full software-defined data center on top — "
                     "software-defined networking, and fleet-wide lifecycle via "
-                    "SDDC Manager. VxRail was the first HCI system with full "
-                    "VCF integration, so SDDC Manager and VxRail Manager "
-                    "coordinate upgrades. The choice when the goal is a "
+                    "SDDC Manager. Dell describes VxRail as the first "
+                    "hyperconverged system fully integrated with SDDC "
+                    "Manager, so SDDC Manager and VxRail Manager coordinate "
+                    "upgrades; that carries into VCF 9.1 on VxRail 9.1 (June "
+                    "2026), where VxRail lifecycle management stays "
+                    "integrated. The choice when the goal is a "
                     "private cloud with self-service and Kubernetes, not just "
                     "a virtualization cluster."
                 ),
@@ -645,7 +668,7 @@ CATALOG: list[CatalogCategory] = [
             "processors and Dell's cloud service give hardware-level and "
             "fleet-level visibility."
         ),
-        limits="iDRAC per node; CloudIQ is cloud-hosted and read-only",
+        limits="iDRAC per node; Dell AIOps (formerly CloudIQ) is cloud-hosted",
         region_ids=_MGMT,
         options=[
             CatalogOption(
@@ -662,14 +685,17 @@ CATALOG: list[CatalogCategory] = [
             ),
             CatalogOption(
                 id="mgmt-cloudiq",
-                name="CloudIQ / APEX AIOps",
+                name="Dell AIOps (formerly CloudIQ)",
                 summary="Dell's cloud monitoring: fleet health, capacity forecasting, anomaly alerts.",
                 details=(
                     "The cluster streams telemetry to Dell's cloud service, "
                     "which trends capacity, forecasts exhaustion, scores "
                     "health, and flags anomalies across every VxRail (and "
-                    "other Dell systems) you own. Read-only by design — "
-                    "control stays on-prem in VxRail Manager and vCenter."
+                    "other Dell systems) you own. For VxRail it is not only a "
+                    "viewer: with vCenter-based access control enabled it can "
+                    "run update pre-checks, stage bundles, and start cluster "
+                    "updates across many clusters, while VxRail Manager on "
+                    "each cluster still carries out the work."
                 ),
             ),
         ],

@@ -56,7 +56,8 @@ ANATOMY = ArrayMap(
             "top, and below it the rear field-replaceable units — two "
             "controllers with mirrored write cache, two power supplies. "
             "Drives set the I/O budget (a 10k spindle manages ~170 "
-            "random IOPS; an SSD, tens of thousands), RAID sets the "
+            "random IOPS, I/O operations per second; an SSD, tens of "
+            "thousands), RAID sets the "
             "write tax (×2 mirror, ×4 RAID 5, ×6 RAID 6), and the "
             "controllers set the front-end ceiling. Fail a drive and "
             "the rebuild window opens — hours or days during which a "
@@ -67,8 +68,10 @@ ANATOMY = ArrayMap(
             "genuinely is: 24 drive slots whose population sets the "
             "disk-I/O budget, two active-active controller canisters "
             "whose mirrored write cache degrades to write-through the "
-            "moment its partner dies, and nothing else — no dedupe, no "
-            "tiering, no machinery between you and the arithmetic. Host "
+            "moment its partner dies, and nothing else — the array has "
+            "no dedupe or compression, and the model leaves out its "
+            "optional tiering and snapshots, so nothing stands between "
+            "you and the arithmetic. Host "
             "writes are multiplied by the RAID write penalty (×2 "
             "mirrored, ×4 single-parity, ×6 dual-parity: read data, "
             "read parity, write both — twice for RAID 6) before they "
@@ -89,7 +92,8 @@ ANATOMY = ArrayMap(
             "level; read_cost 2× while parity-degraded), and raw = "
             "usable + overhead + spares exactly. Rebuild: capacity ÷ "
             "(rate × (1 − 0.5·util)), 20% budget reserve while active; "
-            "risk index ∝ remaining window × level exposure factor."
+            "exposure index (unitless, not a probability) ∝ exposure hours "
+            "× a weight set by the tolerance left."
         ),
         expert=(
             "Classic RAID ledger, nothing else. IOPS balance and "
@@ -117,7 +121,8 @@ ANATOMY = ArrayMap(
             description=(
                 "The first controller canister — half of the "
                 "active-active pair that runs the array: RAID math, "
-                "cache, and the SAS/iSCSI/FC host ports. Each controller "
+                "cache, and the host ports (12 Gb SAS, 10/25 Gb iSCSI, "
+                "or 32 Gb Fibre Channel). Each controller "
                 "has a front-end ceiling that spindles never reach but a "
                 "shelf of SSDs will. Click to fail it and watch the "
                 "survivor own everything."
@@ -150,7 +155,7 @@ ANATOMY = ArrayMap(
             description=(
                 "Redundant power supply. Not a player in this sim's "
                 "physics — drawn because the enclosure has it, and "
-                "because storage arrays owe their five-nines habit to "
+                "because storage arrays owe their availability to "
                 "there being two of everything."
             ),
         ),
@@ -164,10 +169,15 @@ ANATOMY = ArrayMap(
         ),
     ],
     sources=[
-        {"label": "Dell PowerVault ME5 spec sheet",
-         "url": "https://www.dell.com/en-us/shop/productdetailstxn/powervault-me5"},
-        {"label": "Dell ME5 Administrator's Guide (RAID levels, spares)",
-         "url": "https://www.dell.com/support/home/en-us/product-support/product/powervault-me5012/docs"},
+        {"label": "Dell PowerVault ME5000 Series specification sheet "
+                  "(drive bays, drive catalog, host ports, RAID support)",
+         "url": "https://www.delltechnologies.com/asset/en-us/products/storage/technical-support/dell-powervault-me5-ss.pdf"},
+        {"label": "Dell PowerVault ME5 Series Administrator's Guide — "
+                  "RAID levels (and spares, ADAPT)",
+         "url": "https://www.dell.com/support/manuals/en-us/powervault-me5084/me5_series_ag/raid-levels?guid=guid-9b165030-450e-494c-ab4e-42639880d166&lang=en-us"},
+        {"label": "TechTarget, Feb 2022 — ME5 launch; Dell's up-to-640K-"
+                  "IOPS claim",
+         "url": "https://www.techtarget.com/searchstorage/news/252513889/Performance-capacity-tick-up-with-Dell-PowerVault-ME5"},
         {"label": "physics_specs/10-additional-products.md §3 (this repo)",
          "url": "../physics_specs/10-additional-products.md"},
     ],

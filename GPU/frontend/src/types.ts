@@ -312,7 +312,15 @@ export interface LiveSessionInfo {
 // spec_15 (+ spec_20 #7 history): latest calibration per metric.
 export type Measurements = Record<
   string,
-  { value: number; kernel: string | null; measuredAt: string; history?: number[] }
+  {
+    value: number;
+    kernel: string | null;
+    measuredAt: string;
+    history?: number[];
+    // The session's device_info name when the measurement arrived inside a
+    // session that had one; absent on older records.
+    device?: string | null;
+  }
 >;
 
 // spec_20 #1.

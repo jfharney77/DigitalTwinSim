@@ -124,6 +124,11 @@ class SimState(CamelModel):
     todays_novel_physical_tb: float
     gc_reclaimed_tb: float
     capacity_used_pct: float
+    # Capacity-side detection: the pre-disturbance straight line projected
+    # forward (0 until something disturbs the estate), and whether physical
+    # has left it by more than the notice margin yet.
+    capacity_trend_tb: float = 0.0
+    capacity_noticed: bool = False
     # The entropy instrument — the smoke alarm.
     stream_entropy_pct: float
     entropy_alarm: bool
@@ -154,6 +159,7 @@ class Summary(CamelModel):
     peak_stream_entropy_pct: float
     alarm_day: int          # -1 if the alarm never fired
     capacity_full_day: int  # -1 if the store never filled
+    capacity_notice_day: int = -1  # -1 if physical never left its trend
     final_capacity_used_pct: float
 
 

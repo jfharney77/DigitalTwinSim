@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+from .constants import value as C
 from .engine import stage_rates
 from .models import STAGES, Scenario, Validation
+
+
+def servable_tbh(scenario: Scenario) -> float:
+    """Steady-state TB/h the serve stage can hand the GPUs at the starting
+    configuration — the engine's own expression, before any backlog drains."""
+    rates = stage_rates(scenario.config)
+    throughput = min(scenario.workload.raw_arrival_tbh, min(rates[s] for s in STAGES))
+    return min(rates["serve"], throughput + C("serve_store_headroom_tbh"))
 
 
 def validate(scenario: Scenario) -> list[Validation]:
@@ -16,14 +25,21 @@ def validate(scenario: Scenario) -> list[Validation]:
     slowest = rates[bottleneck]
 
     # Rule 1 — the constraint, named before the run.
-    out.append(Validation(
-        rule_id="bottleneck", level="ok",
-        message=(
+    if wl.raw_arrival_tbh < slowest:
+        rule1 = (
+            f"The slowest stage is '{bottleneck}' at {slowest:.0f} TB/h, "
+            f"but only {wl.raw_arrival_tbh:.0f} TB/h arrives: the sources "
+            "set the pace, and no stage fills up."
+        )
+    else:
+        rule1 = (
             f"The constraint is '{bottleneck}' at {slowest:.0f} TB/h — "
             "the pipeline will move exactly that fast, whatever the "
             "other stages cost."
-        ),
-        source="spec 06 — throughput = min(stage rates)",
+        )
+    out.append(Validation(
+        rule_id="bottleneck", level="ok", message=rule1,
+        source="spec 06 — throughput = min(arrival, stage rates)",
     ))
 
     # Rule 2 — arrival above the constraint = unbounded backlog.
@@ -39,14 +55,20 @@ def validate(scenario: Scenario) -> list[Validation]:
             source="spec 06 — under-provisioned ingest",
         ))
 
-    # Rule 3 — GPU demand above serve capacity.
-    if wl.gpu_read_demand_tbh > min(rates["serve"], slowest):
+    # Rule 3 — GPU demand above what the serve stage can hand over. Same
+    # expression as the engine's gauge, at the starting configuration.
+    servable = servable_tbh(scenario)
+    if wl.gpu_read_demand_tbh > servable:
+        idle = 100.0 * (1.0 - servable / wl.gpu_read_demand_tbh)
         out.append(Validation(
             rule_id="starvation", level="warning",
             message=(
                 f"GPU read demand {wl.gpu_read_demand_tbh:.0f} TB/h "
-                "exceeds what the pipeline can serve — the idle gauge "
-                "will say so, and PhysicsCompute's wasted-GPU-hours "
+                f"exceeds the {servable:.0f} TB/h this build can serve "
+                "at the start of the run (fresh throughput plus about "
+                f"{C('serve_store_headroom_tbh'):.0f} TB/h of re-reads, "
+                "capped by the serve rate). The idle gauge opens near "
+                f"{idle:.0f}%, and PhysicsCompute's wasted-GPU-hours "
                 "ledger is the bill."
             ),
             source="spec 06 — GPU idle due to data",

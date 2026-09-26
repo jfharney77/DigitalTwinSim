@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
-import { fetchAtlas, fetchLessonTour, fetchTourRecording } from "../api";
+import {
+  fetchAtlas,
+  fetchLessonTour,
+  fetchMeasurements,
+  fetchTourRecording,
+} from "../api";
 import { useLevel } from "../level";
-import type { Atlas, GpuProfile, LessonTour as Tour, LiveState } from "../types";
+import type {
+  Atlas,
+  GpuProfile,
+  LessonTour as Tour,
+  LiveState,
+  Measurements,
+} from "../types";
 import { dieForDevice } from "../types";
 import { GanttStrip } from "./GanttStrip";
 import { dieGrid, LiveCounters, LiveDieView } from "./LiveViz";
@@ -35,6 +46,14 @@ export function LessonTour({
 
   useEffect(() => {
     fetchAtlas().then(setAtlas).catch(() => setAtlas(null));
+  }, []);
+
+  // The bandwidth lesson's caption points at the simulator's "last bandwidth
+  // measurement" row; show the same stored figure here so the two tabs are
+  // visibly talking about one number.
+  const [measured, setMeasured] = useState<Measurements>({});
+  useEffect(() => {
+    fetchMeasurements().then(setMeasured).catch(() => setMeasured({}));
   }, []);
 
   const step = tour?.steps[stepIdx] ?? null;
@@ -85,7 +104,10 @@ export function LessonTour({
       <p className="mini">
         {step.provenance === "hardware"
           ? "recorded on real hardware"
-          : "representative recording — capture your own with make run-" +
+          : "representative recording, authored to match the lesson rather " +
+            "than captured on hardware. GPU util, VRAM, power and temperature " +
+            "are placeholder samples from before the kernel launched. " +
+            "Capture your own with make run-" +
             step.lessonId.slice(0, 2)}
         {badgeDie && (
           <>
@@ -94,8 +116,26 @@ export function LessonTour({
           </>
         )}
       </p>
-      <LiveDieView profile={profile} state={frame} />
+      <LiveDieView
+        profile={profile}
+        state={frame}
+        representative={step.provenance === "representative"}
+      />
       <LiveCounters state={frame} />
+      {step.lessonId.startsWith("06") && measured["stream_gbps"] && (
+        <p className="mini">
+          Last bandwidth measurement posted to this backend:{" "}
+          {measured["stream_gbps"].value.toFixed(0)} GB/s on{" "}
+          {measured["stream_gbps"].measuredAt}
+          {measured["stream_gbps"].device
+            ? ` (${measured["stream_gbps"].device})`
+            : " (the record does not name the GPU)"}
+          . The Simulator tab shows this same figure under Roofline. It is a
+          separate run from the recording above, so it differs a little from
+          the rate the caption works out from that recording. (The caption's
+          number is named there, not here, so the two cannot drift apart.)
+        </p>
+      )}
       <GanttStrip state={frame} smCount={smCount} />
       {step.experiment && (
         <p className="mini">

@@ -587,7 +587,7 @@ label.field.cfg-row { display: flex; flex-direction: row; align-items: center; g
 .scenario-list button.active { outline: 2px solid var(--accent, #0672cb); }
 .scenario-narration { margin-top: 8px; line-height: 1.5; }
 .scenario-narration p { margin: 0 0 6px; }
-.scenario-question { font-weight: 600; color: var(--accent, #0672cb); }
+.scenario-question { font-weight: 600; color: #0672cb; }
 .flow-slow line { stroke-dashoffset: 0; animation: flowdash 3s linear infinite; }
 .flow-mid line { animation: flowdash 1.5s linear infinite; }
 .flow-fast line { animation: flowdash 0.6s linear infinite; }
@@ -603,8 +603,10 @@ label.field.cfg-row { display: flex; flex-direction: row; align-items: center; g
 }
 .gallery-card.active { border-color: #0672cb; box-shadow: 0 0 0 1px #0672cb; }
 .gallery-card-name { font-size: 11px; }
-.gallery-hero { display: flex; gap: 12px; align-items: flex-start; }
-.gallery-hero-text { flex: 1; min-width: 0; }
+/* The text drops below the thumbnail when the column is too narrow to sit
+   beside it, instead of wrapping one word per line. */
+.gallery-hero { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.gallery-hero-text { flex: 1 1 140px; min-width: 0; }
 .gallery-credit { color: #8a95a5; font-style: italic; margin-top: 4px; }
 
 /* V2/V10 x-ray toggle */
@@ -632,3 +634,21 @@ label.field.cfg-row { display: flex; flex-direction: row; align-items: center; g
   .app.dell .an-hero { padding: 20px 16px 24px; }
   .app.dell .an-hero h2 { font-size: 28px; }
 }
+
+/* Guided-scenario banner: the narration and question sit above the grid so
+   a #scenario= deep link opens on them. */
+.app.dell .scenario-banner { margin-bottom: 14px; }
+.app.dell .scenario-banner .scenario-narration { max-width: 96ch; font-size: 13px; }
+.app.dell .intro-terms { margin-top: 8px; max-width: 96ch; }
+.app.dell .intro-terms summary { cursor: pointer; color: #0672cb; }
+.app.dell .intro-terms dl { margin: 8px 0 0; display: grid; gap: 6px; }
+.app.dell .intro-terms dt { font-weight: 600; display: inline; }
+.app.dell .intro-terms dt::after { content: ": "; }
+.app.dell .intro-terms dd { display: inline; margin: 0; }
+.app.dell .workload-scheduled { margin: 6px 0; }
+.app.dell .leg-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.app.dell .leg-table th { text-align: right; font-weight: 500; color: #5b6675; padding: 2px 4px; }
+.app.dell .leg-table td { text-align: right; padding: 3px 4px; font-variant-numeric: tabular-nums; }
+.app.dell .leg-table th:first-child, .app.dell .leg-table td:first-child { text-align: left; }
+.app.dell .leg-table tr.leg-live td { color: #0672cb; }
+.app.dell .workload-presets button.active { outline: 2px solid #0672cb; }

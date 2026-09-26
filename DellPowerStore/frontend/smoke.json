@@ -25,6 +25,22 @@
       "play": { "click": "button:text-is('Reset')", "watch": ".phase", "times": 1 }
     },
     {
+      "hash": "#scenario=node-loss-failover",
+      "name": "scenario-node-loss",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc"],
+      "text": ["1 / 10", "Serving I/O from both nodes", "acknowledged writes lost"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 2 }
+    },
+    {
+      "hash": "#scenario=node-loss-failover&phase=degraded",
+      "name": "scenario-node-loss-degraded",
+      "svg": true,
+      "visible": [".phase", ".poweron-desc", ".region-failed >> nth=0"],
+      "text": ["5 / 10", "One node serves every volume", "acknowledged writes lost", "1 of 2"],
+      "play": { "click": "button:text-is('Step')", "watch": ".phase", "times": 1 }
+    },
+    {
       "hash": "#anatomy",
       "name": "anatomy",
       "svg": true,

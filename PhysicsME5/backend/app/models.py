@@ -8,7 +8,7 @@ clock.
 
 Scope framing: this is the suite's *first* storage sim on purpose — the
 ME5 is Dell's entry SAN, and its physics is classic RAID with nothing
-else in the way. No dedupe, no tiering, no snapshots in the model: drive
+else in the way. No dedupe on the array, and no tiering or snapshots in the model: drive
 mechanics, RAID write penalties, dual controllers, and the rebuild
 window. Correct relationships and orders of magnitude, not a benchmark.
 Every constant lives in ``constants.py`` with a source field.
@@ -62,7 +62,8 @@ class ArrayConfig(CamelModel):
     model: ArrayModel = "ME5024"
     drive_type: DriveType = "hdd-10k"
     drive_count: int = Field(24, ge=2, le=24)   # populated slots
-    drive_tb: int = 4                            # one of DRIVE_TB_OPTIONS
+    drive_tb: int = 2                            # one of DRIVE_TB_OPTIONS
+                                                 # (10k SAS tops out at 2.4 TB)
     raid_level: RaidLevel = "6"
     spares: int = Field(1, ge=0, le=4)           # global hot spares
     controllers: int = Field(2, ge=1, le=2)

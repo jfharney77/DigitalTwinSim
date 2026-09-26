@@ -117,7 +117,11 @@ TOUR = LessonTour(
                     "independent processing engines — and a block always runs "
                     "entirely inside one SM, never split across two. Which SM "
                     "gets the block? The chip's own scheduler picks; run the "
-                    "program again and a different tile lights."
+                    "program again and a different tile lights. The label "
+                    "%smid in the picture's header is the name this project's "
+                    "probe uses for the SM number each block reports. This "
+                    "twin's SM vocabulary is a teaching model, not something "
+                    "a vendor toolkit hands you."
                 ),
                 plain=(
                     "Launching a kernel — the function a GPU runs — creates a "
@@ -126,23 +130,30 @@ TOUR = LessonTour(
                     "multiprocessor) tile lights, because a block runs "
                     "entirely on one SM, never split across two. The hardware "
                     "scheduler picks which one; rerun it and a different tile "
-                    "lights."
+                    "lights. %smid in the header is this project's probe "
+                    "vocabulary for the SM number a block reports — part of "
+                    "the twin's teaching model, not a vendor toolkit feature."
                 ),
                 standard=(
                     "A kernel launch creates a grid of thread blocks. This is "
                     "hello_thread: one block of eight threads — and exactly one "
                     "SM tile lights, because a block runs entirely on one SM, "
                     "never split across two. Which SM? The hardware scheduler "
-                    "decides; rerun it and a different tile lights."
+                    "decides; rerun it and a different tile lights. %smid in "
+                    "the header is this project's probe vocabulary for the SM "
+                    "number a block reports, not a vendor toolkit feature."
                 ),
                 technical=(
                     "hello_thread: a one-block, eight-thread launch. One SM "
                     "tile lights — blocks never split across SMs — and the "
-                    "block scheduler picks which, so reruns move the tile."
+                    "block scheduler picks which, so reruns move the tile. "
+                    "%smid is this project's probe register for the SM id, "
+                    "not a vendor API."
                 ),
                 expert=(
                     "1×8 launch → one SM. Blocks never split; placement is "
-                    "the scheduler's, nondeterministic across runs."
+                    "the scheduler's, nondeterministic across runs. %smid = "
+                    "this project's probe vocabulary, not a vendor API."
                 ),
             ),
             lesson_id="01_hello_thread",
@@ -201,7 +212,7 @@ TOUR = LessonTour(
                 ),
                 expert=(
                     "4,096 blocks / 24 SMs ≈ 170:1. Oversubscription hides "
-                    "DRAM latency."
+                    "device-memory latency."
                 ),
             ),
             lesson_id="02_vector_add",
@@ -291,37 +302,43 @@ TOUR = LessonTour(
                     "This is a matrix multiplication — the exact computation "
                     "the Simulator tab animates — written the simplest "
                     "possible way: one thread per output cell, and every "
-                    "number fetched straight from the GPU's main memory "
-                    "(called global memory) each time it is needed. The die "
-                    "picture looks perfectly healthy: every SM is busy. But "
-                    "note the elapsed time printed on the chip. The cost of "
-                    "this version is invisible here, because it hides in the "
-                    "memory system — the same values being fetched again and "
-                    "again."
+                    "number fetched straight from the GPU's device memory — "
+                    "the large, slow memory beside the chip, which CUDA calls "
+                    "global memory — each time it is needed. (On this laptop "
+                    "part that memory is GDDR6. The Simulator tab draws the "
+                    "same tier and labels it HBM, the kind data-centre GPUs "
+                    "use.) The die picture looks perfectly healthy: every SM "
+                    "is busy. But note the Kernel time read-out under the "
+                    "die: 6.40 ms. The cost of this version is invisible in "
+                    "the picture, because it hides in the memory system — the "
+                    "same values being fetched again and again."
                 ),
                 plain=(
                     "The exact computation the Simulator tab animates, one "
                     "thread per output cell, with every operand read straight "
-                    "from global memory each time it's needed. The die "
-                    "picture looks fine — every SM busy — but note the "
-                    "elapsed time: the cost hides in the memory system."
+                    "from global memory — device memory, the tier the "
+                    "Simulator tab labels HBM — each time it's needed. The "
+                    "die picture looks fine, every SM busy, but note the "
+                    "Kernel time read-out under it, 6.40 ms: the cost hides "
+                    "in the memory system."
                 ),
                 standard=(
                     "The exact computation the Simulator tab animates, one "
                     "thread per output cell, every operand read straight from "
-                    "global memory. Note the elapsed time on the chip — the die "
-                    "picture looks fine; the cost is hiding in the memory "
+                    "global memory (device memory — the tier the Simulator tab "
+                    "labels HBM). Note the Kernel time read-out, 6.40 ms — the "
+                    "die picture looks fine; the cost is hiding in the memory "
                     "system."
                 ),
                 technical=(
                     "The simulator's matmul, naive: one thread per output "
                     "cell, all operands from global memory. Placement looks "
-                    "healthy; the elapsed time says otherwise — the cost is "
-                    "memory traffic."
+                    "healthy; Kernel time (6.40 ms) says otherwise — the cost "
+                    "is device-memory traffic."
                 ),
                 expert=(
-                    "Naive matmul: per-cell threads, all traffic to DRAM. "
-                    "Die view clean; time isn't."
+                    "Naive matmul: per-cell threads, all traffic to device "
+                    "memory. Die view clean; Kernel time (6.40 ms) isn't."
                 ),
             ),
             lesson_id="04_matmul_naive",
@@ -339,36 +356,49 @@ TOUR = LessonTour(
                     "and then reuses those numbers many times before fetching "
                     "more. This is the tiling idea the simulator animates, "
                     "made physical. The placement picture looks identical to "
-                    "the previous step, yet the program runs several times "
-                    "faster. The speedup lives entirely in memory traffic the "
-                    "die view cannot draw — which is exactly why the "
-                    "simulator has a bandwidth model."
+                    "the previous step, yet Kernel time falls from 6.40 ms to "
+                    "1.50 ms. The speedup lives entirely in memory traffic "
+                    "the die view cannot draw — which is exactly why the "
+                    "simulator has a bandwidth model. One difference to keep "
+                    "in mind: the simulator pretends the scratchpad can hold "
+                    "any tile, even the whole matrix. A real scratchpad is "
+                    "small, so the real choice is between small tiles and the "
+                    "previous step's fetch-everything-every-time."
                 ),
                 plain=(
                     "Same matmul, but each block stages a tile of A and B in "
                     "the SM's shared memory — a fast on-chip scratchpad — and "
-                    "reuses it, spec_03's animation made physical. The "
-                    "placement picture is identical yet the run is several "
-                    "times faster: the speedup lives in traffic the die view "
-                    "doesn't draw, which is why the simulator's bandwidth "
-                    "model exists."
+                    "reuses it: the Simulator tab's tiling animation made "
+                    "physical. The placement picture is identical yet Kernel "
+                    "time drops from 6.40 ms to 1.50 ms: the speedup lives in "
+                    "traffic the die view doesn't draw, which is why the "
+                    "simulator's bandwidth model exists. The simulator's "
+                    "scratchpad has no size limit, so there the largest tile "
+                    "always wins; real shared memory is small, and the real "
+                    "comparison is tiled against the previous step."
                 ),
                 standard=(
                     "Same matmul, but each block stages a tile of A and B in "
-                    "the SM's shared memory and reuses it — spec_03's animation "
-                    "made physical. Same placement picture, several times "
-                    "faster: the speedup lives in traffic the die view doesn't "
-                    "draw, which is why the simulator's bandwidth model exists."
+                    "the SM's shared memory and reuses it — the Simulator tab's "
+                    "tiling animation made physical. Same placement picture, "
+                    "Kernel time 1.50 ms against 6.40 ms: the speedup lives in "
+                    "traffic the die view doesn't draw, which is why the "
+                    "simulator's bandwidth model exists. The simulator's "
+                    "scratchpad is unbounded, so its best tile is the whole "
+                    "matrix; on hardware the tile is capped by shared-memory "
+                    "size and the baseline is the previous step."
                 ),
                 technical=(
                     "Tiled matmul: blocks stage A/B tiles in shared memory "
-                    "and reuse them. Identical placement, several-times "
-                    "speedup — all in DRAM traffic the die view doesn't "
-                    "render."
+                    "and reuse them. Identical placement, 6.40 → 1.50 ms — "
+                    "all in device-memory traffic the die view doesn't "
+                    "render. The sim's scratchpad is unbounded (T=N wins "
+                    "there); hardware caps T at shared-memory size."
                 ),
                 expert=(
-                    "Shared-memory tiling: same placement, several× faster; "
-                    "the win is DRAM traffic, invisible here."
+                    "Shared-memory tiling: same placement, 6.40 → 1.50 ms; "
+                    "the win is device-memory traffic, invisible here. Sim "
+                    "scratchpad unbounded; real T capped by shared memory."
                 ),
             ),
             lesson_id="05_matmul_tiled",
@@ -376,18 +406,18 @@ TOUR = LessonTour(
             provenance="representative",
             experiment=L(
                 novice=(
-                    "Look at the elapsed milliseconds printed on this chip, "
-                    "then flip back to the previous step and compare. Same "
+                    "Look at the Kernel time read-out under the die, then "
+                    "flip back to the previous step and compare. Same "
                     "computation, same placement picture — the difference is "
                     "the tiles being reused instead of re-fetched."
                 ),
                 plain=(
-                    "Compare this chip's elapsed ms with the previous step's "
-                    "— same picture, very different time."
+                    "Compare the Kernel time read-out with the previous "
+                    "step's — same picture, very different time."
                 ),
-                standard="Compare this chip's elapsed ms with the previous step's.",
-                technical="Diff the elapsed ms against step 4's.",
-                expert="ms here vs step 4.",
+                standard="Compare the Kernel time read-out with the previous step's.",
+                technical="Diff Kernel time against step 4's.",
+                expert="Kernel time here vs step 4.",
             ),
         ),
         TourStep(
@@ -397,46 +427,74 @@ TOUR = LessonTour(
                 novice=(
                     "This kernel simply copies data — almost no arithmetic at "
                     "all — so how fast it runs is really a measurement of the "
-                    "memory system itself. Watch the throughput climb and "
-                    "then flatten near 256 gigabytes per second: that is this "
-                    "laptop GPU's memory at full speed, with the arithmetic "
-                    "units idle. The flat ceiling is called the memory roof "
-                    "in the roofline model of performance, and once measured "
-                    "it calibrates the read-out on the Simulator tab. "
-                    "Everything in this tour can also run live on your own "
-                    "GPU: type make run-01 in GPU/cuda/."
+                    "memory system itself. One number comes off the screen: "
+                    "all 24 SMs took blocks, and Kernel time says the whole "
+                    "copy took 2.20 ms. The other number comes from the "
+                    "lesson's own source code, which sets the array size: it "
+                    "reads 67 million numbers and writes them back, four "
+                    "bytes each, so 0.537 gigabytes moved. Divide 0.537 GB "
+                    "by 0.0022 seconds and you get about 244 gigabytes per "
+                    "second. This laptop GPU's memory is rated at 256 GB/s on "
+                    "paper, so the copy ran just under the memory's top speed "
+                    "— and no amount of extra arithmetic hardware would make "
+                    "it faster. The SMs are all occupied, but their threads "
+                    "spend the time waiting on memory, not calculating. That "
+                    "ceiling is called the memory roof in the roofline model "
+                    "of performance. When the lesson runs live it posts its "
+                    "own GB/s figure, which the Simulator tab shows under "
+                    "Roofline as the last bandwidth measurement; each run "
+                    "lands a little differently, always below the rating. To "
+                    "run this lesson on your own GPU, type make run-06 in "
+                    "GPU/cuda/."
                 ),
                 plain=(
                     "A pure copy kernel does almost no math, so its speed is "
-                    "really the memory system's: throughput plateaus near the "
-                    "4060's ~256 GB/s while the compute units sit idle. That "
-                    "plateau is the roofline model's memory roof, and once "
-                    "measured it calibrates the Simulator tab's read-out. "
-                    "Your GPU can do all of this live: make run-01."
+                    "really the memory system's. On screen: all 24 SMs hold "
+                    "blocks and Kernel time reads 2.20 ms. The lesson's array "
+                    "size fixes the rest — 67 million floats read and written "
+                    "is 0.537 GB moved — so 0.537 GB ÷ "
+                    "2.20 ms ≈ 244 GB/s — just under the 4060 Laptop's rated "
+                    "256 GB/s. The SMs are full, yet their threads are "
+                    "waiting on memory rather than computing. That ceiling is "
+                    "the roofline model's memory roof. A live run posts its "
+                    "own GB/s, which the Simulator tab lists under Roofline "
+                    "as the last bandwidth measurement; runs vary a little "
+                    "and stay below the rating. Live: make run-06."
                 ),
                 standard=(
                     "A pure copy kernel does almost no math, so its speed IS "
-                    "the memory system's: throughput plateaus near the 4060's "
-                    "~256 GB/s while compute sits idle. That plateau is the "
-                    "roofline's memory roof — and once measured, it calibrates "
-                    "the Simulator tab's read-out. Your GPU can do all of this "
-                    "live: make run-01."
+                    "the memory system's. The copy's footprint is fixed by the "
+                    "lesson, not measured here: 67M floats read and written = "
+                    "0.537 GB. The counters supply the other term — Kernel "
+                    "time, 2.20 ms. So 0.537 GB ÷ 2.20 ms ≈ 244 GB/s, just "
+                    "under the 4060 Laptop's rated "
+                    "256 GB/s. All 24 SMs are occupied, but by threads waiting "
+                    "on memory. That ceiling is the roofline's memory roof. A "
+                    "live run posts its measured GB/s to the Simulator tab's "
+                    "Roofline read-out as the last bandwidth measurement; runs "
+                    "differ slightly and sit below the rating. Live: make "
+                    "run-06."
                 ),
                 technical=(
-                    "Copy kernel ≈ zero arithmetic intensity: throughput "
-                    "saturates at the 4060's ~256 GB/s, compute idle. That is "
-                    "the roofline's memory roof; the measurement calibrates "
-                    "the simulator. Live: make run-01."
+                    "Copy kernel ≈ zero arithmetic intensity: 0.537 GB "
+                    "footprint (67M floats × 4 B × 2, from the lesson source) "
+                    "/ 2.20 ms Kernel time ≈ 244 GB/s against the 4060 "
+                    "Laptop's "
+                    "rated 256 GB/s. SMs occupied, lanes stalled on memory. "
+                    "That is the roofline's memory roof; a live run posts its "
+                    "GB/s to the simulator's Roofline panel. Live: make run-06."
                 ),
                 expert=(
-                    "Copy kernel → BW ceiling ~256 GB/s = memory roof; "
-                    "calibrates the sim roofline. make run-01."
+                    "Copy kernel: 0.537 GB footprint / 2.20 ms Kernel time ≈ "
+                    "244 GB/s vs 256 GB/s "
+                    "rated = memory roof. Live runs post GB/s to the sim's "
+                    "Roofline panel. Live: make run-06."
                 ),
             ),
             lesson_id="06_bandwidth",
             cursor=2,
             provenance="representative",
-            # spec_30: the roofline read-out this measurement calibrates lives
+            # spec_30: the Roofline read-out that lists this measurement lives
             # on the simulator tab.
             link="#",
         ),

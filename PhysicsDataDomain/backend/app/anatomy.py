@@ -152,8 +152,13 @@ ANATOMY = PipelineMap(
         ),
     ],
     sources=[
-        {"label": "Dell PowerProtect Data Domain family data sheet",
-         "url": "https://www.delltechnologies.com/asset/en-us/products/data-protection/technical-support/h16867-powerprotect-dd-series-appliances-ds.pdf"},
+        {"label": "Dell PowerProtect Data Domain family spec sheet",
+         "url": "https://www.delltechnologies.com/asset/en-us/products/cyber-resilience/technical-support/dell-powerprotect-data-domain-family-spec-sheet.pdf"},
+        {"label": "Zhu, Li & Patterson — Avoiding the Disk Bottleneck in the "
+                  "Data Domain Deduplication File System (USENIX FAST 2008)",
+         "url": "https://www.usenix.org/legacy/event/fast08/tech/full_papers/zhu/zhu.pdf"},
+        {"label": "Dell blog — Data Domain All-Flash unveiled (20 May 2025)",
+         "url": "https://www.dell.com/en-us/blog/achieving-cyber-resilience-with-dell-powerprotect/"},
         {"label": "DellPowerProtect narrative twin (this repo) — vault-side companion",
          "url": "../DellPowerProtect/README.md"},
         {"label": "Expansion-roster spec (this repo), product #4",

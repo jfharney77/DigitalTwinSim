@@ -1,0 +1,137 @@
+{
+  "params": {
+    "product": [
+      "alienware",
+      "promax"
+    ],
+    "view": [
+      "aw-laptop",
+      "aw-desktop",
+      "promax"
+    ]
+  },
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "product": "alienware",
+          "formFactor": "laptop",
+          "cpuPl1W": 55,
+          "gpuTgpW": 140,
+          "npu": false,
+          "ramGb": 32,
+          "nvmeCount": 1,
+          "batteryWh": 90,
+          "batteryHealthPct": 100,
+          "chargerW": 240,
+          "psuCapacityW": 1000
+        },
+        "workload": {
+          "cpuPct": 70,
+          "gpuPct": 100,
+          "npuPct": 0,
+          "inference": false
+        },
+        "environment": {
+          "ambientC": 22,
+          "onLap": false,
+          "perfMode": "balanced",
+          "pluggedIn": true,
+          "startChargePct": 100
+        },
+        "durationS": 1200,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "alienware",
+          "formFactor": "laptop",
+          "cpuPl1W": 55,
+          "gpuTgpW": 140,
+          "npu": false,
+          "ramGb": 32,
+          "nvmeCount": 1,
+          "batteryWh": 90,
+          "batteryHealthPct": 100,
+          "chargerW": 240,
+          "psuCapacityW": 1000
+        },
+        "workload": {
+          "cpuPct": 70,
+          "gpuPct": 100,
+          "npuPct": 0,
+          "inference": false
+        },
+        "environment": {
+          "ambientC": 22,
+          "onLap": false,
+          "perfMode": "balanced",
+          "pluggedIn": true,
+          "startChargePct": 30
+        },
+        "durationS": 1800,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "promax",
+          "formFactor": "laptop",
+          "cpuPl1W": 55,
+          "gpuTgpW": 115,
+          "npu": true,
+          "ramGb": 64,
+          "nvmeCount": 2,
+          "batteryWh": 96,
+          "batteryHealthPct": 80,
+          "chargerW": 280,
+          "psuCapacityW": 1000
+        },
+        "workload": {
+          "cpuPct": 10,
+          "gpuPct": 0,
+          "npuPct": 100,
+          "inference": true
+        },
+        "environment": {
+          "ambientC": 22,
+          "onLap": false,
+          "perfMode": "balanced",
+          "pluggedIn": false,
+          "startChargePct": 100
+        },
+        "durationS": 3600,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "alienware",
+          "formFactor": "laptop",
+          "cpuPl1W": 55,
+          "gpuTgpW": 140,
+          "npu": false,
+          "ramGb": 32,
+          "nvmeCount": 1,
+          "batteryWh": 90,
+          "batteryHealthPct": 100,
+          "chargerW": 240,
+          "psuCapacityW": 1000
+        },
+        "workload": {
+          "cpuPct": 70,
+          "gpuPct": 100,
+          "npuPct": 0,
+          "inference": false
+        },
+        "environment": {
+          "ambientC": 22,
+          "onLap": true,
+          "perfMode": "balanced",
+          "pluggedIn": true,
+          "startChargePct": 50
+        },
+        "durationS": 1200,
+        "events": []
+      }
+    ]
+  }
+}

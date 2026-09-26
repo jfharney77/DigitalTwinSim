@@ -292,7 +292,54 @@ def test_guided_fan_feedback_raises_wall_power_at_constant_work():
     before, after = trace[179], trace[-1]
     assert after.cpu_power_w == before.cpu_power_w, "the work never changes"
     assert after.fan_power_w > before.fan_power_w * 2, "fans pay for the hot air"
-    assert after.ac_power_w > before.ac_power_w + 2, "and the wall meter shows it"
+    assert after.ac_power_w > before.ac_power_w + 30, (
+        "the loop is priced in tens of watts, not a rounding error"
+    )
+    assert before.fan_rpm_pct < 65 and after.fan_rpm_pct > 80, (
+        "the narration's 'just over half speed to about 90%'"
+    )
+    assert 3.5 < after.fan_power_w / before.fan_power_w < 5, "'roughly quadruples'"
+    # The baseline the reader takes at t=179 has stopped moving.
+    assert abs(trace[179].ac_power_w - trace[150].ac_power_w) < 5
+
+
+def test_boost_expiry_is_logged_when_cpu_power_steps_down():
+    """CPU watts fall ~13% at t=60 under full load. Unlogged, that reads as
+    a throttle; the log and the boosting flag say what it is."""
+    trace, log, summary = _guided("kill-a-fan")
+    drop = next(s.t for a, s in zip(trace, trace[1:]) if s.cpu_power_w < a.cpu_power_w)
+    entry = next(e for e in log if "boost" in e.message.lower())
+    assert entry.t == drop == 60
+    assert "not throttling" in entry.message
+    assert all(s.cpu_boosting for s in trace[:60])
+    assert not any(s.cpu_boosting for s in trace[60:])
+    assert summary.throttle_seconds == 0
+    assert round(trace[59].cpu_power_w - trace[60].cpu_power_w) == 75, "narration's 75 W"
+
+
+def test_exhaust_air_is_never_hotter_than_what_heats_it():
+    """From a cold start the heatsinks soak up watts before passing them
+    on: the air carries released heat, not instantaneous power."""
+    for gid in ("kill-a-fan", "fan-feedback", "350w-problem"):
+        trace, _, _ = _guided(gid)
+        for s in trace[:90]:
+            assert s.exhaust_c <= s.cpu_temp_c + 0.5, f"{gid} t={s.t}"
+            assert s.air_heat_w <= s.dc_power_w * 1.35, f"{gid} t={s.t}"
+        assert trace[0].air_heat_w < trace[0].dc_power_w / 2, "cold metal keeps its watts"
+        for s in trace:
+            if s.powered_on:
+                inlet = s.inlet_effective_c
+                assert all(v >= inlet - 0.05 or k == "backplane" or k.startswith("cpu")
+                           or k == "gpu-riser" for k, v in s.region_temps.items()), s.t
+                assert s.region_temps["dimm-a"] >= inlet - 0.05
+
+
+def test_air_heat_converges_to_dc_power():
+    trace, _, _ = run(Scenario(config=BALANCED, workload=DATABASE, duration_s=1500))
+    s = trace[-1]
+    assert abs(s.air_heat_w - s.dc_power_w) < 0.01 * s.dc_power_w
+    m_dot = s.airflow_cfm * C("cfm_to_m3s") * C("air_density_sl")
+    assert abs(s.mass_flow_kgps - m_dot) < 1e-3
 
 
 def test_heatsink_needs_airflow_so_fans_do_real_work_under_load():

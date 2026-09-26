@@ -76,6 +76,13 @@ export interface SimState {
   restoring: boolean;
   restoreProgressPct: number;
   rtoHours: number;
+  decisionHours: number;
+  transferHours: number;
+  restoreStage: "" | "deciding" | "moving";
+  restoreFailed: boolean;
+  rpoRealisedH: number; // -1 until a restore is ordered
+  outageHours: number;
+  peakBlastGb: number;
   recovered: boolean;
   failedRestores: number;
   reachableAssets: number;

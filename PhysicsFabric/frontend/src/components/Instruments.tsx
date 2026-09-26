@@ -27,11 +27,14 @@ export function Instruments({
   explains,
   explainOn,
   product,
+  baselineFctMs = null,
 }: {
   state: SimState | null;
   explains: Explain[];
   explainOn: boolean;
   product: string;
+  /** FCT on the step before the gray failure began, if this run has one. */
+  baselineFctMs?: number | null;
 }) {
   const s = state;
   const ex = (id: string) => explains.find((e) => e.id === id);
@@ -67,7 +70,7 @@ export function Instruments({
         <div className={`mini ${s.statusAllGreen ? "rule-ok" : "rule-error"}`}>
           {s.statusAllGreen ? "● ALL GREEN (says the fabric)" : "■ FAULT VISIBLE"}
           {s.goodputPenaltyPct > 0 && s.statusAllGreen && (
-            <span> — and yet goodput is down {s.goodputPenaltyPct.toFixed(0)}%…</span>
+            <span> — and yet useful traffic is down {s.goodputPenaltyPct.toFixed(0)}% fabric-wide</span>
           )}
         </div>
       )}
@@ -83,9 +86,20 @@ export function Instruments({
       <div className="stat"><span>oversubscription</span><span>{s ? `${s.oversubRatio.toFixed(2)}:1` : "—"}</span></div>
       <Info id="oversub" />
       <div className="stat"><span>latency</span><span>{s ? `${s.latencyUs.toFixed(1)} µs` : "—"}</span></div>
-      <div className="stat"><span>FCT (64 MB)</span><span>{s ? `${s.fctMs.toFixed(1)} ms` : "—"}</span></div>
+      <div className="stat">
+        <span title="Flow completion time: how long one 64 MB transfer takes">FCT (64 MB)</span>
+        <span>
+          {s ? `${s.fctMs.toFixed(1)} ms` : "—"}
+          {s && baselineFctMs !== null && s.goodputPenaltyPct > 0 && (
+            <span className="mini"> (was {baselineFctMs.toFixed(1)} ms)</span>
+          )}
+        </span>
+      </div>
       <Info id="queue-delay" />
-      <div className="stat"><span>drops</span><span>{s ? `${s.droppedPps.toFixed(0)} pps` : "—"}</span></div>
+      {s && s.affectedFlowPenaltyPct > 0 && (
+        <div className="stat"><span>affected flows (useful traffic)</span><span>−{s.affectedFlowPenaltyPct.toFixed(0)}%</span></div>
+      )}
+      <div className="stat"><span>drops (switch-reported)</span><span>{s ? `${s.droppedPps.toFixed(0)} pps` : "—"}</span></div>
       <div className="stat"><span>pauses · stalls</span><span>{s ? `${s.pauseEventsS.toFixed(0)}/s · ${s.stallUsPerS.toFixed(0)} µs/s` : "—"}</span></div>
       <Info id="lossless" />
       {product === "x800" && (

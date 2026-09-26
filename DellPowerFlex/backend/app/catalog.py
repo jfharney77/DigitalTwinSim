@@ -25,7 +25,10 @@ CATALOG: list[CatalogCategory] = [
             "The servers that make up the pool. Every one is identical in "
             "role, which is what makes the scaling arithmetic simple."
         ),
-        limits="3 to 2,000+ nodes; up to 240 million IOPS",
+        limits=(
+            "Dell-quoted for the mirrored generations: 3 to 2,000+ nodes, up "
+            "to 240 million IOPS. PowerFlex 5.0 spec sheet: 5 to 128 storage nodes"
+        ),
         region_ids=["node-1", "node-2", "node-3", "node-4", "node-5", "node-6"],
         options=[
             CatalogOption(
@@ -160,7 +163,10 @@ CATALOG: list[CatalogCategory] = [
             "How the pool survives losing hardware, and what that costs in "
             "capacity."
         ),
-        limits="Mesh mirroring or erasure coding; fault sets for failure domains",
+        limits=(
+            "Mesh mirroring (through 4.x) or erasure coding (5.0, greenfield "
+            "only); fault sets for failure domains"
+        ),
         region_ids=["protection"],
         options=[
             CatalogOption(
@@ -171,7 +177,8 @@ CATALOG: list[CatalogCategory] = [
                     "node is a rebuild partner."
                 ),
                 details=(
-                    "The classic PowerFlex protection scheme. Each chunk "
+                    "The classic PowerFlex protection scheme, used through the "
+                    "4.x releases and the one this twin's trace models. Each chunk "
                     "exists twice, on different nodes, and the placement "
                     "is deliberately spread rather than paired — node 1 is "
                     "not the mirror of node 2. That distinction is what "
@@ -196,10 +203,18 @@ CATALOG: list[CatalogCategory] = [
                     "dramatically compared with mirroring. The trade is "
                     "computation: a rebuild has to calculate the missing "
                     "data rather than copy it, and writes incur parity "
-                    "work. The 5.0 Ultra release pairs this with a "
-                    "scalable availability engine, which is the part that "
-                    "keeps the many-to-many rebuild property intact rather "
-                    "than trading it away for the capacity saving."
+                    "work. PowerFlex 5.0 (the Ultra release, available "
+                    "October 2025) is built on this: its Scalable "
+                    "Availability Engine is dual-parity erasure coding in "
+                    "two schemes, 2+2 (five-node minimum, 50 percent "
+                    "usable) and 8+2 (eleven-node minimum, 80 percent "
+                    "usable), surviving two node failures. Dell describes "
+                    "it as fully distributed, which is the part that keeps "
+                    "the many-to-many rebuild rather than trading it away, "
+                    "and claims up to ten nines of availability. It "
+                    "replaces mirroring rather than joining it: 5.0 is a "
+                    "fresh deployment with no in-place upgrade from 4.x, "
+                    "and its spec sheet lists 128 storage nodes per system."
                 ),
             ),
             CatalogOption(
@@ -356,7 +371,7 @@ CATALOG: list[CatalogCategory] = [
             "Snapshots, replication, and reduction — included rather than "
             "licensed separately."
         ),
-        limits="All-inclusive licensing; massive snapshot capacity in 5.0 Ultra",
+        limits="All-inclusive licensing; 1,022 snapshots or clones per volume in 5.0",
         region_ids=["protection", "mgmt"],
         options=[
             CatalogOption(
@@ -367,7 +382,9 @@ CATALOG: list[CatalogCategory] = [
                     "routine tool rather than a rationed one."
                 ),
                 details=(
-                    "Snapshot capacity in the 5.0 Ultra release is large "
+                    "PowerFlex 5.0 allows 1,022 snapshots or clones per "
+                    "source volume and 128,000 volumes and snapshots per "
+                    "system (spec sheet), which is large "
                     "enough that snapshots stop being something to budget "
                     "for and become something to take casually — before "
                     "every deployment, on every test database, hourly on "

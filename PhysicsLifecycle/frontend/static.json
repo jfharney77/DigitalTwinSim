@@ -1,0 +1,211 @@
+{
+  "params": {
+    "product": [
+      "telecomblocks",
+      "circulardesign"
+    ]
+  },
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "product": "telecomblocks",
+          "sites": 100,
+          "deployMode": "blocks",
+          "extendedTemp": true,
+          "spareCapacity": true,
+          "remoteRemediation": true,
+          "subscribersPerSiteK": 20,
+          "batteryReplaceable": true,
+          "ramSocketed": true,
+          "chassisRecycled": true,
+          "portsModular": true,
+          "grid": "average",
+          "firstOwnerYears": 4,
+          "annualKwh": 60
+        },
+        "durationD": 365,
+        "events": [
+          {
+            "atD": 10,
+            "action": "deploy-sites",
+            "value": 50
+          },
+          {
+            "atD": 40,
+            "action": "deploy-sites",
+            "value": 50
+          }
+        ]
+      },
+      {
+        "config": {
+          "product": "circulardesign",
+          "sites": 100,
+          "deployMode": "blocks",
+          "extendedTemp": true,
+          "spareCapacity": true,
+          "remoteRemediation": true,
+          "subscribersPerSiteK": 20,
+          "batteryReplaceable": true,
+          "ramSocketed": true,
+          "chassisRecycled": true,
+          "portsModular": true,
+          "grid": "average",
+          "firstOwnerYears": 4,
+          "annualKwh": 60
+        },
+        "durationD": 2920,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "telecomblocks",
+          "sites": 100,
+          "deployMode": "diy",
+          "extendedTemp": true,
+          "spareCapacity": true,
+          "remoteRemediation": true,
+          "subscribersPerSiteK": 20,
+          "batteryReplaceable": true,
+          "ramSocketed": true,
+          "chassisRecycled": true,
+          "portsModular": true,
+          "grid": "average",
+          "firstOwnerYears": 4,
+          "annualKwh": 60
+        },
+        "durationD": 365,
+        "events": [
+          {
+            "atD": 10,
+            "action": "deploy-sites",
+            "value": 50
+          },
+          {
+            "atD": 40,
+            "action": "deploy-sites",
+            "value": 50
+          }
+        ]
+      },
+      {
+        "config": {
+          "product": "telecomblocks",
+          "sites": 100,
+          "deployMode": "blocks",
+          "extendedTemp": false,
+          "spareCapacity": true,
+          "remoteRemediation": true,
+          "subscribersPerSiteK": 20,
+          "batteryReplaceable": true,
+          "ramSocketed": true,
+          "chassisRecycled": true,
+          "portsModular": true,
+          "grid": "average",
+          "firstOwnerYears": 4,
+          "annualKwh": 60
+        },
+        "durationD": 365,
+        "events": [
+          {
+            "atD": 10,
+            "action": "deploy-sites",
+            "value": 50
+          },
+          {
+            "atD": 40,
+            "action": "deploy-sites",
+            "value": 50
+          }
+        ]
+      },
+      {
+        "config": {
+          "product": "circulardesign",
+          "sites": 100,
+          "deployMode": "blocks",
+          "extendedTemp": true,
+          "spareCapacity": true,
+          "remoteRemediation": true,
+          "subscribersPerSiteK": 20,
+          "batteryReplaceable": false,
+          "ramSocketed": false,
+          "chassisRecycled": false,
+          "portsModular": false,
+          "grid": "average",
+          "firstOwnerYears": 4,
+          "annualKwh": 60
+        },
+        "durationD": 2920,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "circulardesign",
+          "sites": 100,
+          "deployMode": "blocks",
+          "extendedTemp": true,
+          "spareCapacity": true,
+          "remoteRemediation": true,
+          "subscribersPerSiteK": 20,
+          "batteryReplaceable": true,
+          "ramSocketed": true,
+          "chassisRecycled": true,
+          "portsModular": true,
+          "grid": "coal",
+          "firstOwnerYears": 4,
+          "annualKwh": 120
+        },
+        "durationD": 2920,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "telecomblocks",
+          "sites": 100,
+          "deployMode": "diy",
+          "extendedTemp": false,
+          "spareCapacity": false,
+          "remoteRemediation": true,
+          "subscribersPerSiteK": 20,
+          "batteryReplaceable": true,
+          "ramSocketed": true,
+          "chassisRecycled": true,
+          "portsModular": true,
+          "grid": "average",
+          "firstOwnerYears": 4,
+          "annualKwh": 60
+        },
+        "durationD": 120,
+        "events": [
+          {
+            "atD": 10,
+            "action": "deploy-sites",
+            "value": 50.0
+          },
+          {
+            "atD": 40,
+            "action": "deploy-sites",
+            "value": 50.0
+          },
+          {
+            "atD": 60,
+            "action": "heatwave",
+            "value": 48.0
+          },
+          {
+            "atD": 70,
+            "action": "bundle-update",
+            "value": null
+          },
+          {
+            "atD": 100,
+            "action": "bundle-update",
+            "value": null
+          }
+        ]
+      }
+    ]
+  }
+}

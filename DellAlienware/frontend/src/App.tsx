@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import { fetchAnatomy, fetchCatalog, fetchDefaultProfile, fetchTour, simulate } from "./api";
+import {
+  BASELINE_TRACE,
+  fetchAnatomy,
+  fetchCatalog,
+  fetchDefaultProfile,
+  fetchScenarios,
+  fetchTour,
+  simulate,
+} from "./api";
 import { AnatomyPage } from "./components/AnatomyPage";
 import { AnatomyView } from "./components/AnatomyView";
 import { UseCasePage } from "./components/UseCasePage";
@@ -9,7 +17,11 @@ import { PowerPathView } from "./components/PowerPathView";
 import { PowerControls } from "./components/PowerControls";
 import { PowerCounters } from "./components/PowerCounters";
 import { Legend } from "./components/Legend";
+import { DiagnosticReadout } from "./components/DiagnosticReadout";
 import { LevelControl } from "./components/LevelControl";
+import { LabPanel } from "./components/LabPanel";
+import { fetchExplains, fetchLabs, labFromHash } from "./labs";
+import type { Explain, Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   Anatomy,
@@ -19,6 +31,7 @@ import type {
   Scenario,
   Summary,
   ThermalMode,
+  TraceScenario,
   WorkloadKind,
 } from "./types";
 
@@ -58,17 +71,35 @@ function tourStepFromHash(): string | null {
   return m ? m[1] : null;
 }
 
-// Deep-link into the trace: /#step=N or /#phase=<name>. Returns the starting
-// cursor, or null when the hash matches neither pattern (or names an unknown
-// phase) — in which case playback starts at 0 as before.
+// The sim page's hash is a small key=value list:
+//   #step=N · #phase=<name> · #scenario=<id> · #scenario=<id>&phase=<name>
+// All of them fall through pageFromHash() and land on the sim page.
+function hashParams(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of window.location.hash.replace(/^#/, "").split("&")) {
+    const m = part.match(/^(step|phase|scenario)=([a-z0-9_-]+)$/i);
+    if (m) out[m[1]] = m[2];
+  }
+  return out;
+}
+
+const TRACE_IDS = [BASELINE_TRACE, "charge-taper-diagnostics"];
+
+function traceFromHash(): string {
+  const s = hashParams().scenario;
+  return s && TRACE_IDS.includes(s) ? s : BASELINE_TRACE;
+}
+
+// Deep-link into the trace. Returns the starting cursor, or null when the
+// hash names neither a step nor a known phase — playback then starts at 0.
 function initialStepFromHash(states: { phase: string }[]): number | null {
   if (states.length === 0) return null;
-  const h = window.location.hash;
-  const step = h.match(/#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  const { step, phase } = hashParams();
+  if (step !== undefined && /^\d+$/.test(step)) {
+    return Math.min(Number(step), states.length - 1);
+  }
+  if (phase !== undefined) {
+    const i = states.findIndex((s) => s.phase === phase);
     return i >= 0 ? i : null;
   }
   return null;
@@ -83,6 +114,11 @@ const PHASE_LABEL: Record<PowerPhase, string> = {
   boot: "boot",
   load: "under load",
   steady: "steady state",
+  cap: "charge limit",
+  taper: "taper",
+  heat: "pack too hot",
+  resume: "charge resumes",
+  swap: "adapter unknown",
 };
 
 export function App() {
@@ -90,6 +126,12 @@ export function App() {
   const [page, setPage] = useState<Page>(pageFromHash);
   const pageRef = useRef(page);
   pageRef.current = page;
+  // Which trace the sim page plays: the plug-in path, or a failure walk.
+  const [traceId, setTraceId] = useState<string>(traceFromHash);
+  const traceIdRef = useRef(traceId);
+  traceIdRef.current = traceId;
+  const [scenarios, setScenarios] = useState<TraceScenario[]>([]);
+  const [traceInfo, setTraceInfo] = useState<TraceScenario | null>(null);
   useEffect(() => {
     // Only overwrite the hash for top-level switches; pages may append their
     // own deep-link segments (e.g. #anatomy/<anatomyId>).
@@ -97,13 +139,33 @@ export function App() {
     // prefix test would leave #anatomy/<id> in the URL after switching back
     // to the power path.
     if (pageFromHash() !== page) {
-      window.location.hash = PAGE_HASH[page];
+      // Coming back to the sim page keeps a chosen failure scenario in the
+      // address bar, so the link stays shareable.
+      window.location.hash =
+        page === "sim" && traceIdRef.current !== BASELINE_TRACE
+          ? `scenario=${traceIdRef.current}`
+          : PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
   }, [page]);
   // Follow back/forward navigation and in-page hash links.
   useEffect(() => {
-    const onHash = () => setPage(pageFromHash());
+    const onHash = () => {
+      setPage(pageFromHash());
+      if (pageFromHash() !== "sim") return;
+      const next = traceFromHash();
+      if (next !== traceIdRef.current) {
+        // A different trace: the fetch effect places the cursor once it has
+        // the right steps to place it in.
+        setTraceId(next);
+        return;
+      }
+      const start = initialStepFromHash(traceRef.current);
+      if (start !== null) {
+        stopRef.current();
+        setCursor(start);
+      }
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -118,6 +180,8 @@ export function App() {
 
   // --- Trace playback ---
   const [trace, setTrace] = useState<PowerState[]>([]);
+  const traceRef = useRef<PowerState[]>([]);
+  const stopRef = useRef<() => void>(() => {});
   const [summary, setSummary] = useState<Summary | null>(null);
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
@@ -136,12 +200,20 @@ export function App() {
 
   const level = useLevel();
   const timer = useRef<number | null>(null);
+
+  // --- Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [explains, setExplains] = useState<Explain[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   // Apply a #step=/#phase= deep link only on the first successful trace load.
   const hashApplied = useRef(false);
   // The scenario the loaded trace belongs to. A refetch for a new reading
   // level keeps the cursor (numbers and step count are identical across
   // levels); a new scenario starts playback over.
   const loadedScenario = useRef("");
+  const loadedTrace = useRef("");
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -153,6 +225,11 @@ export function App() {
     }
     setRunning(false);
   }, []);
+  stopRef.current = stop;
+
+  // The guided tour pins steps of the plug-in trace, so the tour page plays
+  // that one whatever the sim page has selected.
+  const liveTrace = page === "tour" ? BASELINE_TRACE : traceId;
 
   // Load the catalog once; start on the backend's default profile.
   useEffect(() => {
@@ -170,17 +247,26 @@ export function App() {
   useEffect(() => {
     if (!profileId || !adapterId) return;
     let cancelled = false;
-    simulate({ profileId, adapterId, startBatteryPct, thermalMode, workload })
+    simulate(
+      { profileId, adapterId, startBatteryPct, thermalMode, workload },
+      liveTrace,
+    )
       .then((resp) => {
         if (cancelled) return;
         setTrace(resp.trace);
+        traceRef.current = resp.trace;
         setSummary(resp.summary);
+        setTraceInfo(resp.traceScenario ?? null);
         setError(null);
-        const key = [profileId, adapterId, startBatteryPct, thermalMode, workload].join("|");
+        const key = [liveTrace, profileId, adapterId, startBatteryPct, thermalMode, workload].join("|");
         const sameScenario = loadedScenario.current === key;
+        // A new trace scenario is a new trace: it starts from the step its
+        // link names, or from zero.
+        const newTrace = loadedTrace.current !== liveTrace;
         loadedScenario.current = key;
+        loadedTrace.current = liveTrace;
         const pinned = pageRef.current === "tour" ? tourCursor.current : null;
-        if (!hashApplied.current) {
+        if (!hashApplied.current || newTrace) {
           hashApplied.current = true;
           stop();
           setCursor(pinned ?? initialStepFromHash(resp.trace) ?? 0);
@@ -195,7 +281,77 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [profileId, adapterId, startBatteryPct, thermalMode, workload, level, stop]);
+  }, [profileId, adapterId, startBatteryPct, thermalMode, workload, level, liveTrace, stop]);
+
+  useEffect(() => {
+    fetchScenarios()
+      .then(setScenarios)
+      .catch(() => setScenarios([])); // no picker; the plug-in trace still plays
+  }, [level]);
+
+  // Labs and the equations their criteria cite are leveled prose.
+  useEffect(() => {
+    Promise.all([fetchLabs(), fetchExplains()])
+      .then(([l, e]) => {
+        setLabs(l);
+        setExplains(e);
+      })
+      .catch(() => setLabs([])); // no labs; every other mode still works
+  }, [level]);
+
+  // A lab's start scenario loads into the ordinary controls, on the plug-in
+  // trace, so the lab uses the same dials as every other mode.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setTraceId(BASELINE_TRACE);
+    setProfileId(lab.start.profileId);
+    setAdapterId(lab.start.adapterId);
+    setStartBatteryPct(lab.start.startBatteryPct);
+    setThermalMode(lab.start.thermalMode);
+    setWorkload(lab.start.workload);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      window.history.replaceState(null, "", `#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once, when both the labs and the catalog have
+  // arrived (so the default profile cannot override it), then follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0 || profiles.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, profiles, loadLabStart]);
+  useEffect(() => {
+    const onLabHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onLabHash);
+    return () => window.removeEventListener("hashchange", onLabHash);
+  }, [labs, loadLabStart]);
+
+  // The picker. The hash is rewritten without a phase or step, so the new
+  // trace starts from its first state.
+  const chooseTrace = useCallback((id: string) => {
+    window.history.replaceState(
+      null,
+      "",
+      id === BASELINE_TRACE
+        ? window.location.pathname + window.location.search
+        : `#scenario=${id}`,
+    );
+    setTraceId(id);
+  }, []);
 
   // The tour is fetched the first time its page opens, and again when the
   // reading level changes (the narration is leveled prose).
@@ -273,6 +429,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speed]);
 
+  const failure = page === "sim" && traceId !== BASELINE_TRACE;
   const profile = profiles.find((p) => p.id === profileId) ?? null;
   const adapters = profile?.adapters ?? [];
 
@@ -315,6 +472,26 @@ export function App() {
             onClick={() => setPage("tour")}
           >
             Guided tour
+          </button>
+          <button
+            className={page === "sim" && labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              if (page === "sim" && labsOpen) {
+                setLabsOpen(false);
+                window.history.replaceState(
+                  null,
+                  "",
+                  window.location.pathname + window.location.search,
+                );
+                return;
+              }
+              // The lab hashes land on the power-path page; the hashchange
+              // listeners switch the page and open the panel.
+              setLabsOpen(true);
+              window.location.hash = activeLabId ? `#lab=${activeLabId}` : "#labs";
+            }}
+          >
+            Labs
           </button>
         </nav>
         {page === "sim" && state && (
@@ -397,8 +574,18 @@ export function App() {
       {page === "sim" && (
         <>
           <div className="an-hero">
-            <h2>What happens when you plug it in</h2>
-            <p>
+            <h2>
+              {failure
+                ? "It stopped charging at 80%"
+                : "What happens when you plug it in"}
+            </h2>
+            {failure && (
+              <p>
+                {traceInfo?.summary ??
+                  "One complaint, four causes, and the readouts that tell them apart."}
+              </p>
+            )}
+            <p hidden={failure}>
               A 280 W gaming laptop never just "takes power". The adapter must
               first prove what it is over a 1-Wire ID pin, the EC (embedded
               controller) sets a power budget from that answer, the charger IC
@@ -413,10 +600,29 @@ export function App() {
               Guided tour
             </button>
           </div>
+          {labsOpen && (
+            <LabPanel
+              labs={labs}
+              lab={activeLab}
+              scenario={{ profileId, adapterId, startBatteryPct, thermalMode, workload }}
+              explains={explains}
+              onSelect={selectLab}
+              onLoadStart={loadLabStart}
+              onClose={() => {
+                setLabsOpen(false);
+                window.history.replaceState(
+                  null,
+                  "",
+                  window.location.pathname + window.location.search,
+                );
+              }}
+            />
+          )}
           <div className="stage">
             <div className="an-card">
               {error && <div className="mini an-error">{error}</div>}
               <PowerPathView state={state} />
+              {failure && state && <DiagnosticReadout state={state} info={traceInfo} />}
               <div className="mini an-hint">
                 Highlighted blocks are the parts doing work at this step; lit
                 lines carry power, labelled with live wattage. The full tour of
@@ -427,6 +633,9 @@ export function App() {
 
           <aside className="controls">
             <PowerControls
+              scenarios={scenarios}
+              traceId={traceId}
+              onTrace={chooseTrace}
               profiles={profiles}
               profileId={profileId}
               onProfile={onProfile}
@@ -452,10 +661,11 @@ export function App() {
             <PowerCounters
               state={state}
               summary={summary}
+              heroLabel={failure ? traceInfo?.heroLabel ?? null : null}
               stepIndex={cursor}
               stepCount={trace.length}
             />
-            <Legend />
+            <Legend failure={failure} />
           </aside>
         </>
       )}

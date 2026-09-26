@@ -1,3 +1,4 @@
+import { apiFetch } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
 import { getLevel } from "./level";
 import type {
@@ -17,31 +18,31 @@ function url(path: string): string {
 }
 
 export async function fetchAnatomy(): Promise<ChassisAnatomy> {
-  const r = await fetch(url("/anatomy"));
+  const r = await apiFetch(url("/anatomy"));
   if (!r.ok) throw new Error(`anatomy ${r.status}`);
   return r.json();
 }
 
 export async function fetchJoin(): Promise<JoinResponse> {
-  const r = await fetch(url("/join"));
+  const r = await apiFetch(url("/join"));
   if (!r.ok) throw new Error(`join ${r.status}`);
   return r.json();
 }
 
 export async function fetchCatalog(): Promise<CatalogCategory[]> {
-  const r = await fetch(url("/catalog"));
+  const r = await apiFetch(url("/catalog"));
   if (!r.ok) throw new Error(`catalog ${r.status}`);
   return r.json();
 }
 
 export async function fetchUseCases(): Promise<UseCase[]> {
-  const r = await fetch(url("/usecases"));
+  const r = await apiFetch(url("/usecases"));
   if (!r.ok) throw new Error(`usecases ${r.status}`);
   return r.json();
 }
 
 export async function fetchTour(): Promise<TourResponse> {
-  const r = await fetch(url("/tour"));
+  const r = await apiFetch(url("/tour"));
   if (!r.ok) throw new Error(`tour ${r.status}`);
   return r.json();
 }

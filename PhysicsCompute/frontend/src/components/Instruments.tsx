@@ -19,6 +19,8 @@ function substituted(id: string, s: SimState): string {
       return `hottest ${s.gpuTempHotC.toFixed(1)} °C · coolest ${s.gpuTempCoolC.toFixed(1)} °C · ${s.gpusThrottled} throttled`;
     case "cooling-overhead":
       return `(${fmtW(s.fanPowerW)} + ${fmtW(s.pumpPowerW)}) / IT = ${s.coolingOverheadPct.toFixed(1)}%`;
+    case "power-chain":
+      return `${fmtW(s.gpuPowerW)} GPU of ${fmtW(s.dcPowerW)} DC → ${fmtW(s.acPowerW)} at the wall (PSU ${(100 * s.psuEfficiency).toFixed(1)}%)`;
     case "redfish":
       return `open the iDRAC tab — this state, as Redfish JSON`;
     default:
@@ -70,8 +72,8 @@ export function Instruments({
           <Gauge label="effective GPU util" unit="%" value={s.effectiveGpuUtilPct} min={0} max={100}
             bands={[{ to: 50, color: "#c8281e" }, { to: 85, color: "#e8c33d" }, { to: 100, color: "#7fbf5a" }]}
             ticks={[]} format={(v) => `${v.toFixed(0)}%`} />
-          <Gauge label="cooling overhead" unit="%" value={s.coolingOverheadPct} min={0} max={10}
-            bands={[{ to: 2, color: "#7fbf5a" }, { to: 5, color: "#e8c33d" }, { to: 10, color: "#c8281e" }]}
+          <Gauge label="cooling overhead" unit="%" value={s.coolingOverheadPct} min={0} max={20}
+            bands={[{ to: 3, color: "#7fbf5a" }, { to: 10, color: "#e8c33d" }, { to: 20, color: "#c8281e" }]}
             ticks={[]} format={(v) => `${v.toFixed(1)}%`} />
         </div>
       )}
@@ -84,8 +86,11 @@ export function Instruments({
       <div className="stat"><span>DC power</span><span>{s ? fmtW(s.dcPowerW) : "—"}</span></div>
       <div className="stat"><span>wall / busbar</span><span>{s ? fmtW(s.acPowerW) : "—"}</span></div>
       <div className="stat"><span>GPU power</span><span>{s ? fmtW(s.gpuPowerW) : "—"}</span></div>
+      <Info id="power-chain" />
       <div className="stat">
-        <span>cooling overhead</span>
+        <span title="Share of electricity spent on fans and pumps rather than computing">
+          cooling overhead (fans + pumps ÷ IT)
+        </span>
         <span className="fan-overhead">{s ? `${s.coolingOverheadPct.toFixed(1)}%` : "—"}</span>
       </div>
       <Info id="cooling-overhead" />
@@ -100,7 +105,17 @@ export function Instruments({
             <span>coolant supply → return</span>
             <span>{s ? `${s.coolantSupplyC.toFixed(0)} → ${s.coolantReturnC.toFixed(1)} °C` : "—"}</span>
           </div>
-          <div className="stat"><span>ΔT · flow</span><span>{s ? `${s.coolantDeltaTC.toFixed(1)} °C · ${s.flowLpm.toFixed(0)} L/min` : "—"}</span></div>
+          <div className="stat">
+            <span>measured rise (return − supply)</span>
+            <span>{s ? `${(s.coolantReturnC - s.coolantSupplyC).toFixed(1)} °C` : "—"}</span>
+          </div>
+          <div className="stat">
+            <span title="Q / (ṁ × cp): where the measured rise settles after the loop's lag of about a minute">
+              settled ΔT · flow
+            </span>
+            <span>{s ? `${s.coolantDeltaTC.toFixed(1)} °C · ${s.flowLpm.toFixed(0)} L/min` : "—"}</span>
+          </div>
+          <div className="stat"><span>pumps · tray fans</span><span>{s ? `${fmtW(s.pumpPowerW)} · ${fmtW(s.fanPowerW)}` : "—"}</span></div>
           <div className="stat"><span>liquid · air split</span><span>{s ? `${fmtW(s.liquidWatts)} · ${fmtW(s.airWatts)}` : "—"}</span></div>
           <Info id="liquid-balance" />
         </>

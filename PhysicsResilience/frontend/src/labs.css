@@ -1,0 +1,50 @@
+/* Graded labs panel. Page chrome, so scoped under the Dell skin; no divider
+   rules, no eyebrow text, no highlighted text. */
+.app.dell .lab-panel { margin: 0 0 14px; }
+.app.dell .lab-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 1100px) { .app.dell .lab-grid { grid-template-columns: 1fr; } }
+.app.dell .lab-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.app.dell .lab-list button { text-align: left; font-size: 12px; }
+.app.dell .lab-list button.active { outline: 2px solid var(--dell-blue, #0672cb); }
+.app.dell .lab-best { color: var(--dell-muted, #636363); margin-left: 6px; }
+.app.dell .lab-goal h3 { margin: 0 0 6px; font-size: 16px; font-weight: 500; }
+.app.dell .lab-goal p { margin: 0 0 8px; line-height: 1.5; }
+.app.dell .lab-goal ul { margin: 0 0 8px; padding-left: 18px; line-height: 1.5; }
+.app.dell .lab-meta { color: var(--dell-muted, #636363); font-size: 12px; }
+.app.dell .lab-actions { margin: 10px 0; flex-wrap: wrap; align-items: center; }
+.app.dell .lab-score { font-size: 28px; font-weight: 300; margin: 0; }
+.app.dell .lab-score.pass { color: #217346; }
+.app.dell .lab-score.fail { color: #9a6a00; }
+.app.dell .lab-verdict { margin: 2px 0 10px; line-height: 1.45; }
+.app.dell .lab-criterion { margin: 0 0 8px; line-height: 1.45; }
+.app.dell .lab-criterion summary { cursor: pointer; font-size: 13px; }
+.app.dell .lab-criterion .mark-pass { color: #217346; font-weight: 600; }
+.app.dell .lab-criterion .mark-fail { color: #ce1126; font-weight: 600; }
+.app.dell .lab-measured { font-family: monospace; color: var(--dell-muted, #636363); margin-left: 6px; }
+.app.dell .lab-why { margin: 4px 0 0 18px; font-size: 12px; }
+.app.dell .lab-eq { font-family: monospace; font-weight: 600; display: block; margin-bottom: 2px; }
+.app.dell .lab-why button { font-size: 11px; margin-top: 4px; }
+.app.dell .lab-hint { margin: 6px 0 0; font-size: 12px; line-height: 1.5; }
+.app.dell .lab-objective-bar { height: 6px; background: #e8eaed; border-radius: 3px; margin: 4px 0 10px; }
+.app.dell .lab-objective-fill { height: 100%; border-radius: 3px; background: var(--dell-blue, #0672cb); transition: width 0.3s; }
+
+/* The editable incident script (App.tsx): one row per scripted event. */
+.app.dell .script-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.app.dell .script-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app.dell .script-row .script-action {
+  flex: 1;
+  min-width: 0;
+}
+.app.dell .script-row input {
+  width: 64px;
+  margin-left: 2px;
+}

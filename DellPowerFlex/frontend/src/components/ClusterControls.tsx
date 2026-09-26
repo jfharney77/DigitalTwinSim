@@ -1,4 +1,5 @@
 import { ControlPanel } from "@twinsim/twin-ui";
+import { useLevel } from "../level";
 
 /**
  * ClusterControls — the shared {@link ControlPanel} with this twin's own note.
@@ -27,6 +28,7 @@ export function ClusterControls({
   onStep: () => void;
   onReset: () => void;
 }) {
+  const level = useLevel();
   return (
     <ControlPanel
       running={running}
@@ -39,14 +41,16 @@ export function ClusterControls({
       onReset={onReset}
       onSpeed={onSpeed}
       note={
-        <>
-          The sequence is a fixed trace computed by the backend; Run only
-          plays it back. Step walks one event at a time. Note which stage
-          dwells longest — it is building the pool, not repairing it. Every
-          other twin here lingers on a recovery-ish stage; this one lingers on
-          the setup, because scattering chunks everywhere in advance is
-          precisely what makes the repair short.
-        </>
+        level >= 4 ? (
+          <>Fixed backend trace. Run plays it back; Step advances one event.</>
+        ) : (
+          <>
+            The sequence is a fixed trace computed by the backend; Run only
+            plays it back. Step walks one event at a time. Playback lingers
+            longest on building the pool, not on repairing it: scattering
+            chunks everywhere in advance is what makes the repair short.
+          </>
+        )
       }
     />
   );

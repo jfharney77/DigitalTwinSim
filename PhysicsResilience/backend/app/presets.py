@@ -48,9 +48,9 @@ CONFIG_PRESETS = [
     ConfigPreset(id="blind", name="No detection", config=BLIND,
                  blurb="Restore-and-pray — the doubled-RTO branch."),
     ConfigPreset(id="mdr", compare_preset_id="inhouse", name="MDR 24/7", config=MDR_247,
-                 blurb="The response clock that doesn't sleep."),
-    ConfigPreset(id="inhouse", name="In-house SOC", config=INHOUSE,
-                 blurb="Capable, diurnal, and behind a queue."),
+                 blurb="Managed detection and response: an outside team on watch around the clock."),
+    ConfigPreset(id="inhouse", name="In-house security team", config=INHOUSE,
+                 blurb="Your own analysts: capable, office hours only, and behind a queue."),
     ConfigPreset(id="zerotrust", compare_preset_id="perimeter", name="Fort Zero · zero trust", config=ZT,
                  blurb="Blast radius = the grant list, divided by segments."),
     ConfigPreset(id="perimeter", name="Fort Zero · perimeter", config=PERIMETER,
@@ -66,34 +66,59 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "Day ten: corruption begins spreading through the "
-                    "estate — and through the backup repository too, "
-                    "because the repository is reachable from the "
-                    "systems it protects. Watch the repo-copies "
-                    "counter fall to zero while the vault copies, "
-                    "behind their almost-always-closed gap, hold. "
-                    "Then the restore runs from the vault. Rerun on "
-                    "the repository-only preset: the same incident, "
-                    "and nothing left to restore from. Backups are "
-                    "not the product; unreachable backups are."
+                    "Two places hold backup copies here. The backup "
+                    "repository sits on the same network as the "
+                    "systems it protects. The vault sits behind a gap "
+                    "that opens only briefly, once a day, to take in a "
+                    "new copy. At hour 240 (day ten) corruption starts "
+                    "spreading through production, and the repository "
+                    "goes with it because production can reach it. In "
+                    "Instruments, watch the row 'copies intact · repo "
+                    "/ vault': the first number drops to 0 and the "
+                    "second holds at 9. Copies pile up as the run "
+                    "goes, one a day, so ten exist by hour 240 — the "
+                    "vault has nine of them, because the tenth was "
+                    "taken in the hour the corruption started and "
+                    "never made it through the gap. The event log "
+                    "says the same thing at h+240. At h+290 the "
+                    "restore is ordered, "
+                    "and the log names the vault as the source. Then "
+                    "run it a second time: under Architecture press "
+                    "'Repository only' and play again. Same incident, "
+                    "no vault, and the log at h+290 reads 'No backup "
+                    "exists intact'. A backup only helps if the "
+                    "incident cannot reach it."
                 ),
                 standard=(
-                    "The spec's devastating-common pattern, run twice: "
-                    "the incident (abstract corruption at 500 GB/h "
-                    "from hour 240) marks every repository copy "
-                    "corrupt, while vault copies behind the "
-                    "operational air gap stay intact — the tests "
-                    "assert the gap holds. Recovery proceeds from the "
-                    "vault at the RTO arithmetic the validation panel "
-                    "quoted. The repo-only preset ends with "
-                    "recovery_succeeded = false. Isolation, not "
-                    "copies, is the claim."
+                    "Run it twice. First with the vault: corruption "
+                    "at 500 GB/h from h+240 marks every repository "
+                    "copy corrupt in the first hour, because the "
+                    "repository is reachable from production. The "
+                    "vault copies sit behind the operational air gap "
+                    "and stay intact; the row 'copies intact · repo / "
+                    "vault' reads 0 / 9 when the restore is ordered "
+                    "at h+290, and the log names the vault as the "
+                    "source. Nine, not ten: ten daily copies exist "
+                    "by hour 240, and the vault holds every one of "
+                    "them except the copy taken as the incident "
+                    "began, which reached the repository and not "
+                    "the gap. Recovery then takes the hours the "
+                    "Architecture panel quoted before the run. Now "
+                    "press 'Repository only' under Architecture and "
+                    "play again. With no vault, no intact copy exists "
+                    "at h+290, the restore cannot start, and the RTO "
+                    "row reads 'no intact copy'. The backup policy "
+                    "did not change between the two runs — same "
+                    "cadence, same retention. What changed is "
+                    "whether any copy sits somewhere production "
+                    "cannot reach."
                 ),
                 expert=(
-                    "Repo copies → 0 intact; vault holds "
-                    "(asserted). Vault restore at quoted RTO; "
-                    "repo-only run: nothing to restore. Isolation is "
-                    "the product."
+                    "Repo copies → 0 intact at onset; vault holds "
+                    "0 / 9 at h+290. Vault restore at the quoted "
+                    "RTO. Repository-only rerun: the vault side of "
+                    "that row is 0 throughout, so nothing to "
+                    "restore. Same policy, different reach."
                 ),
             ),
         ],
@@ -114,32 +139,50 @@ GUIDED_SCENARIOS = [
             L(
                 novice=(
                     "The restore works perfectly. It also takes more "
-                    "than two days, because two hundred terabytes "
-                    "moving through a one-gigabyte-per-second pipe "
-                    "is arithmetic no vendor can negotiate with: "
-                    "200,000 gigabytes ÷ 1 GB/s ≈ 56 hours, plus "
-                    "the hours spent deciding and validating first. "
-                    "Watch the progress bar crawl and do the "
-                    "division alongside it. Recovery time is mostly "
-                    "a bandwidth purchase, made — or not — years "
-                    "before the incident."
+                    "than two days. RTO means recovery time "
+                    "objective: the hours from ordering the restore "
+                    "to having the systems back. It has two parts, "
+                    "and Instruments shows them as two rows. 'RTO · "
+                    "deciding' is the 6 hours people spend choosing "
+                    "a copy and checking it is safe. 'RTO · moving "
+                    "data' is plain division: 200 TB is 200,000 GB, and "
+                    "200,000 GB ÷ 1 GB/s ÷ 3,600 seconds per hour ≈ "
+                    "56 hours. 6 + 56 ≈ 62 hours. The restore is "
+                    "ordered at h+120; the 'restore progress' row "
+                    "reads 'deciding' for six hours, then counts "
+                    "bytes. "
+                    "The incident began at h+100, so the row 'down "
+                    "since onset' ends at 82 hours, longer than the "
+                    "RTO. When the run finishes, find the 'Restore "
+                    "pipe' slider under Architecture, drag it to 4 "
+                    "GB/s, and play again."
                 ),
                 standard=(
-                    "RTO decomposed live: 6 decision hours + 200 TB ÷ "
-                    "1 GB/s ≈ 61.5 h. The validation panel stated it "
-                    "before the run; the trace pays it out. Doubling "
-                    "restore bandwidth halves the dominant term — "
-                    "the cheapest RTO improvement is usually a "
-                    "bigger pipe, and the sim makes that argument "
-                    "quantitative."
+                    "The RTO has two terms and Instruments shows "
+                    "them as separate rows: 6 h deciding and "
+                    "validating + 200 TB ÷ 1 GB/s ≈ 55.6 h moving "
+                    "data ≈ 61.6 h, which the hourly tick rounds to "
+                    "62. The Architecture panel stated the sum "
+                    "before the run, and the log repeats it when the "
+                    "restore is ordered at h+120. The RTO clock "
+                    "starts at that order. The outage started at "
+                    "h+100, so 'down since onset' ends at 82 h. "
+                    "Bandwidth divides the larger term and leaves "
+                    "the 6 h alone. Drag 'Restore pipe' to 4 GB/s "
+                    "and rerun to see how much of the 62 h a bigger "
+                    "pipe can reach."
                 ),
                 expert=(
-                    "RTO = 6 + 200e3/1/3600 ≈ 61.5 h. The pipe is "
-                    "the knob. Buy bandwidth before the incident."
+                    "RTO = 6 h + 200 TB ÷ 1 GB/s ≈ 61.6 h from the "
+                    "restore order; 82 h from onset. The pipe scales "
+                    "one term only. Rerun at 4 GB/s."
                 ),
             ),
         ],
-        question="What fraction of the RTO was decision time, and what would 4 GB/s have saved?",
+        question=(
+            "What fraction of the RTO was decision time, and how many "
+            "hours does dragging Restore pipe to 4 GB/s save?"
+        ),
         scenario=Scenario(
             config=VAULTED, duration_h=480,
             events=[
@@ -208,24 +251,29 @@ GUIDED_SCENARIOS = [
                     "until Monday at eight. Watch the blast-radius "
                     "counter integrate all weekend. Then rerun on "
                     "the MDR preset: the same detection, a 24/7 "
-                    "clock, containment in minutes. The service "
+                    "clock, containment in minutes (the simulator's "
+                    "assumption, not a published Dell figure). The service "
                     "isn't buying better detection; it is buying "
                     "the hours between an alert and a human."
                 ),
                 standard=(
-                    "Incident at t=50 (Saturday 02:00; the engine's "
+                    "Incident at t=122 (Saturday 02:00; the engine's "
                     "week starts Monday 00:00). In-house: detection "
                     "fires, containment waits for Monday 08:00 plus "
-                    "queue drain — blast radius = rate × ~55 h. "
-                    "MDR: triage in 15 minutes, radius ~three orders "
-                    "smaller. Same estate, same detector; the "
+                    "queue drain — blast radius = rate × ~135 h on this "
+                    "run. "
+                    "MDR: triage in 15 minutes (this model's estimate "
+                    "— Dell publishes no figure), contained ~11 h after "
+                    "onset (10 h of it detection), radius about an order "
+                    "of magnitude smaller. Same estate, same detector; the "
                     "response clock is the entire difference, and "
                     "the tests pin the ordering."
                 ),
                 expert=(
-                    "t=50 = Sat 02:00. In-house TTC ≈ 55 h; MDR ≈ "
-                    "0.25 h. Radius ∝ TTC. The clock is the "
-                    "product."
+                    "t=122 = Sat 02:00. In-house TTC ≈ 135 h; MDR ≈ "
+                    "11 h (10 h detection + 0.25 h triage, a model "
+                    "estimate, on a 1 h tick). Radius ∝ TTC. The "
+                    "clock is the product."
                 ),
             ),
         ],
@@ -360,22 +408,31 @@ EXPLAINS = [
         inputs=["estate TB", "restore throughput", "decision time", "RTO"],
         explanation=L(
             novice=(
-                "Recovery time is mostly moving bytes: two hundred "
-                "terabytes through one gigabyte per second is "
-                "fifty-six hours before anyone celebrates. Add the "
-                "meeting where someone decides which copy to use — "
-                "and if that copy turns out corrupt, start again "
-                "from an older one. The pipe was sized years before "
-                "the bad day."
+                "Recovery time has two parts. First people decide "
+                "which copy to use and check it is safe: 6 hours "
+                "here. Then the bytes move: two hundred terabytes "
+                "through one gigabyte per second is about fifty-six "
+                "hours. The two rows above add up to the RTO. If "
+                "the chosen copy turns out corrupt, the whole thing "
+                "starts again from an older one. The pipe was sized "
+                "years before the bad day. This simulator always "
+                "restores everything, which is the slowest case."
             ),
             standard=(
-                "The two terms the spec names, plus the branch "
-                "detection removes: a corrupt first restore pays the "
-                "failed-restore penalty and a second full pass. "
-                "Restore bandwidth dominates at scale, which makes "
-                "RTO primarily a procurement decision — the "
-                "validation panel computes it before any incident "
-                "exists."
+                "Two terms, shown as two rows: hours deciding and "
+                "validating (a fixed 6 h here, an estimate), then "
+                "bytes ÷ restore bandwidth. The clock starts when "
+                "the restore is ordered, so 'down since onset' is "
+                "always longer. A corrupt first restore pays a "
+                "failed-restore penalty and a second full pass, "
+                "which is the branch detection removes. Bandwidth "
+                "dominates at scale, so RTO is mostly a procurement "
+                "decision, and the Architecture panel computes it "
+                "before any incident exists. The model always "
+                "restores the whole estate at the full pipe rate. "
+                "Restoring only damaged volumes, and the cost of "
+                "rehydrating deduplicated backups, are not "
+                "modelled."
             ),
             expert=(
                 "decide + TB/BW (+ retry on corrupt-first). BW "
@@ -398,8 +455,8 @@ EXPLAINS = [
                 "units."
             ),
             standard=(
-                "The integral the MDR mode exists to shrink: rate × "
-                "TTC, where TTC = detection latency + queue wait + "
+                "Rate × time-to-contain (TTC), where TTC = "
+                "detection latency + queue wait + "
                 "triage, and the queue term is diurnal for in-house "
                 "teams. Fort Zero's radius is the graph version — "
                 "reachable set, capped by architecture rather than "
@@ -429,11 +486,10 @@ EXPLAINS = [
             standard=(
                 "The classic ROC trade as one slider: latency = "
                 "base ÷ sensitivity, false alarms = rate × "
-                "sensitivity at 3 h each. PhysicsData's anomaly "
-                "detector carries the same knob deliberately — the "
-                "spec notes the rhyme — because every detector in "
-                "every domain is this trade wearing different "
-                "units."
+                "sensitivity at 3 h each. An operations anomaly "
+                "detector watching storage latency faces the same "
+                "slider, because every detector in every domain "
+                "is this trade in different units."
             ),
             expert=(
                 "latency ∝ 1/s, FP ∝ s. Same knob as the AIOps "

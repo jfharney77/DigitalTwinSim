@@ -57,6 +57,40 @@ function initialStepFromHash(states: { phase: string }[]): number | null {
   return null;
 }
 
+// The landing paragraph in three registers, picked by the reading level.
+// It leads with the perimeter model's failure; the pointers to the other
+// twins come last, because a course reader may not have met them yet.
+const HERO_INTRO = {
+  novice:
+    "Security used to mean a wall. Check people at the gate, then trust " +
+    "whatever is already inside. Access given just for being inside has a " +
+    "name: implicit trust. Its weakness is that an attacker who gets in " +
+    "once is handed that same trust. Zero trust does not build a stronger " +
+    "wall, it removes the idea of an inside. Every request for every " +
+    "single thing is checked on its own evidence. Play the trace to the " +
+    "breach step and look at what an attacker sitting inside the office " +
+    "network can reach. Nothing, and not because a guard stopped the " +
+    "attack: being inside was never worth anything.",
+  standard:
+    "Security was built around a perimeter: verify at the boundary, then " +
+    "trust what is behind it. The recurring failure of that model is that " +
+    "an attacker who gets in once inherits what the inside was allowed to " +
+    "do. Zero trust does not harden the perimeter, it deletes the concept. " +
+    "Play the trace to the breach step and watch what an attacker with a " +
+    "valid position inside the network can reach. Nothing, and not because " +
+    "the attack was blocked: being inside was never worth anything. The " +
+    "trace stages that breach with network position only, no live session " +
+    "and no token; the breach step says what a hijacked live session would " +
+    "be bounded to. Most other twins in this repo carry their lesson in a " +
+    "boundary, such as the PowerProtect air gap. This one carries it in " +
+    "the absence of one.",
+  expert:
+    "Perimeter model: verify at the boundary, trust the interior, so " +
+    "initial access inherits the interior's permissions. Zero trust " +
+    "removes the interior. The breach step tests network position only " +
+    "(no session, no token): reachable 0, implicit trust grants 0.",
+} as const;
+
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
@@ -310,20 +344,7 @@ export function App() {
         <>
           <div className="an-hero">
             <h2>There is no inside</h2>
-            <p>
-              Every other twin in this repo carries its lesson in a
-              boundary — weights crossing a PCIe strip once, an attack that
-              cannot cross an air gap, a band of nodes with no controller
-              above it. Security was built the same way: verify at the
-              perimeter, then trust what is behind it. That model fails
-              identically every time, because an attacker who gets in once
-              inherits everything the inside was allowed to do. Zero trust
-              does not harden the perimeter, it deletes the concept. Play
-              the trace to the breach step and watch what an attacker with
-              a valid position inside the network can reach. Nothing — not
-              because the attack was blocked, but because being inside was
-              never worth anything.
-            </p>
+            <p>{HERO_INTRO[level <= 2 ? "novice" : level >= 5 ? "expert" : "standard"]}</p>
             <button
               className="primary poweron-tour-link"
               onClick={() => setPage("tour")}

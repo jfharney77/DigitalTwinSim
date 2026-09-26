@@ -75,7 +75,7 @@ const KIND_SWATCH: Record<RegionKind, string> = {
 
 const KIND_LABEL: Record<RegionKind, string> = {
   storage: "NVMe drive bays",
-  nvram: "NVRAM write cache",
+  nvram: "persistent write cache",
   cpu: "node CPU",
   memory: "node DIMMs",
   io: "front-end ports",
@@ -83,7 +83,7 @@ const KIND_LABEL: Record<RegionKind, string> = {
   cooling: "fan pack",
   battery: "battery backup (vault)",
   management: "management ports",
-  board: "boards & RDMA mesh",
+  board: "boards & cluster network",
 };
 
 export function App() {
@@ -337,9 +337,9 @@ export function App() {
               PowerStore Elite's signature move is not a boot sequence — it
               is a cluster join. An array a company already owns keeps
               serving while the new Elite appliance wakes beside it, joins
-              its cluster, links up over a 200 Gb RDMA mesh, and drains the
+              its cluster, links up over the cluster network, and drains the
               volumes across live. Cutover is invisible, performance
-              triples, and the old array takes a second job instead of a
+              triples (Dell's claim), and the old array takes a second job instead of a
               skip. Play the trace and watch the downtime counter — it
               never leaves zero.
             </p>
@@ -369,8 +369,8 @@ export function App() {
               <div className="mini an-hint">
                 Highlighted blocks are the parts doing work at this step.
                 The top band is the prior-generation array, the bottom band
-                is the Elite, and the thin strip between them is the RDMA
-                cluster interconnect. Click a block to pin what it is; every
+                is the Elite, and the thin strip between them is the
+                cluster network. Click a block to pin what it is; every
                 part is described under Inside the cluster, and the Guided
                 tour narrates the join beat by beat.
               </div>

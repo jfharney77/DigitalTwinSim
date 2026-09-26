@@ -42,7 +42,7 @@ Srdf = Literal["off", "sync", "async"]
 
 class StorageConfig(CamelModel):
     product: Product = "powerstore"
-    units: int = Field(2, ge=1, le=100)       # appliances / bricks / nodes
+    units: int = Field(2, ge=1, le=100)       # appliances / node pairs / nodes
     drives_per_unit: int = Field(12, ge=2, le=24)
     drive_tb: float = Field(15.36, ge=1, le=61.44)
     drive_class: DriveClass = "nvme"
@@ -140,6 +140,7 @@ class SimState(CamelModel):
     rebuild_pct: float
     rebuild_hours_left: float
     exposure: bool            # rebuild window: one more failure loses data
+    last_rebuild_h: float = 0.0   # length of the last finished rebuild, fractional hours
     # Replication (PowerMax).
     srdf_latency_ms: float
     rpo_seconds: float

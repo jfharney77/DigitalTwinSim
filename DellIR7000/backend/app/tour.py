@@ -165,7 +165,7 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
                     "and the tall pipe on the left, the supply manifold, fills with "
                     "cool liquid and pushes it up the rack and into every bay. The "
                     "tall pipe on the right, the return manifold, collects the "
-                    "liquid on its way back down to the CDU. About 300 litres a "
+                    "liquid on its way back down to the CDU. About 80 litres a "
                     "minute is moving in this illustrative run, and there is still "
                     "no heat at all. The loop proves it can move liquid before "
                     "anyone asks it to move heat."
@@ -175,15 +175,14 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
                     "supply manifold on the left pressurizes, pushing coolant up "
                     "the rack and into every bay through blind-mate quick "
                     "disconnects; the return manifold on the right carries it back "
-                    "down to the heat exchanger. Flow settles near 300 litres per "
-                    "minute (illustrative) with zero heat to carry. The engine "
-                    "asserts the order: flow exists strictly before the first watt "
-                    "of IT load."
+                    "down to the heat exchanger. Flow settles near 80 litres per "
+                    "minute (illustrative) with zero heat to carry. The order is "
+                    "the rule: coolant flows strictly before the first watt of IT "
+                    "load, on every run."
                 ),
                 expert=(
-                    "Pumps up; supply manifold left, return right, ~300 L/min "
-                    "(illustrative) at zero load. Flow-before-heat is an asserted "
-                    "invariant."
+                    "Pumps up; supply manifold left, return right, ~80 L/min "
+                    "(illustrative) at zero load. Flow strictly precedes heat."
                 ),
             ),
             camera=frame(*manifolds, pad=1.0),
@@ -258,17 +257,16 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
                     "dissipates 60 kW (illustrative), and energy conservation "
                     "dictates that all of it leaves the rack: 55 kW through the "
                     "cold plates into the liquid, 5 kW through air into the rear "
-                    "door. Liquid plus air equals IT load, exactly, and the tests "
-                    "assert it on every step of the trace with no tolerance. At "
+                    "door. Liquid plus air equals IT load, exactly, on every step "
+                    "of the trace, with no tolerance. At "
                     "least 85% leaves as liquid whenever there is load; here it is "
                     "about 92%. The busbar, the coolant's temperature rise and the "
                     "door's coil are three meters on one fact."
                 ),
                 expert=(
                     "Signature: heat balance. 60 kW in (illustrative) = 55 kW "
-                    "liquid + 5 kW air. liquidWatts + airWatts == itLoadWatts, "
-                    "asserted every step, zero tolerance; liquid share >= 85% "
-                    "under load."
+                    "liquid + 5 kW air. liquid + air == load on every step, zero "
+                    "tolerance; liquid share >= 85% under load."
                 ),
             ),
             camera=frame(*balance_ids, pad=1.0),
@@ -289,9 +287,10 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
                     "holds a coil of water pipe and a wall of fans that pull the "
                     "warm air through the coil and hand its heat to the same "
                     "liquid loop. As the load climbs to 150 kilowatts in this "
-                    "illustrative run, the door carries 13 of them, the fans speed "
-                    "up to follow, and the aisle behind the rack stays at room "
-                    "temperature."
+                    "illustrative run, the door carries 13 of them and its fans "
+                    "speed up to follow. The pumps speed up too, in step with the "
+                    "load, so the liquid comes back about as warm as it did "
+                    "before. The aisle behind the rack stays at room temperature."
                 ),
                 standard=(
                     "Not everything wears a cold plate: DIMMs, NICs, drives and "
@@ -299,11 +298,13 @@ def build_tour(anatomy: RackAnatomy) -> Tour:
                     "heat exchanger (eRDHx) on the right is the catch for that "
                     "remainder, a water coil and fan wall in the rack's rear door "
                     "that hands exhaust heat to the same loop. As load climbs to "
-                    "150 kW, the CDU speeds its pumps to hold the temperature rise "
-                    "steady and the door's fans track the exhaust: 137 kW by "
-                    "liquid, 13 kW by air (illustrative). The rack stays "
-                    "room-neutral; Dell quotes up to 60% cooling-energy savings "
-                    "versus conventional room cooling."
+                    "150 kW, the CDU speeds its pumps in proportion, so the "
+                    "coolant's temperature rise holds near 10 K, and the door's "
+                    "fans track the exhaust: 137 kW by cold plate, 13 kW by air "
+                    "(illustrative). The rack stays room-neutral, meaning its "
+                    "exhaust leaves at room temperature. Dell quotes up to 60% "
+                    "cooling-energy savings against what it calls standard "
+                    "solutions, a baseline this twin's sources do not define."
                 ),
                 expert=(
                     "eRDHx captures the air-side remainder into the loop. 150 kW: "

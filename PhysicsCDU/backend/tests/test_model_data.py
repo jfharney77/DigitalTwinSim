@@ -203,3 +203,47 @@ def test_explain_entries_cover_the_required_readouts():
     for e in EXPLAINS:
         assert e.equation.strip() and e.explanation.strip(), e.id
         assert len(e.inputs) >= 3, f"{e.id}: causal chain too short"
+
+
+def test_guided_answers_are_read_off_their_own_traces():
+    """Every scenario carries a worked answer, and the numbers the two
+    warm-water answers quote are this engine's, not remembered ones."""
+    from app.engine import simulate
+
+    by_id = {g.id: g for g in GUIDED_SCENARIOS}
+    for g in GUIDED_SCENARIOS:
+        assert g.answer.strip(), g.id
+
+    day, _, day_sum = simulate(by_id["warm-water-day"].scenario)
+    event_t = by_id["warm-water-day"].scenario.events[0].at_s
+    before = day[event_t - 1].heat_removed_kw
+    after = day[-1].heat_removed_kw
+    # The baseline has settled (and already caps slightly) before the step,
+    # so the question's subtraction isolates the warm water.
+    assert abs(day[event_t - 1].chip_temp_c - day[event_t - 60].chip_temp_c) < 0.5
+    assert 97 <= day[event_t - 1].cap_pct < 100
+    assert 232 <= before <= 238 and 202 <= after <= 208
+    assert 25 <= before - after <= 35          # "about 30 kW"
+    assert day_sum.trips == 0 and 70 <= day_sum.delivered_kwh <= 74
+
+    panic, log, panic_sum = simulate(by_id["warm-water-panic"].scenario)
+    assert panic_sum.trips == 3 and 53 <= panic_sum.delivered_kwh <= 57
+    first_trip = next(s.t for s in panic if s.trips > 0)
+    assert 450 <= first_trip <= 460
+    # The stagger is said out loud, once, before the first trip line.
+    assert sum("staggered" in e.message for e in log) == 1
+
+
+def test_running_energy_and_steady_targets_ride_the_trace():
+    """The instruments show energy delivered and where the lagged
+    readings are heading; both must agree with the settled loop."""
+    from app.engine import simulate
+
+    trace, _, summary = simulate(Scenario())
+    kwh = [s.delivered_kwh for s in trace]
+    assert kwh == sorted(kwh) and kwh[-1] == summary.delivered_kwh
+    last = trace[-1]
+    assert abs(last.sec_supply_c - last.sec_supply_steady_c) < 0.3
+    assert abs(last.chip_temp_c - last.chip_steady_c) < 0.3
+    # Early on the live value lags the target: the equation is not yet true.
+    assert trace[5].sec_supply_steady_c - trace[5].sec_supply_c > 5

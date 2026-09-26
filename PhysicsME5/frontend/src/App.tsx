@@ -10,8 +10,11 @@ import {
 import { ArrayView } from "./components/ArrayView";
 import { BuildPanel } from "./components/BuildPanel";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ArrayConfig,
@@ -33,7 +36,7 @@ import type {
 // current cursor.
 
 const DEFAULT_CONFIG: ArrayConfig = {
-  model: "ME5024", driveType: "hdd-10k", driveCount: 24, driveTb: 4,
+  model: "ME5024", driveType: "hdd-10k", driveCount: 24, driveTb: 2,
   raidLevel: "6", spares: 1, controllers: 2, hostInterface: "iSCSI",
 };
 const DEFAULT_WORKLOAD: Workload = { offeredKiops: 3, readPct: 70, blockKb: 8 };
@@ -82,10 +85,18 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
   const setActiveScenario = (g: GuidedScenario | null) => {
     setActiveScenarioId(g ? g.id : null);
-    writeHash(g ? `#scenario=${g.id}` : "");
+    // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+    const labHash = labFromHash();
+    const rest = labHash.open ? (labHash.id ? `#lab=${labHash.id}` : "#labs") : "";
+    writeHash(g ? `#scenario=${g.id}` : rest);
   };
 
   // Prose-bearing content refetches on level change.
@@ -97,6 +108,10 @@ export function App() {
         setExplains(ex);
       })
       .catch((e) => setError(String(e)));
+  }, [level]);
+
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
   }, [level]);
 
   useEffect(() => {
@@ -178,6 +193,9 @@ export function App() {
     setTickMinutes(g.scenario.tickMinutes);
     setCursor(0);
     setRunning(true);
+    // Each scenario is narrated at its own pace, and the fast speeds skip
+    // the moment the narration asks you to watch. Start every one at ×1.
+    setSpeed(1);
   }, []);
 
   // Apply a #scenario= deep link once the scenario list first arrives, and
@@ -200,6 +218,50 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [scenarios, applyGuided]);
 
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses. The
+  // staged failures ride in the start's events.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEvents(lab.start.events);
+    setDurationMin(lab.start.durationMin);
+    setTickMinutes(lab.start.tickMinutes);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
+
   const reset = () => {
     setEvents([]);
     setActiveScenario(null);
@@ -210,7 +272,8 @@ export function App() {
   const selectedRegion = anatomy?.regions.find((r) => r.id === regionId) ?? null;
   const visibleLog = (result?.log ?? []).filter((e) => e.t <= (state?.t ?? 0));
   const fmtT = (t: number) =>
-    t >= 1440 ? `${(t / 1440).toFixed(1)} d` : t >= 60 ? `${(t / 60).toFixed(1)} h` : `${t} min`;
+    // Hours stay readable to two days, so t+25 h is not rounded to "1.0 d".
+    t >= 2880 ? `${(t / 1440).toFixed(1)} d` : t >= 60 ? `${(t / 60).toFixed(1)} h` : `${t} min`;
 
   return (
     <div className="app dell thermal-app">
@@ -223,10 +286,21 @@ export function App() {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
-            ? `t+${fmtT(state.t)} · ${state.online ? (state.degraded ? "DEGRADED" : "online") : "OFFLINE"} · ${state.servedKiops.toFixed(1)}k IOPS`
+            // A lost controller is a degraded array too: redundancy is gone
+            // even though every drive is present.
+            ? `t+${fmtT(state.t)} · ${state.online ? (state.degraded || state.controllersAlive < config.controllers ? "DEGRADED" : "online") : "OFFLINE"} · ${state.servedKiops.toFixed(1)}k IOPS`
             : "—"}
         </span>
         <LevelControl />
@@ -234,17 +308,29 @@ export function App() {
 
       <div className="an-hero">
         <h2>Drives set the budget · RAID sets the write tax · failures turn time into risk</h2>
+        {/* Leveled by the backend: the enclosure overview, at the reader's level. */}
+        <p>{anatomy?.overview ?? ""}</p>
         <p>
-          Build Dell's entry SAN, load it, and break it. Every host write is
-          multiplied by the RAID write penalty before it touches a drive —
-          ×2 mirrored, ×4 single-parity, ×6 dual-parity — and every failure
-          opens a rebuild window measured in hours or days, during which the
-          array is one (or, on RAID 6, two) failures from loss. Classic
-          storage physics with nothing else in the way: no dedupe, no
-          tiering — that machinery lives in the bigger arrays this sim
-          exists to make legible. Constants are estimates and say so.
+          IOPS means I/O operations per second. Constants are estimates and
+          say so.
         </p>
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         {/* Left — build panel + guided scenarios */}
@@ -345,7 +431,11 @@ export function App() {
           </div>
           <div className="mini footnote">
             What we don't model: caching beyond a flat controller overhead,
-            snapshots, thin provisioning, stripe geometry, SAS topology,
+            snapshots, thin provisioning, stripe geometry, disk-group size
+            limits (the sim builds one group from every drive, where a real
+            ME5 caps a RAID 6 group at 10 drives and a RAID 10 group at 16
+            and would split 24 drives into several groups, each paying its
+            own parity, so usable capacity here reads high), SAS topology,
             multipathing, and RAID 10's lucky second failures (the model
             takes the unlucky mirror and says so). Drive IOPS, rebuild
             rates, and the controller ceiling are estimates pending
@@ -423,7 +513,12 @@ export function App() {
               </button>
             </div>
           </div>
-          <Instruments state={state} explains={explains} explainOn={explainOn} />
+          <Instruments
+            state={state}
+            explains={explains}
+            explainOn={explainOn}
+            controllersConfigured={config.controllers}
+          />
           <StripCharts trace={trace} cursor={cursor} />
         </div>
       </div>

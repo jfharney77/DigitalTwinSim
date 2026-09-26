@@ -113,7 +113,7 @@ USE_CASES: list[UseCase] = [
             Stat(label="GPUs in the job", value="576 Blackwell (8 × NVL72)"),
             Stat(label="Scale-up fabric", value="NVLink · 1.8 TB/s per GPU in-rack"),
             Stat(label="Scale-out fabric", value="Quantum InfiniBand + SHARP"),
-            Stat(label="Power envelope", value="~1 MW for the compute rows"),
+            Stat(label="Power envelope", value="~1 MW for the compute rows (illustrative)"),
         ],
     ),
     UseCase(
@@ -139,9 +139,12 @@ USE_CASES: list[UseCase] = [
                 "Why the XE9712 fits: the fused domain is the feature. "
                 "With 72 Blackwell Ultra GPUs pooling roughly 20 TB of "
                 "HBM3e behind a single NVLink fabric, the entire model plus "
-                "its key-value caches lives inside one rack — this is the "
-                "configuration behind the '30× real-time trillion-"
-                "parameter inference' claim. GB300 is chosen over GB200 "
+                "its key-value caches lives inside one rack. One fused "
+                "domain is what NVIDIA's '30× real-time trillion-parameter "
+                "inference' claim for GB200 NVL72 (against the same number "
+                "of H100 GPUs) rests on, and for GB300 NVIDIA and Dell claim "
+                "up to 50× the reasoning-inference output of a Hopper-"
+                "based platform; both are vendor figures. GB300 is chosen over GB200 "
                 "precisely because reasoning workloads spend their compute "
                 "at serving time. NIM microservices wrap the domain into "
                 "versioned model endpoints, and Spectrum-X Ethernet — "
@@ -205,7 +208,7 @@ USE_CASES: list[UseCase] = [
         ],
         outcomes=[
             Stat(label="Model residency", value="Whole model in one NVLink domain"),
-            Stat(label="Claimed speedup", value="Up to 30× real-time LLM inference"),
+            Stat(label="Vendor claim", value="Up to 50× reasoning-inference output vs Hopper (NVIDIA/Dell)"),
             Stat(label="Serving surface", value="NIM endpoints over Spectrum-X"),
             Stat(label="Growth unit", value="One rack = one more model replica"),
         ],

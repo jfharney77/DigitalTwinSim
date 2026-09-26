@@ -5,6 +5,7 @@ import {
   fetchAnatomy,
   fetchConfigPresets,
   fetchExplain,
+  fetchIntro,
   fetchScenarios,
   fetchWorkloadPresets,
   simulate,
@@ -13,9 +14,12 @@ import { BuildPanel } from "./components/BuildPanel";
 import { ProductGallery } from "./components/ProductGallery";
 import { FabricView } from "./components/FabricView";
 import { Instruments } from "./components/Instruments";
+import { LabPanel } from "./components/LabPanel";
 import { LevelControl } from "./components/LevelControl";
 import { StripCharts } from "./components/StripCharts";
 import { Timeline, bandsWhere } from "./components/Timeline";
+import { fetchLabs, labFromHash } from "./labs";
+import type { Lab } from "./labs";
 import { useLevel } from "./level";
 import type {
   ConfigPreset,
@@ -81,6 +85,11 @@ export function App() {
   // Held by id so a reading-level refetch swaps in the re-levelled narration.
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const activeScenario = scenarios.find((g) => g.id === activeScenarioId) ?? null;
+  // Graded labs (#labs, #lab=<id>): held by id so a level refetch re-levels.
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [labsOpen, setLabsOpen] = useState(() => labFromHash().open);
+  const [activeLabId, setActiveLabId] = useState<string | null>(() => labFromHash().id);
+  const activeLab = labs.find((l) => l.id === activeLabId) ?? null;
 
   const [config, setConfig] = useState<FabricConfig>(DEFAULT_CONFIG);
   const [workload, setWorkload] = useState<Workload>(DEFAULT_WORKLOAD);
@@ -94,6 +103,11 @@ export function App() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const level = useLevel();
+  const [intro, setIntro] = useState("");
+
+  useEffect(() => {
+    fetchIntro().then(setIntro).catch(() => {});
+  }, [level]);
 
   useEffect(() => {
     Promise.all([fetchAnatomy(config.product), fetchScenarios(), fetchExplain()])
@@ -104,6 +118,11 @@ export function App() {
       })
       .catch((e) => setError(String(e)));
   }, [level, config.product]);
+
+  // Lab prose is leveled, so the list refetches with the reading level.
+  useEffect(() => {
+    fetchLabs().then(setLabs).catch((e) => setError(String(e)));
+  }, [level]);
 
   useEffect(() => {
     fetchMedia().then(setMedia).catch(() => {});
@@ -185,8 +204,53 @@ return () => {
 
   const clearScenario = () => {
     setActiveScenarioId(null);
-    if (scenarioIdFromHash()) writeHash("");
+    if (scenarioIdFromHash()) {
+      // Leaving a guided scenario inside lab mode keeps the lab's deep link.
+      writeHash(labsOpen ? (activeLabId ? `#lab=${activeLabId}` : "#labs") : "");
+    }
   };
+
+  // Labs: load a lab's start scenario into the ordinary controls. The start
+  // is the naive default — it does not pass — and everything after that is
+  // the learner's own work with the same dials every other mode uses.
+  const loadLabStart = useCallback((lab: Lab) => {
+    setActiveScenarioId(null);
+    setConfig(lab.start.config);
+    setWorkload(lab.start.workload);
+    setEvents(lab.start.events);
+    setDurationS(lab.start.durationS);
+    setCursor(0);
+    setRunning(false);
+  }, []);
+  const selectLab = useCallback(
+    (lab: Lab) => {
+      setLabsOpen(true);
+      setActiveLabId(lab.id);
+      writeHash(`#lab=${lab.id}`);
+      loadLabStart(lab);
+    },
+    [loadLabStart],
+  );
+  // Apply a #lab=<id> deep link once the labs arrive, and follow the hash.
+  const labHashApplied = useRef(false);
+  useEffect(() => {
+    if (labHashApplied.current || labs.length === 0) return;
+    labHashApplied.current = true;
+    const lab = labs.find((l) => l.id === labFromHash().id);
+    if (lab) loadLabStart(lab);
+  }, [labs, loadLabStart]);
+  useEffect(() => {
+    const onHash = () => {
+      const h = labFromHash();
+      if (!h.open) return;
+      setLabsOpen(true);
+      setActiveLabId(h.id);
+      const lab = labs.find((l) => l.id === h.id);
+      if (lab) loadLabStart(lab);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [labs, loadLabStart]);
 
   // Switching product loads that product's baseline build: carrying the old
   // one across leaves datacenter features on a campus switch (a validation
@@ -227,6 +291,10 @@ return () => {
     severity: e.severity,
     message: e.message,
   }));
+  // FCT just before the gray failure started, so the instrument can show the
+  // before-and-after side by side instead of asking the reader to remember it.
+  const grayFrom = trace.findIndex((s) => s.goodputPenaltyPct > 0);
+  const baselineFctMs = grayFrom > 0 ? trace[grayFrom - 1].fctMs : null;
   const bands = [
     ...bandsWhere(trace, (s) => s.worstLinkPct > 90, "#e07b28", "worst link past the knee"),
     ...bandsWhere(trace, (s) => s.goodputPenaltyPct > 0, "#8b6cc9", "gray failure active"),
@@ -243,6 +311,15 @@ return () => {
           >
             Explain mode
           </button>
+          <button
+            className={labsOpen ? "active nav-labs" : "nav-labs"}
+            onClick={() => {
+              setLabsOpen(!labsOpen);
+              writeHash(labsOpen ? "" : activeLabId ? `#lab=${activeLabId}` : "#labs");
+            }}
+          >
+            Labs
+          </button>
         </nav>
         <span className="sub">
           {state
@@ -255,17 +332,25 @@ return () => {
       <div className="an-hero">
         <h2>Where the traffic jam forms, and what each fabric does about it</h2>
         <p>
-          One flow-level engine, three answers to congestion: the E3200
-          campus tree (where the PoE budget binds before the ports do),
-          the SN6000 AI Ethernet fabric (hash collisions, adaptive
-          routing, PFC losslessness, and an optics power ledger), and the
-          Quantum-X800, whose credit-based InfiniBand cannot express a
-          drop and whose switches do the collective's math in flight.
-          Oversubscription is arithmetic, the queue curve is the storage
-          app's knee wearing a different badge, and the worst link — not
-          the average — is always the story.
+          {intro}
         </p>
       </div>
+
+      {labsOpen && (
+        <LabPanel
+          labs={labs}
+          lab={activeLab}
+          scenario={scenario}
+          explains={explains}
+          onSelect={selectLab}
+          onLoadStart={loadLabStart}
+          onExplain={() => setExplainOn(true)}
+          onClose={() => {
+            setLabsOpen(false);
+            writeHash("");
+          }}
+        />
+      )}
 
       <div className="thermal-grid">
         <div className="thermal-col">
@@ -465,6 +550,7 @@ return () => {
             explains={explains}
             explainOn={explainOn}
             product={config.product}
+            baselineFctMs={baselineFctMs}
           />
           <StripCharts trace={trace} cursor={cursor} />
         </div>

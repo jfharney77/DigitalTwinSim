@@ -109,6 +109,37 @@ def _regions() -> list[MapRegion]:
     ]
 
 
+# Public sources per personality, checked 2026-09. They ground the product
+# claims the overviews make (what the product is, who supplies the
+# analytics, that the service is 24x7, the DoD validation); every number
+# in the engine remains a labeled estimate in constants.py.
+_PRODUCT_SOURCES: dict[str, list[dict[str, str]]] = {
+    "powerprotect": [
+        {"label": "Dell — PowerProtect Cyber Recovery (operational air gap, "
+                  "isolated vault, immutability)",
+         "url": "https://www.dell.com/en-us/lp/dt/data-protection-cyber-recovery-solution"},
+    ],
+    "cyberdetect": [
+        {"label": "Dell — Cyber Detect product page (full-content analytics; "
+                  "the 99.99% accuracy figure is Dell's own claim)",
+         "url": "https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/cyber-detect"},
+        {"label": "Index Engines — Dell Cyber Detect (the analytics supplier)",
+         "url": "https://indexengines.com/products/dell-cyber-detect/"},
+    ],
+    "mdr": [
+        {"label": "Dell — Managed Detection and Response (24x7 security "
+                  "operations; Dell publishes no triage-time figure, so the "
+                  "minutes-scale clock here is an estimate)",
+         "url": "https://www.dell.com/en-us/lp/managed-detection-response"},
+    ],
+    "fortzero": [
+        {"label": "Dell press release, 2 April 2025 — Project Fort Zero "
+                  "achieves US DoD Target Level zero-trust validation",
+         "url": "https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2025~04~dell-technologies-achieves-us-department-of-defense-validation-for-zero-trust-solution.htm"},
+    ],
+}
+
+
 def _map(map_id: str, name: str, gen: str, overview: str) -> ResilienceMap:
     return ResilienceMap(
         id=map_id,
@@ -121,7 +152,7 @@ def _map(map_id: str, name: str, gen: str, overview: str) -> ResilienceMap:
         height=59,
         overview=overview,
         regions=_regions(),
-        sources=[
+        sources=_PRODUCT_SOURCES[map_id] + [
             {"label": "physics_specs/05-security-resilience.md (this repo)",
              "url": "../physics_specs/05-security-resilience.md"},
             {"label": "Scope boundary", "url": SCOPE_NOTE},
@@ -228,7 +259,8 @@ MDR = _map(
             "The alert-queue operations game: noise at N/day, "
             "in-house capacity drained business-hours-only (backlog "
             "grows nights and weekends), MDR at 24/7 with "
-            "minutes-scale triage. Containment stops the spread, so "
+            "minutes-scale triage (an estimate; Dell publishes no "
+            "figure). Containment stops the spread, so "
             "blast radius = rate × time-to-contain — the 2 a.m. "
             "Saturday scenario is the headline, and alert fatigue "
             "(raise the noise, watch the real alert wait) is the "

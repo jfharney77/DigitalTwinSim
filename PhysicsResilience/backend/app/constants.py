@@ -28,7 +28,11 @@ CONSTANTS: dict[str, Constant] = {
     ),
     # --- Response (MDR) -----------------------------------------------------
     "mdr_triage_h": Constant(
-        value=0.25, unit="h", source="estimate — 24/7 SOC, minutes to triage",
+        value=0.25, unit="h", source=(
+            "estimate — Dell MDR is a 24x7 service "
+            "(dell.com/en-us/lp/managed-detection-response) but publishes "
+            "no triage-time figure; minutes-scale is this model's assumption"
+        ),
         estimated=True,
         blurb="MDR mean time from alert to containment action.",
     ),

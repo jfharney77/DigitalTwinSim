@@ -153,6 +153,44 @@ def test_snapshots_are_never_lost():
     assert all(a <= b for a, b in zip(taken, taken[1:]))
 
 
+def test_snapshots_arrive_on_a_uniform_schedule():
+    """One snapshot every SNAPSHOT_INTERVAL_HOURS, with the named copy
+    (snapshot 3) at t+0. The count on every step up to the restore follows
+    from the clock; the last step adds the on-demand post-restore copy."""
+    from app.anatomy import CLEAN_SNAPSHOTS
+    from app.engine import SNAPSHOT_INTERVAL_HOURS
+
+    trace = simulate()
+    for s in trace[:-1]:
+        expected = CLEAN_SNAPSHOTS + s.elapsed_hours // SNAPSHOT_INTERVAL_HOURS
+        assert s.snapshots_taken == expected, (s.step, s.phase)
+    assert trace[-1].snapshots_taken == trace[-2].snapshots_taken + 1
+
+
+def test_a_snapshot_never_turns_corrupt_after_it_was_taken():
+    """Snapshots are immutable: the clean count never falls before recovery
+    removes the corrupt set."""
+    trace = simulate()
+    rec = next(i for i, s in enumerate(trace) if s.phase == "recover")
+    clean = [s.snapshots_taken - s.snapshots_corrupted for s in trace[:rec]]
+    assert all(c == clean[0] for c in clean)
+
+
+def test_the_answer_carries_a_timestamp():
+    """The deliverable is a date: unset before the verdict, then the named
+    copy's time, which is what the restored data age is measured from."""
+    trace = simulate()
+    for s in trace:
+        if s.last_clean_snapshot < 0:
+            assert s.last_clean_taken_at_hours is None
+        else:
+            assert s.last_clean_taken_at_hours is not None
+    rec = next(s for s in trace if s.phase == "recover")
+    assert rec.elapsed_hours - rec.last_clean_taken_at_hours == (
+        rec.recovery_point_age_hours
+    )
+
+
 def test_recovery_uses_the_copy_the_verdict_named():
     """The recovery step lights the recovery region, the verdict that drove
     it, and the clean snapshot itself — not the newest copy, and not an

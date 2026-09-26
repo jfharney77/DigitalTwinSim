@@ -1,0 +1,470 @@
+{
+ "postBodies": {
+  "/api/simulate": [
+   {
+    "config": {
+     "sleds": [
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      }
+     ],
+     "psuCount": 6,
+     "redundancy": "grid",
+     "powerCapW": 0
+    },
+    "workload": {
+     "loads": [
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 50,
+       "memPct": 40,
+       "storagePct": 30
+      }
+     ]
+    },
+    "environment": {
+     "inletC": 22
+    },
+    "durationS": 900,
+    "events": []
+   },
+   {
+    "config": {
+     "sleds": [
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      }
+     ],
+     "psuCount": 6,
+     "redundancy": "grid",
+     "powerCapW": 0
+    },
+    "workload": {
+     "loads": [
+      {
+       "cpuPct": 100,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 40,
+       "storagePct": 30
+      },
+      {
+       "cpuPct": 0,
+       "memPct": 0,
+       "storagePct": 0
+      },
+      {
+       "cpuPct": 0,
+       "memPct": 0,
+       "storagePct": 0
+      },
+      {
+       "cpuPct": 0,
+       "memPct": 0,
+       "storagePct": 0
+      },
+      {
+       "cpuPct": 0,
+       "memPct": 0,
+       "storagePct": 0
+      }
+     ]
+    },
+    "environment": {
+     "inletC": 22
+    },
+    "durationS": 600,
+    "events": []
+   },
+   {
+    "config": {
+     "sleds": [
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      }
+     ],
+     "psuCount": 4,
+     "redundancy": "n+1",
+     "powerCapW": 0
+    },
+    "workload": {
+     "loads": [
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      }
+     ]
+    },
+    "environment": {
+     "inletC": 22
+    },
+    "durationS": 600,
+    "events": [
+     {
+      "atS": 300,
+      "action": "lose-feed",
+      "index": 0,
+      "value": null,
+      "load": null
+     }
+    ]
+   },
+   {
+    "config": {
+     "sleds": [
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      },
+      {
+       "kind": "compute",
+       "cpuTdpW": 205,
+       "dimms": 16,
+       "drives": 2,
+       "ownerSlot": null
+      }
+     ],
+     "psuCount": 6,
+     "redundancy": "grid",
+     "powerCapW": 4000
+    },
+    "workload": {
+     "loads": [
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      },
+      {
+       "cpuPct": 100,
+       "memPct": 80,
+       "storagePct": 60
+      }
+     ]
+    },
+    "environment": {
+     "inletC": 30.0
+    },
+    "durationS": 600,
+    "events": []
+   }
+  ]
+ }
+}

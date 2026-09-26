@@ -44,8 +44,8 @@ LAPTOP_CPU_PL1 = [45, 55, 65]
 DESKTOP_CPU_PL1 = [65, 125, 150]
 LAPTOP_GPU_TGP = [0, 80, 115, 140, 175]
 DESKTOP_GPU_TGP = [0, 200, 300, 450]
-BATTERY_WH = [68, 90, 97]
-CHARGER_W = [130, 180, 240, 330]
+BATTERY_WH = [68, 90, 96, 97]      # 96 Wh = Dell Pro Max 16 Plus (StorageReview spec table)
+CHARGER_W = [130, 165, 180, 240, 280, 330]  # 165/280 W = Pro Max 16 Plus adapters
 DESKTOP_PSU_W = [750, 1000, 1500]
 
 
@@ -161,7 +161,8 @@ class SimState(CamelModel):
     # Performance proxies.
     fps_proxy: float            # gaming output ∝ GPU power delivered
     tokens_per_s: float         # inference output of the active engine
-    tokens_per_joule: float
+    tokens_per_joule: float     # per engine watt
+    system_tokens_per_joule: float  # per system watt — what the battery sees
     active_engine: InferenceEngine | None
     region_temps: dict[str, float]
 
@@ -257,6 +258,19 @@ class WorkloadPreset(CamelModel):
     id: str
     name: str
     workload: Workload
+
+
+class Term(CamelModel):
+    term: str
+    meaning: str
+
+
+class PageIntro(CamelModel):
+    """The simulator page's opening paragraph and the instrument-label
+    glossary — served so the reading level reaches the page chrome."""
+    heading: str
+    text: str
+    terms: list[Term]
 
 
 class GuidedScenario(CamelModel):

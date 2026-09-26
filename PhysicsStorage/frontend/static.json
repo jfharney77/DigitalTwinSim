@@ -1,0 +1,574 @@
+{
+ "params": {
+  "product": [
+   "powerstore",
+   "powermax",
+   "powerscale",
+   "objectscale",
+   "powerflex",
+   "exascale"
+  ]
+ },
+ "postBodies": {
+  "/api/simulate": [
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powermax",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerscale",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "objectscale",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerflex",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "exascale",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powermax",
+     "units": 4,
+     "drivesPerUnit": 24,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerscale",
+     "units": 20,
+     "drivesPerUnit": 15,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "ec8+2",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "objectscale",
+     "units": 12,
+     "drivesPerUnit": 24,
+     "driveTb": 20.0,
+     "driveClass": "hdd",
+     "protection": "ec16+4",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": true,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerflex",
+     "units": 20,
+     "drivesPerUnit": 10,
+     "driveTb": 7.68,
+     "driveClass": "nvme",
+     "protection": "mirror",
+     "nicGbps": 100,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "exascale",
+     "units": 32,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "ec8+2",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 16,
+     "fileUnits": 6,
+     "objectUnits": 6,
+     "blockUnits": 4
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 300,
+     "blockKb": 8,
+     "readPct": 70,
+     "sequentialPct": 5,
+     "workingSetFitPct": 80,
+     "ingestTbDay": 1.0,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 3.0
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 200,
+     "blockKb": 16,
+     "readPct": 60,
+     "sequentialPct": 10,
+     "workingSetFitPct": 70,
+     "ingestTbDay": 0.5,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 6.0
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 40,
+     "blockKb": 512,
+     "readPct": 5,
+     "sequentialPct": 95,
+     "workingSetFitPct": 5,
+     "ingestTbDay": 40.0,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 8.0
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 60,
+     "blockKb": 1024,
+     "readPct": 98,
+     "sequentialPct": 98,
+     "workingSetFitPct": 10,
+     "ingestTbDay": 2.0,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 1.2
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 2000,
+     "blockKb": 1024,
+     "readPct": 95,
+     "sequentialPct": 90,
+     "workingSetFitPct": 15,
+     "ingestTbDay": 5.0,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 1.5
+    },
+    "durationH": 168,
+    "events": []
+   },
+   {
+    "config": {
+     "product": "powerstore",
+     "units": 2,
+     "drivesPerUnit": 12,
+     "driveTb": 15.36,
+     "driveClass": "nvme",
+     "protection": "raid6",
+     "nicGbps": 25,
+     "srdf": "off",
+     "distanceKm": 0,
+     "smallObjects": false,
+     "immutable": false,
+     "lightningUnits": 0,
+     "fileUnits": 0,
+     "objectUnits": 0,
+     "blockUnits": 0
+    },
+    "workload": {
+     "iopsDemandK": 500,
+     "blockKb": 128,
+     "readPct": 90,
+     "sequentialPct": 70,
+     "workingSetFitPct": 30,
+     "ingestTbDay": 8.0,
+     "snapshotsPerDay": 0,
+     "reductionRatio": 2.5
+    },
+    "durationH": 168,
+    "events": []
+   }
+  ]
+ }
+}

@@ -37,8 +37,10 @@ PLATFORM_ILLO = Photo(
 
 _ENDPOINT_DESC = (
     "One edge endpoint — a PowerEdge XR-class server, gateway, or "
-    "workstation at a site with no IT staff: a branch, a line, a "
-    "substation, a trackside garage. Drawn identical to its neighbours on "
+    "workstation. The four endpoints drawn here are the devices delivered "
+    "to one site with no IT staff (a branch, a line, a substation, a "
+    "trackside garage), and an estate is hundreds of sites like it. Drawn "
+    "identical to its neighbours on "
     "purpose: an estate is one building block repeated, and everything "
     "that makes four hundred of these manageable — identity burned in at "
     "manufacture, outbound-only onboarding, pulled software — is designed "
@@ -49,7 +51,7 @@ _ENDPOINT_DESC = (
 
 def _endpoint(idx: int, y: float) -> PlatformRegion:
     return PlatformRegion(
-        id=f"endpoint-e{idx}", kind="endpoint", label=f"Edge site {idx}",
+        id=f"endpoint-e{idx}", kind="endpoint", label=f"Device {idx}",
         x=0, y=y, w=14, h=12, description=_ENDPOINT_DESC,
     )
 
@@ -59,7 +61,7 @@ ANATOMY = PlatformMap(
     name="Dell NativeEdge",
     vendor="Dell Technologies",
     form_factor="Edge operations software platform",
-    generation="NativeEdge 2.x (Dell Distributed Private Cloud basis)",
+    generation="NativeEdge 2.x–3.x (renamed Dell Distributed Private Cloud, May 2026)",
     year=2024,
     width=100,
     height=58,
@@ -67,40 +69,44 @@ ANATOMY = PlatformMap(
         novice=(
             "This is a control system for computers that live far from any "
             "IT department — in shops, factories, substations, race-weekend "
-            "garages. The band of identical boxes on the left is the estate: "
-            "the same edge computer repeated at hundreds of sites, none of "
-            "which has a technician. Everything else in the picture exists "
+            "garages. The band of identical boxes on the left is one site: "
+            "four edge computers delivered to a place with no technician. "
+            "The whole estate is that site repeated hundreds of times. "
+            "Everything else in the picture exists "
             "so that nobody ever has to visit those sites. When a new box is "
             "plugged in, it proves to the identity gate that it really is "
             "the machine Dell built, and then the big block in the middle — "
             "the Orchestrator — takes over: it decides what the site should "
             "run from a written-down plan, installs everything over the "
             "network, applies the security rules, and watches the result. "
-            "The only human act in the whole diagram is connecting two "
-            "cables at the far left."
+            "The only thing a person at the site does is plug the devices "
+            "into power and the network, at the far left. The plan itself "
+            "is written once, centrally, for every site."
         ),
         plain=(
             "Dell NativeEdge is an edge-operations platform: it manages "
             "estates of servers, gateways, and workstations deployed "
             "outside any datacenter. The diagram reads left to right — a "
-            "uniform band of endpoints (an estate is one building block "
-            "repeated), the WAN, the secure-onboarding gate where a device "
+            "uniform band of endpoints (four devices at one site; an "
+            "estate is that building block repeated), the WAN, the secure-onboarding gate where a device "
             "cryptographically proves it is the machine Dell built, the "
             "singular Orchestrator that claims devices and reconciles them "
             "against declarative blueprints, then the application catalog, "
             "Zero Trust policy, and observability. The design premise: no "
-            "site has IT staff, so the only human action anywhere is power "
-            "and a network cable."
+            "site has IT staff, so the only on-site human action is power "
+            "and a network cable; vouchers and blueprints are handled "
+            "centrally, once."
         ),
         standard=(
             "Dell NativeEdge is Dell's edge operations software platform "
-            "(2023; 2.0 in 2024; now also the basis of Dell Distributed "
-            "Private Cloud): it manages estates of servers, gateways, "
+            "(2023; 2.0 in 2024; renamed Dell Distributed Private Cloud "
+            "in May 2026): it manages estates of servers, gateways, "
             "workstations, and desktops deployed outside the datacenter — "
             "factory floors, retail branches, substations, ships, "
             "trackside garages. The diagram reads left to right. The "
-            "endpoint band is drawn uniform on purpose: an estate is one "
-            "building block repeated, at sites that have no IT staff, "
+            "endpoint band is four devices at one site, drawn uniform on "
+            "purpose: an estate is one building block repeated, at "
+            "hundreds of sites that have no IT staff, "
             "which is the premise everything else answers. Behind the WAN "
             "sits the secure-onboarding gate — a device wakes, proves "
             "cryptographically that it is the machine Dell built, and "
@@ -112,27 +118,33 @@ ANATOMY = PlatformMap(
             "application catalog that supplies it, and the Zero Trust "
             "policy and observability planes that keep it honest. The "
             "trace on the first tab walks one site through all of it "
-            "with exactly one human action."
+            "with exactly one on-site human action; the central work, "
+            "loading ownership vouchers and authoring blueprints, is "
+            "done once for the estate."
         ),
         technical=(
-            "Edge operations platform: uniform endpoint band (N=4 drawn; "
-            "estates are hundreds) → WAN → secure device onboarding "
+            "Edge operations platform: uniform endpoint band (four "
+            "devices at one site drawn; estates are hundreds of sites) "
+            "→ WAN → secure device onboarding "
             "(manufacture-time identity + measured boot) → singular "
             "Orchestrator (claim, provision, blueprint reconciliation) → "
             "catalog / Zero Trust policy / observability. Phase order "
             "crated → power → attest → onboard → provision → blueprint → "
-            "workload → managed. Asserted: operator_actions peaks at 1 "
-            "(power phase) and never increments; nothing runs and no "
-            "endpoint counts as online before trust_established; trust "
-            "is monotone; the Orchestrator is never in the endpoint "
-            "count; endpoints light in lockstep; attestation holds max "
-            "dwell. Geometry pinned: endpoint band uniform, Orchestrator "
+            "workload → managed. Held by the twin's tests: on-site "
+            "human acts peak at one (power phase) and onboarding never "
+            "adds another; nothing runs and no endpoint counts as "
+            "online before trust is established; trust is never "
+            "revoked; the Orchestrator is never in the endpoint "
+            "count; endpoints light in lockstep; attestation is the "
+            "longest stage. Geometry pinned: endpoint band uniform, Orchestrator "
             "singular/largest/central, estate strictly left of control."
         ),
         expert=(
-            "ZTP estate platform. operator_actions ≤ 1 (asserted); no "
-            "run before attest; trust monotone; Orchestrator ∉ endpoint "
-            "count; lockstep estate; attest = max dwell. Geometry: "
+            "Zero-touch estate platform over FDO (FIDO Device Onboard). "
+            "One site of four devices drawn. One on-site act per site; "
+            "nothing runs before attestation; trust never revoked; "
+            "Orchestrator never counted as an endpoint; devices move in "
+            "lockstep; attestation is the longest stage. Geometry: "
             "uniform endpoint band, singular central Orchestrator, "
             "estate left / control right."
         ),
@@ -244,11 +256,11 @@ ANATOMY = PlatformMap(
         ),
     ],
     stats=[
-        Stat(label="Subject", value="Edge operations software platform (2023; 2.0 in 2024)"),
-        Stat(label="Manages", value="PowerEdge XR, gateways, workstations, desktops"),
-        Stat(label="Human actions per site", value="1 — power and a network cable"),
-        Stat(label="Onboarding", value="Secure device onboarding — attest before anything"),
-        Stat(label="Control plane", value="One Orchestrator per estate, sites in the hundreds"),
+        Stat(label="Subject", value="Edge operations software platform (2023; 2.0 in 2024; renamed Distributed Private Cloud 2026)"),
+        Stat(label="Manages", value="PowerEdge (incl. rugged XR), Edge Gateways, Precision, OptiPlex"),
+        Stat(label="On-site human actions per site", value="1 — the plug-in visit: power and a network cable (vouchers and blueprints are central work)"),
+        Stat(label="Onboarding", value="Secure device onboarding (FIDO Device Onboard) — attest before anything"),
+        Stat(label="Control plane", value="One Orchestrator per estate; site counts illustrative"),
         Stat(label="Configuration", value="Declarative blueprints — intent, not steps"),
         Stat(label="Connectivity", value="Assumed intermittent — every transfer resumable"),
         Stat(label="Security", value="Zero Trust enforced per endpoint"),
@@ -256,8 +268,8 @@ ANATOMY = PlatformMap(
     photo=PLATFORM_ILLO,
     sources=[
         SourceLink(
-            label="Dell NativeEdge — edge platform page",
-            url="https://www.dell.com/en-us/dt/solutions/edge-computing/edge-platform.htm",
+            label="Dell Distributed Private Cloud (formerly NativeEdge) — product page",
+            url="https://www.dell.com/en-us/shop/private-cloud/sf/nativeedge",
         ),
         SourceLink(
             label="Announcing Dell NativeEdge 2.0 (Dell blog)",
@@ -268,8 +280,16 @@ ANATOMY = PlatformMap(
             url="https://infohub.delltechnologies.com/en-us/l/introduction-to-the-dell-nativeedge-software-platform-white-paper-4/nativeedge-orchestrator-11/",
         ),
         SourceLink(
-            label="Dell NativeEdge launch press release (May 2023)",
+            label="Dell NativeEdge launch press release (May 23, 2023; availability August 2023)",
             url="https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2023~05~dell-nativeedge-software-transforms-edge-operations.htm",
+        ),
+        SourceLink(
+            label="Secure device onboard with FDO (NativeEdge Orchestrator User's Guide)",
+            url="https://www.dell.com/support/manuals/en-us/native-edge-or-solutions/nativeedge-orchestrator-ug/secure-device-onboard-with-fdo?guid=guid-b41dfbd8-b3b3-46e4-9ccc-5ff29d366545&lang=en-us",
+        ),
+        SourceLink(
+            label="NativeEdge renamed Distributed Private Cloud (SDxCentral, May 20, 2026)",
+            url="https://www.sdxcentral.com/news/dell-private-cloud-gains-requested-vmware-support-edge-is-now-distributed/",
         ),
     ],
 )

@@ -1,6 +1,7 @@
 import type { DType, Execution, GpuProfile, WorkloadKind } from "../types";
 import { totalCores } from "../types";
 import { InfoDot } from "./InfoDot";
+import { Leveled } from "./Leveled";
 
 const DTYPES: DType[] = ["fp32", "fp16", "bf16", "int8", "fp8", "fp4"];
 
@@ -112,7 +113,14 @@ export function Controls({
                 <strong>lanes</strong> (CUDA cores) are bundled into{" "}
                 <strong>SMs</strong> (Streaming Multiprocessors — a worker crew with its
                 own scheduler and fast scratchpad), tiled across the die alongside{" "}
-                <strong>HBM</strong> memory.
+                <strong>HBM</strong> — high-bandwidth memory, the large pool of
+                device memory beside the chip. It is big and, next to an SM's
+                scratchpad, slow. The drawing labels this tier HBM on every die;
+                a laptop part such as the RTX 4060 uses GDDR6 in the same role.
+                The <strong>L2 cache · interconnect</strong> bar across the top is
+                the die-wide cache and wiring all SMs share; the strip inside
+                each SM is its own shared-memory scratchpad, where tiles are
+                staged.
               </p>
               <p>
                 <code>Generic-128</code> = 8 SMs × 16 lanes = 128 lanes;{" "}
@@ -154,14 +162,18 @@ export function Controls({
             Kind
             <InfoDot title="Workload kind">
               <p>
-                <strong>Matrix multiply</strong> is the single N×N·N×N matmul from
-                spec_01–05.
+                <strong>Matrix multiply</strong> is a single matmul: two N×N
+                matrices multiplied into a third. Each output cell is a row of A
+                times a column of B — N multiply-adds, which this page counts as{" "}
+                <strong>MACs</strong> (multiply-accumulates).
               </p>
               <p>
-                <strong>Neural-net training step</strong> (spec_06) runs one SGD step
-                of a tiny 2-layer MLP: the forward pass is two matmuls, backprop is
-                three more, and the weight update is a cheap elementwise op. Same
-                silicon, same tiling and bandwidth model — only the operands change.
+                <strong>Neural-net training step</strong> runs one step of
+                gradient descent (SGD) on a tiny two-layer neural network (an
+                MLP, multi-layer perceptron): the forward pass is two matmuls,
+                backprop is three more, and the weight update is a cheap
+                elementwise op. Same silicon, same tiling and bandwidth model —
+                only the operands change.
               </p>
               <p>
                 Two things to watch: training costs about <strong>3×</strong> an
@@ -170,7 +182,7 @@ export function Controls({
                 circuit".
               </p>
               <p>
-                <strong>LLM token decode</strong> (spec_26) runs one token step
+                <strong>LLM token decode</strong> runs one token step
                 of a toy transformer block. The interesting part is the{" "}
                 <strong>KV cache</strong>: every new token re-reads it in full,
                 so as context grows the bytes grow and the arithmetic barely
@@ -253,6 +265,11 @@ export function Controls({
                     <strong>memory-bound</strong>. Nothing about the silicon
                     changed — the workload's <em>shape</em> did. This is why
                     decode speed is quoted in GB/s, not TFLOPs.
+                  </p>
+                  <p>
+                    This slider is the cache <em>before</em> decoding starts.
+                    The KV length counter reads one higher, because each token
+                    appends its own key and value before it attends.
                   </p>
                 </InfoDot>
               </span>
@@ -397,20 +414,74 @@ export function Controls({
           <span className="field-head">
             Tile size T (shared-memory block)
             <InfoDot title="Tile size T">
-              <p>
-                A whole matrix rarely fits in an SM's small, fast scratchpad (shared
-                memory). So the work is broken into <strong>tiles</strong>: T×T blocks are
-                streamed in from HBM, multiplied, and the next block is streamed in.
-              </p>
-              <p>
-                Smaller T = smaller blocks, so more separate load→compute→writeback trips
-                but a lighter memory footprint per trip. <code>T=N</code> means one tile =
-                the whole matrix (no tiling).
-              </p>
-              <p>
-                Tiling is the single most important trick for making matmul fast on real
-                hardware — it maximizes reuse of data already sitting in fast memory.
-              </p>
+              <Leveled
+                novice={
+                  <>
+                    <p>
+                      Each SM (streaming multiprocessor, one of the die's worker
+                      crews) has a small, fast scratchpad called shared memory.
+                      The matrices live in the big, slow device memory the
+                      drawing labels HBM. A <strong>tile</strong> is a T×T square
+                      of the matrix copied into the scratchpad, multiplied
+                      there, and written back before the next square is fetched.
+                    </p>
+                    <p>
+                      Smaller T means more separate fetch, compute, write-back
+                      trips. Each fetched number is then used fewer times before
+                      it is thrown away, so the Roofline panel's intensity figure
+                      falls as you shrink T. <code>T=N</code> means one tile holds
+                      the whole matrix.
+                    </p>
+                    <p>
+                      One thing this model leaves out: its scratchpad has no size
+                      limit, so the whole-matrix tile always comes out best here.
+                      On real hardware the scratchpad is tiny, the whole matrix
+                      never fits, and the choice is between small tiles and no
+                      scratchpad at all, where every number is fetched from
+                      device memory each time it is used. That is why real code
+                      tiles. The guided tour on the Live tab shows both: the
+                      uncached matmul takes 6.40 ms and the tiled one 1.50 ms.
+                      The rule that holds in both worlds: use the largest tile
+                      that fits.
+                    </p>
+                  </>
+                }
+                standard={
+                  <>
+                    <p>
+                      A whole matrix rarely fits in an SM's small, fast scratchpad
+                      (shared memory). So the work is broken into{" "}
+                      <strong>tiles</strong>: T×T blocks are streamed in from HBM,
+                      multiplied, and the next block is streamed in.
+                    </p>
+                    <p>
+                      Smaller T = more separate load→compute→writeback trips, and
+                      each loaded value is reused fewer times before it is
+                      evicted, so arithmetic intensity falls with T.{" "}
+                      <code>T=N</code> means one tile = the whole matrix.
+                    </p>
+                    <p>
+                      What this model assumes: the scratchpad is unbounded, so
+                      T=N is always the best setting here. On hardware T is capped
+                      by shared-memory size, and the comparison that matters is
+                      tiled against untiled-from-device-memory, where every
+                      operand is re-read on each use (tour lessons 4 and 5: 6.40
+                      ms against 1.50 ms). Tiling wins on real parts because it
+                      reuses data already in fast memory; the best T is the
+                      largest that fits.
+                    </p>
+                  </>
+                }
+                expert={
+                  <p>
+                    T×T blocking through SM shared memory. Intensity falls with T
+                    (less reuse per loaded value). The model's scratchpad is
+                    unbounded, so T=N is optimal here; on hardware T ≤
+                    shared-memory capacity and the baseline is the uncached
+                    read-per-operand kernel (tour lessons 4 and 5), not T=N.
+                  </p>
+                }
+              />
             </InfoDot>
           </span>
           <input
@@ -432,7 +503,7 @@ export function Controls({
             <InfoDot title="Block size (threads per block)">
               <p>
                 On real hardware you launch a grid of <strong>thread blocks</strong>, and
-                each block claims warp slots on one SM until it finishes. Block size is
+                each block claims warp slots (groups of threads that step together) on one SM until it finishes. Block size is
                 a <strong>launch decision</strong>, made before the first instruction runs.
               </p>
               <p>
@@ -471,22 +542,74 @@ export function Controls({
           <span className="field-head">
             Precision (dtype)
             <InfoDot title="Precision (dtype)">
-              <p>
-                How many bits store each number — same idea as <code>int8</code> vs{" "}
-                <code>float</code> vs <code>double</code> in normal code. Fewer bits =
-                smaller footprint, less accuracy.
-              </p>
-              <p>
-                <code>fp32</code> = 4 bytes (most accurate), <code>fp16</code> /{" "}
-                <code>bf16</code> = 2 bytes (bf16 trades accuracy for wider range),{" "}
-                <code>int8</code> = 1 byte (quantized, tiniest).
-              </p>
-              <p>
-                Here it feeds the <strong>bandwidth model</strong>: a smaller dtype means
-                fewer bytes to haul from HBM, so loads are cheaper and lanes stall less.
-                This is why AI moved to fp16/bf16/int8 — not to save space, but to feed the
-                lanes faster. It changes data <em>moved</em>, not the number of multiplies.
-              </p>
+              <Leveled
+                novice={
+                  <>
+                    <p>
+                      How many bits store each number. Fewer bits means each
+                      number takes less room and carries less detail.
+                    </p>
+                    <p>
+                      <code>fp32</code> uses 4 bytes per number and keeps the most
+                      detail. <code>fp16</code> and <code>bf16</code> use 2 bytes:
+                      fp16 keeps finer detail over a narrow range of sizes, bf16
+                      covers the same wide range as fp32 with coarser detail.{" "}
+                      <code>int8</code> uses 1 byte and stores whole-number steps
+                      only, so values are rounded to fit (quantized).
+                    </p>
+                    <p>
+                      On this page the choice changes one thing: how many bytes
+                      have to be fetched from device memory (HBM in the drawing).
+                      Fewer bytes per number means shorter loads, so the lanes
+                      spend less time waiting. The count of multiply-adds (MACs)
+                      does not change.
+                    </p>
+                    <p>
+                      Real AI systems use small number formats for three reasons
+                      at once: bigger models fit in the same memory, less data
+                      has to move, and special tensor hardware multiplies small
+                      numbers faster.
+                    </p>
+                  </>
+                }
+                standard={
+                  <>
+                    <p>
+                      How many bits store each number — same idea as{" "}
+                      <code>int8</code> vs <code>float</code> vs{" "}
+                      <code>double</code> in normal code. Fewer bits = smaller
+                      footprint, less precision.
+                    </p>
+                    <p>
+                      <code>fp32</code> = 4 bytes. <code>fp16</code> /{" "}
+                      <code>bf16</code> = 2 bytes (fp16 has more mantissa bits;
+                      bf16 keeps fp32's exponent range and gives up mantissa).{" "}
+                      <code>int8</code> = 1 byte, quantized.
+                    </p>
+                    <p>
+                      Here it feeds the <strong>bandwidth model</strong>: a
+                      smaller dtype means fewer bytes to haul from HBM, so loads
+                      are cheaper and lanes stall less. It changes data{" "}
+                      <em>moved</em>, not the number of multiplies.
+                    </p>
+                    <p>
+                      AI moved to fp16/bf16/int8 not only to save space (model
+                      fit, KV-cache size, batch size): fewer bytes per value also
+                      raises arithmetic intensity, so the lanes stall less, and
+                      tensor cores run low-precision math faster.
+                    </p>
+                  </>
+                }
+                expert={
+                  <p>
+                    Bytes per element for the bandwidth model: bytes moved scale
+                    with dtype width, MAC count does not, so intensity rises as
+                    width falls. Low precision on real parts buys capacity (model
+                    fit, KV cache, batch), bandwidth and tensor-core throughput
+                    together.
+                  </p>
+                }
+              />
             </InfoDot>
           </span>
           <select value={dtype} onChange={(e) => onDtype(e.target.value as DType)}>
@@ -510,8 +633,8 @@ export function Controls({
             <InfoDot title="Execution: CUDA cores vs tensor cores">
               <p>
                 <strong>CUDA cores</strong> run the matmul the scalar way: one
-                k-rank per step, one MAC per lane — every trace this app has
-                shown since spec_01.
+                term of each dot product per step, one MAC (multiply-accumulate)
+                per lane — the default on this page.
               </p>
               <p>
                 <strong>Tensor cores</strong> are matrix-multiply-accumulate
@@ -559,7 +682,7 @@ export function Controls({
         <div className="mini">
           {execution === "tensor" && tensorSpec
             ? `×${tensorSpec.multipliers[dtype] ?? "?"} MACs/cycle at ${dtype} · ${tensorSpec.mmaK} ranks per MMA step`
-            : "scalar path — one k-rank per step, one MAC per lane"}
+            : "scalar path — one term of each dot product per step, one MAC (multiply-accumulate) per lane"}
         </div>
         {kind === "matmul" && (
           <>
@@ -657,19 +780,55 @@ export function Controls({
         <span className="field-head">
           <h2 className="with-info">Run</h2>
           <InfoDot title="Run controls">
-            <p>
-              <strong>Run</strong> plays the trace on a clock owned entirely by the UI — the
-              simulation itself is pure data with no notion of time.
-            </p>
-            <p>
-              <strong>Step</strong> advances exactly one state so you can inspect a single
-              phase transition; <strong>Reset</strong> returns to the start.
-            </p>
-            <p>
-              <strong>Speed</strong> retunes the playback interval live (it does not change
-              the simulation, only how fast you watch it). Slower is better for following
-              the load → compute → writeback phases per tile.
-            </p>
+            <Leveled
+              novice={
+                <>
+                  <p>
+                    <strong>Run</strong> plays the simulation like a film. The
+                    whole sequence of states was computed in advance; the page
+                    just shows them one after another.
+                  </p>
+                  <p>
+                    <strong>Step</strong> moves forward exactly one state, which
+                    is the best way to read the numbers in the Counters and
+                    Roofline panels. <strong>Reset</strong> goes back to the
+                    start.
+                  </p>
+                  <p>
+                    <strong>Speed</strong> changes how fast the film plays. It
+                    does not change any result. Go slowly to follow each tile
+                    through its three phases: load (fetch from memory), compute
+                    (multiply-adds), write-back (store the result).
+                  </p>
+                </>
+              }
+              standard={
+                <>
+                  <p>
+                    <strong>Run</strong> plays the trace on a clock owned entirely
+                    by the UI — the simulation itself is pure data with no notion
+                    of time.
+                  </p>
+                  <p>
+                    <strong>Step</strong> advances exactly one state so you can
+                    inspect a single phase transition; <strong>Reset</strong>{" "}
+                    returns to the start.
+                  </p>
+                  <p>
+                    <strong>Speed</strong> retunes the playback interval live (it
+                    does not change the simulation, only how fast you watch it).
+                    Slower is better for following the load → compute → writeback
+                    phases per tile.
+                  </p>
+                </>
+              }
+              expert={
+                <p>
+                  Playback over a precomputed trace; the clock is the UI's. Step =
+                  one state, Speed = interval only, results unchanged.
+                </p>
+              }
+            />
           </InfoDot>
         </span>
         <div className="btnrow">

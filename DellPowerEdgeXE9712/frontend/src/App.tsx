@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAnatomy, fetchPowerOn, fetchTour } from "./api";
+import { fetchAnatomy, fetchPowerOn, fetchScenarios, fetchTour } from "./api";
 import { AnatomyPage, KIND_LABEL, KIND_SWATCH } from "./components/AnatomyPage";
 import { CatalogPage } from "./components/CatalogPage";
 import { UseCasePage } from "./components/UseCasePage";
@@ -10,7 +10,13 @@ import { LevelControl } from "./components/LevelControl";
 import { useLevel } from "./level";
 import { TourPlayer } from "@twinsim/twin-ui";
 import type { TourResponse } from "@twinsim/twin-ui";
-import type { PowerOnState, RackAnatomy, RegionKind } from "./types";
+import type {
+  PowerOnState,
+  RackAnatomy,
+  RegionKind,
+  ScenarioId,
+  ScenarioInfo,
+} from "./types";
 
 const MAX_DWELL = 6; // cap how long the UI lingers on a slow stage (pacing only)
 
@@ -39,15 +45,32 @@ function tourStepFromHash(): string | null {
   return m ? m[1] : null;
 }
 
-// #step=N / #phase=<name> deep-links start playback at a chosen step; both
-// fall through pageFromHash() and land on the default page.
+// The power-on page's hash is a small key=value list:
+//   #step=N · #phase=<name> · #scenario=<id> · #scenario=<id>&phase=<name>
+// All of them fall through pageFromHash() and land on the default page.
+function hashParams(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of window.location.hash.replace(/^#/, "").split("&")) {
+    const m = part.match(/^(step|phase|scenario)=([a-z0-9_-]+)$/i);
+    if (m) out[m[1]] = m[2];
+  }
+  return out;
+}
+
+const SCENARIO_IDS: ScenarioId[] = ["nominal", "coolant-fault"];
+
+function scenarioFromHash(): ScenarioId {
+  const s = hashParams().scenario as ScenarioId | undefined;
+  return s && SCENARIO_IDS.includes(s) ? s : "nominal";
+}
+
 function initialStepFromHash(states: { phase: string }[]): number | null {
-  const h = window.location.hash;
-  const step = h.match(/^#step=(\d+)$/);
-  if (step) return Math.min(Number(step[1]), states.length - 1);
-  const phase = h.match(/^#phase=([a-z0-9_-]+)$/i);
-  if (phase) {
-    const i = states.findIndex((s) => s.phase === phase[1]);
+  const p = hashParams();
+  if (p.step !== undefined && /^\d+$/.test(p.step)) {
+    return Math.min(Number(p.step), states.length - 1);
+  }
+  if (p.phase !== undefined) {
+    const i = states.findIndex((s) => s.phase === p.phase);
     return i >= 0 ? i : null;
   }
   return null;
@@ -56,12 +79,19 @@ function initialStepFromHash(states: { phase: string }[]): number | null {
 export function App() {
   // Deep-linkable pages: /#anatomy, /#components, /#usecases.
   const [page, setPage] = useState<Page>(pageFromHash);
+  const [scenario, setScenario] = useState<ScenarioId>(scenarioFromHash);
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   useEffect(() => {
     // Compare pages, not prefixes: the power-on page's hash is empty and
     // every hash starts with "#", so a prefix check never cleared a leftover
     // #anatomy and a reload landed back on the wrong page.
     if (pageFromHash() !== page) {
-      window.location.hash = PAGE_HASH[page];
+      // Coming back to the power-on page keeps a chosen failure scenario in
+      // the address bar, so the link stays shareable.
+      window.location.hash =
+        page === "poweron" && scenario !== "nominal"
+          ? `scenario=${scenario}`
+          : PAGE_HASH[page];
     }
     document.body.classList.add("dell-body");
   }, [page]);
@@ -80,13 +110,20 @@ export function App() {
 
   const timer = useRef<number | null>(null);
   const dwell = useRef(0); // ticks remaining on the current (possibly slow) state
-  // Apply the #step=/#phase= deep-link only on the first load — a
-  // reading-level refetch must not yank the cursor back.
-  const hashApplied = useRef(false);
+  // Apply the #step=/#phase= deep-link once per scenario — a reading-level
+  // refetch must not yank the cursor back, but a new scenario is a new trace
+  // and always starts from the hash's step, or from zero.
+  const appliedFor = useRef<ScenarioId | null>(null);
+  const loadedOnce = useRef(false);
+  // The guided tour pins steps of the nominal trace, so the tour page always
+  // plays that one whatever the power-on page has selected.
+  const liveScenario: ScenarioId = page === "tour" ? "nominal" : scenario;
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const traceRef = useRef<PowerOnState[]>([]);
   traceRef.current = trace;
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
 
   const stop = useCallback(() => {
     if (timer.current !== null) {
@@ -99,18 +136,49 @@ export function App() {
   // The trace is pure data from the backend engine; fetch it once and play
   // it back here — the clock lives in the frontend, never in the engine.
   useEffect(() => {
-    Promise.all([fetchAnatomy(), fetchPowerOn()])
+    let stale = false;
+    Promise.all([fetchAnatomy(), fetchPowerOn(liveScenario)])
       .then(([an, po]) => {
+        if (stale) return;
         setAnatomy(an);
         setTrace(po.trace);
-        if (!hashApplied.current) {
-          hashApplied.current = true;
-          const s = initialStepFromHash(po.trace);
-          if (s !== null) setCursor(s);
+        if (appliedFor.current !== liveScenario) {
+          const start = initialStepFromHash(po.trace);
+          if (loadedOnce.current) {
+            stop();
+            setCursor(start ?? 0);
+          } else if (start !== null) {
+            // First load: leave the cursor alone unless the link names a
+            // step — a #tour/<step> link may already have placed it.
+            setCursor(start);
+          }
+          appliedFor.current = liveScenario;
+          loadedOnce.current = true;
         }
       })
       .catch((e) => setError(String(e)));
+    return () => {
+      stale = true;
+    };
+  }, [level, liveScenario, stop]);
+
+  useEffect(() => {
+    fetchScenarios()
+      .then(setScenarios)
+      .catch(() => setScenarios([])); // no picker; the nominal trace still plays
   }, [level]);
+
+  // The picker: a new scenario is a new trace, so playback stops and the
+  // cursor returns to the first step (the fetch effect above does both).
+  const chooseScenario = useCallback((id: ScenarioId) => {
+    window.history.replaceState(
+      null,
+      "",
+      id === "nominal" ? window.location.pathname : `#scenario=${id}`,
+    );
+    appliedFor.current = null;
+    setScenario(id);
+  }, []);
 
   // The tour is fetched the first time its page opens, and again when the
   // reading level changes (the narration is leveled prose).
@@ -167,6 +235,16 @@ export function App() {
   useEffect(() => {
     const onHash = () => {
       setPage(pageFromHash());
+      if (pageFromHash() === "poweron") {
+        const next = scenarioFromHash();
+        if (next !== scenarioRef.current) {
+          // A different trace: let the fetch effect place the cursor once it
+          // has the right steps to place it in.
+          appliedFor.current = null;
+          setScenario(next);
+          return;
+        }
+      }
       const start = initialStepFromHash(traceRef.current);
       if (start !== null) {
         stop();
@@ -300,18 +378,42 @@ export function App() {
       {page === "poweron" && (
         <>
           <div className="an-hero">
-            <h2>What happens when a GB200 NVL72 rack powers on</h2>
-            <p>
-              The XE9712 is not a server in a rack — it is the rack. Power
-              shelves energize a DC busbar, and then, before any GPU is
-              allowed on, the coolant loop must prove itself: liquid before
-              silicon. Eighteen compute trays boot their Grace CPUs in
-              lockstep, seventy-two Blackwell GPUs wake on their cold plates,
-              and thousands of copper NVLink links train — until the fabric
-              fuses them into a single domain that software sees as one giant
-              GPU. Play the trace and watch each stage light up the hardware
-              it runs on.
-            </p>
+            <h2>
+              {level <= 2
+                ? "What happens when this rack is switched on"
+                : "What happens when a GB200 NVL72 rack powers on"}
+            </h2>
+            {level <= 2 ? (
+              <p>
+                This is not a computer that goes in a rack — the whole rack is
+                one computer. Power shelves at the top turn the building's
+                electricity into the kind the machine uses and send it down a
+                metal power rail, called a busbar, at the back of the rack.
+                Then, before a single chip is allowed to switch on, the
+                cooling has to prove itself: coolant is pumped through the
+                whole rack first, because these chips run far too hot for
+                fans to cope with. Only then do the 18 shelves of computing
+                wake up together. Each one carries Grace processors, which
+                run the ordinary work, and Blackwell graphics processors
+                (GPUs, the chips that do the mathematics behind modern
+                artificial intelligence). Last, thousands of copper cables
+                link the 72 graphics processors together so tightly that
+                software treats them as one enormous processor. Play the
+                sequence and watch each step light up the hardware it uses.
+              </p>
+            ) : (
+              <p>
+                The XE9712 is not a server in a rack — it is the rack. Power
+                shelves energize a DC busbar, and then, before any GPU is
+                allowed on, the coolant loop must prove itself: liquid before
+                silicon. Eighteen compute trays boot their Grace CPUs in
+                lockstep, seventy-two Blackwell GPUs wake on their cold plates,
+                and the NVLink links train over thousands of copper cables —
+                until the fabric fuses all 72 into a single domain, which NVIDIA
+                describes as one giant GPU. Play the trace and watch each stage light up the hardware
+                it runs on.
+              </p>
+            )}
             <button
               className="primary poweron-tour-link"
               onClick={() => setPage("tour")}
@@ -326,6 +428,7 @@ export function App() {
                 <RackView
                   anatomy={anatomy}
                   active={new Set(state?.activeRegions ?? [])}
+                  failed={new Set(state?.failedRegions ?? [])}
                   selected={regionId}
                   onSelect={setRegionId}
                 />
@@ -336,18 +439,39 @@ export function App() {
                 </div>
               )}
               <div className="mini an-hint">
-                Highlighted blocks are the parts doing work at this step.
-                Watch the cooling loop light up before any compute does, and
-                watch the GPUs-in-domain counter: it stays at zero through the
-                whole bring-up, then snaps to 72 when the NVLink fabric fuses.
-                Click a block to pin what it is; the full tour lives under
-                Inside the rack.
+                {level <= 2 ? (
+                  <>
+                    The lit blocks are the parts doing work at this step. Two
+                    things are worth watching. The cooling loop lights up
+                    before any chip does. And the count of joined graphics
+                    processors stays at zero the whole way through, then jumps
+                    straight to 72 the moment the cables finish linking them —
+                    there is no halfway. Click a block to see what it is; the
+                    narrated walk-through is under Guided tour.
+                    {scenario !== "nominal" &&
+                      " In the cooling-fault run, the shelf whose coolant failed is outlined in dashed red and stays dark for as long as the fault lasts."}
+                  </>
+                ) : (
+                  <>
+                    Highlighted blocks are the parts doing work at this step.
+                    Watch the cooling loop light up before any compute does, and
+                    watch the GPUs-in-domain counter: it stays at zero through
+                    the whole bring-up, then snaps to 72 when the NVLink fabric
+                    fuses. Click a block to pin what it is; the narrated
+                    walk-through lives under Guided tour.
+                    {scenario !== "nominal" &&
+                      " In the coolant-fault scenario a faulted tray is outlined in dashed red and stays unlit while the fault stands."}
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           <aside className="controls">
             <PowerOnControls
+              scenarios={scenarios}
+              scenario={scenario}
+              onScenario={chooseScenario}
               speed={speed}
               running={running}
               done={done}
@@ -362,6 +486,7 @@ export function App() {
               state={state}
               stepIndex={cursor}
               stepCount={trace.length}
+              fault={scenario !== "nominal"}
             />
             {selectedRegion && (
               <section className="an-panel">
@@ -383,6 +508,17 @@ export function App() {
                     {KIND_LABEL[k]}
                   </span>
                 ))}
+                {scenario !== "nominal" && (
+                  <span className="legend-failed">
+                    <i
+                      style={{
+                        background: "#3a1016",
+                        border: "1px dashed var(--dell-error)",
+                      }}
+                    />
+                    faulted
+                  </span>
+                )}
               </section>
             )}
           </aside>

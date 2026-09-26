@@ -27,7 +27,7 @@ from twinkit.models import CamelModel
 
 RegionKind = Literal[
     "storage",     # NVMe drive bays + backplanes (prior 2.5″, Elite E3)
-    "nvram",       # NVMe NVRAM write-cache slots
+    "nvram",       # persistent write cache (SDPM on Elite, NVRAM drives before)
     "cpu",         # per-node Xeon socket + heatsink
     "memory",      # per-node DIMM banks (DDR5 on Elite)
     "io",          # front-end ports and hot-swap I/O modules
@@ -35,7 +35,7 @@ RegionKind = Literal[
     "cooling",     # per-node fan packs
     "battery",     # battery backup units (cache vaulting)
     "management",  # management / service ports
-    "board",       # node system boards and the cluster RDMA mesh
+    "board",       # node system boards and the cluster network strip
 ]
 
 # The lifecycle of a modernization, not a boot: an old array serving,
@@ -45,7 +45,7 @@ JoinPhase = Literal[
     "steady",     # the prior-generation array serving I/O, alone
     "power",      # the Elite appliance racked, cabled, waking (dual-node)
     "join",       # Elite joins the existing cluster — generations become 2
-    "mesh",       # the 200 Gb RDMA node interconnect links the appliances
+    "mesh",       # the Ethernet cluster network links the appliances
     "rebalance",  # volumes migrate live across the mesh (the longest stage)
     "cutover",    # Elite becomes the primary server — performance triples
     "repurpose",  # the prior array takes a second role instead of a skip
@@ -85,7 +85,7 @@ class Stat(CamelModel):
 
 class ChassisAnatomy(CamelModel):
     """The cluster map: two appliances of different generations joined by
-    the RDMA mesh. ``width``/``height`` set the viewBox."""
+    the cluster network. ``width``/``height`` set the viewBox."""
 
     id: str
     name: str

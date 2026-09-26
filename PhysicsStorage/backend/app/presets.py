@@ -48,8 +48,8 @@ EXASCALE_32 = StorageConfig(
 CONFIG_PRESETS = [
     ConfigPreset(id="powerstore", compare_preset_id="powerflex", name="PowerStore ×2", config=POWERSTORE_2,
                  blurb="Dual-controller mid-range — the knee's natural habitat."),
-    ConfigPreset(id="powermax", compare_preset_id="powerscale", name="PowerMax ×4 bricks", config=POWERMAX_4,
-                 blurb="Six-nines personality; add SRDF and a distance."),
+    ConfigPreset(id="powermax", compare_preset_id="powerscale", name="PowerMax ×4 node pairs", config=POWERMAX_4,
+                 blurb="Dell's six-nines claim as a personality; add SRDF and a distance."),
     ConfigPreset(id="powerscale", name="PowerScale ×20", config=POWERSCALE_20,
                  blurb="Scale-out NAS — rebuilds get faster as it grows."),
     ConfigPreset(id="objectscale", name="ObjectScale ×12", config=OBJECTSCALE_12,
@@ -233,7 +233,7 @@ GUIDED_SCENARIOS = [
                     "Sync SRDF at 0, then 300, then 800 km (workload "
                     "events swap the config's distance via demand — "
                     "here, three runs in one: watch the srdf-latency "
-                    "instrument). The penalty is distance × 0.01 ms/km "
+                    "instrument). The penalty is distance × 0.005 ms/km "
                     "× 2 on the write fraction — speed of light in "
                     "fiber, the one constant in this app that is not "
                     "an estimate. Past ~100–200 km the tax dominates "
@@ -241,7 +241,7 @@ GUIDED_SCENARIOS = [
                     "pairs are metro."
                 ),
                 expert=(
-                    "+d×0.02 ms on writes. 800 km = +16 ms against a "
+                    "+d×0.01 ms on writes. 800 km = +8 ms against a "
                     "0.1 ms medium. c is the vendor nobody negotiates "
                     "with."
                 ),
@@ -271,7 +271,7 @@ GUIDED_SCENARIOS = [
                 ),
                 standard=(
                     "Async SRDF: RPO = backlog ÷ link rate. At hour 12 "
-                    "a ×5 write burst outruns the 1 GB/s link for six "
+                    "a ×5 write burst outruns the 2 GB/s link for six "
                     "hours; the backlog integrates the excess and the "
                     "RPO gauge climbs, then drains after the burst. "
                     "Sync mode's distance tax bought zero RPO; async "
@@ -300,34 +300,73 @@ GUIDED_SCENARIOS = [
         narration=[
             L(
                 novice=(
-                    "A fifteen-terabyte drive dies in a twenty-node "
-                    "cluster. Instead of one controller grinding "
-                    "through the rebuild for hours, every surviving "
-                    "node rebuilds a small slice at once — done in "
-                    "under an hour, and a bigger cluster would be "
-                    "faster still. Run the same failure on the "
-                    "PowerStore preset and compare: same drive, same "
-                    "data, opposite arithmetic. Growth making recovery "
-                    "faster is the deepest argument for scale-out."
+                    "A fifteen-terabyte drive dies at hour 6 in a "
+                    "twenty-node cluster. Until its data is recreated "
+                    "somewhere else, the system has one less layer of "
+                    "protection than it was built with. Here the other "
+                    "nineteen nodes each rebuild a small slice at the "
+                    "same time, so the repair takes about 27 minutes. "
+                    "One step of this sim is a whole hour, so both "
+                    "lines in the event log carry the same stamp, h+6. "
+                    "The real length is written inside the second "
+                    "line: \"Rebuild complete after 0.45 h\". The "
+                    "rebuild row under Instruments keeps that figure "
+                    "too. Now pick the PowerStore preset in the Build "
+                    "panel. The same failure replays at hour 6, but "
+                    "one controller pair does all the work, and the "
+                    "log reports hours. Reset brings the cluster back. "
+                    "A bigger cluster would be faster "
+                    "still. Growth making repair faster is the deepest "
+                    "argument for scale-out."
                 ),
                 standard=(
                     "A 15.36 TB drive fails at hour 6 in a 20-node "
-                    "PowerScale: rebuild rate = per-node contribution "
-                    "× 19 survivors ≈ 9.5 GB/s → well under an hour, "
-                    "with the exposure flag barely lit. The identical "
-                    "event on PowerStore runs at the controller's "
-                    "1.2 GB/s ≈ 3.5 h. The rebuild-window risk gauge "
-                    "is the real product here: it is exposure time, "
-                    "and scale-out shrinks it with every node added."
+                    "PowerScale. The engine rebuilds at the per-node "
+                    "contribution × the 19 peer nodes (the node that "
+                    "owns the dead drive is left out of the count; it "
+                    "is the one being repaired) ≈ 9.5 GB/s, so the "
+                    "rebuild lands in about 27 minutes. That is "
+                    "shorter than the one-hour tick: the rebuild row "
+                    "never shows a percentage and no rebuild band is "
+                    "drawn on the timeline. Read the duration from "
+                    "the log line \"Rebuild complete after 0.45 h\" "
+                    "or from the rebuild row, which keeps the last "
+                    "rebuild's length. The identical event on the "
+                    "PowerStore preset runs at the controller's fixed "
+                    "1.2 GB/s ≈ 3.6 h, visible as a yellow band from "
+                    "h+6 to h+9. With protection that survives two "
+                    "failures, one dead drive does not raise the red "
+                    "EXPOSURE WINDOW flag on either platform; the "
+                    "rebuild time is how long a second and third "
+                    "failure would have to race. Scale-out shrinks it "
+                    "with every node added. Rates are illustrative."
                 ),
                 expert=(
-                    "rate ∝ survivors: 19×0.5 ≈ 9.5 GB/s vs 1.2 fixed "
-                    "→ ~25 min vs ~3.5 h. Exposure window is the "
-                    "metric that matters."
+                    "Drive loss, so rate = 0.5 GB/s × 19 peers (owner "
+                    "excluded) ≈ 9.5 vs 1.2 fixed → 0.45 h vs 3.6 h. "
+                    "Sub-tick on scale-out: read the completion log "
+                    "line or the rebuild row's last-rebuild figure. "
+                    "EC 8+2 and RAID 6 both survive 2, so one failure "
+                    "never lights the exposure flag; rebuild time is "
+                    "the race clock."
                 ),
             ),
         ],
-        question="How long was the exposure window here versus on the PowerStore preset?",
+        question=L(
+            novice=(
+                "Read the \"Rebuild complete after\" line in the event "
+                "log, or the rebuild row under Instruments, which "
+                "keeps the same figure. For how long was the data "
+                "short of full protection here, and for how long on "
+                "the PowerStore preset?"
+            ),
+            standard=(
+                "From the two \"Rebuild complete after\" log lines, how "
+                "long did the rebuild take here versus on the PowerStore "
+                "preset?"
+            ),
+            expert="Rebuild time here vs the PowerStore preset, and the ratio?",
+        ),
         scenario=Scenario(
             config=POWERSCALE_20, workload=ANALYTICS, duration_h=24,
             events=[SimEvent(at_h=6, action="fail-drive")],
@@ -548,8 +587,8 @@ EXPLAINS = [
                 "budget (host I/O competing, the ×1.6 latency "
                 "penalty); scale-out rebuilds at per-node rate × "
                 "survivors — PowerScale ~0.5 GB/s/node, PowerFlex "
-                "~2 GB/s/node, which is how 'the 60-second rebuild' "
-                "happens. The exposure flag marks when failures-in-"
+                "~2 GB/s/node (both illustrative), which is how a "
+                "rebuild lands in minutes. The exposure flag marks when failures-in-"
                 "window equal what the protection survives: that "
                 "duration, not IOPS, is the resilience spec."
             ),
@@ -563,7 +602,7 @@ EXPLAINS = [
     Explain(
         id="srdf",
         title="Replication: light and backlog",
-        equation="sync: +d × 0.01 × 2 ms per write;  async: RPO = backlog / link",
+        equation="sync: +d × 0.005 × 2 ms per write;  async: RPO = backlog / link",
         inputs=["distance", "write fraction", "latency tax", "backlog", "RPO"],
         explanation=L(
             novice=(
@@ -577,7 +616,7 @@ EXPLAINS = [
                 "free one."
             ),
             standard=(
-                "Sync: distance × 0.01 ms/km each way on the write "
+                "Sync: distance × 0.005 ms/km each way on the write "
                 "fraction — fiber-optic light speed, this app's only "
                 "non-estimate performance constant. Async: the "
                 "backlog integrates writes minus link and RPO = "
@@ -587,7 +626,7 @@ EXPLAINS = [
                 "write-burst event let you shop both."
             ),
             expert=(
-                "c/1.5 ≈ 200 km/ms → 0.02 ms/km RT. RPO = ∫(W−L)/L. "
+                "c/1.5 ≈ 200 km/ms → 0.01 ms/km RT. RPO = ∫(W−L)/L. "
                 "Latency or loss; geography sets the exchange rate."
             ),
         ),

@@ -306,18 +306,49 @@ export function App() {
         <>
           <div className="an-hero">
             <h2>How a parallel file system keeps thousands of GPUs fed</h2>
-            <p>
-              Every other storage twin in this repo moves bytes through a
-              controller, and that controller's ceiling is the system's
-              ceiling. A parallel file system refuses that bargain. The
-              client asks the metadata server exactly one question — where
-              do this file's stripes live? — and from then on reads straight
-              from every data server at once, with the metadata server out
-              of the path entirely. Throughput becomes the sum of the
-              servers instead of the maximum of one. Play the trace and
-              watch the metadata block go dark the moment real data starts
-              moving.
-            </p>
+            {level <= 2 ? (
+              <p>
+                Storage systems like PowerStore and PowerMax, shown
+                elsewhere in this collection, send every piece of data
+                through one special computer called a controller, so that
+                controller's top speed is the whole system's top speed. This
+                system works differently. A file here is cut into pieces,
+                called stripes, and those pieces are spread across several
+                storage servers. A computer that wants the file asks one
+                dedicated server a single question — which servers hold the
+                pieces of this file? — and after that it reads from all of
+                those servers at the same time, without going back to ask
+                again. Speed becomes the servers added together rather than
+                the fastest one. Play the trace and watch the metadata block
+                go dark the moment real data starts moving.
+              </p>
+            ) : level >= 4 ? (
+              <p>
+                PowerStore and PowerMax put a controller in every byte's
+                path, so its ceiling is the array's. Here the client takes a
+                layout from the metadata server once, then reads its stripes
+                straight from every data server named in it; the MDS is out
+                of the path and restartable mid-read. Throughput sums across
+                servers rather than capping at one. Play the trace: the
+                metadata block is dark through every bulk phase, which the
+                tests assert.
+              </p>
+            ) : (
+              <p>
+                The controller arrays in this repo, PowerStore and PowerMax,
+                move every byte through a controller, and that controller's
+                ceiling is the system's ceiling. PowerFlex and PowerScale
+                refuse that bargain in their own ways, and a parallel file
+                system refuses it here. The
+                client asks the metadata server exactly one question — where
+                do this file's stripes live? — and from then on reads straight
+                from every data server at once, with the metadata server out
+                of the path entirely. Throughput becomes the sum of the
+                servers instead of the maximum of one. Play the trace and
+                watch the metadata block go dark the moment real data starts
+                moving.
+              </p>
+            )}
             <button
               className="primary poweron-tour-link"
               onClick={() => setPage("tour")}

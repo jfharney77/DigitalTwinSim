@@ -55,7 +55,8 @@ cd frontend && npm run build                                 # typecheck / build
 
 ## Pages
 
-- **Boot** — the switch coming up from AC to forwarding: standby → CPU → ONIE
+- **Boot** — the switch coming up from AC to forwarding: standby → CPU → boot
+  loader/ONIE (ONIE itself runs only when no network OS is installed)
   → network OS (OS10 / SONiC) → ASIC programming → ports/PoE → line rate,
   animated over the floorplan.
 - **Inside the switch** — the annotated top-down floorplan: access ports, PoE
@@ -65,6 +66,7 @@ cd frontend && npm run build                                 # typecheck / build
 - **Use cases** — Wi-Fi 6E/7 campus edge, enterprise PoE access floor, fiber
   branch distribution.
 
-Content is grounded in the Dell PowerSwitch E3200-ON spec sheet (Aug 2024) and
-Dell's OS10/SONiC/ONIE docs (see the Sources panel on the anatomy page).
+Content is grounded in the Dell PowerSwitch E3200-ON spec sheet (Aug 2024), the
+N3200-ON/E3200-ON Installation Guide (three fan modules, PoE budget ceilings),
+the ONIE project overview, and Dell's OS10/SONiC/ONIE docs (see the Sources panel on the anatomy page).
 Timings and wattages are illustrative, not measured.

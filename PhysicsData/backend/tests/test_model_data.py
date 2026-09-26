@@ -34,10 +34,16 @@ def test_every_constant_has_units_source_and_blurb():
             )
 
 
-def test_vendor_claims_are_labeled_verify():
-    """The 6×-class GPU claims must carry the verify discipline."""
-    for name in ("gpu_process_speedup", "gpu_analytics_speedup"):
-        assert "verify" in CONSTANTS[name].source.lower(), name
+def test_vendor_claims_are_labeled():
+    """The 6× GPU figures keep their receipts: the analytics one is a
+    Dell claim (fact-checked 2026-09, cited), the process one has no
+    published figure and stays an estimate to verify."""
+    proc = CONSTANTS["gpu_process_speedup"]
+    assert proc.estimated and "verify" in proc.source.lower()
+    ana = CONSTANTS["gpu_analytics_speedup"]
+    assert "vendor claim" in ana.source.lower()
+    assert "up to" in ana.source.lower()
+    assert "https://www.dell.com/" in ana.source
 
 
 # --- Validation rules ------------------------------------------------------

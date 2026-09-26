@@ -79,8 +79,17 @@ export interface ThermalState {
   cycleCost: number;
 }
 
+// The thermal page's own prose, resolved server-side at the reader's level.
+export interface PageCopy {
+  intro: string;
+  hint: string;
+  balanceNote: string;
+  playbackNote: string;
+}
+
 export interface ThermalResponse {
   trace: ThermalState[];
+  pageCopy?: PageCopy | null;
 }
 
 export interface CatalogOption {

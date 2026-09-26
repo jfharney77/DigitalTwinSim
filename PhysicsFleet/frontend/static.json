@@ -1,0 +1,226 @@
+{
+  "params": {
+    "product": [
+      "vxrail",
+      "privatecloud",
+      "apex",
+      "nativeedge",
+      "automationstudio"
+    ]
+  },
+  "postBodies": {
+    "/api/simulate": [
+      {
+        "config": {
+          "product": "vxrail",
+          "sites": 1,
+          "nodesPerSite": 8,
+          "opsMode": "automated",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 150,
+          "bufferPct": 30,
+          "demandCurve": "steady",
+          "siteClass": "store",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 20,
+          "growthPctMonth": 3,
+          "vmSizeCapacity": 10
+        },
+        "durationD": 180,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "privatecloud",
+          "sites": 1,
+          "nodesPerSite": 8,
+          "opsMode": "automated",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 150,
+          "bufferPct": 30,
+          "demandCurve": "steady",
+          "siteClass": "store",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 20,
+          "growthPctMonth": 3,
+          "vmSizeCapacity": 10
+        },
+        "durationD": 180,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "apex",
+          "sites": 1,
+          "nodesPerSite": 8,
+          "opsMode": "automated",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 150,
+          "bufferPct": 30,
+          "demandCurve": "steady",
+          "siteClass": "store",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 20,
+          "growthPctMonth": 3,
+          "vmSizeCapacity": 10
+        },
+        "durationD": 180,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "nativeedge",
+          "sites": 1,
+          "nodesPerSite": 8,
+          "opsMode": "automated",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 150,
+          "bufferPct": 30,
+          "demandCurve": "steady",
+          "siteClass": "store",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 20,
+          "growthPctMonth": 3,
+          "vmSizeCapacity": 10
+        },
+        "durationD": 180,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "automationstudio",
+          "sites": 1,
+          "nodesPerSite": 8,
+          "opsMode": "automated",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 150,
+          "bufferPct": 30,
+          "demandCurve": "steady",
+          "siteClass": "store",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 20,
+          "growthPctMonth": 3,
+          "vmSizeCapacity": 10
+        },
+        "durationD": 180,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "vxrail",
+          "sites": 1,
+          "nodesPerSite": 3,
+          "opsMode": "automated",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 100,
+          "bufferPct": 20,
+          "demandCurve": "steady",
+          "siteClass": "store",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 24,
+          "growthPctMonth": 5,
+          "vmSizeCapacity": 10
+        },
+        "durationD": 180,
+        "events": [
+          {
+            "atD": 20,
+            "action": "node-fault",
+            "value": null
+          },
+          {
+            "atD": 150,
+            "action": "node-fault",
+            "value": null
+          }
+        ]
+      },
+      {
+        "config": {
+          "product": "nativeedge",
+          "sites": 80,
+          "nodesPerSite": 2,
+          "opsMode": "manual",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 100,
+          "bufferPct": 20,
+          "demandCurve": "steady",
+          "siteClass": "factory",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 15,
+          "growthPctMonth": 0,
+          "vmSizeCapacity": 10
+        },
+        "durationD": 180,
+        "events": []
+      },
+      {
+        "config": {
+          "product": "apex",
+          "sites": 1,
+          "nodesPerSite": 16,
+          "opsMode": "automated",
+          "ftt": 1,
+          "stacks": 1,
+          "catalog": true,
+          "committedVms": 150,
+          "bufferPct": 50,
+          "demandCurve": "spiky",
+          "siteClass": "store",
+          "twoNodeHa": true,
+          "wanReliable": true,
+          "testGate": true
+        },
+        "workload": {
+          "vmsPerSite": 150,
+          "growthPctMonth": 1,
+          "vmSizeCapacity": 15
+        },
+        "durationD": 180,
+        "events": []
+      }
+    ]
+  }
+}

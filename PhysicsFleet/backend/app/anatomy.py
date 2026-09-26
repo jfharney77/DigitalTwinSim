@@ -96,13 +96,16 @@ def _regions() -> list[MapRegion]:
             description=(
                 "APEX's layer: committed base + overage vs owned "
                 "capacity amortized. Colored by commitment "
-                "utilization — paying for air shows up here."
+                "utilization — paying for air shows up here. The "
+                "overage premium is a generic consumption model, not "
+                "Dell's rate card."
             ),
         ),
     ]
 
 
-def _map(map_id: str, name: str, gen: str, overview: str) -> FleetMap:
+def _map(map_id: str, name: str, gen: str, overview: str,
+         sources: list[dict[str, str]]) -> FleetMap:
     return FleetMap(
         id=map_id,
         name=name,
@@ -117,6 +120,7 @@ def _map(map_id: str, name: str, gen: str, overview: str) -> FleetMap:
         sources=[
             {"label": "physics_specs/04-cloud-edge-automation.md (this repo)",
              "url": "../physics_specs/04-cloud-edge-automation.md"},
+            *sources,
         ],
     )
 
@@ -124,7 +128,7 @@ def _map(map_id: str, name: str, gen: str, overview: str) -> FleetMap:
 VXRAIL = _map(
     "vxrail",
     "VxRail · lifecycle-managed HCI",
-    "VxRail 8.x / VCF era",
+    "VxRail 8.x–9.x / VCF era",
     L(
         novice=(
             "A cluster of identical servers that pools its drives into "
@@ -133,9 +137,10 @@ VXRAIL = _map(
             "node while spare capacity keeps every workload alive. Run "
             "the same update in manual mode and it becomes days of "
             "per-node work with a compatibility checklist. The other "
-            "lesson is the three-node trap: the smallest legal cluster "
-            "has nowhere to rebuild when one node dies — minimums "
-            "exist because arithmetic, not marketing."
+            "lesson is the three-node trap: the smallest standard "
+            "cluster (two-node sites exist, but lean on an outside "
+            "witness) has nowhere to rebuild when one node dies — "
+            "minimums exist because arithmetic, not marketing."
         ),
         standard=(
             "The HCI personality: the lifecycle bundle IS the product. "
@@ -154,6 +159,14 @@ VXRAIL = _map(
             "capacity; 3-node FTT=1 → exposure on first fault."
         ),
     ),
+    sources=[
+        {"label": "Dell VxRail Architecture Overview — sizing considerations (3-node clusters cannot self-heal)",
+         "url": "https://www.dell.com/support/manuals/en-us/vxrail-appliance-series/vxrail_architecture_guide/sizing-considerations?guid=guid-b6878555-6aef-488f-80d1-e6d093b7bea9&lang=en-us"},
+        {"label": "Dell VxRail Network Planning Guide — 2-node cluster (fixed at two nodes, requires a witness)",
+         "url": "https://www.dell.com/support/manuals/en-us/vxrail-appliance-series/vxrail_planning_guide/2-node-cluster?guid=guid-519032f2-5b7e-43de-a822-823b4fb9b591&lang=en-us"},
+        {"label": "VMware Cloud Foundation blog, June 2026 — VCF 9.1 path for VxRail customers (VxRail LCM stays integrated)",
+         "url": "https://blogs.vmware.com/cloud-foundation/2026/06/16/vmware-cloud-foundation-9-1-path-for-dell-vxrail-customers/"},
+    ],
 )
 
 PRIVATECLOUD = _map(
@@ -184,17 +197,25 @@ PRIVATECLOUD = _map(
             "artisanal 16 h. The twin argues; this app invoices."
         ),
     ),
+    sources=[
+        {"label": "Dell Private Cloud product page",
+         "url": "https://www.dell.com/en-us/shop/dell-private-cloud/sf/private-cloud"},
+        {"label": "Dell blog — Dell Private Cloud expands choice with Nutanix support (alongside VMware vSphere and Red Hat OpenShift)",
+         "url": "https://www.dell.com/en-us/blog/dell-private-cloud-expands-choice-with-nutanix-support/"},
+    ],
 )
 
 APEX = _map(
     "apex",
     "APEX · as-a-service consumption",
-    "APEX subscriptions",
+    "Dell APEX Infrastructure (Flex on Demand)",
     L(
         novice=(
             "Here nothing is bought — capacity is subscribed to: a "
             "committed base you always pay for, a buffer above it, "
-            "and premium rates beyond that. Whether that beats "
+            "and premium rates beyond that (a common rental shape "
+            "used here for teaching; Dell says its own APEX offer "
+            "charges one rate with no overage fees). Whether that beats "
             "owning depends entirely on the shape of your demand: "
             "spiky demand loves subscriptions (you stop paying for "
             "idle peaks), flat demand loves ownership (subscription "
@@ -210,14 +231,24 @@ APEX = _map(
             "tests), steady favors ownership — and the buffer slider "
             "prices both failure modes: capacity outages under it, "
             "idle spend above it. Rates are estimates; the shape is "
-            "the truth."
+            "the truth. The 1.5× overage is the generic consumption "
+            "model, not Dell's rate card: Dell states APEX "
+            "Infrastructure (Flex on Demand) bills committed plus "
+            "metered buffer at a single rate with no overage fees, "
+            "capped at 85% of installed capacity on storage-metered "
+            "offers."
         ),
         expert=(
             "asvc = base + 1.5×overage; capex = amortized·capacity. "
             "Spiky → asvc wins, flat → capex wins; buffer trades "
-            "outage vs air. Shape, not price."
+            "outage vs air. Shape, not price. 1.5× is generic; Dell "
+            "states single-rate buffer, 85% billing cap."
         ),
     ),
+    sources=[
+        {"label": "Dell APEX Infrastructure (Flex on Demand) — committed + buffer capacity, single rate, 85% billing cap",
+         "url": "https://www.dell.com/en-us/dt/payment-solutions/flexible-consumption/flex-on-demand.htm"},
+    ],
 )
 
 NATIVEEDGE = _map(
@@ -242,8 +273,9 @@ NATIVEEDGE = _map(
             "admin-hours bill is the headline test), 2-node HA vs "
             "the single-node truck-roll day (1,440 outage minutes), "
             "and disconnected operation — WAN down means autonomy "
-            "plus drift, reconciled on reconnect. Dell's rebrand to "
-            "Distributed Private Cloud is kept visible, per spec. "
+            "plus drift, reconciled on reconnect. Dell's 2026 rename "
+            "of NativeEdge to Distributed Private Cloud is kept "
+            "visible, per spec. "
             "Narrative companion: DellNativeEdge (:5187)."
         ),
         expert=(
@@ -252,12 +284,18 @@ NATIVEEDGE = _map(
             "stays on the label."
         ),
     ),
+    sources=[
+        {"label": "Dell Distributed Private Cloud (previously Dell NativeEdge) product page",
+         "url": "https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/nativeedge"},
+        {"label": "SDxCentral — Dell Private Cloud gains VMware support, 'edge' is now 'distributed' (2026 rename, zero-touch endpoint support)",
+         "url": "https://www.sdxcentral.com/news/dell-private-cloud-gains-requested-vmware-support-edge-is-now-distributed/"},
+    ],
 )
 
 AUTOMATIONSTUDIO = _map(
     "automationstudio",
     "Automation Studio · infrastructure as pipelines",
-    "Dell Automation Platform premium",
+    "Dell Automation Platform toolkit (introduced May 2026)",
     L(
         novice=(
             "The finishing school: infrastructure changes written as "
@@ -277,7 +315,10 @@ AUTOMATIONSTUDIO = _map(
             "minutes. Pipeline re-runs reconcile drift "
             "(enforcement), and the pipeline-vs-clicks admin-hours "
             "comparison is the same order-of-magnitude story the "
-            "whole file tells."
+            "whole file tells. Dell describes the product as a "
+            "CI/CD-native orchestration toolkit (blueprints, "
+            "Terraform/Ansible reuse); the test gate is this app's "
+            "model of such a pipeline, not a documented feature."
         ),
         expert=(
             "Gate on: caught, 0 min. Off: 240 min. Re-runs = drift "
@@ -285,6 +326,12 @@ AUTOMATIONSTUDIO = _map(
             "lesson, again."
         ),
     ),
+    sources=[
+        {"label": "Dell Automation Studio product page — CI/CD-native infrastructure orchestration toolkit",
+         "url": "https://www.dell.com/en-us/shop/storage-servers-and-networking-for-business/sf/automation-studio"},
+        {"label": "Dell blog, May 2026 — Dell Ushers in the Agentic Era of IT Operations (introduces Automation Studio)",
+         "url": "https://www.dell.com/en-us/blog/dell-ushers-in-the-agentic-era-of-it-operations/"},
+    ],
 )
 
 
